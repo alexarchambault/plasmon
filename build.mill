@@ -1153,14 +1153,21 @@ object ci extends Module {
   def waitForSync(version: String = PlasmonPublishModule.buildVersion) = Task.Command {
     Sync.waitForSync(
       s"${server.pomSettings().organization}:${server.artifactId()}:$version",
-      if (version.endsWith("SNAPSHOT")) Seq("-r", "sonatype:snapshots") else Nil,
+      if (version.endsWith("SNAPSHOT"))
+        Seq("-r", "https://central.sonatype.com/repository/maven-snapshots")
+      else
+        Nil,
       25
     )
   }
 
   def bootstrapLauncher(version: String = PlasmonPublishModule.buildVersion) = Task.Command {
-    val extraArgs = if (version.endsWith("SNAPSHOT")) Seq("-r", "sonatype:snapshots") else Nil
-    val dest      = Task.dest / "bootstrap.jar"
+    val extraArgs =
+      if (version.endsWith("SNAPSHOT"))
+        Seq("-r", "https://central.sonatype.com/repository/maven-snapshots")
+      else
+        Nil
+    val dest = Task.dest / "bootstrap.jar"
     os.proc(
       "cs",
       "bootstrap",
@@ -1174,8 +1181,12 @@ object ci extends Module {
   }
 
   def assemblyLauncher(version: String = PlasmonPublishModule.buildVersion) = Task.Command {
-    val extraArgs = if (version.endsWith("SNAPSHOT")) Seq("-r", "sonatype:snapshots") else Nil
-    val dest      = Task.dest / "assembly.jar"
+    val extraArgs =
+      if (version.endsWith("SNAPSHOT"))
+        Seq("-r", "https://central.sonatype.com/repository/maven-snapshots")
+      else
+        Nil
+    val dest = Task.dest / "assembly.jar"
     os.proc(
       "cs",
       "bootstrap",
