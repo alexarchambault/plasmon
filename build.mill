@@ -303,13 +303,32 @@ object server extends ScalaModule with PlasmonPublishModule {
       Deps.semanticdbJavac
     )
 
-    // Remove once switching to mill-native-image 0.2.4
+    // Remove and just use writeNativeImageScript from mill-native-image
+    // once switching to mill-native-image 0.2.4
     def writeNativeImageScript0(scriptDest: String, imageDest: String = ""): Task.Command[Unit] =
       Task.Command {
         val scriptDest0 = os.Path(scriptDest, BuildCtx.workspaceRoot)
         val script      = nativeImageScript(imageDest)().path
         os.copy(script, scriptDest0, replaceExisting = true, createFolders = true)
       }
+
+    def nativeImageGraalvmHome =
+      if (Properties.isWin && System.getenv("CI") != null)
+        Task {
+          val baseHome = super.nativeImageGraalvmHome().path
+          val newHome  = BuildCtx.workspaceRoot / "graalvm"
+
+          if (!os.exists(newHome)) {
+            val newHomeTmp = BuildCtx.workspaceRoot / "graalvm-tmp"
+            os.remove.all(newHomeTmp)
+            os.copy(baseHome, newHomeTmp)
+            os.move(newHomeTmp, newHome)
+          }
+
+          PathRef(newHome, quick = true)
+        }
+      else
+        super.nativeImageGraalvmHome
 
     private def stripFile(
       jar: os.Path,
