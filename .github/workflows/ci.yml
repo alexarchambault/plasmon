@@ -67,7 +67,7 @@ jobs:
         apps: sbt scala-cli
         jvm: 17
     - name: Prepare for native image
-      run: ./mill -i server.native.writeNativeImageScript --scriptDest generate-native-image.sh --imageDest ""
+      run: ./mill -i server.native.writeNativeImageScript0 --scriptDest generate-native-image.sh
     - name: Generate native image
       run: bash ./generate-native-image.sh
     - name: Test
