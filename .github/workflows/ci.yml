@@ -67,9 +67,17 @@ jobs:
         apps: sbt scala-cli
         jvm: 17
     - name: Prepare for native image
+      if: runner.os != 'Windows'
       run: ./mill -i server.native.writeNativeImageScript0 --scriptDest generate-native-image.sh
+    - name: Prepare for native image (Windows)
+      if: runner.os == 'Windows'
+      run: ./mill -i server.native.writeNativeImageScript0 --scriptDest generate-native-image.bat
     - name: Generate native image
-      run: bash ./generate-native-image.sh
+      if: runner.os != 'Windows'
+      run: ./generate-native-image.sh
+    - name: Generate native image (Windows)
+      if: runner.os == 'Windows'
+      run: ./generate-native-image.bat
     - name: Test
       run: ./mill -i integration.native.testForked
     - name: Diff
@@ -78,7 +86,7 @@ jobs:
         git diff
         git diff-index HEAD --quiet || ( echo "Some test data differ"; exit 1 )
     - name: Copy artifacts
-      run: ./mill copyLauncher --directory artifacts/
+      run: ./mill ci.copyLauncher --directory artifacts/
     - uses: actions/attest-build-provenance@v3
       if: startsWith(github.ref, 'refs/tags/v')
       with:
