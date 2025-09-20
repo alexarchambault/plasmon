@@ -113,7 +113,9 @@ object PlasmonPublishModule {
     .trim()
   def computeBuildVersion() = {
     // FIXME Print stderr if command fails
-    val gitHead = os.proc("git", "rev-parse", "HEAD").call(cwd = BuildCtx.workspaceRoot, stderr = os.Pipe).out.trim()
+    val gitHead = os.proc("git", "rev-parse", "HEAD")
+      .call(cwd = BuildCtx.workspaceRoot, stderr = os.Pipe)
+      .out.trim()
     val maybeExactTag = scala.util.Try {
       // FIXME Print stderr if command fails
       os.proc("git", "describe", "--exact-match", "--tags", "--always", gitHead)
@@ -127,7 +129,8 @@ object PlasmonPublishModule {
         os.proc("git", "rev-list", gitHead, "--not", latestTaggedVersion, "--count")
           .call(cwd = BuildCtx.workspaceRoot, stderr = os.Pipe).out.trim()
           .toInt
-      val gitHash = os.proc("git", "rev-parse", "--short", "HEAD").call(cwd = BuildCtx.workspaceRoot).out.trim()
+      val gitHash =
+        os.proc("git", "rev-parse", "--short", "HEAD").call(cwd = BuildCtx.workspaceRoot).out.trim()
       s"${latestTaggedVersion.stripPrefix("v")}-$commitsSinceTaggedVersion-$gitHash-SNAPSHOT"
     }
   }
