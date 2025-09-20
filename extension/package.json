@@ -1,0 +1,200 @@
+{
+  "name": "plasmon",
+  "displayName": "Plasmon",
+  "description": "VSCode extension for Plasmon (Scala language server)",
+  "version": "0.0.2",
+  "publisher": "alexarchambault",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/alexarchambault/plasmon-code.git"
+  },
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onLanguage:scala",
+    "workspaceContains:build.sc",
+    "workspaceContains:build.mill",
+    "workspaceContains:.scala-build"
+  ],
+  "main": "./out/extension.js",
+  "configuration": {
+    "type": "object",
+    "title": "Example configuration",
+    "properties": {
+      "plasmon.binary": {
+          "scope": "resource",
+          "type": "string",
+          "default": "",
+          "description": "Plasmon binary path (optional)"
+      }
+    }
+  },
+  "contributes": {
+    "commands": [
+      {
+        "command": "plasmon.debug-pc-enable",
+        "title": "Plasmon: Enable presentation compiler debugging"
+      },
+      {
+        "command": "plasmon.debug-pc-disable",
+        "title": "Plasmon: Disable presentation compiler debugging"
+      },
+      {
+        "command": "plasmon.testOpenReadonly",
+        "title": "Plasmon: Test open Read-only Document"
+      },
+      {
+        "command": "plasmon.testFancyStatusTooltip",
+        "title": "Plasmon: Test fancy status tooltip"
+      },
+      {
+        "command": "plasmon.dump-symbol-index",
+        "title": "Plasmon: Dump symbol index for current module"
+      },
+      {
+        "command": "plasmon.dump-full-tree",
+        "title": "Plasmon: Dump presentation compiler full tree for current file"
+      },
+      {
+        "command": "plasmon.dump-bsp-data",
+        "title": "Plasmon: Dump BSP data for current file"
+      },
+      {
+        "command": "plasmon.dump-semanticdb-details",
+        "title": "Plasmon: Dump semanticdb details for current file"
+      },
+      {
+        "command": "plasmon.test-progress",
+        "title": "Plasmon: Test progress"
+      },
+      {
+        "command": "plasmon.load-build-tool",
+        "title": "Plasmon: Load or unload build tool"
+      },
+      {
+        "command": "plasmon.load-build-tool-or-module",
+        "title": "Plasmon: Load or unload build tool or module"
+      },
+      {
+        "command": "plasmon.build-tool-restart",
+        "title": "Plasmon: Restart build tool"
+      },
+      {
+        "command": "plasmon.build-tool-restart-or-reconnect",
+        "title": "Plasmon: Restart build tool or reconnect to it"
+      },
+      {
+        "command": "plasmon.unload-all-modules",
+        "title": "Plasmon: Unload all modules"
+      },
+      {
+        "command": "plasmon.unload-all-build-tools",
+        "title": "Plasmon: Unload all modules and build tools"
+      },
+      {
+        "command": "plasmon.re-index",
+        "title": "Plasmon: Re-index"
+      },
+      {
+        "command": "plasmon.interactive-shutdown",
+        "title": "Plasmon: Restart interactive compiler"
+      },
+      {
+        "command": "plasmon.completion-interactive-shutdown",
+        "title": "Plasmon: Restart interactive compiler for completions"
+      },
+      {
+        "command": "plasmon.interactive-interrupt",
+        "title": "Plasmon: Interrupt interactive compiler"
+      },
+      {
+        "command": "plasmon.completion-interactive-interrupt",
+        "title": "Plasmon: Interrupt interactive compiler for completions"
+      },
+      {
+        "command": "plasmon.interactive-compiler",
+        "title": "Plasmon: Interactive compiler"
+      },
+      {
+        "command": "plasmon.compile",
+        "title": "Plasmon: Compile current file"
+      },
+      {
+        "command": "plasmon.clean",
+        "title": "Plasmon: Clean current file's module"
+      },
+      {
+        "command": "plasmon.compile-all",
+        "title": "Plasmon: Compile all modules"
+      },
+      {
+        "command": "plasmon.clean-all",
+        "title": "Plasmon: Clean all modules"
+      },
+      {
+        "command": "plasmon.re-import",
+        "title": "Plasmon: Re-import project from build tool"
+      },
+      {
+        "command": "plasmon.stop-server",
+        "title": "Plasmon: Stop LSP server"
+      },
+      {
+        "command": "plasmon.start-server",
+        "title": "Plasmon: Start LSP server"
+      },
+      {
+        "command": "plasmon.organize-imports",
+        "title": "Plasmon: Organize imports in this file"
+      },
+      {
+        "command": "plasmon.organize-imports-in-module",
+        "title": "Plasmon: Organize imports in whole module"
+      }
+    ],
+    "configurationDefaults": {
+      "[scala]": {
+        "editor.suggestSelection": "first",
+        "editor.formatOnPaste": true,
+        "editor.formatOnType": true
+      },
+      "files.watcherExclude": {
+        "**/.plasmon/": true
+      },
+      "search.exclude": {
+        "**/.plasmon/": true
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src --ext ts",
+    "test": "vscode-test",
+    "package": "vsce package"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10.0.6",
+    "@types/node": "18.x",
+    "@types/vscode": "^1.85.0",
+    "@typescript-eslint/eslint-plugin": "^6.19.1",
+    "@typescript-eslint/parser": "^6.19.1",
+    "@vscode/test-cli": "^0.0.4",
+    "@vscode/test-electron": "^2.3.9",
+    "@vscode/vsce": "^2.23.0",
+    "eslint": "^8.56.0",
+    "typescript": "^5.3.3"
+  },
+  "dependencies": {
+    "vscode-languageclient": "^7.0.0"
+  },
+  "extensionPack": [
+    "scala-lang.scala"
+  ]
+}

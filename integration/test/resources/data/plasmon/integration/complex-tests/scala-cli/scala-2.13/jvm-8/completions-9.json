@@ -1,0 +1,271 @@
+{
+  "right": {
+    "isIncomplete": false,
+    "items": [
+      {
+        "label": "LazyList scala.collection.immutable",
+        "kind": "Module",
+        "detail": " scala.collection.immutable",
+        "preselect": true,
+        "sortText": "00000",
+        "filterText": "LazyList",
+        "insertTextFormat": "PlainText",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 9,
+              "character": 29
+            },
+            "end": {
+              "line": 9,
+              "character": 30
+            }
+          },
+          "newText": "LazyList"
+        },
+        "data": {
+          "symbol": "scala/collection/immutable/LazyList.",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "kind": 0
+        }
+      },
+      {
+        "label": "LinearSeq scala.collection.immutable",
+        "kind": "Module",
+        "detail": " scala.collection.immutable",
+        "sortText": "00001",
+        "filterText": "LinearSeq",
+        "insertTextFormat": "PlainText",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 9,
+              "character": 29
+            },
+            "end": {
+              "line": 9,
+              "character": 30
+            }
+          },
+          "newText": "LinearSeq"
+        },
+        "data": {
+          "symbol": "scala/collection/immutable/LinearSeq.",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "kind": 0
+        }
+      },
+      {
+        "label": "List scala.collection.immutable",
+        "kind": "Module",
+        "detail": " scala.collection.immutable",
+        "sortText": "00002",
+        "filterText": "List",
+        "insertTextFormat": "PlainText",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 9,
+              "character": 29
+            },
+            "end": {
+              "line": 9,
+              "character": 30
+            }
+          },
+          "newText": "List"
+        },
+        "data": {
+          "symbol": "scala/collection/immutable/List.",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "kind": 0
+        }
+      },
+      {
+        "label": "ListMap scala.collection.immutable",
+        "kind": "Module",
+        "detail": " scala.collection.immutable",
+        "sortText": "00003",
+        "filterText": "ListMap",
+        "insertTextFormat": "PlainText",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 9,
+              "character": 29
+            },
+            "end": {
+              "line": 9,
+              "character": 30
+            }
+          },
+          "newText": "ListMap"
+        },
+        "data": {
+          "symbol": "scala/collection/immutable/ListMap.",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "kind": 0
+        }
+      },
+      {
+        "label": "ListSet scala.collection.immutable",
+        "kind": "Module",
+        "detail": " scala.collection.immutable",
+        "sortText": "00004",
+        "filterText": "ListSet",
+        "insertTextFormat": "PlainText",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 9,
+              "character": 29
+            },
+            "end": {
+              "line": 9,
+              "character": 30
+            }
+          },
+          "newText": "ListSet"
+        },
+        "data": {
+          "symbol": "scala/collection/immutable/ListSet.",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "kind": 0
+        }
+      },
+      {
+        "label": "LongMap scala.collection.immutable",
+        "kind": "Module",
+        "detail": " scala.collection.immutable",
+        "sortText": "00005",
+        "filterText": "LongMap",
+        "insertTextFormat": "PlainText",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 9,
+              "character": 29
+            },
+            "end": {
+              "line": 9,
+              "character": 30
+            }
+          },
+          "newText": "LongMap"
+        },
+        "data": {
+          "symbol": "scala/collection/immutable/LongMap.",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "kind": 0
+        }
+      },
+      {
+        "label": "IndexedSeqDefaults scala.collection.immutable",
+        "kind": "Module",
+        "detail": " scala.collection.immutable",
+        "sortText": "00006",
+        "filterText": "IndexedSeqDefaults",
+        "insertTextFormat": "PlainText",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 9,
+              "character": 29
+            },
+            "end": {
+              "line": 9,
+              "character": 30
+            }
+          },
+          "newText": "IndexedSeqDefaults"
+        },
+        "data": {
+          "symbol": "scala/collection/immutable/IndexedSeqDefaults.",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "kind": 0
+        }
+      },
+      {
+        "label": "Iterable scala.collection.immutable",
+        "kind": "Module",
+        "detail": " scala.collection.immutable",
+        "sortText": "00007",
+        "filterText": "Iterable",
+        "insertTextFormat": "PlainText",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 9,
+              "character": 29
+            },
+            "end": {
+              "line": 9,
+              "character": 30
+            }
+          },
+          "newText": "Iterable"
+        },
+        "data": {
+          "symbol": "scala/collection/immutable/Iterable.",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "kind": 0
+        }
+      },
+      {
+        "label": "Nil scala.collection.immutable",
+        "kind": "Module",
+        "detail": " scala.collection.immutable",
+        "sortText": "00008",
+        "filterText": "Nil",
+        "insertTextFormat": "PlainText",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 9,
+              "character": 29
+            },
+            "end": {
+              "line": 9,
+              "character": 30
+            }
+          },
+          "newText": "Nil"
+        },
+        "data": {
+          "symbol": "scala/collection/immutable/Nil.",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "kind": 0
+        }
+      },
+      {
+        "label": "Traversable scala.collection.immutable",
+        "kind": "Module",
+        "tags": [
+          "Deprecated"
+        ],
+        "detail": " scala.collection.immutable",
+        "sortText": "00009",
+        "filterText": "Traversable",
+        "insertTextFormat": "PlainText",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 9,
+              "character": 29
+            },
+            "end": {
+              "line": 9,
+              "character": 30
+            }
+          },
+          "newText": "Traversable"
+        },
+        "data": {
+          "symbol": "scala/collection/immutable/package.Traversable.",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "kind": 0
+        }
+      }
+    ]
+  }
+}

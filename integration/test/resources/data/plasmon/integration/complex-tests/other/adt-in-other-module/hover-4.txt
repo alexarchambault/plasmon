@@ -1,0 +1,3 @@
+```scala
+object foo.Thing.Thirds
+```

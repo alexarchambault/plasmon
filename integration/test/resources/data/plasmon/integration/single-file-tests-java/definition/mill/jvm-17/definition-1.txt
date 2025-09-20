@@ -1,0 +1,9 @@
+{
+  "path": "test-mod/src/Foo.java",
+  "line": 8,
+  "colRange": [
+    13,
+    16
+  ],
+  "content": "Foo"
+}

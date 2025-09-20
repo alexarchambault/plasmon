@@ -1,0 +1,7 @@
+```scala
+object mill.api.Result.Aborted
+```
+
+***
+
+A task execution was skipped/aborted because of earlier (maybe unrelated) tasks failed and the evaluation was in fail-fast mode.

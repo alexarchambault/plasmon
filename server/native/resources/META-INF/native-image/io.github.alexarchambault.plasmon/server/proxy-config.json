@@ -1,0 +1,44 @@
+[
+  {
+    "interfaces": [
+      "plasmon.languageclient.PlasmonLanguageClient",
+      "org.eclipse.lsp4j.jsonrpc.Endpoint"
+    ]
+  },
+  {
+    "interfaces": [
+      "plasmon.bsp.PlasmonBuildServer",
+      "org.eclipse.lsp4j.jsonrpc.Endpoint"
+    ]
+  },
+  {
+    "interfaces": [
+      "scala.build.bsp.ScalaScriptBuildServer",
+      "org.eclipse.lsp4j.jsonrpc.Endpoint"
+    ]
+  },
+  {
+    "interfaces": [
+      "ch.epfl.scala.bsp4j.BuildClient",
+      "org.eclipse.lsp4j.jsonrpc.Endpoint"
+    ]
+  },
+  {
+    "interfaces": [
+      "plasmon.bsp.PlasmonBuildClient",
+      "org.eclipse.lsp4j.jsonrpc.Endpoint"
+    ]
+  },
+  {
+    "interfaces": [
+      "plasmon.protocol.CommandServer",
+      "org.eclipse.lsp4j.jsonrpc.Endpoint"
+    ]
+  },
+  {
+    "interfaces": [
+      "plasmon.protocol.CommandClient",
+      "org.eclipse.lsp4j.jsonrpc.Endpoint"
+    ]
+  }
+]

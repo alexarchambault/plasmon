@@ -1,0 +1,9 @@
+{
+  "path": ".plasmon/readonly/dependencies/src.zip/java.base/java/lang/Runtime.java",
+  "line": 210,
+  "colRange": [
+    16,
+    31
+  ],
+  "content": "addShutdownHook"
+}

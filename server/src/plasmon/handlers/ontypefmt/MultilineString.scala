@@ -1,0 +1,496 @@
+// Originally based on https://github.com/scalameta/metals/blob/2a6f8a437a1ce7c44140673edfe34bb74dfd33be/metals/src/main/scala/scala/meta/internal/metals/formatting/MultilineString.scala or an earlier version of that file
+
+package plasmon.handlers.ontypefmt
+
+import scala.meta.tokens.Tokens
+import scala.meta.tokens.Token
+
+import org.eclipse.{lsp4j => l}
+
+import scala.meta.XtensionClassifiable
+import plasmon.PlasmonEnrichments.*
+import scala.meta.inputs.Position
+import scala.annotation.tailrec
+import scala.meta.inputs.Input
+
+private object MultilineString extends OnTypeFormatter with RangeFormatter {
+
+  private val quote            = '"'
+  private val space            = " "
+  private val stripMargin      = "stripMargin"
+  private val spaceAndBrackets = raw"[ ]*[\}\)\]]+.*"
+
+  private def hasStripMarginSuffix(
+    stringTokenIndex: Int,
+    tokens: Tokens
+  ): Boolean = {
+    var methodIndex = stringTokenIndex + 1
+    while (
+      tokens(methodIndex).isWhiteSpaceOrComment ||
+      tokens(methodIndex).isInstanceOf[Token.Dot]
+    ) methodIndex += 1
+    tokens(methodIndex) match {
+      case token: Token.Ident if token.value == stripMargin =>
+        true
+      case _ =>
+        false
+    }
+  }
+
+  private def isMultilineString(token: Token): Boolean = {
+    val text  = token.input.text
+    val start = token.start
+    hasNQuotes(start, text, 3)
+  }
+
+  private def determineDefaultIndent(
+    lines: Array[String],
+    lineNumberToCheck: Int
+  ): String = {
+    val lineToCheck = lines(lineNumberToCheck)
+    val index =
+      if (lineToCheck.contains("\"\"\"|"))
+        lineToCheck.indexOf('"') + 3
+      else if (lineToCheck.contains("|"))
+        lineToCheck.indexOf('|')
+      else if (lineToCheck.contains("\"\"\""))
+        lineToCheck.indexOf('"') + 2
+      else 0
+    space * index
+  }
+
+  private def getIndexOfLastOpenQuote(line: String): Option[(Int, Boolean)] = {
+
+    var lastQuote   = -1
+    var escaped     = false
+    var quoteClosed = true
+    for (i <- 0 until line.size) {
+      val char = line(i)
+      if (char == '"')
+        if (!escaped) {
+          lastQuote = i
+          quoteClosed = !quoteClosed
+        }
+        else
+          escaped = !escaped
+      else if (char == '\\')
+        escaped = !escaped
+      else
+        escaped = false
+    }
+    if (lastQuote != -1) Some((lastQuote, quoteClosed)) else None
+  }
+
+  private def hasNQuotes(start: Int, text: String, n: Int): Boolean =
+    (start until start + n).forall(i =>
+      if (i < 0 || i >= text.length) false else text(i) == quote
+    )
+
+  private def indentWhenNoStripMargin(
+    expr: StringLiteralExpr,
+    splitLines: Array[String],
+    position: l.Position
+  ): List[l.TextEdit] = {
+    val nextLineIdx = position.getLine + 1
+    def isLineWithBracket =
+      expr.endPos.endLine == nextLineIdx && splitLines(
+        nextLineIdx
+      ).matches(spaceAndBrackets)
+    if (
+      expr.startPos.startLine == position.getLine - 1 &&
+      (expr.endPos.endLine == position.getLine || isLineWithBracket)
+    ) {
+      val newPos =
+        new Position.Range(
+          expr.input,
+          expr.endPos.end,
+          expr.endPos.end
+        )
+      indent(splitLines, position, expr) ++ List(
+        new l.TextEdit(newPos.toLsp, ".stripMargin")
+      )
+    }
+    else indent(splitLines, position, expr)
+  }
+
+  private def indent(
+    splitLines: Array[String],
+    position: l.Position,
+    expr: StringLiteralExpr
+  ): List[l.TextEdit] = {
+    // position line -1 since we are checking the line before when doing onType
+    val defaultIndent  = determineDefaultIndent(splitLines, position.getLine - 1)
+    val existingSpaces = position.getCharacter
+    val addedSpaces    = defaultIndent.drop(existingSpaces)
+    val startChar      = defaultIndent.size - addedSpaces.size
+    position.setCharacter(startChar)
+    val endChar     = startChar + Math.max(0, existingSpaces - defaultIndent.size)
+    val endPosition = new l.Position(position.getLine, endChar)
+    val firstEdit =
+      new l.TextEdit(new l.Range(position, endPosition), addedSpaces + "|")
+
+    val formatBraces = {
+      val nextLineIdx  = position.getLine + 1
+      val isRangeValid = nextLineIdx <= expr.endPos.endLine
+      def isLineWithBracket =
+        splitLines(nextLineIdx).matches(spaceAndBrackets)
+      if (isRangeValid && isLineWithBracket) {
+        val nextLine        = splitLines(nextLineIdx)
+        val nextLineContent = nextLine.dropWhile(_.isWhitespace)
+        val startPos        = new l.Position(nextLineIdx, 0)
+        val endPos = new l.Position(
+          nextLineIdx,
+          nextLine.size
+        )
+        List(
+          new l.TextEdit(
+            new l.Range(startPos, endPos),
+            defaultIndent + "|" + nextLineContent
+          )
+        )
+      }
+      else Nil
+    }
+    List(firstEdit) ++ formatBraces
+  }
+
+  private def indent(
+    splitLines: Array[String],
+    startPosition: Position,
+    range: l.Range
+  ): List[l.TextEdit] = {
+    // position.startLine since we want to check current line on rangeFormatting
+    val defaultIndent =
+      determineDefaultIndent(splitLines, startPosition.startLine)
+    val linesToFormat =
+      range.getStart.getLine.to(range.getEnd.getLine)
+    linesToFormat
+      .flatMap(line => formatPipeLine(line, splitLines, defaultIndent))
+      .toList
+  }
+
+  private def inToken(
+    startPos: Position,
+    endPos: Position,
+    startTokenPos: Position,
+    endTokenPos: Position
+  ): Boolean =
+    startPos.startLine >= startTokenPos.startLine && endPos.endLine <= endTokenPos.endLine
+
+  private def pipeInScope(
+    startPos: Position,
+    endPos: Position,
+    text: String,
+    newlineAdded: Boolean
+  ): Boolean = {
+    val indexOfLastBackToLine = text.lastIndexBetween(
+      '\n',
+      0,
+      upperBound = startPos.start - 1
+    )
+    val lastBackToLine =
+      if (!newlineAdded) indexOfLastBackToLine
+      else
+        text.lastIndexBetween('\n', 0, upperBound = indexOfLastBackToLine - 1)
+    val pipeBetweenLastLineAndPos = text.lastIndexBetween(
+      '|',
+      lastBackToLine,
+      startPos.start - 1
+    )
+    val pipeBetweenSelection = text.lastIndexBetween(
+      '|',
+      startPos.start - 1,
+      endPos.end - 1
+    )
+    pipeBetweenLastLineAndPos != -1 || pipeBetweenSelection != -1
+  }
+
+  private def fixStringNewline(
+    position: l.Position,
+    splitLines: Array[String]
+  ): List[l.TextEdit] = {
+    val previousLineNumber = position.getLine - 1
+    val previousLine       = splitLines(previousLineNumber)
+    val previousLinePosition =
+      new l.Position(previousLineNumber, previousLine.length)
+    val textEditPrecedentLine = new l.TextEdit(
+      new l.Range(previousLinePosition, previousLinePosition),
+      "\"" + " " + "+"
+    )
+    val defaultIndent = previousLine.prefixLength(_ == ' ')
+    val indent =
+      if (
+        previousLineNumber > 1 && !splitLines(
+          previousLineNumber - 1
+        ).trim.lastOption
+          .contains('+')
+      )
+        defaultIndent + 2
+      else defaultIndent
+    val interpolationString = getIndexOfLastOpenQuote(previousLine)
+      .map { case (lastQuoteIndex, _) =>
+        if (lastQuoteIndex > 0 && previousLine(lastQuoteIndex - 1) == 's') "s"
+        else ""
+      }
+      .getOrElse("")
+
+    val zeroPos = new l.Position(position.getLine, 0)
+    val textEditcurrentLine =
+      new l.TextEdit(
+        new l.Range(zeroPos, position),
+        " " * indent + interpolationString + "\""
+      )
+    List(textEditPrecedentLine, textEditcurrentLine)
+  }
+
+  private def replaceWithSixQuotes(pos: l.Position): List[l.TextEdit] = {
+    val pos1 = new l.Position(pos.getLine, pos.getCharacter - 3)
+    val pos2 = new l.Position(pos.getLine, pos.getCharacter + 1)
+    List(new l.TextEdit(new l.Range(pos1, pos2), "\"\"\"\"\"\""))
+  }
+
+  private def addTripleQuote(pos: l.Position): List[l.TextEdit] = {
+    val endPos = new l.Position(pos.getLine, pos.getCharacter + 1)
+    List(new l.TextEdit(new l.Range(pos, endPos), "\"\"\""))
+  }
+
+  private def formatPipeLine(
+    line: Int,
+    lines: Array[String],
+    defaultIndent: String
+  ): Option[l.TextEdit] = {
+    val zeroPos   = new l.Position(line, 0)
+    val lineText  = lines(line)
+    val firstChar = lineText.trim.headOption
+    firstChar match {
+      case Some('|') =>
+        val firstPipeIndex     = lineText.indexOf('|')
+        val firstCharAfterPipe = lineText.trim.tail.trim.headOption
+
+        firstCharAfterPipe match {
+          case Some('|') =>
+            val secondPipeIndex = lineText.indexOf('|', firstPipeIndex + 1)
+            val secondPipePos   = new l.Position(line, secondPipeIndex)
+            val textEdit =
+              new l.TextEdit(new l.Range(zeroPos, secondPipePos), defaultIndent)
+            Some(textEdit)
+          case _ =>
+            val pipePos = new l.Position(line, firstPipeIndex)
+            val textEdit =
+              new l.TextEdit(new l.Range(zeroPos, pipePos), defaultIndent)
+            Some(textEdit)
+        }
+      case _ =>
+        val isFirstLineOfMultiLine = lineText.trim.contains("\"\"\"")
+        if (isFirstLineOfMultiLine)
+          None
+        else {
+          val newText  = defaultIndent + "|"
+          val textEdit = new l.TextEdit(new l.Range(zeroPos, zeroPos), newText)
+          Some(textEdit)
+        }
+    }
+  }
+
+  private def collectStringAndInterpolations(
+    tokens: Tokens
+  ): PartialFunction[(Token, Int), StringLiteralExpr] = {
+    case (token: Token.Constant.String, i) if isMultilineString(token) =>
+      val hasSuffix = hasStripMarginSuffix(i, tokens)
+      StringLiteralExpr(token.input, token.pos, token.pos, hasSuffix)
+    case (token: Token.Interpolation.Start, i) if isMultilineString(token) =>
+      // interpolations can be nested!
+      @tailrec
+      def findInterpolationEnd(idx: Int, openedInterpolations: Int): Int =
+        tokens(idx) match {
+          case _: Token.Interpolation.Start =>
+            findInterpolationEnd(idx + 1, openedInterpolations + 1)
+          case _: Token.Interpolation.End =>
+            if (openedInterpolations == 1) idx
+            else findInterpolationEnd(idx + 1, openedInterpolations - 1)
+          case _ => findInterpolationEnd(idx + 1, openedInterpolations)
+        }
+      val endIndex  = findInterpolationEnd(i + 1, 1)
+      val endToken  = tokens(endIndex)
+      val hasSuffix = hasStripMarginSuffix(endIndex, tokens)
+      StringLiteralExpr(token.input, token.pos, endToken.pos, hasSuffix)
+  }
+
+  private def getStringLiterals(
+    tokens: Tokens,
+    params: FormatterParams,
+    newlineAdded: Boolean
+  ): Iterator[StringLiteralExpr] = {
+    val startPos   = params.startPos
+    val endPos     = params.endPos
+    val sourceText = params.sourceText
+    tokens.iterator.zipWithIndex
+      .collect(collectStringAndInterpolations(tokens))
+      .filter { td =>
+        inToken(startPos, endPos, td.startPos, td.endPos) &&
+        pipeInScope(
+          startPos,
+          endPos,
+          sourceText,
+          newlineAdded
+        )
+      }
+  }
+
+  override def contribute(
+    params: OnTypeFormatterParams
+  ): Option[List[l.TextEdit]] =
+    params.triggerChar.head match {
+      case '"'  => contributeQuotes(params)
+      case '\n' => contributeNewline(params)
+      case _    => None
+    }
+
+  private def contributeQuotes(
+    params: OnTypeFormatterParams
+  ): Option[List[l.TextEdit]] = {
+    val range = new l.Range(params.position, params.position)
+    params.tokens
+      .getOrElse(Nil)
+      .sliding(3)
+      .collectFirst {
+        // `s""""` <- four quotes interpolation
+        case Seq(
+              start: Token.Interpolation.Start,
+              part: Token.Interpolation.Part,
+              invalid
+            )
+            if part.pos.encloses(range) && start.pos.text
+              .startsWith("\"\"\"") && part.pos.text.startsWith(
+              "\""
+            ) && invalid.getClass.getName.endsWith("Invalid") =>
+          Some(replaceWithSixQuotes(params.position))
+        // `""""` <- simple four quotes
+        case Seq(token: Token.Constant.String, invalid, _)
+            if token.pos
+              .encloses(range) && token.pos.text.startsWith(
+              "\"\"\"\""
+            ) && invalid.getClass.getName.endsWith("Invalid") =>
+          Some(replaceWithSixQuotes(params.position))
+      }
+      .flatten
+  }
+
+  private def contributeNewline(
+    params: OnTypeFormatterParams
+  ): Option[List[l.TextEdit]] = {
+    val splitLines = params.splitLines
+    val position   = params.position
+    val range      = new l.Range(params.position, params.position)
+    val sourceText = params.sourceText
+
+    def isUnfinishedTripleQuote(token: Token) =
+      token.pos.startLine != token.pos.endLine &&
+      token.end - token.start >= 6 &&
+      (sourceText.subSequence(token.start, token.start + 3) != "\"\"\"" ||
+      sourceText.subSequence(token.end - 3, token.end) != "\"\"\"")
+
+    def isUnfinishedDoubleQuote(token: Token.Constant.String) =
+      token.start != token.end && (
+        sourceText(token.start) != '"' ||
+        sourceText(token.end - 1) != '"'
+      )
+    params.tokens
+      .getOrElse(Nil)
+      .sliding(3)
+      .collectFirst {
+        /*
+         *```
+         * """some text without ending triple quotes
+         *```
+         */
+        case Seq(token: Token.Constant.String, invalid, _)
+            if token.pos.encloses(range) &&
+            isUnfinishedTripleQuote(token) && invalid.getClass.getName.endsWith("Invalid") =>
+          Some(addTripleQuote(position))
+        /*
+         *```
+         * sql"""some interpolated text without ending triple quotes
+         *```
+         */
+        case Seq(
+              start: Token.Interpolation.Start,
+              part: Token.Interpolation.Part,
+              invalid
+            )
+            if part.pos.encloses(range) &&
+            start.pos.text.startsWith("\"\"\"") && invalid.getClass.getName.endsWith("Invalid") =>
+          Some(addTripleQuote(position))
+        /*
+         *```
+         * s"some interpolated text without ending quote
+         *  some textwithout starting quote"
+         *```
+         */
+        case Seq(
+              _: Token.Interpolation.Part,
+              token,
+              _
+            )
+            if token.pos.endLine == position.getLine - 1 && token.getClass.getName.endsWith(
+              "Invalid"
+            ) => // we added enter
+          Some(fixStringNewline(position, splitLines))
+        /*
+         *```
+         * "some text without ending quote
+         *  some textwithout starting quote"
+         *```
+         */
+        case Seq(token: Token.Constant.String, _, _)
+            if isUnfinishedDoubleQuote(token) =>
+          Some(fixStringNewline(position, splitLines))
+
+        /*
+         * Otherwise, we are inside a multiline string or interpolation.
+         */
+        case Seq(token, _, _)
+            if (token.is[Token.Constant.String] || token
+              .is[Token.Interpolation.Part]) &&
+            token.pos.encloses(range) && params.tokens.nonEmpty =>
+          getStringLiterals(params.tokens.get, params, true)
+            .map { expr =>
+              if (expr.hasStripMargin)
+                indent(splitLines, position, expr)
+              else
+                indentWhenNoStripMargin(
+                  expr,
+                  splitLines,
+                  position
+                )
+            }
+            .find(_.nonEmpty)
+      }
+      .flatten
+  }
+
+  override def contribute(
+    params: RangeFormatterParams
+  ): Option[List[l.TextEdit]] = {
+    val startPos = params.startPos
+
+    params.tokens.flatMap { tokens =>
+      getStringLiterals(tokens, params, false)
+        .filter(_.hasStripMargin)
+        .map { _ =>
+          val range      = params.range
+          val splitLines = params.splitLines
+          indent(splitLines, startPos, range)
+        }
+        .find(_.nonEmpty)
+    }
+  }
+
+  private case class StringLiteralExpr(
+    input: Input,
+    startPos: Position,
+    endPos: Position,
+    hasStripMargin: Boolean
+  )
+
+}

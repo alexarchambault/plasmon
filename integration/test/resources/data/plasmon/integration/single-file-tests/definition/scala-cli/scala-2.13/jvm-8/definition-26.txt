@@ -1,0 +1,9 @@
+{
+  "path": ".plasmon/readonly/dependencies/src.zip/java/lang/Thread.java",
+  "line": 1442,
+  "colRange": [
+    23,
+    44
+  ],
+  "content": "getContextClassLoader"
+}

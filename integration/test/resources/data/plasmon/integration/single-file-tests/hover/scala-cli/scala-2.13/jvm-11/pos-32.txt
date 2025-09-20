@@ -1,0 +1,12 @@
+```scala
+def toASCIIString(): String
+```
+
+***
+
+Returns the content of this URI as a US-ASCII string.
+
+ If this URI does not contain any characters in the *other*
+category then an invocation of this method will return the same value as
+an invocation of the [toString](#toString()) method.  Otherwise
+this method works as if by invoking that method and then [encoding]() the result.

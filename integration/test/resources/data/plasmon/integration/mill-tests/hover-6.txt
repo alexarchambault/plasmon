@@ -1,0 +1,3 @@
+```scala
+def rtTo(file: File, bool: Boolean): Boolean
+```

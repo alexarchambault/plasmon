@@ -1,0 +1,19 @@
+```scala
+def empty[A]: Seq[A]
+```
+
+***
+
+An empty collection
+
+
+***
+
+**Type Parameters**
+- `A`: the type of the ${coll}'s elements
+
+***
+**Expression type**
+```scala
+Seq[Nothing]
+```

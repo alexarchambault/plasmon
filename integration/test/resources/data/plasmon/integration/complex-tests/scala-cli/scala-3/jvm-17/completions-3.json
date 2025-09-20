@@ -1,0 +1,169 @@
+{
+  "right": {
+    "isIncomplete": false,
+    "items": [
+      {
+        "label": "LinkedHashMap scala.collection.mutable",
+        "kind": "Module",
+        "tags": [],
+        "detail": " scala.collection.mutable",
+        "sortText": "00000",
+        "filterText": "LinkedHashMap",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 4,
+              "character": 29
+            },
+            "end": {
+              "line": 4,
+              "character": 31
+            }
+          },
+          "newText": "LinkedHashMap"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/mutable/LinkedHashMap.",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "kind": 0
+        }
+      },
+      {
+        "label": "LinkedHashSet scala.collection.mutable",
+        "kind": "Module",
+        "tags": [],
+        "detail": " scala.collection.mutable",
+        "sortText": "00001",
+        "filterText": "LinkedHashSet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 4,
+              "character": 29
+            },
+            "end": {
+              "line": 4,
+              "character": 31
+            }
+          },
+          "newText": "LinkedHashSet"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/mutable/LinkedHashSet.",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "kind": 0
+        }
+      },
+      {
+        "label": "ListBuffer scala.collection.mutable",
+        "kind": "Module",
+        "tags": [],
+        "detail": " scala.collection.mutable",
+        "sortText": "00002",
+        "filterText": "ListBuffer",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 4,
+              "character": 29
+            },
+            "end": {
+              "line": 4,
+              "character": 31
+            }
+          },
+          "newText": "ListBuffer"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/mutable/ListBuffer.",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "kind": 0
+        }
+      },
+      {
+        "label": "ListMap scala.collection.mutable",
+        "kind": "Module",
+        "tags": [],
+        "detail": " scala.collection.mutable",
+        "sortText": "00003",
+        "filterText": "ListMap",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 4,
+              "character": 29
+            },
+            "end": {
+              "line": 4,
+              "character": 31
+            }
+          },
+          "newText": "ListMap"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/mutable/ListMap.",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "kind": 0
+        }
+      },
+      {
+        "label": "LinkedHashSet[A](elems: A*): CC[A]",
+        "kind": "Method",
+        "tags": [],
+        "detail": "[A](elems: A*): CC[A]",
+        "sortText": "00004",
+        "filterText": "LinkedHashSet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 4,
+              "character": 29
+            },
+            "end": {
+              "line": 4,
+              "character": 31
+            }
+          },
+          "newText": "LinkedHashSet"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/IterableFactory#apply().",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "kind": 0
+        }
+      },
+      {
+        "label": "LinkedHashMap[K, V](elems: (K, V)*): CC[K, V]",
+        "kind": "Method",
+        "tags": [],
+        "detail": "[K, V](elems: (K, V)*): CC[K, V]",
+        "sortText": "00005",
+        "filterText": "LinkedHashMap",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 4,
+              "character": 29
+            },
+            "end": {
+              "line": 4,
+              "character": 31
+            }
+          },
+          "newText": "LinkedHashMap"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/MapFactory#apply().",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "kind": 0
+        }
+      }
+    ]
+  }
+}

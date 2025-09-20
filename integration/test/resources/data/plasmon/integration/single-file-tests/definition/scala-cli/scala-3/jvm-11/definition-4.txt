@@ -1,0 +1,9 @@
+{
+  "path": ".plasmon/readonly/dependencies/scala-library-2.13.12-sources.jar/scala/collection/mutable/ListBuffer.scala",
+  "line": 396,
+  "colRange": [
+    7,
+    17
+  ],
+  "content": "ListBuffer"
+}

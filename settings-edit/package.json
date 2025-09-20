@@ -1,0 +1,10 @@
+{
+  "repository": "https://github.com/alexarchambault/plasmon.git",
+  "license": "Apache-2.0",
+  "devDependencies": {
+    "esbuild": "^0.19.11"
+  },
+  "dependencies": {
+    "jsonc-parser": "3.2.0"
+  }
+}

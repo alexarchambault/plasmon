@@ -1,0 +1,493 @@
+{
+  "right": {
+    "isIncomplete": false,
+    "items": [
+      {
+        "label": "ListBuffer[A](elems: A*): ListBuffer[A]",
+        "kind": "Method",
+        "tags": [],
+        "detail": "[A](elems: A*): ListBuffer[A]",
+        "sortText": "00000",
+        "filterText": "ListBuffer",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 4,
+              "character": 29
+            },
+            "end": {
+              "line": 4,
+              "character": 31
+            }
+          },
+          "newText": "ListBuffer"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/IterableFactory#apply().",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "kind": 3
+        }
+      },
+      {
+        "label": "LinkedHashSet[A](elems: A*): LinkedHashSet[A]",
+        "kind": "Method",
+        "tags": [],
+        "detail": "[A](elems: A*): LinkedHashSet[A]",
+        "sortText": "00001",
+        "filterText": "LinkedHashSet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 4,
+              "character": 29
+            },
+            "end": {
+              "line": 4,
+              "character": 31
+            }
+          },
+          "newText": "LinkedHashSet"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/IterableFactory#apply().",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "kind": 3
+        }
+      },
+      {
+        "label": "LinkedHashMap[K, V](elems: (K, V)*): LinkedHashMap[K, V]",
+        "kind": "Method",
+        "tags": [],
+        "detail": "[K, V](elems: (K, V)*): LinkedHashMap[K, V]",
+        "sortText": "00002",
+        "filterText": "LinkedHashMap",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 4,
+              "character": 29
+            },
+            "end": {
+              "line": 4,
+              "character": 31
+            }
+          },
+          "newText": "LinkedHashMap"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/MapFactory#apply().",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "kind": 3
+        }
+      },
+      {
+        "label": "new LinkedHashMap[K, V]: LinkedHashMap[K, V]",
+        "kind": "Constructor",
+        "tags": [],
+        "detail": "[K, V]: LinkedHashMap[K, V]",
+        "sortText": "00003",
+        "filterText": "LinkedHashMap",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 4,
+              "character": 4
+            },
+            "end": {
+              "line": 4,
+              "character": 31
+            }
+          },
+          "newText": "new scala.collection.mutable.LinkedHashMap"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/mutable/LinkedHashMap#`\u003cinit\u003e`().",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "kind": 3
+        }
+      },
+      {
+        "label": "new LinkedHashSet[A]: LinkedHashSet[A]",
+        "kind": "Constructor",
+        "tags": [],
+        "detail": "[A]: LinkedHashSet[A]",
+        "sortText": "00004",
+        "filterText": "LinkedHashSet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 4,
+              "character": 4
+            },
+            "end": {
+              "line": 4,
+              "character": 31
+            }
+          },
+          "newText": "new scala.collection.mutable.LinkedHashSet"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/mutable/LinkedHashSet#`\u003cinit\u003e`().",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "kind": 3
+        }
+      },
+      {
+        "label": "new ListBuffer[A]: ListBuffer[A]",
+        "kind": "Constructor",
+        "tags": [],
+        "detail": "[A]: ListBuffer[A]",
+        "sortText": "00005",
+        "filterText": "ListBuffer",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 4,
+              "character": 4
+            },
+            "end": {
+              "line": 4,
+              "character": 31
+            }
+          },
+          "newText": "new scala.collection.mutable.ListBuffer"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/mutable/ListBuffer#`\u003cinit\u003e`().",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "kind": 3
+        }
+      },
+      {
+        "label": "LinkedHashMap scala.collection.mutable",
+        "kind": "Module",
+        "tags": [],
+        "detail": " scala.collection.mutable",
+        "sortText": "00006",
+        "filterText": "LinkedHashMap",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 4,
+              "character": 29
+            },
+            "end": {
+              "line": 4,
+              "character": 31
+            }
+          },
+          "newText": "LinkedHashMap"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/mutable/LinkedHashMap.",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "kind": 3
+        }
+      },
+      {
+        "label": "LinkedHashSet scala.collection.mutable",
+        "kind": "Module",
+        "tags": [],
+        "detail": " scala.collection.mutable",
+        "sortText": "00007",
+        "filterText": "LinkedHashSet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 4,
+              "character": 29
+            },
+            "end": {
+              "line": 4,
+              "character": 31
+            }
+          },
+          "newText": "LinkedHashSet"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/mutable/LinkedHashSet.",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "kind": 3
+        }
+      },
+      {
+        "label": "ListBuffer scala.collection.mutable",
+        "kind": "Module",
+        "tags": [],
+        "detail": " scala.collection.mutable",
+        "sortText": "00008",
+        "filterText": "ListBuffer",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 4,
+              "character": 29
+            },
+            "end": {
+              "line": 4,
+              "character": 31
+            }
+          },
+          "newText": "ListBuffer"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/mutable/ListBuffer.",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "kind": 3
+        }
+      },
+      {
+        "label": "ListMap[K, V](elems: (K, V)*): ListMap[K, V]",
+        "kind": "Method",
+        "tags": [],
+        "detail": "[K, V](elems: (K, V)*): ListMap[K, V]",
+        "sortText": "00009",
+        "filterText": "ListMap",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 4,
+              "character": 29
+            },
+            "end": {
+              "line": 4,
+              "character": 31
+            }
+          },
+          "newText": "ListMap"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/MapFactory#apply().",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "kind": 3
+        }
+      },
+      {
+        "label": "new ListMap[K, V]: ListMap[K, V]",
+        "kind": "Constructor",
+        "tags": [],
+        "detail": "[K, V]: ListMap[K, V]",
+        "sortText": "00010",
+        "filterText": "ListMap",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 4,
+              "character": 4
+            },
+            "end": {
+              "line": 4,
+              "character": 31
+            }
+          },
+          "newText": "new scala.collection.mutable.ListMap"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/mutable/ListMap#`\u003cinit\u003e`().",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "kind": 3
+        }
+      },
+      {
+        "label": "ListMap scala.collection.mutable",
+        "kind": "Module",
+        "tags": [],
+        "detail": " scala.collection.mutable",
+        "sortText": "00011",
+        "filterText": "ListMap",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 4,
+              "character": 29
+            },
+            "end": {
+              "line": 4,
+              "character": 31
+            }
+          },
+          "newText": "ListMap"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/mutable/ListMap.",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "kind": 3
+        }
+      },
+      {
+        "label": "CollisionProofHashMap[K: Ordering, V](elems: (K, V)*): CollisionProofHashMap[K, V]",
+        "kind": "Method",
+        "tags": [],
+        "detail": "[K: Ordering, V](elems: (K, V)*): CollisionProofHashMap[K, V]",
+        "sortText": "00012",
+        "filterText": "CollisionProofHashMap",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 4,
+              "character": 29
+            },
+            "end": {
+              "line": 4,
+              "character": 31
+            }
+          },
+          "newText": "CollisionProofHashMap"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/SortedMapFactory#apply().",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "kind": 3
+        }
+      },
+      {
+        "label": "new CollisionProofHashMap[K, V](implicit ordering: Ordering[K]): CollisionProofHashMap[K, V]",
+        "kind": "Constructor",
+        "tags": [],
+        "detail": "[K, V](implicit ordering: Ordering[K]): CollisionProofHashMap[K, V]",
+        "sortText": "00013",
+        "filterText": "CollisionProofHashMap",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 4,
+              "character": 4
+            },
+            "end": {
+              "line": 4,
+              "character": 31
+            }
+          },
+          "newText": "new scala.collection.mutable.CollisionProofHashMap"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/mutable/CollisionProofHashMap#`\u003cinit\u003e`(+1).",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "kind": 3
+        }
+      },
+      {
+        "label": "new CollisionProofHashMap[K, V](initialCapacity: Int, loadFactor: Double)(implicit ordering: Ordering[K]): CollisionProofHashMap[K, V]",
+        "kind": "Constructor",
+        "tags": [],
+        "detail": "[K, V](initialCapacity: Int, loadFactor: Double)(implicit ordering: Ordering[K]): CollisionProofHashMap[K, V]",
+        "sortText": "00014",
+        "filterText": "CollisionProofHashMap",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 4,
+              "character": 4
+            },
+            "end": {
+              "line": 4,
+              "character": 31
+            }
+          },
+          "newText": "new scala.collection.mutable.CollisionProofHashMap"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/mutable/CollisionProofHashMap#`\u003cinit\u003e`().",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "kind": 3
+        }
+      },
+      {
+        "label": "CollisionProofHashMap scala.collection.mutable",
+        "kind": "Module",
+        "tags": [],
+        "detail": " scala.collection.mutable",
+        "sortText": "00015",
+        "filterText": "CollisionProofHashMap",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 4,
+              "character": 29
+            },
+            "end": {
+              "line": 4,
+              "character": 31
+            }
+          },
+          "newText": "CollisionProofHashMap"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/mutable/CollisionProofHashMap.",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "kind": 3
+        }
+      },
+      {
+        "label": "DoublingUnrolledBuffer[T](implicit t: ClassTag[T]): DoublingUnrolledBuffer[T]",
+        "kind": "Constructor",
+        "tags": [],
+        "detail": "[T](implicit t: ClassTag[T]): DoublingUnrolledBuffer[T]",
+        "sortText": "00016",
+        "filterText": "DoublingUnrolledBuffer",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 4,
+              "character": 29
+            },
+            "end": {
+              "line": 4,
+              "character": 31
+            }
+          },
+          "newText": "DoublingUnrolledBuffer"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/mutable/DoublingUnrolledBuffer#`\u003cinit\u003e`().",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "kind": 3
+        }
+      },
+      {
+        "label": "GrowableBuilder[Elem, To \u003c: Growable[Elem]](elems: To): GrowableBuilder[Elem, To]",
+        "kind": "Constructor",
+        "tags": [],
+        "detail": "[Elem, To \u003c: Growable[Elem]](elems: To): GrowableBuilder[Elem, To]",
+        "sortText": "00017",
+        "filterText": "GrowableBuilder",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 4,
+              "character": 29
+            },
+            "end": {
+              "line": 4,
+              "character": 31
+            }
+          },
+          "newText": "GrowableBuilder"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/mutable/GrowableBuilder#`\u003cinit\u003e`().",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "kind": 3
+        }
+      }
+    ]
+  }
+}

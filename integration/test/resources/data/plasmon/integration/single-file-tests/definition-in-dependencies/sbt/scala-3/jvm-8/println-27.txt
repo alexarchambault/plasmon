@@ -1,0 +1,9 @@
+{
+  "path": ".plasmon/readonly/dependencies/src.zip/java/io/PrintStream.java",
+  "line": 803,
+  "colRange": [
+    16,
+    23
+  ],
+  "content": "println"
+}

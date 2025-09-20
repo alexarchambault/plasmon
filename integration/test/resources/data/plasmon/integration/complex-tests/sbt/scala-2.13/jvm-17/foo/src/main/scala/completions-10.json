@@ -1,0 +1,1103 @@
+{
+  "right": {
+    "isIncomplete": false,
+    "items": [
+      {
+        "label": "append(x$1: Char): PrintStream",
+        "kind": "Interface",
+        "detail": "(x$1: Char): PrintStream",
+        "preselect": true,
+        "sortText": "00000",
+        "filterText": "append",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 12,
+              "character": 13
+            },
+            "end": {
+              "line": 12,
+              "character": 13
+            }
+          },
+          "newText": "append($0)"
+        },
+        "data": {
+          "symbol": "java/io/PrintStream#append(+2).",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 0
+        }
+      },
+      {
+        "label": "append(x$1: CharSequence): PrintStream",
+        "kind": "Interface",
+        "detail": "(x$1: CharSequence): PrintStream",
+        "sortText": "00001",
+        "filterText": "append",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 12,
+              "character": 13
+            },
+            "end": {
+              "line": 12,
+              "character": 13
+            }
+          },
+          "newText": "append($0)"
+        },
+        "data": {
+          "symbol": "java/io/PrintStream#append().",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 0
+        }
+      },
+      {
+        "label": "append(x$1: CharSequence, x$2: Int, x$3: Int): PrintStream",
+        "kind": "Interface",
+        "detail": "(x$1: CharSequence, x$2: Int, x$3: Int): PrintStream",
+        "sortText": "00002",
+        "filterText": "append",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 12,
+              "character": 13
+            },
+            "end": {
+              "line": 12,
+              "character": 13
+            }
+          },
+          "newText": "append($0)"
+        },
+        "data": {
+          "symbol": "java/io/PrintStream#append(+1).",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 0
+        }
+      },
+      {
+        "label": "checkError(): Boolean",
+        "kind": "Interface",
+        "detail": "(): Boolean",
+        "sortText": "00003",
+        "filterText": "checkError",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 12,
+              "character": 13
+            },
+            "end": {
+              "line": 12,
+              "character": 13
+            }
+          },
+          "newText": "checkError()"
+        },
+        "data": {
+          "symbol": "java/io/PrintStream#checkError().",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 0
+        }
+      },
+      {
+        "label": "close(): Unit",
+        "kind": "Interface",
+        "detail": "(): Unit",
+        "sortText": "00004",
+        "filterText": "close",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 12,
+              "character": 13
+            },
+            "end": {
+              "line": 12,
+              "character": 13
+            }
+          },
+          "newText": "close()"
+        },
+        "data": {
+          "symbol": "java/io/PrintStream#close().",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 0
+        }
+      },
+      {
+        "label": "flush(): Unit",
+        "kind": "Interface",
+        "detail": "(): Unit",
+        "sortText": "00005",
+        "filterText": "flush",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 12,
+              "character": 13
+            },
+            "end": {
+              "line": 12,
+              "character": 13
+            }
+          },
+          "newText": "flush()"
+        },
+        "data": {
+          "symbol": "java/io/PrintStream#flush().",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 0
+        }
+      },
+      {
+        "label": "format(x$1: String, x$2: Object*): PrintStream",
+        "kind": "Interface",
+        "detail": "(x$1: String, x$2: Object*): PrintStream",
+        "sortText": "00006",
+        "filterText": "format",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 12,
+              "character": 13
+            },
+            "end": {
+              "line": 12,
+              "character": 13
+            }
+          },
+          "newText": "format($0)"
+        },
+        "data": {
+          "symbol": "java/io/PrintStream#format().",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 0
+        }
+      },
+      {
+        "label": "format(x$1: Locale, x$2: String, x$3: Object*): PrintStream",
+        "kind": "Interface",
+        "detail": "(x$1: Locale, x$2: String, x$3: Object*): PrintStream",
+        "sortText": "00007",
+        "filterText": "format",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 12,
+              "character": 13
+            },
+            "end": {
+              "line": 12,
+              "character": 13
+            }
+          },
+          "newText": "format($0)"
+        },
+        "data": {
+          "symbol": "java/io/PrintStream#format(+1).",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 0
+        }
+      },
+      {
+        "label": "print(x$1: Array[Char]): Unit",
+        "kind": "Interface",
+        "detail": "(x$1: Array[Char]): Unit",
+        "sortText": "00008",
+        "filterText": "print",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 12,
+              "character": 13
+            },
+            "end": {
+              "line": 12,
+              "character": 13
+            }
+          },
+          "newText": "print($0)"
+        },
+        "data": {
+          "symbol": "java/io/PrintStream#print(+6).",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 0
+        }
+      },
+      {
+        "label": "print(x$1: Boolean): Unit",
+        "kind": "Interface",
+        "detail": "(x$1: Boolean): Unit",
+        "sortText": "00009",
+        "filterText": "print",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 12,
+              "character": 13
+            },
+            "end": {
+              "line": 12,
+              "character": 13
+            }
+          },
+          "newText": "print($0)"
+        },
+        "data": {
+          "symbol": "java/io/PrintStream#print().",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 0
+        }
+      },
+      {
+        "label": "print(x$1: Char): Unit",
+        "kind": "Interface",
+        "detail": "(x$1: Char): Unit",
+        "sortText": "00010",
+        "filterText": "print",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 12,
+              "character": 13
+            },
+            "end": {
+              "line": 12,
+              "character": 13
+            }
+          },
+          "newText": "print($0)"
+        },
+        "data": {
+          "symbol": "java/io/PrintStream#print(+1).",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 0
+        }
+      },
+      {
+        "label": "print(x$1: Double): Unit",
+        "kind": "Interface",
+        "detail": "(x$1: Double): Unit",
+        "sortText": "00011",
+        "filterText": "print",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 12,
+              "character": 13
+            },
+            "end": {
+              "line": 12,
+              "character": 13
+            }
+          },
+          "newText": "print($0)"
+        },
+        "data": {
+          "symbol": "java/io/PrintStream#print(+5).",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 0
+        }
+      },
+      {
+        "label": "print(x$1: Float): Unit",
+        "kind": "Interface",
+        "detail": "(x$1: Float): Unit",
+        "sortText": "00012",
+        "filterText": "print",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 12,
+              "character": 13
+            },
+            "end": {
+              "line": 12,
+              "character": 13
+            }
+          },
+          "newText": "print($0)"
+        },
+        "data": {
+          "symbol": "java/io/PrintStream#print(+4).",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 0
+        }
+      },
+      {
+        "label": "print(x$1: Int): Unit",
+        "kind": "Interface",
+        "detail": "(x$1: Int): Unit",
+        "sortText": "00013",
+        "filterText": "print",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 12,
+              "character": 13
+            },
+            "end": {
+              "line": 12,
+              "character": 13
+            }
+          },
+          "newText": "print($0)"
+        },
+        "data": {
+          "symbol": "java/io/PrintStream#print(+2).",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 0
+        }
+      },
+      {
+        "label": "print(x$1: Long): Unit",
+        "kind": "Interface",
+        "detail": "(x$1: Long): Unit",
+        "sortText": "00014",
+        "filterText": "print",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 12,
+              "character": 13
+            },
+            "end": {
+              "line": 12,
+              "character": 13
+            }
+          },
+          "newText": "print($0)"
+        },
+        "data": {
+          "symbol": "java/io/PrintStream#print(+3).",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 0
+        }
+      },
+      {
+        "label": "print(x$1: Object): Unit",
+        "kind": "Interface",
+        "detail": "(x$1: Object): Unit",
+        "sortText": "00015",
+        "filterText": "print",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 12,
+              "character": 13
+            },
+            "end": {
+              "line": 12,
+              "character": 13
+            }
+          },
+          "newText": "print($0)"
+        },
+        "data": {
+          "symbol": "java/io/PrintStream#print(+8).",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 0
+        }
+      },
+      {
+        "label": "print(x$1: String): Unit",
+        "kind": "Interface",
+        "detail": "(x$1: String): Unit",
+        "sortText": "00016",
+        "filterText": "print",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 12,
+              "character": 13
+            },
+            "end": {
+              "line": 12,
+              "character": 13
+            }
+          },
+          "newText": "print($0)"
+        },
+        "data": {
+          "symbol": "java/io/PrintStream#print(+7).",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 0
+        }
+      },
+      {
+        "label": "printf(x$1: String, x$2: Object*): PrintStream",
+        "kind": "Interface",
+        "detail": "(x$1: String, x$2: Object*): PrintStream",
+        "sortText": "00017",
+        "filterText": "printf",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 12,
+              "character": 13
+            },
+            "end": {
+              "line": 12,
+              "character": 13
+            }
+          },
+          "newText": "printf($0)"
+        },
+        "data": {
+          "symbol": "java/io/PrintStream#printf().",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 0
+        }
+      },
+      {
+        "label": "printf(x$1: Locale, x$2: String, x$3: Object*): PrintStream",
+        "kind": "Interface",
+        "detail": "(x$1: Locale, x$2: String, x$3: Object*): PrintStream",
+        "sortText": "00018",
+        "filterText": "printf",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 12,
+              "character": 13
+            },
+            "end": {
+              "line": 12,
+              "character": 13
+            }
+          },
+          "newText": "printf($0)"
+        },
+        "data": {
+          "symbol": "java/io/PrintStream#printf(+1).",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 0
+        }
+      },
+      {
+        "label": "println(): Unit",
+        "kind": "Interface",
+        "detail": "(): Unit",
+        "sortText": "00019",
+        "filterText": "println",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 12,
+              "character": 13
+            },
+            "end": {
+              "line": 12,
+              "character": 13
+            }
+          },
+          "newText": "println()"
+        },
+        "data": {
+          "symbol": "java/io/PrintStream#println().",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 0
+        }
+      },
+      {
+        "label": "println(x$1: Array[Char]): Unit",
+        "kind": "Interface",
+        "detail": "(x$1: Array[Char]): Unit",
+        "sortText": "00020",
+        "filterText": "println",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 12,
+              "character": 13
+            },
+            "end": {
+              "line": 12,
+              "character": 13
+            }
+          },
+          "newText": "println($0)"
+        },
+        "data": {
+          "symbol": "java/io/PrintStream#println(+7).",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 0
+        }
+      },
+      {
+        "label": "println(x$1: Boolean): Unit",
+        "kind": "Interface",
+        "detail": "(x$1: Boolean): Unit",
+        "sortText": "00021",
+        "filterText": "println",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 12,
+              "character": 13
+            },
+            "end": {
+              "line": 12,
+              "character": 13
+            }
+          },
+          "newText": "println($0)"
+        },
+        "data": {
+          "symbol": "java/io/PrintStream#println(+1).",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 0
+        }
+      },
+      {
+        "label": "println(x$1: Char): Unit",
+        "kind": "Interface",
+        "detail": "(x$1: Char): Unit",
+        "sortText": "00022",
+        "filterText": "println",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 12,
+              "character": 13
+            },
+            "end": {
+              "line": 12,
+              "character": 13
+            }
+          },
+          "newText": "println($0)"
+        },
+        "data": {
+          "symbol": "java/io/PrintStream#println(+2).",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 0
+        }
+      },
+      {
+        "label": "println(x$1: Double): Unit",
+        "kind": "Interface",
+        "detail": "(x$1: Double): Unit",
+        "sortText": "00023",
+        "filterText": "println",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 12,
+              "character": 13
+            },
+            "end": {
+              "line": 12,
+              "character": 13
+            }
+          },
+          "newText": "println($0)"
+        },
+        "data": {
+          "symbol": "java/io/PrintStream#println(+6).",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 0
+        }
+      },
+      {
+        "label": "println(x$1: Float): Unit",
+        "kind": "Interface",
+        "detail": "(x$1: Float): Unit",
+        "sortText": "00024",
+        "filterText": "println",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 12,
+              "character": 13
+            },
+            "end": {
+              "line": 12,
+              "character": 13
+            }
+          },
+          "newText": "println($0)"
+        },
+        "data": {
+          "symbol": "java/io/PrintStream#println(+5).",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 0
+        }
+      },
+      {
+        "label": "println(x$1: Int): Unit",
+        "kind": "Interface",
+        "detail": "(x$1: Int): Unit",
+        "sortText": "00025",
+        "filterText": "println",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 12,
+              "character": 13
+            },
+            "end": {
+              "line": 12,
+              "character": 13
+            }
+          },
+          "newText": "println($0)"
+        },
+        "data": {
+          "symbol": "java/io/PrintStream#println(+3).",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 0
+        }
+      },
+      {
+        "label": "println(x$1: Long): Unit",
+        "kind": "Interface",
+        "detail": "(x$1: Long): Unit",
+        "sortText": "00026",
+        "filterText": "println",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 12,
+              "character": 13
+            },
+            "end": {
+              "line": 12,
+              "character": 13
+            }
+          },
+          "newText": "println($0)"
+        },
+        "data": {
+          "symbol": "java/io/PrintStream#println(+4).",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 0
+        }
+      },
+      {
+        "label": "println(x$1: Object): Unit",
+        "kind": "Interface",
+        "detail": "(x$1: Object): Unit",
+        "sortText": "00027",
+        "filterText": "println",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 12,
+              "character": 13
+            },
+            "end": {
+              "line": 12,
+              "character": 13
+            }
+          },
+          "newText": "println($0)"
+        },
+        "data": {
+          "symbol": "java/io/PrintStream#println(+9).",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 0
+        }
+      },
+      {
+        "label": "println(x$1: String): Unit",
+        "kind": "Interface",
+        "detail": "(x$1: String): Unit",
+        "sortText": "00028",
+        "filterText": "println",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 12,
+              "character": 13
+            },
+            "end": {
+              "line": 12,
+              "character": 13
+            }
+          },
+          "newText": "println($0)"
+        },
+        "data": {
+          "symbol": "java/io/PrintStream#println(+8).",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 0
+        }
+      },
+      {
+        "label": "write(x$1: Array[Byte]): Unit",
+        "kind": "Interface",
+        "detail": "(x$1: Array[Byte]): Unit",
+        "sortText": "00029",
+        "filterText": "write",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 12,
+              "character": 13
+            },
+            "end": {
+              "line": 12,
+              "character": 13
+            }
+          },
+          "newText": "write($0)"
+        },
+        "data": {
+          "symbol": "java/io/PrintStream#write(+2).",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 0
+        }
+      },
+      {
+        "label": "write(x$1: Int): Unit",
+        "kind": "Interface",
+        "detail": "(x$1: Int): Unit",
+        "sortText": "00030",
+        "filterText": "write",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 12,
+              "character": 13
+            },
+            "end": {
+              "line": 12,
+              "character": 13
+            }
+          },
+          "newText": "write($0)"
+        },
+        "data": {
+          "symbol": "java/io/PrintStream#write().",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 0
+        }
+      },
+      {
+        "label": "write(x$1: Array[Byte], x$2: Int, x$3: Int): Unit",
+        "kind": "Interface",
+        "detail": "(x$1: Array[Byte], x$2: Int, x$3: Int): Unit",
+        "sortText": "00031",
+        "filterText": "write",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 12,
+              "character": 13
+            },
+            "end": {
+              "line": 12,
+              "character": 13
+            }
+          },
+          "newText": "write($0)"
+        },
+        "data": {
+          "symbol": "java/io/PrintStream#write(+1).",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 0
+        }
+      },
+      {
+        "label": "writeBytes(x$1: Array[Byte]): Unit",
+        "kind": "Interface",
+        "detail": "(x$1: Array[Byte]): Unit",
+        "sortText": "00032",
+        "filterText": "writeBytes",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 12,
+              "character": 13
+            },
+            "end": {
+              "line": 12,
+              "character": 13
+            }
+          },
+          "newText": "writeBytes($0)"
+        },
+        "data": {
+          "symbol": "java/io/PrintStream#writeBytes().",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 0
+        }
+      },
+      {
+        "label": "+(other: String): String",
+        "kind": "Method",
+        "detail": "(other: String): String",
+        "sortText": "00033",
+        "filterText": "+",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 12,
+              "character": 13
+            },
+            "end": {
+              "line": 12,
+              "character": 13
+            }
+          },
+          "newText": "+($0)"
+        },
+        "data": {
+          "symbol": "scala/Predef.any2stringadd#`+`().",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 0
+        }
+      },
+      {
+        "label": "formatted(fmtstr: String): String",
+        "kind": "Method",
+        "tags": [
+          "Deprecated"
+        ],
+        "detail": "(fmtstr: String): String",
+        "sortText": "00034",
+        "filterText": "formatted",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 12,
+              "character": 13
+            },
+            "end": {
+              "line": 12,
+              "character": 13
+            }
+          },
+          "newText": "formatted($0)"
+        },
+        "data": {
+          "symbol": "scala/Predef.StringFormat#formatted().",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 0
+        }
+      },
+      {
+        "label": "asInstanceOf[T0]: T0",
+        "kind": "Method",
+        "detail": "[T0]: T0",
+        "sortText": "00035",
+        "filterText": "asInstanceOf",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 12,
+              "character": 13
+            },
+            "end": {
+              "line": 12,
+              "character": 13
+            }
+          },
+          "newText": "asInstanceOf"
+        },
+        "data": {
+          "symbol": "scala/Any#asInstanceOf().",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 0
+        }
+      },
+      {
+        "label": "equals(x$1: Object): Boolean",
+        "kind": "Interface",
+        "detail": "(x$1: Object): Boolean",
+        "sortText": "00036",
+        "filterText": "equals",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 12,
+              "character": 13
+            },
+            "end": {
+              "line": 12,
+              "character": 13
+            }
+          },
+          "newText": "equals($0)"
+        },
+        "data": {
+          "symbol": "java/lang/Object#equals().",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 0
+        }
+      },
+      {
+        "label": "getClass(): Class[_ \u003c: Object]",
+        "kind": "Interface",
+        "detail": "(): Class[_ \u003c: Object]",
+        "sortText": "00037",
+        "filterText": "getClass",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 12,
+              "character": 13
+            },
+            "end": {
+              "line": 12,
+              "character": 13
+            }
+          },
+          "newText": "getClass()"
+        },
+        "data": {
+          "symbol": "java/lang/Object#getClass().",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 0
+        }
+      },
+      {
+        "label": "hashCode(): Int",
+        "kind": "Interface",
+        "detail": "(): Int",
+        "sortText": "00038",
+        "filterText": "hashCode",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 12,
+              "character": 13
+            },
+            "end": {
+              "line": 12,
+              "character": 13
+            }
+          },
+          "newText": "hashCode()"
+        },
+        "data": {
+          "symbol": "java/lang/Object#hashCode().",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 0
+        }
+      },
+      {
+        "label": "isInstanceOf[T0]: Boolean",
+        "kind": "Method",
+        "detail": "[T0]: Boolean",
+        "sortText": "00039",
+        "filterText": "isInstanceOf",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 12,
+              "character": 13
+            },
+            "end": {
+              "line": 12,
+              "character": 13
+            }
+          },
+          "newText": "isInstanceOf"
+        },
+        "data": {
+          "symbol": "scala/Any#isInstanceOf().",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 0
+        }
+      },
+      {
+        "label": "synchronized[T0](x$1: T0): T0",
+        "kind": "Method",
+        "detail": "[T0](x$1: T0): T0",
+        "sortText": "00040",
+        "filterText": "synchronized",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 12,
+              "character": 13
+            },
+            "end": {
+              "line": 12,
+              "character": 13
+            }
+          },
+          "newText": "synchronized($0)"
+        },
+        "data": {
+          "symbol": "java/lang/Object#synchronized().",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 0
+        }
+      },
+      {
+        "label": "toString(): String",
+        "kind": "Interface",
+        "detail": "(): String",
+        "sortText": "00041",
+        "filterText": "toString",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 12,
+              "character": 13
+            },
+            "end": {
+              "line": 12,
+              "character": 13
+            }
+          },
+          "newText": "toString()"
+        },
+        "data": {
+          "symbol": "java/lang/Object#toString().",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 0
+        }
+      }
+    ]
+  }
+}

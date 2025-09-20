@@ -1,0 +1,7 @@
+```scala
+case class AllBootstrapEvaluators
+```
+
+***
+
+Holds all [Evaluator](Evaluator)s needed to evaluate the targets of the project and all it's bootstrap projects.

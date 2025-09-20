@@ -1,0 +1,62 @@
+[
+  {
+    "range": {
+      "start": {
+        "line": 80,
+        "character": 74
+      },
+      "end": {
+        "line": 80,
+        "character": 74
+      }
+    },
+    "severity": "Warning",
+    "source": "mill",
+    "message": "Auto-application to `()` is deprecated. Supply the empty argument list `()` explicitly to invoke method toSet,\nor remove the empty argument list from its definition (Java-defined methods are exempt).\nIn Scala 3, an unapplied method like this will be eta-expanded into a function. [quickfixable]"
+  },
+  {
+    "range": {
+      "start": {
+        "line": 109,
+        "character": 6
+      },
+      "end": {
+        "line": 109,
+        "character": 6
+      }
+    },
+    "severity": "Warning",
+    "source": "mill",
+    "message": "Auto-application to `()` is deprecated. Supply the empty argument list `()` explicitly to invoke method exclusions,\nor remove the empty argument list from its definition (Java-defined methods are exempt).\nIn Scala 3, an unapplied method like this will be eta-expanded into a function. [quickfixable]"
+  },
+  {
+    "range": {
+      "start": {
+        "line": 101,
+        "character": 4
+      },
+      "end": {
+        "line": 101,
+        "character": 4
+      }
+    },
+    "severity": "Warning",
+    "source": "mill",
+    "message": "method withExclusions in class Dependency is deprecated (since 2.1.0-M6): This method will be dropped in favor of withMinimizedExclusions in a future version"
+  },
+  {
+    "range": {
+      "start": {
+        "line": 101,
+        "character": 30
+      },
+      "end": {
+        "line": 101,
+        "character": 30
+      }
+    },
+    "severity": "Warning",
+    "source": "mill",
+    "message": "value zero in object Exclusions is deprecated (since 2.1.0-M6): This method will be replaced by MinimizedExclusions in a future version"
+  }
+]

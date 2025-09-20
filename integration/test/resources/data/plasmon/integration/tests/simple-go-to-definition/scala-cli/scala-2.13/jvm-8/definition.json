@@ -1,0 +1,9 @@
+{
+  "path": ".plasmon/readonly/dependencies/scala-library-2.13.14-sources.jar/scala/Predef.scala",
+  "line": 426,
+  "colRange": [
+    6,
+    13
+  ],
+  "content": "println"
+}

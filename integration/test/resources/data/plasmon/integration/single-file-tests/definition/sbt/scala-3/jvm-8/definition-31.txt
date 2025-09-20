@@ -1,0 +1,9 @@
+{
+  "path": ".plasmon/readonly/dependencies/src.zip/java/net/URL.java",
+  "line": 987,
+  "colRange": [
+    15,
+    20
+  ],
+  "content": "toURI"
+}

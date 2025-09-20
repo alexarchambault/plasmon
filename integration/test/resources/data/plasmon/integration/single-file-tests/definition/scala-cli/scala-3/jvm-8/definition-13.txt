@@ -1,0 +1,9 @@
+{
+  "path": ".plasmon/readonly/dependencies/src.zip/java/lang/Runtime.java",
+  "line": 45,
+  "colRange": [
+    13,
+    20
+  ],
+  "content": "Runtime"
+}

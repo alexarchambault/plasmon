@@ -1,0 +1,29 @@
+```scala
+def map[B](f: URL => B): Vector[B]
+```
+
+***
+
+Builds a new collection by applying a function to all elements of this collection.
+
+
+
+***
+
+**Type Parameters**
+- `B`: the element type of the returned collection.
+
+
+***
+
+**Parameters**
+- `f`: the function to apply to each element.
+
+**Returns** a new collection resulting from applying the given function
+               `f` to each element of this collection and collecting the results.
+
+***
+**Expression type**
+```scala
+Vector[String]
+```

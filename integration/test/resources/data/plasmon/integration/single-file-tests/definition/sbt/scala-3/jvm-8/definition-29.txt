@@ -1,0 +1,9 @@
+{
+  "path": ".plasmon/readonly/dependencies/scala-library-2.13.12-sources.jar/scala/collection/IterableOnce.scala",
+  "line": 1316,
+  "colRange": [
+    6,
+    14
+  ],
+  "content": "toVector"
+}

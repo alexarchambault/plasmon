@@ -1,0 +1,554 @@
+{
+  "right": {
+    "isIncomplete": false,
+    "items": [
+      {
+        "label": "print(x$1: Array[Char]): Unit",
+        "kind": "Interface",
+        "detail": "(x$1: Array[Char]): Unit",
+        "preselect": true,
+        "sortText": "00000",
+        "filterText": "print",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 2,
+              "character": 13
+            },
+            "end": {
+              "line": 2,
+              "character": 15
+            }
+          },
+          "newText": "print($0)"
+        },
+        "data": {
+          "symbol": "java/io/PrintStream#print(+6).",
+          "target": "file:///workspace/test-mod",
+          "kind": 0
+        }
+      },
+      {
+        "label": "print(x$1: Boolean): Unit",
+        "kind": "Interface",
+        "detail": "(x$1: Boolean): Unit",
+        "sortText": "00001",
+        "filterText": "print",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 2,
+              "character": 13
+            },
+            "end": {
+              "line": 2,
+              "character": 15
+            }
+          },
+          "newText": "print($0)"
+        },
+        "data": {
+          "symbol": "java/io/PrintStream#print().",
+          "target": "file:///workspace/test-mod",
+          "kind": 0
+        }
+      },
+      {
+        "label": "print(x$1: Char): Unit",
+        "kind": "Interface",
+        "detail": "(x$1: Char): Unit",
+        "sortText": "00002",
+        "filterText": "print",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 2,
+              "character": 13
+            },
+            "end": {
+              "line": 2,
+              "character": 15
+            }
+          },
+          "newText": "print($0)"
+        },
+        "data": {
+          "symbol": "java/io/PrintStream#print(+1).",
+          "target": "file:///workspace/test-mod",
+          "kind": 0
+        }
+      },
+      {
+        "label": "print(x$1: Double): Unit",
+        "kind": "Interface",
+        "detail": "(x$1: Double): Unit",
+        "sortText": "00003",
+        "filterText": "print",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 2,
+              "character": 13
+            },
+            "end": {
+              "line": 2,
+              "character": 15
+            }
+          },
+          "newText": "print($0)"
+        },
+        "data": {
+          "symbol": "java/io/PrintStream#print(+5).",
+          "target": "file:///workspace/test-mod",
+          "kind": 0
+        }
+      },
+      {
+        "label": "print(x$1: Float): Unit",
+        "kind": "Interface",
+        "detail": "(x$1: Float): Unit",
+        "sortText": "00004",
+        "filterText": "print",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 2,
+              "character": 13
+            },
+            "end": {
+              "line": 2,
+              "character": 15
+            }
+          },
+          "newText": "print($0)"
+        },
+        "data": {
+          "symbol": "java/io/PrintStream#print(+4).",
+          "target": "file:///workspace/test-mod",
+          "kind": 0
+        }
+      },
+      {
+        "label": "print(x$1: Int): Unit",
+        "kind": "Interface",
+        "detail": "(x$1: Int): Unit",
+        "sortText": "00005",
+        "filterText": "print",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 2,
+              "character": 13
+            },
+            "end": {
+              "line": 2,
+              "character": 15
+            }
+          },
+          "newText": "print($0)"
+        },
+        "data": {
+          "symbol": "java/io/PrintStream#print(+2).",
+          "target": "file:///workspace/test-mod",
+          "kind": 0
+        }
+      },
+      {
+        "label": "print(x$1: Long): Unit",
+        "kind": "Interface",
+        "detail": "(x$1: Long): Unit",
+        "sortText": "00006",
+        "filterText": "print",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 2,
+              "character": 13
+            },
+            "end": {
+              "line": 2,
+              "character": 15
+            }
+          },
+          "newText": "print($0)"
+        },
+        "data": {
+          "symbol": "java/io/PrintStream#print(+3).",
+          "target": "file:///workspace/test-mod",
+          "kind": 0
+        }
+      },
+      {
+        "label": "print(x$1: Object): Unit",
+        "kind": "Interface",
+        "detail": "(x$1: Object): Unit",
+        "sortText": "00007",
+        "filterText": "print",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 2,
+              "character": 13
+            },
+            "end": {
+              "line": 2,
+              "character": 15
+            }
+          },
+          "newText": "print($0)"
+        },
+        "data": {
+          "symbol": "java/io/PrintStream#print(+8).",
+          "target": "file:///workspace/test-mod",
+          "kind": 0
+        }
+      },
+      {
+        "label": "print(x$1: String): Unit",
+        "kind": "Interface",
+        "detail": "(x$1: String): Unit",
+        "sortText": "00008",
+        "filterText": "print",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 2,
+              "character": 13
+            },
+            "end": {
+              "line": 2,
+              "character": 15
+            }
+          },
+          "newText": "print($0)"
+        },
+        "data": {
+          "symbol": "java/io/PrintStream#print(+7).",
+          "target": "file:///workspace/test-mod",
+          "kind": 0
+        }
+      },
+      {
+        "label": "printf(x$1: String, x$2: Object*): PrintStream",
+        "kind": "Interface",
+        "detail": "(x$1: String, x$2: Object*): PrintStream",
+        "sortText": "00009",
+        "filterText": "printf",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 2,
+              "character": 13
+            },
+            "end": {
+              "line": 2,
+              "character": 15
+            }
+          },
+          "newText": "printf($0)"
+        },
+        "data": {
+          "symbol": "java/io/PrintStream#printf().",
+          "target": "file:///workspace/test-mod",
+          "kind": 0
+        }
+      },
+      {
+        "label": "printf(x$1: Locale, x$2: String, x$3: Object*): PrintStream",
+        "kind": "Interface",
+        "detail": "(x$1: Locale, x$2: String, x$3: Object*): PrintStream",
+        "sortText": "00010",
+        "filterText": "printf",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 2,
+              "character": 13
+            },
+            "end": {
+              "line": 2,
+              "character": 15
+            }
+          },
+          "newText": "printf($0)"
+        },
+        "data": {
+          "symbol": "java/io/PrintStream#printf(+1).",
+          "target": "file:///workspace/test-mod",
+          "kind": 0
+        }
+      },
+      {
+        "label": "println(): Unit",
+        "kind": "Interface",
+        "detail": "(): Unit",
+        "sortText": "00011",
+        "filterText": "println",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 2,
+              "character": 13
+            },
+            "end": {
+              "line": 2,
+              "character": 15
+            }
+          },
+          "newText": "println()"
+        },
+        "data": {
+          "symbol": "java/io/PrintStream#println().",
+          "target": "file:///workspace/test-mod",
+          "kind": 0
+        }
+      },
+      {
+        "label": "println(x$1: Array[Char]): Unit",
+        "kind": "Interface",
+        "detail": "(x$1: Array[Char]): Unit",
+        "sortText": "00012",
+        "filterText": "println",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 2,
+              "character": 13
+            },
+            "end": {
+              "line": 2,
+              "character": 15
+            }
+          },
+          "newText": "println($0)"
+        },
+        "data": {
+          "symbol": "java/io/PrintStream#println(+7).",
+          "target": "file:///workspace/test-mod",
+          "kind": 0
+        }
+      },
+      {
+        "label": "println(x$1: Boolean): Unit",
+        "kind": "Interface",
+        "detail": "(x$1: Boolean): Unit",
+        "sortText": "00013",
+        "filterText": "println",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 2,
+              "character": 13
+            },
+            "end": {
+              "line": 2,
+              "character": 15
+            }
+          },
+          "newText": "println($0)"
+        },
+        "data": {
+          "symbol": "java/io/PrintStream#println(+1).",
+          "target": "file:///workspace/test-mod",
+          "kind": 0
+        }
+      },
+      {
+        "label": "println(x$1: Char): Unit",
+        "kind": "Interface",
+        "detail": "(x$1: Char): Unit",
+        "sortText": "00014",
+        "filterText": "println",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 2,
+              "character": 13
+            },
+            "end": {
+              "line": 2,
+              "character": 15
+            }
+          },
+          "newText": "println($0)"
+        },
+        "data": {
+          "symbol": "java/io/PrintStream#println(+2).",
+          "target": "file:///workspace/test-mod",
+          "kind": 0
+        }
+      },
+      {
+        "label": "println(x$1: Double): Unit",
+        "kind": "Interface",
+        "detail": "(x$1: Double): Unit",
+        "sortText": "00015",
+        "filterText": "println",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 2,
+              "character": 13
+            },
+            "end": {
+              "line": 2,
+              "character": 15
+            }
+          },
+          "newText": "println($0)"
+        },
+        "data": {
+          "symbol": "java/io/PrintStream#println(+6).",
+          "target": "file:///workspace/test-mod",
+          "kind": 0
+        }
+      },
+      {
+        "label": "println(x$1: Float): Unit",
+        "kind": "Interface",
+        "detail": "(x$1: Float): Unit",
+        "sortText": "00016",
+        "filterText": "println",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 2,
+              "character": 13
+            },
+            "end": {
+              "line": 2,
+              "character": 15
+            }
+          },
+          "newText": "println($0)"
+        },
+        "data": {
+          "symbol": "java/io/PrintStream#println(+5).",
+          "target": "file:///workspace/test-mod",
+          "kind": 0
+        }
+      },
+      {
+        "label": "println(x$1: Int): Unit",
+        "kind": "Interface",
+        "detail": "(x$1: Int): Unit",
+        "sortText": "00017",
+        "filterText": "println",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 2,
+              "character": 13
+            },
+            "end": {
+              "line": 2,
+              "character": 15
+            }
+          },
+          "newText": "println($0)"
+        },
+        "data": {
+          "symbol": "java/io/PrintStream#println(+3).",
+          "target": "file:///workspace/test-mod",
+          "kind": 0
+        }
+      },
+      {
+        "label": "println(x$1: Long): Unit",
+        "kind": "Interface",
+        "detail": "(x$1: Long): Unit",
+        "sortText": "00018",
+        "filterText": "println",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 2,
+              "character": 13
+            },
+            "end": {
+              "line": 2,
+              "character": 15
+            }
+          },
+          "newText": "println($0)"
+        },
+        "data": {
+          "symbol": "java/io/PrintStream#println(+4).",
+          "target": "file:///workspace/test-mod",
+          "kind": 0
+        }
+      },
+      {
+        "label": "println(x$1: Object): Unit",
+        "kind": "Interface",
+        "detail": "(x$1: Object): Unit",
+        "sortText": "00019",
+        "filterText": "println",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 2,
+              "character": 13
+            },
+            "end": {
+              "line": 2,
+              "character": 15
+            }
+          },
+          "newText": "println($0)"
+        },
+        "data": {
+          "symbol": "java/io/PrintStream#println(+9).",
+          "target": "file:///workspace/test-mod",
+          "kind": 0
+        }
+      },
+      {
+        "label": "println(x$1: String): Unit",
+        "kind": "Interface",
+        "detail": "(x$1: String): Unit",
+        "sortText": "00020",
+        "filterText": "println",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 2,
+              "character": 13
+            },
+            "end": {
+              "line": 2,
+              "character": 15
+            }
+          },
+          "newText": "println($0)"
+        },
+        "data": {
+          "symbol": "java/io/PrintStream#println(+8).",
+          "target": "file:///workspace/test-mod",
+          "kind": 0
+        }
+      }
+    ]
+  }
+}

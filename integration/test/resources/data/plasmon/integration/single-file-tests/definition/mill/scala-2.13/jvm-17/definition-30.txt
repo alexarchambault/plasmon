@@ -1,0 +1,9 @@
+{
+  "path": ".plasmon/readonly/dependencies/scala-library-2.13.16-sources.jar/scala/collection/StrictOptimizedIterableOps.scala",
+  "line": 86,
+  "colRange": [
+    15,
+    18
+  ],
+  "content": "map"
+}

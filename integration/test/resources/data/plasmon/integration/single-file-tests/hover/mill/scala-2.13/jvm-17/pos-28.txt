@@ -1,0 +1,8 @@
+```scala
+def asScala: Iterator[URL]
+```
+
+***
+
+Converts a Java `Enumeration` to a Scala `Iterator`, see
+[`scala.jdk.javaapi.CollectionConverters.asScala`](AsScalaConverters.asScala[A](e:java\.util\.Enumeration[A])*).

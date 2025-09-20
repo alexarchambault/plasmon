@@ -1,0 +1,9 @@
+{
+  "path": ".plasmon/readonly/dependencies/scala-library-2.13.14-sources.jar/scala/jdk/CollectionConverters.scala",
+  "line": 94,
+  "colRange": [
+    7,
+    27
+  ],
+  "content": "CollectionConverters"
+}

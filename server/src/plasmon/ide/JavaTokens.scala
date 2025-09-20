@@ -1,0 +1,64 @@
+package plasmon.ide
+
+import scala.collection.mutable.ArrayBuffer
+import scala.util.Try
+
+import scala.meta.inputs.Input
+
+import org.eclipse.jdt.core.ToolFactory
+import org.eclipse.jdt.core.compiler.ITerminalSymbols
+
+// Based on https://github.com/scalameta/metals/blob/0ad0bc184f82dbd178d01f76913ea6bdfa98db14/metals/src/main/scala/scala/meta/internal/parsing/JavaTokens.scala#L23-L74
+private object JavaTokens {
+
+  /** Best effort translation of java tokens to the scalameta tokens, should work for most purposes.
+    *
+    * @param source
+    *   to tokenize
+    * @return
+    *   tokenized source
+    */
+  def tokenize(source: Input): Try[Array[JavaToken]] = Try {
+
+    val scanner = ToolFactory.createScanner(
+      /*tokenizeComments = */ true, /*tokenizeWhiteSpace = */ true,
+      /*assertMode = */ false, /*recordLineSeparator = */ true
+    )
+    scanner.setSource(source.chars)
+
+    val buffer = new ArrayBuffer[JavaToken]()
+
+    def loop(token: Int): Unit = {
+      if (token != ITerminalSymbols.TokenNameEOF) {
+        val start = scanner.getCurrentTokenStartPosition
+        val end   = scanner.getCurrentTokenEndPosition + 1
+
+        def createToken(txt: String, isLF: Boolean = false) = JavaToken(
+          token,
+          txt,
+          start,
+          end,
+          source,
+          isLF
+        )
+        token match {
+          case ITerminalSymbols.TokenNameWHITESPACE =>
+            scanner.getCurrentTokenSource.foreach {
+              case '\n' => buffer += createToken("\n", isLF = true)
+              case '\r' => buffer += createToken("\r")
+              case '\f' => buffer += createToken("\f")
+              case '\t' => buffer += createToken("\t")
+              case ' '  => buffer += createToken(" ")
+              case ch   => buffer += createToken(ch.toString())
+            }
+          case _ =>
+            buffer += createToken(scanner.getCurrentTokenSource.mkString)
+        }
+        loop(scanner.getNextToken)
+      }
+    }
+
+    loop(scanner.getNextToken)
+    buffer.toArray
+  }
+}

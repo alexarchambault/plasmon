@@ -1,0 +1,34 @@
+{
+  "right": {
+    "isIncomplete": false,
+    "items": [
+      {
+        "label": "mutable scala.collection",
+        "kind": "Module",
+        "tags": [],
+        "detail": " scala.collection",
+        "sortText": "00000",
+        "filterText": "mutable",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 3,
+              "character": 21
+            },
+            "end": {
+              "line": 3,
+              "character": 23
+            }
+          },
+          "newText": "mutable"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/mutable/",
+          "target": "file:///workspace/foo",
+          "kind": 0
+        }
+      }
+    ]
+  }
+}

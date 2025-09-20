@@ -1,0 +1,1467 @@
+{
+  "right": {
+    "isIncomplete": false,
+    "items": [
+      {
+        "label": "append(x$0: CharSequence): PrintStream",
+        "kind": "Method",
+        "tags": [],
+        "detail": "(x$0: CharSequence): PrintStream",
+        "sortText": "00000",
+        "filterText": "append",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 12,
+              "character": 13
+            },
+            "end": {
+              "line": 12,
+              "character": 13
+            }
+          },
+          "newText": "append($0)"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "java/io/PrintStream#append().",
+          "target": "file:///workspace/foo",
+          "kind": 3
+        }
+      },
+      {
+        "label": "append(x$0: Char): PrintStream",
+        "kind": "Method",
+        "tags": [],
+        "detail": "(x$0: Char): PrintStream",
+        "sortText": "00001",
+        "filterText": "append",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 12,
+              "character": 13
+            },
+            "end": {
+              "line": 12,
+              "character": 13
+            }
+          },
+          "newText": "append($0)"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "java/io/PrintStream#append(+2).",
+          "target": "file:///workspace/foo",
+          "kind": 3
+        }
+      },
+      {
+        "label": "append(x$0: CharSequence, x$1: Int, x$2: Int): PrintStream",
+        "kind": "Method",
+        "tags": [],
+        "detail": "(x$0: CharSequence, x$1: Int, x$2: Int): PrintStream",
+        "sortText": "00002",
+        "filterText": "append",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 12,
+              "character": 13
+            },
+            "end": {
+              "line": 12,
+              "character": 13
+            }
+          },
+          "newText": "append($0)"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "java/io/PrintStream#append(+1).",
+          "target": "file:///workspace/foo",
+          "kind": 3
+        }
+      },
+      {
+        "label": "checkError(): Boolean",
+        "kind": "Method",
+        "tags": [],
+        "detail": "(): Boolean",
+        "sortText": "00003",
+        "filterText": "checkError",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 12,
+              "character": 13
+            },
+            "end": {
+              "line": 12,
+              "character": 13
+            }
+          },
+          "newText": "checkError()"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "java/io/PrintStream#checkError().",
+          "target": "file:///workspace/foo",
+          "kind": 3
+        }
+      },
+      {
+        "label": "close(): Unit",
+        "kind": "Method",
+        "tags": [],
+        "detail": "(): Unit",
+        "sortText": "00004",
+        "filterText": "close",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 12,
+              "character": 13
+            },
+            "end": {
+              "line": 12,
+              "character": 13
+            }
+          },
+          "newText": "close()"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "java/io/PrintStream#close().",
+          "target": "file:///workspace/foo",
+          "kind": 3
+        }
+      },
+      {
+        "label": "flush(): Unit",
+        "kind": "Method",
+        "tags": [],
+        "detail": "(): Unit",
+        "sortText": "00005",
+        "filterText": "flush",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 12,
+              "character": 13
+            },
+            "end": {
+              "line": 12,
+              "character": 13
+            }
+          },
+          "newText": "flush()"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "java/io/PrintStream#flush().",
+          "target": "file:///workspace/foo",
+          "kind": 3
+        }
+      },
+      {
+        "label": "format(x$0: String, x$1: Object*): PrintStream",
+        "kind": "Method",
+        "tags": [],
+        "detail": "(x$0: String, x$1: Object*): PrintStream",
+        "sortText": "00006",
+        "filterText": "format",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 12,
+              "character": 13
+            },
+            "end": {
+              "line": 12,
+              "character": 13
+            }
+          },
+          "newText": "format($0)"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "java/io/PrintStream#format().",
+          "target": "file:///workspace/foo",
+          "kind": 3
+        }
+      },
+      {
+        "label": "format(x$0: Locale, x$1: String, x$2: Object*): PrintStream",
+        "kind": "Method",
+        "tags": [],
+        "detail": "(x$0: Locale, x$1: String, x$2: Object*): PrintStream",
+        "sortText": "00007",
+        "filterText": "format",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 12,
+              "character": 13
+            },
+            "end": {
+              "line": 12,
+              "character": 13
+            }
+          },
+          "newText": "format($0)"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "java/io/PrintStream#format(+1).",
+          "target": "file:///workspace/foo",
+          "kind": 3
+        }
+      },
+      {
+        "label": "print(x$0: Object): Unit",
+        "kind": "Method",
+        "tags": [],
+        "detail": "(x$0: Object): Unit",
+        "sortText": "00008",
+        "filterText": "print",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 12,
+              "character": 13
+            },
+            "end": {
+              "line": 12,
+              "character": 13
+            }
+          },
+          "newText": "print($0)"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "java/io/PrintStream#print(+8).",
+          "target": "file:///workspace/foo",
+          "kind": 3
+        }
+      },
+      {
+        "label": "print(x$0: String): Unit",
+        "kind": "Method",
+        "tags": [],
+        "detail": "(x$0: String): Unit",
+        "sortText": "00009",
+        "filterText": "print",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 12,
+              "character": 13
+            },
+            "end": {
+              "line": 12,
+              "character": 13
+            }
+          },
+          "newText": "print($0)"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "java/io/PrintStream#print(+7).",
+          "target": "file:///workspace/foo",
+          "kind": 3
+        }
+      },
+      {
+        "label": "print(x$0: Boolean): Unit",
+        "kind": "Method",
+        "tags": [],
+        "detail": "(x$0: Boolean): Unit",
+        "sortText": "00010",
+        "filterText": "print",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 12,
+              "character": 13
+            },
+            "end": {
+              "line": 12,
+              "character": 13
+            }
+          },
+          "newText": "print($0)"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "java/io/PrintStream#print().",
+          "target": "file:///workspace/foo",
+          "kind": 3
+        }
+      },
+      {
+        "label": "print(x$0: Char): Unit",
+        "kind": "Method",
+        "tags": [],
+        "detail": "(x$0: Char): Unit",
+        "sortText": "00011",
+        "filterText": "print",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 12,
+              "character": 13
+            },
+            "end": {
+              "line": 12,
+              "character": 13
+            }
+          },
+          "newText": "print($0)"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "java/io/PrintStream#print(+1).",
+          "target": "file:///workspace/foo",
+          "kind": 3
+        }
+      },
+      {
+        "label": "print(x$0: Array[Char]): Unit",
+        "kind": "Method",
+        "tags": [],
+        "detail": "(x$0: Array[Char]): Unit",
+        "sortText": "00012",
+        "filterText": "print",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 12,
+              "character": 13
+            },
+            "end": {
+              "line": 12,
+              "character": 13
+            }
+          },
+          "newText": "print($0)"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "java/io/PrintStream#print(+6).",
+          "target": "file:///workspace/foo",
+          "kind": 3
+        }
+      },
+      {
+        "label": "print(x$0: Double): Unit",
+        "kind": "Method",
+        "tags": [],
+        "detail": "(x$0: Double): Unit",
+        "sortText": "00013",
+        "filterText": "print",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 12,
+              "character": 13
+            },
+            "end": {
+              "line": 12,
+              "character": 13
+            }
+          },
+          "newText": "print($0)"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "java/io/PrintStream#print(+5).",
+          "target": "file:///workspace/foo",
+          "kind": 3
+        }
+      },
+      {
+        "label": "print(x$0: Float): Unit",
+        "kind": "Method",
+        "tags": [],
+        "detail": "(x$0: Float): Unit",
+        "sortText": "00014",
+        "filterText": "print",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 12,
+              "character": 13
+            },
+            "end": {
+              "line": 12,
+              "character": 13
+            }
+          },
+          "newText": "print($0)"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "java/io/PrintStream#print(+4).",
+          "target": "file:///workspace/foo",
+          "kind": 3
+        }
+      },
+      {
+        "label": "print(x$0: Int): Unit",
+        "kind": "Method",
+        "tags": [],
+        "detail": "(x$0: Int): Unit",
+        "sortText": "00015",
+        "filterText": "print",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 12,
+              "character": 13
+            },
+            "end": {
+              "line": 12,
+              "character": 13
+            }
+          },
+          "newText": "print($0)"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "java/io/PrintStream#print(+2).",
+          "target": "file:///workspace/foo",
+          "kind": 3
+        }
+      },
+      {
+        "label": "print(x$0: Long): Unit",
+        "kind": "Method",
+        "tags": [],
+        "detail": "(x$0: Long): Unit",
+        "sortText": "00016",
+        "filterText": "print",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 12,
+              "character": 13
+            },
+            "end": {
+              "line": 12,
+              "character": 13
+            }
+          },
+          "newText": "print($0)"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "java/io/PrintStream#print(+3).",
+          "target": "file:///workspace/foo",
+          "kind": 3
+        }
+      },
+      {
+        "label": "printf(x$0: String, x$1: Object*): PrintStream",
+        "kind": "Method",
+        "tags": [],
+        "detail": "(x$0: String, x$1: Object*): PrintStream",
+        "sortText": "00017",
+        "filterText": "printf",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 12,
+              "character": 13
+            },
+            "end": {
+              "line": 12,
+              "character": 13
+            }
+          },
+          "newText": "printf($0)"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "java/io/PrintStream#printf().",
+          "target": "file:///workspace/foo",
+          "kind": 3
+        }
+      },
+      {
+        "label": "printf(x$0: Locale, x$1: String, x$2: Object*): PrintStream",
+        "kind": "Method",
+        "tags": [],
+        "detail": "(x$0: Locale, x$1: String, x$2: Object*): PrintStream",
+        "sortText": "00018",
+        "filterText": "printf",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 12,
+              "character": 13
+            },
+            "end": {
+              "line": 12,
+              "character": 13
+            }
+          },
+          "newText": "printf($0)"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "java/io/PrintStream#printf(+1).",
+          "target": "file:///workspace/foo",
+          "kind": 3
+        }
+      },
+      {
+        "label": "println(): Unit",
+        "kind": "Method",
+        "tags": [],
+        "detail": "(): Unit",
+        "sortText": "00019",
+        "filterText": "println",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 12,
+              "character": 13
+            },
+            "end": {
+              "line": 12,
+              "character": 13
+            }
+          },
+          "newText": "println()"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "java/io/PrintStream#println().",
+          "target": "file:///workspace/foo",
+          "kind": 3
+        }
+      },
+      {
+        "label": "println(x$0: Object): Unit",
+        "kind": "Method",
+        "tags": [],
+        "detail": "(x$0: Object): Unit",
+        "sortText": "00020",
+        "filterText": "println",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 12,
+              "character": 13
+            },
+            "end": {
+              "line": 12,
+              "character": 13
+            }
+          },
+          "newText": "println($0)"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "java/io/PrintStream#println(+9).",
+          "target": "file:///workspace/foo",
+          "kind": 3
+        }
+      },
+      {
+        "label": "println(x$0: String): Unit",
+        "kind": "Method",
+        "tags": [],
+        "detail": "(x$0: String): Unit",
+        "sortText": "00021",
+        "filterText": "println",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 12,
+              "character": 13
+            },
+            "end": {
+              "line": 12,
+              "character": 13
+            }
+          },
+          "newText": "println($0)"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "java/io/PrintStream#println(+8).",
+          "target": "file:///workspace/foo",
+          "kind": 3
+        }
+      },
+      {
+        "label": "println(x$0: Boolean): Unit",
+        "kind": "Method",
+        "tags": [],
+        "detail": "(x$0: Boolean): Unit",
+        "sortText": "00022",
+        "filterText": "println",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 12,
+              "character": 13
+            },
+            "end": {
+              "line": 12,
+              "character": 13
+            }
+          },
+          "newText": "println($0)"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "java/io/PrintStream#println(+1).",
+          "target": "file:///workspace/foo",
+          "kind": 3
+        }
+      },
+      {
+        "label": "println(x$0: Char): Unit",
+        "kind": "Method",
+        "tags": [],
+        "detail": "(x$0: Char): Unit",
+        "sortText": "00023",
+        "filterText": "println",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 12,
+              "character": 13
+            },
+            "end": {
+              "line": 12,
+              "character": 13
+            }
+          },
+          "newText": "println($0)"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "java/io/PrintStream#println(+2).",
+          "target": "file:///workspace/foo",
+          "kind": 3
+        }
+      },
+      {
+        "label": "println(x$0: Array[Char]): Unit",
+        "kind": "Method",
+        "tags": [],
+        "detail": "(x$0: Array[Char]): Unit",
+        "sortText": "00024",
+        "filterText": "println",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 12,
+              "character": 13
+            },
+            "end": {
+              "line": 12,
+              "character": 13
+            }
+          },
+          "newText": "println($0)"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "java/io/PrintStream#println(+7).",
+          "target": "file:///workspace/foo",
+          "kind": 3
+        }
+      },
+      {
+        "label": "println(x$0: Double): Unit",
+        "kind": "Method",
+        "tags": [],
+        "detail": "(x$0: Double): Unit",
+        "sortText": "00025",
+        "filterText": "println",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 12,
+              "character": 13
+            },
+            "end": {
+              "line": 12,
+              "character": 13
+            }
+          },
+          "newText": "println($0)"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "java/io/PrintStream#println(+6).",
+          "target": "file:///workspace/foo",
+          "kind": 3
+        }
+      },
+      {
+        "label": "println(x$0: Float): Unit",
+        "kind": "Method",
+        "tags": [],
+        "detail": "(x$0: Float): Unit",
+        "sortText": "00026",
+        "filterText": "println",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 12,
+              "character": 13
+            },
+            "end": {
+              "line": 12,
+              "character": 13
+            }
+          },
+          "newText": "println($0)"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "java/io/PrintStream#println(+5).",
+          "target": "file:///workspace/foo",
+          "kind": 3
+        }
+      },
+      {
+        "label": "println(x$0: Int): Unit",
+        "kind": "Method",
+        "tags": [],
+        "detail": "(x$0: Int): Unit",
+        "sortText": "00027",
+        "filterText": "println",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 12,
+              "character": 13
+            },
+            "end": {
+              "line": 12,
+              "character": 13
+            }
+          },
+          "newText": "println($0)"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "java/io/PrintStream#println(+3).",
+          "target": "file:///workspace/foo",
+          "kind": 3
+        }
+      },
+      {
+        "label": "println(x$0: Long): Unit",
+        "kind": "Method",
+        "tags": [],
+        "detail": "(x$0: Long): Unit",
+        "sortText": "00028",
+        "filterText": "println",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 12,
+              "character": 13
+            },
+            "end": {
+              "line": 12,
+              "character": 13
+            }
+          },
+          "newText": "println($0)"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "java/io/PrintStream#println(+4).",
+          "target": "file:///workspace/foo",
+          "kind": 3
+        }
+      },
+      {
+        "label": "write(x$0: Array[Byte]): Unit",
+        "kind": "Method",
+        "tags": [],
+        "detail": "(x$0: Array[Byte]): Unit",
+        "sortText": "00029",
+        "filterText": "write",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 12,
+              "character": 13
+            },
+            "end": {
+              "line": 12,
+              "character": 13
+            }
+          },
+          "newText": "write($0)"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "java/io/PrintStream#write(+2).",
+          "target": "file:///workspace/foo",
+          "kind": 3
+        }
+      },
+      {
+        "label": "write(x$0: Int): Unit",
+        "kind": "Method",
+        "tags": [],
+        "detail": "(x$0: Int): Unit",
+        "sortText": "00030",
+        "filterText": "write",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 12,
+              "character": 13
+            },
+            "end": {
+              "line": 12,
+              "character": 13
+            }
+          },
+          "newText": "write($0)"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "java/io/PrintStream#write().",
+          "target": "file:///workspace/foo",
+          "kind": 3
+        }
+      },
+      {
+        "label": "write(x$0: Array[Byte], x$1: Int, x$2: Int): Unit",
+        "kind": "Method",
+        "tags": [],
+        "detail": "(x$0: Array[Byte], x$1: Int, x$2: Int): Unit",
+        "sortText": "00031",
+        "filterText": "write",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 12,
+              "character": 13
+            },
+            "end": {
+              "line": 12,
+              "character": 13
+            }
+          },
+          "newText": "write($0)"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "java/io/PrintStream#write(+1).",
+          "target": "file:///workspace/foo",
+          "kind": 3
+        }
+      },
+      {
+        "label": "writeBytes(x$0: Array[Byte]): Unit",
+        "kind": "Method",
+        "tags": [],
+        "detail": "(x$0: Array[Byte]): Unit",
+        "sortText": "00032",
+        "filterText": "writeBytes",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 12,
+              "character": 13
+            },
+            "end": {
+              "line": 12,
+              "character": 13
+            }
+          },
+          "newText": "writeBytes($0)"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "java/io/PrintStream#writeBytes().",
+          "target": "file:///workspace/foo",
+          "kind": 3
+        }
+      },
+      {
+        "label": "-\u003e[B](y: B): (PrintStream, B)",
+        "kind": "Method",
+        "tags": [],
+        "detail": "[B](y: B): (PrintStream, B)",
+        "sortText": "00033",
+        "filterText": "-\u003e",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 12,
+              "character": 13
+            },
+            "end": {
+              "line": 12,
+              "character": 13
+            }
+          },
+          "newText": "-\u003e($0)"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/Predef.ArrowAssoc#`-\u003e`().",
+          "target": "file:///workspace/foo",
+          "kind": 3
+        }
+      },
+      {
+        "label": "ensuring(cond: Boolean): PrintStream",
+        "kind": "Method",
+        "tags": [],
+        "detail": "(cond: Boolean): PrintStream",
+        "sortText": "00034",
+        "filterText": "ensuring",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 12,
+              "character": 13
+            },
+            "end": {
+              "line": 12,
+              "character": 13
+            }
+          },
+          "newText": "ensuring($0)"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/Predef.Ensuring#ensuring().",
+          "target": "file:///workspace/foo",
+          "kind": 3
+        }
+      },
+      {
+        "label": "ensuring(cond: PrintStream \u003d\u003e Boolean): PrintStream",
+        "kind": "Method",
+        "tags": [],
+        "detail": "(cond: PrintStream \u003d\u003e Boolean): PrintStream",
+        "sortText": "00035",
+        "filterText": "ensuring",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 12,
+              "character": 13
+            },
+            "end": {
+              "line": 12,
+              "character": 13
+            }
+          },
+          "newText": "ensuring($0)"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/Predef.Ensuring#ensuring(+2).",
+          "target": "file:///workspace/foo",
+          "kind": 3
+        }
+      },
+      {
+        "label": "ensuring(cond: Boolean, msg: \u003d\u003e Any): PrintStream",
+        "kind": "Method",
+        "tags": [],
+        "detail": "(cond: Boolean, msg: \u003d\u003e Any): PrintStream",
+        "sortText": "00036",
+        "filterText": "ensuring",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 12,
+              "character": 13
+            },
+            "end": {
+              "line": 12,
+              "character": 13
+            }
+          },
+          "newText": "ensuring($0)"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/Predef.Ensuring#ensuring(+1).",
+          "target": "file:///workspace/foo",
+          "kind": 3
+        }
+      },
+      {
+        "label": "ensuring(cond: PrintStream \u003d\u003e Boolean, msg: \u003d\u003e Any): PrintStream",
+        "kind": "Method",
+        "tags": [],
+        "detail": "(cond: PrintStream \u003d\u003e Boolean, msg: \u003d\u003e Any): PrintStream",
+        "sortText": "00037",
+        "filterText": "ensuring",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 12,
+              "character": 13
+            },
+            "end": {
+              "line": 12,
+              "character": 13
+            }
+          },
+          "newText": "ensuring($0)"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/Predef.Ensuring#ensuring(+3).",
+          "target": "file:///workspace/foo",
+          "kind": 3
+        }
+      },
+      {
+        "label": "nn: err.type \u0026 PrintStream",
+        "kind": "Method",
+        "tags": [],
+        "detail": ": err.type \u0026 PrintStream",
+        "sortText": "00038",
+        "filterText": "nn",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 12,
+              "character": 13
+            },
+            "end": {
+              "line": 12,
+              "character": 13
+            }
+          },
+          "newText": "nn"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/Predef.nn().",
+          "target": "file:///workspace/foo",
+          "kind": 3
+        }
+      },
+      {
+        "label": "runtimeChecked: err.type",
+        "kind": "Method",
+        "tags": [],
+        "detail": ": err.type",
+        "sortText": "00039",
+        "filterText": "runtimeChecked",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 12,
+              "character": 13
+            },
+            "end": {
+              "line": 12,
+              "character": 13
+            }
+          },
+          "newText": "runtimeChecked"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/Predef.runtimeChecked().",
+          "target": "file:///workspace/foo",
+          "kind": 3
+        }
+      },
+      {
+        "label": "formatted(fmtstr: String): String",
+        "kind": "Method",
+        "tags": [
+          "Deprecated"
+        ],
+        "detail": "(fmtstr: String): String",
+        "sortText": "00040",
+        "filterText": "formatted",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 12,
+              "character": 13
+            },
+            "end": {
+              "line": 12,
+              "character": 13
+            }
+          },
+          "newText": "formatted($0)"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/Predef.StringFormat#formatted().",
+          "target": "file:///workspace/foo",
+          "kind": 3
+        }
+      },
+      {
+        "label": "→[B](y: B): (PrintStream, B)",
+        "kind": "Method",
+        "tags": [
+          "Deprecated"
+        ],
+        "detail": "[B](y: B): (PrintStream, B)",
+        "sortText": "00041",
+        "filterText": "→",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 12,
+              "character": 13
+            },
+            "end": {
+              "line": 12,
+              "character": 13
+            }
+          },
+          "newText": "→($0)"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/Predef.ArrowAssoc#`→`().",
+          "target": "file:///workspace/foo",
+          "kind": 3
+        }
+      },
+      {
+        "label": "asInstanceOf[X0]: X0",
+        "kind": "Method",
+        "tags": [],
+        "detail": "[X0]: X0",
+        "sortText": "00042",
+        "filterText": "asInstanceOf",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 12,
+              "character": 13
+            },
+            "end": {
+              "line": 12,
+              "character": 13
+            }
+          },
+          "newText": "asInstanceOf"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/Any#asInstanceOf().",
+          "target": "file:///workspace/foo",
+          "kind": 3
+        }
+      },
+      {
+        "label": "equals(x$0: Any): Boolean",
+        "kind": "Method",
+        "tags": [],
+        "detail": "(x$0: Any): Boolean",
+        "sortText": "00043",
+        "filterText": "equals",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 12,
+              "character": 13
+            },
+            "end": {
+              "line": 12,
+              "character": 13
+            }
+          },
+          "newText": "equals($0)"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/Any#equals().",
+          "target": "file:///workspace/foo",
+          "kind": 3
+        }
+      },
+      {
+        "label": "getClass[X0 \u003e: err.type](): Class[? \u003c: X0]",
+        "kind": "Method",
+        "tags": [],
+        "detail": "[X0 \u003e: err.type](): Class[? \u003c: X0]",
+        "sortText": "00044",
+        "filterText": "getClass",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 12,
+              "character": 13
+            },
+            "end": {
+              "line": 12,
+              "character": 13
+            }
+          },
+          "newText": "getClass()"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/Any#getClass().",
+          "target": "file:///workspace/foo",
+          "kind": 3
+        }
+      },
+      {
+        "label": "hashCode(): Int",
+        "kind": "Method",
+        "tags": [],
+        "detail": "(): Int",
+        "sortText": "00045",
+        "filterText": "hashCode",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 12,
+              "character": 13
+            },
+            "end": {
+              "line": 12,
+              "character": 13
+            }
+          },
+          "newText": "hashCode()"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/Any#hashCode().",
+          "target": "file:///workspace/foo",
+          "kind": 3
+        }
+      },
+      {
+        "label": "isInstanceOf[X0]: Boolean",
+        "kind": "Method",
+        "tags": [],
+        "detail": "[X0]: Boolean",
+        "sortText": "00046",
+        "filterText": "isInstanceOf",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 12,
+              "character": 13
+            },
+            "end": {
+              "line": 12,
+              "character": 13
+            }
+          },
+          "newText": "isInstanceOf"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/Any#isInstanceOf().",
+          "target": "file:///workspace/foo",
+          "kind": 3
+        }
+      },
+      {
+        "label": "synchronized[X0](x$0: X0): X0",
+        "kind": "Method",
+        "tags": [],
+        "detail": "[X0](x$0: X0): X0",
+        "sortText": "00047",
+        "filterText": "synchronized",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 12,
+              "character": 13
+            },
+            "end": {
+              "line": 12,
+              "character": 13
+            }
+          },
+          "newText": "synchronized($0)"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "java/lang/Object#synchronized().",
+          "target": "file:///workspace/foo",
+          "kind": 3
+        }
+      },
+      {
+        "label": "toString(): String",
+        "kind": "Method",
+        "tags": [],
+        "detail": "(): String",
+        "sortText": "00048",
+        "filterText": "toString",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 12,
+              "character": 13
+            },
+            "end": {
+              "line": 12,
+              "character": 13
+            }
+          },
+          "newText": "toString()"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/Any#toString().",
+          "target": "file:///workspace/foo",
+          "kind": 3
+        }
+      },
+      {
+        "label": "wait(): Unit",
+        "kind": "Method",
+        "tags": [],
+        "detail": "(): Unit",
+        "sortText": "00049",
+        "filterText": "wait",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 12,
+              "character": 13
+            },
+            "end": {
+              "line": 12,
+              "character": 13
+            }
+          },
+          "newText": "wait()"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "java/lang/Object#wait().",
+          "target": "file:///workspace/foo",
+          "kind": 3
+        }
+      },
+      {
+        "label": "wait(x$0: Long): Unit",
+        "kind": "Method",
+        "tags": [],
+        "detail": "(x$0: Long): Unit",
+        "sortText": "00050",
+        "filterText": "wait",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 12,
+              "character": 13
+            },
+            "end": {
+              "line": 12,
+              "character": 13
+            }
+          },
+          "newText": "wait($0)"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "java/lang/Object#wait(+1).",
+          "target": "file:///workspace/foo",
+          "kind": 3
+        }
+      },
+      {
+        "label": "wait(x$0: Long, x$1: Int): Unit",
+        "kind": "Method",
+        "tags": [],
+        "detail": "(x$0: Long, x$1: Int): Unit",
+        "sortText": "00051",
+        "filterText": "wait",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 12,
+              "character": 13
+            },
+            "end": {
+              "line": 12,
+              "character": 13
+            }
+          },
+          "newText": "wait($0)"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "java/lang/Object#wait(+2).",
+          "target": "file:///workspace/foo",
+          "kind": 3
+        }
+      }
+    ]
+  }
+}

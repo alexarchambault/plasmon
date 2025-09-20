@@ -1,0 +1,9 @@
+```scala
+def println(x: String): Unit
+```
+
+***
+
+Prints a String and then terminate the line.  This method behaves as
+though it invokes [#print(String)](#print(String)) and then
+[#println()](#println()).

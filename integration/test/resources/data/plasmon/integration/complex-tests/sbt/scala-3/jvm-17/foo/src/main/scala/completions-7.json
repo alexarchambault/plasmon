@@ -1,0 +1,1435 @@
+{
+  "right": {
+    "isIncomplete": false,
+    "items": [
+      {
+        "label": "Iterable[A](elems: A*): Iterable[A]",
+        "kind": "Method",
+        "tags": [],
+        "detail": "[A](elems: A*): Iterable[A]",
+        "sortText": "00000",
+        "filterText": "Iterable",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 8,
+              "character": 19
+            },
+            "end": {
+              "line": 8,
+              "character": 20
+            }
+          },
+          "newText": "Iterable($0)"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/IterableFactory.Delegate#apply().",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 3
+        }
+      },
+      {
+        "label": "Iterator[A](xs: A*): Iterator[A]",
+        "kind": "Method",
+        "tags": [],
+        "detail": "[A](xs: A*): Iterator[A]",
+        "sortText": "00001",
+        "filterText": "Iterator",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 8,
+              "character": 19
+            },
+            "end": {
+              "line": 8,
+              "character": 20
+            }
+          },
+          "newText": "Iterator($0)"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/Iterator.apply().",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 3
+        }
+      },
+      {
+        "label": "IndexedSeq[A](elems: A*): scala.collection.IndexedSeq[A]",
+        "kind": "Method",
+        "tags": [],
+        "detail": "[A](elems: A*): scala.collection.IndexedSeq[A]",
+        "sortText": "00002",
+        "filterText": "IndexedSeq",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 8,
+              "character": 19
+            },
+            "end": {
+              "line": 8,
+              "character": 20
+            }
+          },
+          "newText": "IndexedSeq($0)"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/SeqFactory.Delegate#apply().",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 3
+        }
+      },
+      {
+        "label": "IndexedSeq scala.collection",
+        "kind": "Module",
+        "tags": [],
+        "detail": " scala.collection",
+        "sortText": "00003",
+        "filterText": "IndexedSeq",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 8,
+              "character": 19
+            },
+            "end": {
+              "line": 8,
+              "character": 20
+            }
+          },
+          "newText": "IndexedSeq"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/IndexedSeq.",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 3
+        }
+      },
+      {
+        "label": "IndexedSeqView scala.collection",
+        "kind": "Module",
+        "tags": [],
+        "detail": " scala.collection",
+        "sortText": "00004",
+        "filterText": "IndexedSeqView",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 8,
+              "character": 19
+            },
+            "end": {
+              "line": 8,
+              "character": 20
+            }
+          },
+          "newText": "IndexedSeqView"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/IndexedSeqView.",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 3
+        }
+      },
+      {
+        "label": "IntStepper scala.collection",
+        "kind": "Module",
+        "tags": [],
+        "detail": " scala.collection",
+        "sortText": "00005",
+        "filterText": "IntStepper",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 8,
+              "character": 19
+            },
+            "end": {
+              "line": 8,
+              "character": 20
+            }
+          },
+          "newText": "IntStepper"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/IntStepper.",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 3
+        }
+      },
+      {
+        "label": "Iterable scala.collection",
+        "kind": "Module",
+        "tags": [],
+        "detail": " scala.collection",
+        "sortText": "00006",
+        "filterText": "Iterable",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 8,
+              "character": 19
+            },
+            "end": {
+              "line": 8,
+              "character": 20
+            }
+          },
+          "newText": "Iterable"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/Iterable.",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 3
+        }
+      },
+      {
+        "label": "IterableFactory scala.collection",
+        "kind": "Module",
+        "tags": [],
+        "detail": " scala.collection",
+        "sortText": "00007",
+        "filterText": "IterableFactory",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 8,
+              "character": 19
+            },
+            "end": {
+              "line": 8,
+              "character": 20
+            }
+          },
+          "newText": "IterableFactory"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/IterableFactory.",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 3
+        }
+      },
+      {
+        "label": "IterableOnce scala.collection",
+        "kind": "Module",
+        "tags": [],
+        "detail": " scala.collection",
+        "sortText": "00008",
+        "filterText": "IterableOnce",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 8,
+              "character": 19
+            },
+            "end": {
+              "line": 8,
+              "character": 20
+            }
+          },
+          "newText": "IterableOnce"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/IterableOnce.",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 3
+        }
+      },
+      {
+        "label": "IterableOps scala.collection",
+        "kind": "Module",
+        "tags": [],
+        "detail": " scala.collection",
+        "sortText": "00009",
+        "filterText": "IterableOps",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 8,
+              "character": 19
+            },
+            "end": {
+              "line": 8,
+              "character": 20
+            }
+          },
+          "newText": "IterableOps"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/IterableOps.",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 3
+        }
+      },
+      {
+        "label": "Iterator scala.collection",
+        "kind": "Module",
+        "tags": [],
+        "detail": " scala.collection",
+        "sortText": "00010",
+        "filterText": "Iterator",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 8,
+              "character": 19
+            },
+            "end": {
+              "line": 8,
+              "character": 20
+            }
+          },
+          "newText": "Iterator"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/Iterator.",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 3
+        }
+      },
+      {
+        "label": "IterableOnceExtensionMethods[A](it: IterableOnce[A]): IterableOnceExtensionMethods[A]",
+        "kind": "Method",
+        "tags": [],
+        "detail": "[A](it: IterableOnce[A]): IterableOnceExtensionMethods[A]",
+        "sortText": "00011",
+        "filterText": "IterableOnceExtensionMethods",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 8,
+              "character": 19
+            },
+            "end": {
+              "line": 8,
+              "character": 20
+            }
+          },
+          "newText": "IterableOnceExtensionMethods($0)"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/IterableOnceExtensionMethods.apply().",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 3
+        }
+      },
+      {
+        "label": "IterableOnceExtensionMethods scala.collection",
+        "kind": "Module",
+        "tags": [],
+        "detail": " scala.collection",
+        "sortText": "00012",
+        "filterText": "IterableOnceExtensionMethods",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 8,
+              "character": 19
+            },
+            "end": {
+              "line": 8,
+              "character": 20
+            }
+          },
+          "newText": "IterableOnceExtensionMethods"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/IterableOnceExtensionMethods.",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 3
+        }
+      },
+      {
+        "label": "immutable scala.collection",
+        "kind": "Module",
+        "tags": [],
+        "detail": " scala.collection",
+        "sortText": "00013",
+        "filterText": "immutable",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 8,
+              "character": 19
+            },
+            "end": {
+              "line": 8,
+              "character": 20
+            }
+          },
+          "newText": "immutable"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/immutable/",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 3
+        }
+      },
+      {
+        "label": "isInstanceOf[X0]: Boolean",
+        "kind": "Method",
+        "tags": [],
+        "detail": "[X0]: Boolean",
+        "sortText": "00014",
+        "filterText": "isInstanceOf",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 8,
+              "character": 19
+            },
+            "end": {
+              "line": 8,
+              "character": 20
+            }
+          },
+          "newText": "isInstanceOf"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/Any#isInstanceOf().",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 3
+        }
+      },
+      {
+        "label": "LazyZip2[El1, El2, C1](src: C1, coll1: Iterable[El1], coll2: Iterable[El2]): LazyZip2[El1, El2, C1]",
+        "kind": "Method",
+        "tags": [],
+        "detail": "[El1, El2, C1](src: C1, coll1: Iterable[El1], coll2: Iterable[El2]): LazyZip2[El1, El2, C1]",
+        "sortText": "00015",
+        "filterText": "LazyZip2",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 8,
+              "character": 19
+            },
+            "end": {
+              "line": 8,
+              "character": 20
+            }
+          },
+          "newText": "LazyZip2($0)"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/LazyZip2.apply().",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 3
+        }
+      },
+      {
+        "label": "LazyZip3[El1, El2, El3, C1](src: C1, coll1: Iterable[El1], coll2: Iterable[El2], coll3: Iterable[El3]): LazyZip3[El1, El2, El3, C1]",
+        "kind": "Method",
+        "tags": [],
+        "detail": "[El1, El2, El3, C1](src: C1, coll1: Iterable[El1], coll2: Iterable[El2], coll3: Iterable[El3]): LazyZip3[El1, El2, El3, C1]",
+        "sortText": "00016",
+        "filterText": "LazyZip3",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 8,
+              "character": 19
+            },
+            "end": {
+              "line": 8,
+              "character": 20
+            }
+          },
+          "newText": "LazyZip3($0)"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/LazyZip3.apply().",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 3
+        }
+      },
+      {
+        "label": "LazyZip4[El1, El2, El3, El4, C1](src: C1, coll1: Iterable[El1], coll2: Iterable[El2], coll3: Iterable[El3], coll4: Iterable[El4]): LazyZip4[El1, El2, El3, El4, C1]",
+        "kind": "Method",
+        "tags": [],
+        "detail": "[El1, El2, El3, El4, C1](src: C1, coll1: Iterable[El1], coll2: Iterable[El2], coll3: Iterable[El3], coll4: Iterable[El4]): LazyZip4[El1, El2, El3, El4, C1]",
+        "sortText": "00017",
+        "filterText": "LazyZip4",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 8,
+              "character": 19
+            },
+            "end": {
+              "line": 8,
+              "character": 20
+            }
+          },
+          "newText": "LazyZip4($0)"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/LazyZip4.apply().",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 3
+        }
+      },
+      {
+        "label": "MapView[K, V](elems: (K, V)*): MapView[K, V]",
+        "kind": "Method",
+        "tags": [],
+        "detail": "[K, V](elems: (K, V)*): MapView[K, V]",
+        "sortText": "00018",
+        "filterText": "MapView",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 8,
+              "character": 19
+            },
+            "end": {
+              "line": 8,
+              "character": 20
+            }
+          },
+          "newText": "MapView($0)"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/MapView.apply().",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 3
+        }
+      },
+      {
+        "label": "LinearSeq[A](elems: A*): LinearSeq[A]",
+        "kind": "Method",
+        "tags": [],
+        "detail": "[A](elems: A*): LinearSeq[A]",
+        "sortText": "00019",
+        "filterText": "LinearSeq",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 8,
+              "character": 19
+            },
+            "end": {
+              "line": 8,
+              "character": 20
+            }
+          },
+          "newText": "LinearSeq($0)"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/SeqFactory.Delegate#apply().",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 3
+        }
+      },
+      {
+        "label": "BitSet(xs: Int*): BitSet",
+        "kind": "Method",
+        "tags": [],
+        "detail": "(xs: Int*): BitSet",
+        "sortText": "00020",
+        "filterText": "BitSet",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 8,
+              "character": 19
+            },
+            "end": {
+              "line": 8,
+              "character": 20
+            }
+          },
+          "newText": "BitSet($0)"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/SpecificIterableFactory#apply().",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 3
+        }
+      },
+      {
+        "label": "StringOps(s: String): StringOps",
+        "kind": "Method",
+        "tags": [],
+        "detail": "(s: String): StringOps",
+        "sortText": "00021",
+        "filterText": "StringOps",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 8,
+              "character": 19
+            },
+            "end": {
+              "line": 8,
+              "character": 20
+            }
+          },
+          "newText": "StringOps($0)"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/StringOps.apply().",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 3
+        }
+      },
+      {
+        "label": "View[A](xs: A*): View[A]",
+        "kind": "Method",
+        "tags": [],
+        "detail": "[A](xs: A*): View[A]",
+        "sortText": "00022",
+        "filterText": "View",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 8,
+              "character": 19
+            },
+            "end": {
+              "line": 8,
+              "character": 20
+            }
+          },
+          "newText": "View($0)"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/View.apply().",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 3
+        }
+      },
+      {
+        "label": "BitSet scala.collection",
+        "kind": "Module",
+        "tags": [],
+        "detail": " scala.collection",
+        "sortText": "00023",
+        "filterText": "BitSet",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 8,
+              "character": 19
+            },
+            "end": {
+              "line": 8,
+              "character": 20
+            }
+          },
+          "newText": "BitSet"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/BitSet.",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 3
+        }
+      },
+      {
+        "label": "BitSetOps scala.collection",
+        "kind": "Module",
+        "tags": [],
+        "detail": " scala.collection",
+        "sortText": "00024",
+        "filterText": "BitSetOps",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 8,
+              "character": 19
+            },
+            "end": {
+              "line": 8,
+              "character": 20
+            }
+          },
+          "newText": "BitSetOps"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/BitSetOps.",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 3
+        }
+      },
+      {
+        "label": "BuildFrom scala.collection",
+        "kind": "Module",
+        "tags": [],
+        "detail": " scala.collection",
+        "sortText": "00025",
+        "filterText": "BuildFrom",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 8,
+              "character": 19
+            },
+            "end": {
+              "line": 8,
+              "character": 20
+            }
+          },
+          "newText": "BuildFrom"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/BuildFrom.",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 3
+        }
+      },
+      {
+        "label": "ClassTagIterableFactory scala.collection",
+        "kind": "Module",
+        "tags": [],
+        "detail": " scala.collection",
+        "sortText": "00026",
+        "filterText": "ClassTagIterableFactory",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 8,
+              "character": 19
+            },
+            "end": {
+              "line": 8,
+              "character": 20
+            }
+          },
+          "newText": "ClassTagIterableFactory"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/ClassTagIterableFactory.",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 3
+        }
+      },
+      {
+        "label": "EvidenceIterableFactory scala.collection",
+        "kind": "Module",
+        "tags": [],
+        "detail": " scala.collection",
+        "sortText": "00027",
+        "filterText": "EvidenceIterableFactory",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 8,
+              "character": 19
+            },
+            "end": {
+              "line": 8,
+              "character": 20
+            }
+          },
+          "newText": "EvidenceIterableFactory"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/EvidenceIterableFactory.",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 3
+        }
+      },
+      {
+        "label": "LazyZip2 scala.collection",
+        "kind": "Module",
+        "tags": [],
+        "detail": " scala.collection",
+        "sortText": "00028",
+        "filterText": "LazyZip2",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 8,
+              "character": 19
+            },
+            "end": {
+              "line": 8,
+              "character": 20
+            }
+          },
+          "newText": "LazyZip2"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/LazyZip2.",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 3
+        }
+      },
+      {
+        "label": "LazyZip3 scala.collection",
+        "kind": "Module",
+        "tags": [],
+        "detail": " scala.collection",
+        "sortText": "00029",
+        "filterText": "LazyZip3",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 8,
+              "character": 19
+            },
+            "end": {
+              "line": 8,
+              "character": 20
+            }
+          },
+          "newText": "LazyZip3"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/LazyZip3.",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 3
+        }
+      },
+      {
+        "label": "LazyZip4 scala.collection",
+        "kind": "Module",
+        "tags": [],
+        "detail": " scala.collection",
+        "sortText": "00030",
+        "filterText": "LazyZip4",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 8,
+              "character": 19
+            },
+            "end": {
+              "line": 8,
+              "character": 20
+            }
+          },
+          "newText": "LazyZip4"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/LazyZip4.",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 3
+        }
+      },
+      {
+        "label": "LinearSeq scala.collection",
+        "kind": "Module",
+        "tags": [],
+        "detail": " scala.collection",
+        "sortText": "00031",
+        "filterText": "LinearSeq",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 8,
+              "character": 19
+            },
+            "end": {
+              "line": 8,
+              "character": 20
+            }
+          },
+          "newText": "LinearSeq"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/LinearSeq.",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 3
+        }
+      },
+      {
+        "label": "MapView scala.collection",
+        "kind": "Module",
+        "tags": [],
+        "detail": " scala.collection",
+        "sortText": "00032",
+        "filterText": "MapView",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 8,
+              "character": 19
+            },
+            "end": {
+              "line": 8,
+              "character": 20
+            }
+          },
+          "newText": "MapView"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/MapView.",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 3
+        }
+      },
+      {
+        "label": "Searching scala.collection",
+        "kind": "Module",
+        "tags": [],
+        "detail": " scala.collection",
+        "sortText": "00033",
+        "filterText": "Searching",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 8,
+              "character": 19
+            },
+            "end": {
+              "line": 8,
+              "character": 20
+            }
+          },
+          "newText": "Searching"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/Searching.",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 3
+        }
+      },
+      {
+        "label": "SeqView scala.collection",
+        "kind": "Module",
+        "tags": [],
+        "detail": " scala.collection",
+        "sortText": "00034",
+        "filterText": "SeqView",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 8,
+              "character": 19
+            },
+            "end": {
+              "line": 8,
+              "character": 20
+            }
+          },
+          "newText": "SeqView"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/SeqView.",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 3
+        }
+      },
+      {
+        "label": "SortedIterableFactory scala.collection",
+        "kind": "Module",
+        "tags": [],
+        "detail": " scala.collection",
+        "sortText": "00035",
+        "filterText": "SortedIterableFactory",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 8,
+              "character": 19
+            },
+            "end": {
+              "line": 8,
+              "character": 20
+            }
+          },
+          "newText": "SortedIterableFactory"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/SortedIterableFactory.",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 3
+        }
+      },
+      {
+        "label": "StringOps scala.collection",
+        "kind": "Module",
+        "tags": [],
+        "detail": " scala.collection",
+        "sortText": "00036",
+        "filterText": "StringOps",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 8,
+              "character": 19
+            },
+            "end": {
+              "line": 8,
+              "character": 20
+            }
+          },
+          "newText": "StringOps"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/StringOps.",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 3
+        }
+      },
+      {
+        "label": "View scala.collection",
+        "kind": "Module",
+        "tags": [],
+        "detail": " scala.collection",
+        "sortText": "00037",
+        "filterText": "View",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 8,
+              "character": 19
+            },
+            "end": {
+              "line": 8,
+              "character": 20
+            }
+          },
+          "newText": "View"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/View.",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 3
+        }
+      },
+      {
+        "label": "StringView(s: String): StringView",
+        "kind": "Method",
+        "tags": [],
+        "detail": "(s: String): StringView",
+        "sortText": "00038",
+        "filterText": "StringView",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 8,
+              "character": 19
+            },
+            "end": {
+              "line": 8,
+              "character": 20
+            }
+          },
+          "newText": "StringView($0)"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/StringView.apply().",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 3
+        }
+      },
+      {
+        "label": "LinearSeqIterator[A](coll: LinearSeqOps[A, LinearSeq, LinearSeq[A]]): LinearSeqIterator[A]",
+        "kind": "Constructor",
+        "tags": [],
+        "detail": "[A](coll: LinearSeqOps[A, LinearSeq, LinearSeq[A]]): LinearSeqIterator[A]",
+        "sortText": "00039",
+        "filterText": "LinearSeqIterator",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 8,
+              "character": 19
+            },
+            "end": {
+              "line": 8,
+              "character": 20
+            }
+          },
+          "newText": "LinearSeqIterator"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/LinearSeqIterator#`\u003cinit\u003e`().",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 3
+        }
+      },
+      {
+        "label": "StringView scala.collection",
+        "kind": "Module",
+        "tags": [],
+        "detail": " scala.collection",
+        "sortText": "00040",
+        "filterText": "StringView",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 8,
+              "character": 19
+            },
+            "end": {
+              "line": 8,
+              "character": 20
+            }
+          },
+          "newText": "StringView"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/StringView.",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 3
+        }
+      },
+      {
+        "label": "generic scala.collection",
+        "kind": "Module",
+        "tags": [],
+        "detail": " scala.collection",
+        "sortText": "00041",
+        "filterText": "generic",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 8,
+              "character": 19
+            },
+            "end": {
+              "line": 8,
+              "character": 20
+            }
+          },
+          "newText": "generic"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/generic/",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 3
+        }
+      },
+      {
+        "label": "GenIterable[A](elems: A*): Iterable[A]",
+        "kind": "Method",
+        "tags": [],
+        "detail": "[A](elems: A*): Iterable[A]",
+        "sortText": "00042",
+        "filterText": "GenIterable",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 8,
+              "character": 19
+            },
+            "end": {
+              "line": 8,
+              "character": 20
+            }
+          },
+          "newText": "GenIterable($0)"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/IterableFactory.Delegate#apply().",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 3
+        }
+      },
+      {
+        "label": "GenIterable scala.collection",
+        "kind": "Field",
+        "tags": [],
+        "detail": " scala.collection",
+        "sortText": "00043",
+        "filterText": "GenIterable",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 8,
+              "character": 19
+            },
+            "end": {
+              "line": 8,
+              "character": 20
+            }
+          },
+          "newText": "GenIterable"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/package.GenIterable.",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 3
+        }
+      },
+      {
+        "label": "ensuring(cond: Boolean): scala.collection.type",
+        "kind": "Method",
+        "tags": [],
+        "detail": "(cond: Boolean): scala.collection.type",
+        "sortText": "00044",
+        "filterText": "ensuring",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 8,
+              "character": 19
+            },
+            "end": {
+              "line": 8,
+              "character": 20
+            }
+          },
+          "newText": "ensuring($0)"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/Predef.Ensuring#ensuring().",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 3
+        }
+      },
+      {
+        "label": "ensuring(cond: scala.collection.type \u003d\u003e Boolean): scala.collection.type",
+        "kind": "Method",
+        "tags": [],
+        "detail": "(cond: scala.collection.type \u003d\u003e Boolean): scala.collection.type",
+        "sortText": "00045",
+        "filterText": "ensuring",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 8,
+              "character": 19
+            },
+            "end": {
+              "line": 8,
+              "character": 20
+            }
+          },
+          "newText": "ensuring($0)"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/Predef.Ensuring#ensuring(+2).",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 3
+        }
+      },
+      {
+        "label": "ensuring(cond: Boolean, msg: \u003d\u003e Any): scala.collection.type",
+        "kind": "Method",
+        "tags": [],
+        "detail": "(cond: Boolean, msg: \u003d\u003e Any): scala.collection.type",
+        "sortText": "00046",
+        "filterText": "ensuring",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 8,
+              "character": 19
+            },
+            "end": {
+              "line": 8,
+              "character": 20
+            }
+          },
+          "newText": "ensuring($0)"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/Predef.Ensuring#ensuring(+1).",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 3
+        }
+      },
+      {
+        "label": "ensuring(cond: scala.collection.type \u003d\u003e Boolean, msg: \u003d\u003e Any): scala.collection.type",
+        "kind": "Method",
+        "tags": [],
+        "detail": "(cond: scala.collection.type \u003d\u003e Boolean, msg: \u003d\u003e Any): scala.collection.type",
+        "sortText": "00047",
+        "filterText": "ensuring",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 8,
+              "character": 19
+            },
+            "end": {
+              "line": 8,
+              "character": 20
+            }
+          },
+          "newText": "ensuring($0)"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/Predef.Ensuring#ensuring(+3).",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 3
+        }
+      },
+      {
+        "label": "runtimeChecked scala",
+        "kind": "Method",
+        "tags": [],
+        "detail": " scala",
+        "sortText": "00048",
+        "filterText": "runtimeChecked",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 8,
+              "character": 19
+            },
+            "end": {
+              "line": 8,
+              "character": 20
+            }
+          },
+          "newText": "runtimeChecked"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/Predef.runtimeChecked().",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 3
+        }
+      },
+      {
+        "label": "asInstanceOf[X0]: X0",
+        "kind": "Method",
+        "tags": [],
+        "detail": "[X0]: X0",
+        "sortText": "00049",
+        "filterText": "asInstanceOf",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 8,
+              "character": 19
+            },
+            "end": {
+              "line": 8,
+              "character": 20
+            }
+          },
+          "newText": "asInstanceOf"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/Any#asInstanceOf().",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 3
+        }
+      },
+      {
+        "label": "toString(): String",
+        "kind": "Method",
+        "tags": [],
+        "detail": "(): String",
+        "sortText": "00050",
+        "filterText": "toString",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 8,
+              "character": 19
+            },
+            "end": {
+              "line": 8,
+              "character": 20
+            }
+          },
+          "newText": "toString()"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/Any#toString().",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 3
+        }
+      }
+    ]
+  }
+}
