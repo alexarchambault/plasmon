@@ -318,14 +318,16 @@ object server extends ScalaModule with PlasmonPublishModule {
           val baseHome = super.nativeImageGraalvmHome().path
           val newHome  = BuildCtx.workspaceRoot / "graalvm"
 
-          if (!os.exists(newHome)) {
-            val newHomeTmp = BuildCtx.workspaceRoot / "graalvm-tmp"
-            os.remove.all(newHomeTmp)
-            os.copy(baseHome, newHomeTmp)
-            os.move(newHomeTmp, newHome)
-          }
+          BuildCtx.withFilesystemCheckerDisabled {
+            if (!os.exists(newHome)) {
+              val newHomeTmp = BuildCtx.workspaceRoot / "graalvm-tmp"
+              os.remove.all(newHomeTmp)
+              os.copy(baseHome, newHomeTmp)
+              os.move(newHomeTmp, newHome)
+            }
 
-          PathRef(newHome, quick = true)
+            PathRef(newHome, quick = true)
+          }
         }
       else
         super.nativeImageGraalvmHome
