@@ -201,6 +201,15 @@ object SingleModuleBuildTool {
         ))
       os.Path(f, os.pwd)
     }
+    private lazy val millwBatPath = {
+      val f = coursierapi.Cache.create()
+        .get(coursierapi.Artifact.of(
+          s"https://github.com/com-lihaoyi/mill/raw/${IntegrationConstants.millwCommit}/mill.bat",
+          true,
+          false
+        ))
+      os.Path(f, os.pwd)
+    }
     def setup(
       workspace: os.Path,
       osOpt: Option[OutputStream],
@@ -218,6 +227,7 @@ object SingleModuleBuildTool {
       readOnlyToplevelSymbolsCache: Boolean
     ): Unit = {
       os.copy(millwPath, workspace / "mill")
+      os.copy(millwBatPath, workspace / "mill.bat")
       os.write(workspace / ".mill-version", IntegrationConstants.millVersion)
       (workspace / "mill").toIO.setExecutable(true)
       TestUtil.runServerCommand(workspace, osOpt)(
