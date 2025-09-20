@@ -1,0 +1,3 @@
+```scala
+object Bar: 
+```

@@ -1,0 +1,41 @@
+{
+  "resources": {
+    "includes": [
+      {
+        "pattern": "\\QMETA-INF/services/java.nio.file.spi.FileSystemProvider\\E"
+      },
+      {
+        "pattern": "\\QMETA-INF/services/scala.meta.pc.PresentationCompiler\\E"
+      },
+      {
+        "pattern": "\\Qcompiler.properties\\E"
+      },
+      {
+        "pattern": "\\Qlibrary.properties\\E"
+      },
+      {
+        "pattern": "db/migration/.*\\.sql"
+      },
+      {
+        "pattern": "\\QMETA-INF/services/com.sun.source.util.Plugin\\E"
+      },
+      {
+        "pattern": "\\Qplasmon/settingsEdit.js\\E"
+      },
+      {
+        "pattern": "\\Qnative/x86_64/libswoval-files0.dylib\\E"
+      }
+    ]
+  },
+  "bundles": [
+    {
+      "name": "com.sun.tools.javac.resources.compiler"
+    },
+    {
+      "name": "com.sun.tools.javac.resources.javac"
+    },
+    {
+      "name": "com.sun.tools.javac.resources.ct"
+    }
+  ]
+}

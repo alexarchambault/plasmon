@@ -1,0 +1,9 @@
+{
+  "path": ".plasmon/readonly/dependencies/src.zip/java.base/java/lang/System.java",
+  "line": 156,
+  "colRange": [
+    36,
+    39
+  ],
+  "content": "err"
+}

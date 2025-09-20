@@ -1,0 +1,49 @@
+{
+  "right": {
+    "isIncomplete": false,
+    "items": [
+      {
+        "label": "ListBuffer - scala.collection.mutable",
+        "kind": "Module",
+        "detail": " scala.collection.mutable",
+        "preselect": true,
+        "sortText": "00000",
+        "filterText": "ListBuffer",
+        "insertTextFormat": "PlainText",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 2,
+              "character": 2
+            },
+            "end": {
+              "line": 2,
+              "character": 11
+            }
+          },
+          "newText": "ListBuffer"
+        },
+        "additionalTextEdits": [
+          {
+            "range": {
+              "start": {
+                "line": 1,
+                "character": 0
+              },
+              "end": {
+                "line": 1,
+                "character": 0
+              }
+            },
+            "newText": "import scala.collection.mutable.ListBuffer\n"
+          }
+        ],
+        "data": {
+          "symbol": "scala/collection/mutable/ListBuffer.",
+          "target": "file:/workspace/?id\u003dtest-project",
+          "kind": 0
+        }
+      }
+    ]
+  }
+}

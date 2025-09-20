@@ -1,0 +1,3 @@
+```scala
+case object First: foo.Thing
+```

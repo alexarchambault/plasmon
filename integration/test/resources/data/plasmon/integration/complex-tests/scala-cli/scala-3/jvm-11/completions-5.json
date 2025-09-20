@@ -1,0 +1,115 @@
+{
+  "right": {
+    "isIncomplete": false,
+    "items": [
+      {
+        "label": "print(x: Any): Unit",
+        "kind": "Method",
+        "tags": [],
+        "detail": "(x: Any): Unit",
+        "sortText": "00000",
+        "filterText": "print",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 6,
+              "character": 2
+            },
+            "end": {
+              "line": 6,
+              "character": 6
+            }
+          },
+          "newText": "print"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/Predef.print().",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_f4dd477a3a",
+          "kind": 0
+        }
+      },
+      {
+        "label": "printf(text: String, xs: Any*): Unit",
+        "kind": "Method",
+        "tags": [],
+        "detail": "(text: String, xs: Any*): Unit",
+        "sortText": "00001",
+        "filterText": "printf",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 6,
+              "character": 2
+            },
+            "end": {
+              "line": 6,
+              "character": 6
+            }
+          },
+          "newText": "printf"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/Predef.printf().",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_f4dd477a3a",
+          "kind": 0
+        }
+      },
+      {
+        "label": "println(): Unit",
+        "kind": "Method",
+        "tags": [],
+        "detail": "(): Unit",
+        "sortText": "00002",
+        "filterText": "println",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 6,
+              "character": 2
+            },
+            "end": {
+              "line": 6,
+              "character": 6
+            }
+          },
+          "newText": "println()"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/Predef.println().",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_f4dd477a3a",
+          "kind": 0
+        }
+      },
+      {
+        "label": "println(x: Any): Unit",
+        "kind": "Method",
+        "tags": [],
+        "detail": "(x: Any): Unit",
+        "sortText": "00003",
+        "filterText": "println",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 6,
+              "character": 2
+            },
+            "end": {
+              "line": 6,
+              "character": 6
+            }
+          },
+          "newText": "println"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/Predef.println(+1).",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_f4dd477a3a",
+          "kind": 0
+        }
+      }
+    ]
+  }
+}

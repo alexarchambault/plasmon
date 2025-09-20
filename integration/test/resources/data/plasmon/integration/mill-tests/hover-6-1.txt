@@ -1,0 +1,7 @@
+```scala
+def this(
+  streams: SystemStreams, 
+  bspLogStream: Option[PrintStream], 
+  home: Path
+): BspContext
+```

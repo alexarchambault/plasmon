@@ -1,0 +1,61 @@
+{
+  "right": {
+    "isIncomplete": false,
+    "items": [
+      {
+        "label": "immutable scala.collection",
+        "kind": "Module",
+        "tags": [],
+        "detail": " scala.collection",
+        "sortText": "00000",
+        "filterText": "immutable",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 8,
+              "character": 19
+            },
+            "end": {
+              "line": 8,
+              "character": 20
+            }
+          },
+          "newText": "immutable"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/immutable/",
+          "target": "file:///workspace/foo",
+          "kind": 0
+        }
+      },
+      {
+        "label": "isInstanceOf[X0]: Boolean",
+        "kind": "Method",
+        "tags": [],
+        "detail": "[X0]: Boolean",
+        "sortText": "00001",
+        "filterText": "isInstanceOf",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 8,
+              "character": 19
+            },
+            "end": {
+              "line": 8,
+              "character": 20
+            }
+          },
+          "newText": "isInstanceOf"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/Any#isInstanceOf().",
+          "target": "file:///workspace/foo",
+          "kind": 0
+        }
+      }
+    ]
+  }
+}

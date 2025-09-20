@@ -1,0 +1,680 @@
+[
+  {
+    "name": "com.fasterxml.jackson.databind.ext.Java7SupportImpl",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "com.google.common.hash.Striped64",
+    "fields": [
+      {
+        "name": "base"
+      },
+      {
+        "name": "busy"
+      }
+    ]
+  },
+  {
+    "name": "com.sourcegraph.semanticdb_javac.SemanticdbPlugin",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "com.sourcegraph.shaded.com.google.protobuf.ExtensionRegistry",
+    "methods": [
+      {
+        "name": "getEmptyRegistry",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "com.sun.org.apache.xerces.internal.jaxp.SAXParserFactoryImpl",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "com.sun.tools.javac.api.JavacTrees",
+    "methods": [
+      {
+        "name": "instance",
+        "parameterTypes": [
+          "javax.annotation.processing.ProcessingEnvironment"
+        ]
+      },
+      {
+        "name": "instance",
+        "parameterTypes": [
+          "javax.tools.JavaCompiler$CompilationTask"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "java.lang.Class",
+    "methods": [
+      {
+        "name": "getRecordComponents",
+        "parameterTypes": []
+      },
+      {
+        "name": "isRecord",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "java.lang.ClassValue"
+  },
+  {
+    "name": "java.lang.Object",
+    "queryAllDeclaredMethods": true,
+    "methods": [
+      {
+        "name": "equals",
+        "parameterTypes": [
+          "java.lang.Object"
+        ]
+      },
+      {
+        "name": "hashCode",
+        "parameterTypes": []
+      },
+      {
+        "name": "toString",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "java.lang.Runtime",
+    "methods": [
+      {
+        "name": "version",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "java.lang.Runtime$Version",
+    "methods": [
+      {
+        "name": "major",
+        "parameterTypes": []
+      },
+      {
+        "name": "parse",
+        "parameterTypes": [
+          "java.lang.String"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "java.lang.String"
+  },
+  {
+    "name": "java.lang.invoke.VarHandle",
+    "methods": [
+      {
+        "name": "releaseFence",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "java.lang.reflect.RecordComponent",
+    "methods": [
+      {
+        "name": "getName",
+        "parameterTypes": []
+      },
+      {
+        "name": "getType",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "java.nio.Buffer",
+    "fields": [
+      {
+        "name": "address"
+      }
+    ]
+  },
+  {
+    "name": "java.sql.Date"
+  },
+  {
+    "name": "java.sql.SQLException",
+    "fields": [
+      {
+        "name": "next"
+      }
+    ]
+  },
+  {
+    "name": "java.util.Date"
+  },
+  {
+    "name": "java.util.TimerThread",
+    "fields": [
+      {
+        "name": "newTasksMayBeScheduled"
+      }
+    ]
+  },
+  {
+    "name": "java.util.jar.JarFile",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "java.io.File",
+          "boolean",
+          "int",
+          "java.lang.Runtime$Version"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "javax.annotation.processing.ProcessingEnvironment"
+  },
+  {
+    "name": "javax.tools.JavaCompiler$CompilationTask"
+  },
+  {
+    "name": "net.jpountz.lz4.LZ4HCJavaSafeCompressor",
+    "fields": [
+      {
+        "name": "INSTANCE"
+      }
+    ],
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "int"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "net.jpountz.lz4.LZ4JavaSafeCompressor",
+    "fields": [
+      {
+        "name": "INSTANCE"
+      }
+    ]
+  },
+  {
+    "name": "net.jpountz.lz4.LZ4JavaSafeFastDecompressor",
+    "fields": [
+      {
+        "name": "INSTANCE"
+      }
+    ]
+  },
+  {
+    "name": "net.jpountz.lz4.LZ4JavaSafeSafeDecompressor",
+    "fields": [
+      {
+        "name": "INSTANCE"
+      }
+    ]
+  },
+  {
+    "name": "net.jpountz.xxhash.StreamingXXHash32JavaSafe$Factory",
+    "fields": [
+      {
+        "name": "INSTANCE"
+      }
+    ]
+  },
+  {
+    "name": "net.jpountz.xxhash.StreamingXXHash64JavaSafe$Factory",
+    "fields": [
+      {
+        "name": "INSTANCE"
+      }
+    ]
+  },
+  {
+    "name": "net.jpountz.xxhash.XXHash32JavaSafe",
+    "fields": [
+      {
+        "name": "INSTANCE"
+      }
+    ]
+  },
+  {
+    "name": "net.jpountz.xxhash.XXHash64JavaSafe",
+    "fields": [
+      {
+        "name": "INSTANCE"
+      }
+    ]
+  },
+  {
+    "name": "plasmon.bsp.PlasmonBuildClient",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "plasmon.bsp.PlasmonBuildClientImpl",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "plasmon.bsp.PlasmonBuildServer",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "plasmon.handlers.CodeLens$GotoCommandParams",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "plasmon.ide.ClientCommands$WindowLocation",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "plasmon.ide.HoverExtParams",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "plasmon.ide.ServerCommands$GotoSymbolParams",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "plasmon.internal.AlmostFinalValueHelper",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "plasmon.languageclient.PlasmonLanguageClient$Command",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "plasmon.languageclient.PlasmonLanguageClient$LogMessage",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "plasmon.languageclient.PlasmonLanguageClient$ProgressDetails",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "plasmon.languageclient.PlasmonLanguageClient$StatusUpdate",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "plasmon.protocol.Command",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "plasmon.protocol.CommandClient",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "plasmon.protocol.CommandResult",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "plasmon.protocol.CommandServer",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "plasmon.protocol.PrintData",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "plasmon.servercommand.BspUtil$BspExtraBuildParams",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "scala.Symbol",
+    "methods": [
+      {
+        "name": "apply",
+        "parameterTypes": [
+          "java.lang.String"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "scala.build.bsp.ScalaScriptBuildServer",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "scala.build.bsp.WrappedSourceItem",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "scala.build.bsp.WrappedSourcesItem",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "scala.build.bsp.WrappedSourcesParams",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "scala.build.bsp.WrappedSourcesResult",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "scala.meta.internal.metals.WindowStateDidChangeParams",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "sun.misc.Unsafe",
+    "allDeclaredFields": true,
+    "methods": [
+      {
+        "name": "arrayBaseOffset",
+        "parameterTypes": [
+          "java.lang.Class"
+        ]
+      },
+      {
+        "name": "arrayIndexScale",
+        "parameterTypes": [
+          "java.lang.Class"
+        ]
+      },
+      {
+        "name": "copyMemory",
+        "parameterTypes": [
+          "long",
+          "long",
+          "long"
+        ]
+      },
+      {
+        "name": "copyMemory",
+        "parameterTypes": [
+          "java.lang.Object",
+          "long",
+          "java.lang.Object",
+          "long",
+          "long"
+        ]
+      },
+      {
+        "name": "getBoolean",
+        "parameterTypes": [
+          "java.lang.Object",
+          "long"
+        ]
+      },
+      {
+        "name": "getByte",
+        "parameterTypes": [
+          "long"
+        ]
+      },
+      {
+        "name": "getByte",
+        "parameterTypes": [
+          "java.lang.Object",
+          "long"
+        ]
+      },
+      {
+        "name": "getDouble",
+        "parameterTypes": [
+          "java.lang.Object",
+          "long"
+        ]
+      },
+      {
+        "name": "getFloat",
+        "parameterTypes": [
+          "java.lang.Object",
+          "long"
+        ]
+      },
+      {
+        "name": "getInt",
+        "parameterTypes": [
+          "long"
+        ]
+      },
+      {
+        "name": "getInt",
+        "parameterTypes": [
+          "java.lang.Object",
+          "long"
+        ]
+      },
+      {
+        "name": "getLong",
+        "parameterTypes": [
+          "long"
+        ]
+      },
+      {
+        "name": "getLong",
+        "parameterTypes": [
+          "java.lang.Object",
+          "long"
+        ]
+      },
+      {
+        "name": "getObject",
+        "parameterTypes": [
+          "java.lang.Object",
+          "long"
+        ]
+      },
+      {
+        "name": "objectFieldOffset",
+        "parameterTypes": [
+          "java.lang.reflect.Field"
+        ]
+      },
+      {
+        "name": "putBoolean",
+        "parameterTypes": [
+          "java.lang.Object",
+          "long",
+          "boolean"
+        ]
+      },
+      {
+        "name": "putByte",
+        "parameterTypes": [
+          "long",
+          "byte"
+        ]
+      },
+      {
+        "name": "putByte",
+        "parameterTypes": [
+          "java.lang.Object",
+          "long",
+          "byte"
+        ]
+      },
+      {
+        "name": "putDouble",
+        "parameterTypes": [
+          "java.lang.Object",
+          "long",
+          "double"
+        ]
+      },
+      {
+        "name": "putFloat",
+        "parameterTypes": [
+          "java.lang.Object",
+          "long",
+          "float"
+        ]
+      },
+      {
+        "name": "putInt",
+        "parameterTypes": [
+          "long",
+          "int"
+        ]
+      },
+      {
+        "name": "putInt",
+        "parameterTypes": [
+          "java.lang.Object",
+          "long",
+          "int"
+        ]
+      },
+      {
+        "name": "putLong",
+        "parameterTypes": [
+          "long",
+          "long"
+        ]
+      },
+      {
+        "name": "putLong",
+        "parameterTypes": [
+          "java.lang.Object",
+          "long",
+          "long"
+        ]
+      },
+      {
+        "name": "putObject",
+        "parameterTypes": [
+          "java.lang.Object",
+          "long",
+          "java.lang.Object"
+        ]
+      }
+    ]
+  }
+]

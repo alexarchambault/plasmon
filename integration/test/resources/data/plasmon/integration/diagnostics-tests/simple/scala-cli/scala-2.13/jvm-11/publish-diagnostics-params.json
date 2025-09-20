@@ -1,0 +1,23 @@
+{
+  "uri": "file:///workspace/Foo.scala",
+  "diagnostics": [
+    {
+      "range": {
+        "start": {
+          "line": 3,
+          "character": 2
+        },
+        "end": {
+          "line": 3,
+          "character": 4
+        }
+      },
+      "severity": "Error",
+      "source": "bloop",
+      "message": "not found: value zz",
+      "data": {
+        "actions": []
+      }
+    }
+  ]
+}

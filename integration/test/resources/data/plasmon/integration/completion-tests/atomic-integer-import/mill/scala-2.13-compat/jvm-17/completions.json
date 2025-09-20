@@ -1,0 +1,133 @@
+{
+  "right": {
+    "isIncomplete": false,
+    "items": [
+      {
+        "label": "AtomicInteger - java.util.concurrent.atomic",
+        "kind": "Module",
+        "tags": [],
+        "detail": " java.util.concurrent.atomic",
+        "sortText": "00000",
+        "filterText": "AtomicInteger",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 2,
+              "character": 2
+            },
+            "end": {
+              "line": 2,
+              "character": 14
+            }
+          },
+          "newText": "AtomicInteger"
+        },
+        "additionalTextEdits": [
+          {
+            "range": {
+              "start": {
+                "line": 1,
+                "character": 0
+              },
+              "end": {
+                "line": 1,
+                "character": 0
+              }
+            },
+            "newText": "import java.util.concurrent.atomic.AtomicInteger\n"
+          }
+        ],
+        "data": {
+          "symbol": "java/util/concurrent/atomic/AtomicInteger#",
+          "target": "file:///workspace/test-mod",
+          "kind": 6
+        }
+      },
+      {
+        "label": "AtomicIntegerArray - java.util.concurrent.atomic",
+        "kind": "Module",
+        "tags": [],
+        "detail": " java.util.concurrent.atomic",
+        "sortText": "00001",
+        "filterText": "AtomicIntegerArray",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 2,
+              "character": 2
+            },
+            "end": {
+              "line": 2,
+              "character": 14
+            }
+          },
+          "newText": "AtomicIntegerArray"
+        },
+        "additionalTextEdits": [
+          {
+            "range": {
+              "start": {
+                "line": 1,
+                "character": 0
+              },
+              "end": {
+                "line": 1,
+                "character": 0
+              }
+            },
+            "newText": "import java.util.concurrent.atomic.AtomicIntegerArray\n"
+          }
+        ],
+        "data": {
+          "symbol": "java/util/concurrent/atomic/AtomicIntegerArray#",
+          "target": "file:///workspace/test-mod",
+          "kind": 6
+        }
+      },
+      {
+        "label": "AtomicIntegerFieldUpdater - java.util.concurrent.atomic",
+        "kind": "Module",
+        "tags": [],
+        "detail": " java.util.concurrent.atomic",
+        "sortText": "00002",
+        "filterText": "AtomicIntegerFieldUpdater",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 2,
+              "character": 2
+            },
+            "end": {
+              "line": 2,
+              "character": 14
+            }
+          },
+          "newText": "AtomicIntegerFieldUpdater"
+        },
+        "additionalTextEdits": [
+          {
+            "range": {
+              "start": {
+                "line": 1,
+                "character": 0
+              },
+              "end": {
+                "line": 1,
+                "character": 0
+              }
+            },
+            "newText": "import java.util.concurrent.atomic.AtomicIntegerFieldUpdater\n"
+          }
+        ],
+        "data": {
+          "symbol": "java/util/concurrent/atomic/AtomicIntegerFieldUpdater#",
+          "target": "file:///workspace/test-mod",
+          "kind": 6
+        }
+      }
+    ]
+  }
+}

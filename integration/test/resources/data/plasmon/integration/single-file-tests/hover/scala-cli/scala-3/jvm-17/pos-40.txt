@@ -1,0 +1,11 @@
+```scala
+type String: String
+```
+
+***
+
+The `String` type in Scala has all the methods of the underlying
+ [java.lang.String](java.lang.String), of which it is just an alias.
+
+ In addition, extension methods in [scala.collection.StringOps](scala.collection.StringOps)
+ are added implicitly through the conversion [augmentString](augmentString).

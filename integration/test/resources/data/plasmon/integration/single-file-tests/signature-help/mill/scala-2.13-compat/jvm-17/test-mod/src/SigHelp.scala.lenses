@@ -1,0 +1,39 @@
+{
+  "signatures": [
+    {
+      "label": "apply[A](elems: A*): List[A]",
+      "documentation": {
+        "right": {
+          "kind": "markdown",
+          "value": "Creates a collection with the specified elements.\n\n\n***\n\n**Type Parameters**\n- `A`: the type of the ${coll}\u0027s elements\n\n\n***\n\n**Parameters**\n- `elems`: the elements of the created collection\n\n**Returns** a new collection with elements `elems`"
+        }
+      },
+      "parameters": [
+        {
+          "label": {
+            "left": "A"
+          },
+          "documentation": {
+            "right": {
+              "kind": "markdown",
+              "value": "the type of the ${coll}\u0027s elements"
+            }
+          }
+        },
+        {
+          "label": {
+            "left": "elems: A*"
+          },
+          "documentation": {
+            "right": {
+              "kind": "markdown",
+              "value": "the elements of the created collection"
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "activeSignature": 0,
+  "activeParameter": 1
+}

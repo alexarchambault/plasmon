@@ -1,0 +1,547 @@
+{
+  "right": {
+    "isIncomplete": false,
+    "items": [
+      {
+        "label": "LazyList scala.collection.immutable",
+        "kind": "Module",
+        "tags": [],
+        "detail": " scala.collection.immutable",
+        "sortText": "00000",
+        "filterText": "LazyList",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 9,
+              "character": 29
+            },
+            "end": {
+              "line": 9,
+              "character": 30
+            }
+          },
+          "newText": "LazyList"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/immutable/LazyList.",
+          "target": "file:///workspace/foo",
+          "kind": 0
+        }
+      },
+      {
+        "label": "LinearSeq scala.collection.immutable",
+        "kind": "Module",
+        "tags": [],
+        "detail": " scala.collection.immutable",
+        "sortText": "00001",
+        "filterText": "LinearSeq",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 9,
+              "character": 29
+            },
+            "end": {
+              "line": 9,
+              "character": 30
+            }
+          },
+          "newText": "LinearSeq"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/immutable/LinearSeq.",
+          "target": "file:///workspace/foo",
+          "kind": 0
+        }
+      },
+      {
+        "label": "List scala.collection.immutable",
+        "kind": "Module",
+        "tags": [],
+        "detail": " scala.collection.immutable",
+        "sortText": "00002",
+        "filterText": "List",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 9,
+              "character": 29
+            },
+            "end": {
+              "line": 9,
+              "character": 30
+            }
+          },
+          "newText": "List"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/immutable/List.",
+          "target": "file:///workspace/foo",
+          "kind": 0
+        }
+      },
+      {
+        "label": "ListMap scala.collection.immutable",
+        "kind": "Module",
+        "tags": [],
+        "detail": " scala.collection.immutable",
+        "sortText": "00003",
+        "filterText": "ListMap",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 9,
+              "character": 29
+            },
+            "end": {
+              "line": 9,
+              "character": 30
+            }
+          },
+          "newText": "ListMap"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/immutable/ListMap.",
+          "target": "file:///workspace/foo",
+          "kind": 0
+        }
+      },
+      {
+        "label": "ListSet scala.collection.immutable",
+        "kind": "Module",
+        "tags": [],
+        "detail": " scala.collection.immutable",
+        "sortText": "00004",
+        "filterText": "ListSet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 9,
+              "character": 29
+            },
+            "end": {
+              "line": 9,
+              "character": 30
+            }
+          },
+          "newText": "ListSet"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/immutable/ListSet.",
+          "target": "file:///workspace/foo",
+          "kind": 0
+        }
+      },
+      {
+        "label": "LongMap scala.collection.immutable",
+        "kind": "Module",
+        "tags": [],
+        "detail": " scala.collection.immutable",
+        "sortText": "00005",
+        "filterText": "LongMap",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 9,
+              "character": 29
+            },
+            "end": {
+              "line": 9,
+              "character": 30
+            }
+          },
+          "newText": "LongMap"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/immutable/LongMap.",
+          "target": "file:///workspace/foo",
+          "kind": 0
+        }
+      },
+      {
+        "label": "ListMapBuilder scala.collection.immutable",
+        "kind": "Module",
+        "tags": [],
+        "detail": " scala.collection.immutable",
+        "sortText": "00006",
+        "filterText": "ListMapBuilder",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 9,
+              "character": 29
+            },
+            "end": {
+              "line": 9,
+              "character": 30
+            }
+          },
+          "newText": "ListMapBuilder"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/immutable/ListMapBuilder.",
+          "target": "file:///workspace/foo",
+          "kind": 0
+        }
+      },
+      {
+        "label": "LongMapEntryIterator scala.collection.immutable",
+        "kind": "Module",
+        "tags": [],
+        "detail": " scala.collection.immutable",
+        "sortText": "00007",
+        "filterText": "LongMapEntryIterator",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 9,
+              "character": 29
+            },
+            "end": {
+              "line": 9,
+              "character": 30
+            }
+          },
+          "newText": "LongMapEntryIterator"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/immutable/LongMapEntryIterator.",
+          "target": "file:///workspace/foo",
+          "kind": 0
+        }
+      },
+      {
+        "label": "LongMapKeyIterator scala.collection.immutable",
+        "kind": "Module",
+        "tags": [],
+        "detail": " scala.collection.immutable",
+        "sortText": "00008",
+        "filterText": "LongMapKeyIterator",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 9,
+              "character": 29
+            },
+            "end": {
+              "line": 9,
+              "character": 30
+            }
+          },
+          "newText": "LongMapKeyIterator"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/immutable/LongMapKeyIterator.",
+          "target": "file:///workspace/foo",
+          "kind": 0
+        }
+      },
+      {
+        "label": "LongMapValueIterator scala.collection.immutable",
+        "kind": "Module",
+        "tags": [],
+        "detail": " scala.collection.immutable",
+        "sortText": "00009",
+        "filterText": "LongMapValueIterator",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 9,
+              "character": 29
+            },
+            "end": {
+              "line": 9,
+              "character": 30
+            }
+          },
+          "newText": "LongMapValueIterator"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/immutable/LongMapValueIterator.",
+          "target": "file:///workspace/foo",
+          "kind": 0
+        }
+      },
+      {
+        "label": "LongVectorStepper scala.collection.immutable",
+        "kind": "Module",
+        "tags": [],
+        "detail": " scala.collection.immutable",
+        "sortText": "00010",
+        "filterText": "LongVectorStepper",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 9,
+              "character": 29
+            },
+            "end": {
+              "line": 9,
+              "character": 30
+            }
+          },
+          "newText": "LongVectorStepper"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/immutable/LongVectorStepper.",
+          "target": "file:///workspace/foo",
+          "kind": 0
+        }
+      },
+      {
+        "label": "List[A](elems: A*): CC[A]",
+        "kind": "Method",
+        "tags": [],
+        "detail": "[A](elems: A*): CC[A]",
+        "sortText": "00011",
+        "filterText": "List",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 9,
+              "character": 29
+            },
+            "end": {
+              "line": 9,
+              "character": 30
+            }
+          },
+          "newText": "List"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/IterableFactory#apply().",
+          "target": "file:///workspace/foo",
+          "kind": 0
+        }
+      },
+      {
+        "label": "ListMap[K, V](elems: (K, V)*): CC[K, V]",
+        "kind": "Method",
+        "tags": [],
+        "detail": "[K, V](elems: (K, V)*): CC[K, V]",
+        "sortText": "00012",
+        "filterText": "ListMap",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 9,
+              "character": 29
+            },
+            "end": {
+              "line": 9,
+              "character": 30
+            }
+          },
+          "newText": "ListMap"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/MapFactory#apply().",
+          "target": "file:///workspace/foo",
+          "kind": 0
+        }
+      },
+      {
+        "label": "LinearSeq[A](elems: A*): CC[A]",
+        "kind": "Method",
+        "tags": [],
+        "detail": "[A](elems: A*): CC[A]",
+        "sortText": "00013",
+        "filterText": "LinearSeq",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 9,
+              "character": 29
+            },
+            "end": {
+              "line": 9,
+              "character": 30
+            }
+          },
+          "newText": "LinearSeq"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/SeqFactory.Delegate#apply().",
+          "target": "file:///workspace/foo",
+          "kind": 0
+        }
+      },
+      {
+        "label": "LongMap[T](elems: (Long, T)*): LongMap[T]",
+        "kind": "Method",
+        "tags": [],
+        "detail": "[T](elems: (Long, T)*): LongMap[T]",
+        "sortText": "00014",
+        "filterText": "LongMap",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 9,
+              "character": 29
+            },
+            "end": {
+              "line": 9,
+              "character": 30
+            }
+          },
+          "newText": "LongMap"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/immutable/LongMap.apply().",
+          "target": "file:///workspace/foo",
+          "kind": 0
+        }
+      },
+      {
+        "label": "ListMapBuilder[K, V](): ListMapBuilder[K, V]",
+        "kind": "Method",
+        "tags": [],
+        "detail": "[K, V](): ListMapBuilder[K, V]",
+        "sortText": "00015",
+        "filterText": "ListMapBuilder",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 9,
+              "character": 29
+            },
+            "end": {
+              "line": 9,
+              "character": 30
+            }
+          },
+          "newText": "ListMapBuilder"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/immutable/ListMapBuilder.apply().",
+          "target": "file:///workspace/foo",
+          "kind": 0
+        }
+      },
+      {
+        "label": "LongMapEntryIterator[V](it: LongMap[V]): LongMapEntryIterator[V]",
+        "kind": "Method",
+        "tags": [],
+        "detail": "[V](it: LongMap[V]): LongMapEntryIterator[V]",
+        "sortText": "00016",
+        "filterText": "LongMapEntryIterator",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 9,
+              "character": 29
+            },
+            "end": {
+              "line": 9,
+              "character": 30
+            }
+          },
+          "newText": "LongMapEntryIterator"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/immutable/LongMapEntryIterator.apply().",
+          "target": "file:///workspace/foo",
+          "kind": 0
+        }
+      },
+      {
+        "label": "LongMapKeyIterator[V](it: LongMap[V]): LongMapKeyIterator[V]",
+        "kind": "Method",
+        "tags": [],
+        "detail": "[V](it: LongMap[V]): LongMapKeyIterator[V]",
+        "sortText": "00017",
+        "filterText": "LongMapKeyIterator",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 9,
+              "character": 29
+            },
+            "end": {
+              "line": 9,
+              "character": 30
+            }
+          },
+          "newText": "LongMapKeyIterator"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/immutable/LongMapKeyIterator.apply().",
+          "target": "file:///workspace/foo",
+          "kind": 0
+        }
+      },
+      {
+        "label": "LongMapValueIterator[V](it: LongMap[V]): LongMapValueIterator[V]",
+        "kind": "Method",
+        "tags": [],
+        "detail": "[V](it: LongMap[V]): LongMapValueIterator[V]",
+        "sortText": "00018",
+        "filterText": "LongMapValueIterator",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 9,
+              "character": 29
+            },
+            "end": {
+              "line": 9,
+              "character": 30
+            }
+          },
+          "newText": "LongMapValueIterator"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/immutable/LongMapValueIterator.apply().",
+          "target": "file:///workspace/foo",
+          "kind": 0
+        }
+      },
+      {
+        "label": "LongVectorStepper(it: NewVectorIterator[Long]): LongVectorStepper",
+        "kind": "Method",
+        "tags": [],
+        "detail": "(it: NewVectorIterator[Long]): LongVectorStepper",
+        "sortText": "00019",
+        "filterText": "LongVectorStepper",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 9,
+              "character": 29
+            },
+            "end": {
+              "line": 9,
+              "character": 30
+            }
+          },
+          "newText": "LongVectorStepper"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/immutable/LongVectorStepper.apply().",
+          "target": "file:///workspace/foo",
+          "kind": 0
+        }
+      }
+    ]
+  }
+}

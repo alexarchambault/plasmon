@@ -1,0 +1,37 @@
+{
+  "foreign": {
+    "downcalls": [
+      {
+        "returnType": "int",
+        "parameterTypes": ["long", "long", "long"]
+      },
+      {
+        "returnType": "int",
+        "parameterTypes": ["void*", "void*"]
+      },
+      {
+        "returnType": "int",
+        "parameterTypes": ["void*", "int", "void*", "void*"]
+      }
+    ]
+  },
+  "resources": [
+    {
+      "glob": "moduload.list"
+    }
+  ],
+  "reflection": [
+    {
+      "type": "plasmon.languageclient.PlasmonLanguageClient"
+    },
+    {
+      "type": "plasmon.command.CommandClientImpl"
+    },
+    {
+      "type": "plasmon.command.CommandServerImpl"
+    },
+    {
+      "type": "java.lang.AutoCloseable"
+    }
+  ]
+}

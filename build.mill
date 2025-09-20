@@ -1,0 +1,1226 @@
+//| mill-version: 1.0.5
+
+import mill.api.SystemStreams
+import org.apache.commons.io.input.TailerListener
+import java.nio.file.InvalidPathException
+import org.apache.commons.io.input.Tailer
+import io.github.alexarchambault.millnativeimage.NativeImage
+import mill._
+import mill.api.BuildCtx
+import mill.scalalib.publish._
+import mill.scalalib._
+import mill.scalajslib._
+import mill.scalajslib.api.ModuleKind
+
+import java.io.File
+import java.nio.charset.StandardCharsets
+import java.util.Arrays
+
+import scala.jdk.CollectionConverters._
+import scala.util.{Properties, Using}
+import coursier.jvm.JavaHome
+import coursier.jvm.JvmCache
+import coursier.cache.FileCache
+import plasmonbuild.*
+
+object Versions {
+  def scala   = "2.13.16"
+  def scalaJs = "1.15.0"
+
+  def coursier          = "2.1.25-M19"
+  def coursierInterface = "1.0.29-M3"
+  def graalvm           = "22.0.2"
+  def mtags             = "1.6.1-1"
+  def scalaCli          = "1.8.0"
+
+  def scala213 = scala
+  def scala3   = "3.7.3"
+  def scala3Pc = "3.7.3-2"
+
+  def sbtBloop = "2.0.13"
+  def sbt      = "1.9.9"
+
+  object Test {
+    def mill            = "1.0.0-RC2-4-784a1c"
+    def millwCommit     = "784a1c04d0b9a58760d3a056921dfafa96be9193"
+    def sbt             = "1.9.9"
+    def sbtExtrasCommit = "e3e7378fa325f942da4b0688c83fc42e28bd67f1"
+  }
+}
+
+object Deps {
+  def acyclic = mvn"com.lihaoyi:::acyclic:0.3.16"
+  def bloopRifle =
+    mvn"io.github.alexarchambault.bleep:bloop-rifle_2.13:1.5.17-sc-2"
+      .exclude(("ch.epfl.scala", "bsp4j"))
+  def bsp4j             = mvn"io.github.plasmon-scala:bsp4j:2.2.0-M3"
+  def caseApp           = mvn"com.github.alexarchambault::case-app:2.1.0-M26"
+  def coursierCache     = mvn"io.get-coursier::coursier-cache:${Versions.coursier}"
+  def coursierJvm       = mvn"io.get-coursier::coursier-jvm:${Versions.coursier}"
+  def coursierInterface = mvn"io.get-coursier:interface:${Versions.coursierInterface}"
+  def coursierInterfaceNoShading =
+    mvn"io.get-coursier::interface-no-shading:${Versions.coursierInterface}"
+  def expecty        = mvn"com.eed3si9n.expecty::expecty:0.16.0"
+  def jniUtils       = mvn"io.get-coursier.jniutils:windows-jni-utils:0.3.3"
+  def jsoniterCore   = mvn"com.github.plokhotnyuk.jsoniter-scala::jsoniter-scala-core:2.24.2"
+  def jsoniterMacros = mvn"com.github.plokhotnyuk.jsoniter-scala::jsoniter-scala-macros:2.24.2"
+  def libdaemonjvm   = mvn"io.github.alexarchambault.libdaemon::libdaemon:0.0.11"
+  def lsp4j          = mvn"org.eclipse.lsp4j:org.eclipse.lsp4j:0.20.1"
+  def lz4Java        = mvn"org.lz4:lz4-java:1.8.0"
+  def mtags          = mvn"io.github.plasmon-scala:::mtags:${Versions.mtags}"
+  def mtagsJava      = mvn"io.github.plasmon-scala::mtags-java:${Versions.mtags}"
+  def mtagsScala3 = mvn"io.github.plasmon-scala:scala3-presentation-compiler_3:${Versions.scala3Pc}"
+  def munit       = mvn"org.scalameta::munit:1.1.0"
+  def osLib       = mvn"com.lihaoyi::os-lib:0.10.7"
+  def pprint      = mvn"com.lihaoyi::pprint:0.8.1"
+  def semanticdbJavac  = mvn"com.sourcegraph:semanticdb-javac:0.9.6"
+  def semanticDbScalac = mvn"org.scalameta:::semanticdb-scalac:4.13.3"
+  def svm              = mvn"org.graalvm.nativeimage:svm:24.0.2"
+}
+
+object shared extends Module {
+  def publishVersion = Task.Input(PlasmonPublishModule.computeBuildVersion())
+}
+
+trait PlasmonPublishModule extends PublishModule {
+
+  def docJar = Task {
+    val jar  = Task.dest / "empty.jar"
+    val baos = new java.io.ByteArrayOutputStream
+    val zos  = new java.util.zip.ZipOutputStream(baos)
+    zos.finish()
+    zos.close()
+    os.write.over(jar, baos.toByteArray)
+    PathRef(jar)
+  }
+
+  def pomSettings = PomSettings(
+    description = artifactName(),
+    organization = "io.github.alexarchambault.plasmon",
+    url = "https://github.com/alexarchambault/plasmon",
+    licenses = Seq(License.`Apache-2.0`),
+    versionControl = VersionControl.github("alexarchambault", "plasmon"),
+    developers = Seq(
+      Developer("alexarchambault", "Alex Archambault", "https://github.com/alexarchambault")
+    )
+  )
+  def publishVersion = Task {
+    shared.publishVersion()
+  }
+}
+
+object PlasmonPublishModule {
+
+  lazy val latestTaggedVersion = os.proc("git", "describe", "--abbrev=0", "--tags", "--match", "v*")
+    .call(cwd = BuildCtx.workspaceRoot).out
+    .trim()
+  def computeBuildVersion() = {
+    // FIXME Print stderr if command fails
+    val gitHead = os.proc("git", "rev-parse", "HEAD")
+      .call(cwd = BuildCtx.workspaceRoot, stderr = os.Pipe)
+      .out.trim()
+    val maybeExactTag = scala.util.Try {
+      // FIXME Print stderr if command fails
+      os.proc("git", "describe", "--exact-match", "--tags", "--always", gitHead)
+        .call(cwd = BuildCtx.workspaceRoot, stderr = os.Pipe).out
+        .trim()
+        .stripPrefix("v")
+    }
+    maybeExactTag.toOption.getOrElse {
+      // FIXME Print stderr if command fails
+      val commitsSinceTaggedVersion =
+        os.proc("git", "rev-list", gitHead, "--not", latestTaggedVersion, "--count")
+          .call(cwd = BuildCtx.workspaceRoot, stderr = os.Pipe).out.trim()
+          .toInt
+      val gitHash =
+        os.proc("git", "rev-parse", "--short", "HEAD").call(cwd = BuildCtx.workspaceRoot).out.trim()
+      s"${latestTaggedVersion.stripPrefix("v")}-$commitsSinceTaggedVersion-$gitHash-SNAPSHOT"
+    }
+  }
+
+  lazy val buildVersion = computeBuildVersion()
+}
+
+lazy val disableScala2Pc = {
+  def isArm = sys.props("os.arch").toLowerCase(java.util.Locale.ROOT) match {
+    case "aarch64" | "arm64" => true
+    case _                   => false
+  }
+  // Not enough memory on GitHub macos-15 runners to generate the full native-image of the server
+  System.getenv("CI") != null && Properties.isMac && isArm
+}
+
+object server extends ScalaModule with PlasmonPublishModule {
+  def scalaVersion = Versions.scala
+  def compileMvnDeps = Seq(
+    Deps.acyclic,
+    Deps.jsoniterMacros,
+    Deps.svm
+  )
+  def scalacPluginMvnDeps = Task {
+    super.scalacPluginMvnDeps() // ++ Seq(Deps.acyclic)
+  }
+  def mvnDeps = Seq(
+    Deps.bloopRifle,
+    Deps.caseApp,
+    Deps.coursierInterface,
+    Deps.coursierJvm,
+    Deps.jniUtils,
+    Deps.jsoniterCore,
+    Deps.libdaemonjvm,
+    Deps.lsp4j,
+    Deps.lz4Java,
+    Deps.bsp4j,
+    Deps.mtags,
+    Deps.mtagsJava,
+    Deps.mtagsScala3
+      // don't let mtags-scala-3 bump mtags Scala 2 dependencies
+      .exclude(("io.github.plasmon-scala", s"mtags_${Versions.scala213}"))
+      .exclude(("io.github.plasmon-scala", s"mtags-shared_${Versions.scala213}"))
+      .exclude(("io.github.plasmon-scala", "mtags-interfaces")),
+    Deps.osLib,
+    mvn"io.github.alexarchambault::test-util:0.1.7",
+    mvn"org.wildfly.common:wildfly-common:1.7.0.Final", // bump this one (pulled by Metals, GraalVM issues with 1.5.4.Final and 1.6.0.Final)
+    // mvn"com.lihaoyi:::ammonite-sshd:3.0.0-M0-60-73894704c"
+    mvn"com.lihaoyi::castor:0.3.0",
+    mvn"com.outr:scribe_2.13:3.16.1",
+    mvn"com.lihaoyi:ujson_2.13:4.1.0",
+    mvn"org.eclipse.jdt:org.eclipse.jdt.core:3.25.0",
+    mvn"org.virtuslab.scala-cli:scala-cli-bsp:1.8.0".exclude(("ch.epfl.scala", "bsp4j")),
+    mvn"com.swoval:file-tree-views:2.1.12",
+    mvn"org.eclipse.lsp4j:org.eclipse.lsp4j.debug:0.24.0",
+    mvn"com.outr::scribe-file:3.16.1",
+    mvn"com.google.code.findbugs:jsr305:3.0.2"
+  )
+  def scalacOptions = super.scalacOptions() ++ Seq(
+    "-deprecation",
+    // "-P:acyclic:force",
+    "-Xsource:3",
+    "-Ytasty-reader",
+    "-feature"
+    // "-Ydebug"
+  )
+
+  def generatedSources = super.generatedSources() ++ Seq(constantsFile())
+
+  def constantsFile = Task(persistent = true) {
+    val dir  = Task.dest / "constants"
+    val dest = dir / "Constants.scala"
+    val code =
+      s"""package plasmon.internal
+         |
+         |/** Build-time constants. Generated from Mill. */
+         |object Constants {
+         |  def semanticdbJavaVersion = "${Deps.semanticdbJavac.dep.versionConstraint.asString}"
+         |  def organization = "${pomSettings().organization}"
+         |  def moduleName = "${artifactId()}"
+         |  def version = "${publishVersion()}"
+         |  def scala2Version = "${Versions.scala}"
+         |  def scalaVersion = "${Versions.scala3}"
+         |  def bloopVersion = "${Deps.bloopRifle.dep.versionConstraint.asString}"
+         |  def bspVersion = "${Deps.bsp4j.dep.versionConstraint.asString}"
+         |  def mtagsVersion = "${Versions.mtags}"
+         |  def scalametaVersion = "${Deps.semanticDbScalac.dep.versionConstraint.asString}"
+         |  def sbtBloopVersion = "${Versions.sbtBloop}"
+         |  def defaultSbtVersion = "${Versions.sbt}"
+         |}
+         |""".stripMargin
+    if (!os.isFile(dest) || os.read(dest) != code) {
+      os.remove.all(dir)
+      os.write.over(dest, code, createFolders = true)
+    }
+    PathRef(dir)
+  }
+
+  def transitiveJars0: Task[Seq[PathRef]] = {
+
+    def allModuleDeps(todo: List[JavaModule]): List[JavaModule] =
+      todo match {
+        case Nil => Nil
+        case h :: t =>
+          h :: allModuleDeps(h.moduleDeps.toList ::: t)
+      }
+
+    Task {
+      Task.traverse(allModuleDeps(this :: Nil).distinct)(m =>
+        Task.Anon(m.jar())
+      )()
+    }
+  }
+
+  def runClasspath = Task {
+    compile().classes +: super.runClasspath()
+  }
+
+  def jarClassPath = Task {
+    val cp = runClasspath() ++ transitiveJars0()
+    cp.filter(ref => os.exists(ref.path) && !os.isDir(ref.path))
+  }
+
+  def launcher = Task {
+    import coursier.launcher.{
+      AssemblyGenerator,
+      BootstrapGenerator,
+      ClassPathEntry,
+      Parameters,
+      Preamble
+    }
+    import scala.util.Properties.isWin
+    val cp         = jarClassPath().map(_.path)
+    val mainClass0 = mainClass().getOrElse(sys.error("No main class"))
+
+    val dest = Task.dest / (if (isWin) "launcher.bat" else "launcher")
+
+    val preamble = Preamble()
+      .withOsKind(isWin)
+      .callsItself(isWin)
+    val entries       = cp.map(path => ClassPathEntry.Url(path.toNIO.toUri.toASCIIString))
+    val loaderContent = coursier.launcher.ClassLoaderContent(entries)
+    val params = Parameters.Bootstrap(Seq(loaderContent), mainClass0)
+      .withDeterministic(true)
+      .withPreamble(preamble)
+
+    BootstrapGenerator.generate(params, dest.toNIO)
+
+    PathRef(dest)
+  }
+
+  def mainClass = Some("plasmon.Plasmon")
+
+  def settingsEditDir = Task(persistent = true) {
+    val resourceDir = Task.dest / "resources"
+    val bundleDest  = resourceDir / "plasmon" / "settingsEdit.js"
+    val bundle      = `settings-edit`.bundle().path
+    if (!os.exists(bundleDest) || os.mtime(bundleDest) < os.mtime(bundle))
+      os.copy.over(bundle, bundleDest, createFolders = true)
+    Seq(PathRef(resourceDir))
+  }
+
+  def resources = Task {
+
+    val vsixDir = {
+      val dir      = Task.dest / "vsix"
+      val vsixFile = extension.vsix().path
+      os.copy(vsixFile, dir / "plasmon" / "plasmon.vsix", createFolders = true)
+      dir
+    }
+
+    super.resources() ++ Seq(PathRef(vsixDir)) ++ settingsEditDir()
+  }
+
+  object native extends ScalaModule with NativeImage with FormatNativeImageConf {
+    def scalaVersion = Versions.scala
+    def moduleDeps   = Seq(server)
+    def compileMvnDeps = Seq(
+      Deps.svm
+    )
+    def mvnDeps = Seq(
+      Deps.coursierInterfaceNoShading,
+      Deps.mtags,
+      Deps.semanticdbJavac
+    )
+
+    // Remove and just use writeNativeImageScript from mill-native-image
+    // once switching to mill-native-image 0.2.4
+    def writeNativeImageScript0(scriptDest: String, imageDest: String = ""): Task.Command[Unit] =
+      Task.Command {
+        val scriptDest0 = os.Path(scriptDest, BuildCtx.workspaceRoot)
+        val script      = nativeImageScript(imageDest)().path
+        os.copy(script, scriptDest0, replaceExisting = true, createFolders = true)
+      }
+
+    def nativeImageGraalvmHome =
+      if (Properties.isWin)
+        Task {
+          val baseHome = super.nativeImageGraalvmHome().path
+          val newHome  = BuildCtx.workspaceRoot / "graalvm"
+
+          BuildCtx.withFilesystemCheckerDisabled {
+            if (!os.exists(newHome)) {
+              val newHomeTmp = BuildCtx.workspaceRoot / "graalvm-tmp"
+              os.remove.all(newHomeTmp)
+              os.copy(baseHome, newHomeTmp)
+              os.move(newHomeTmp, newHome)
+            }
+
+            PathRef(newHome, quick = true)
+          }
+        }
+      else
+        super.nativeImageGraalvmHome
+
+    private def stripFile(
+      jar: os.Path,
+      destDir: os.Path,
+      toStripPrefixes: Seq[String]
+    ): Option[os.Path] = {
+      import java.io._
+      import java.util.zip._
+      import scala.jdk.CollectionConverters._
+      var zf: ZipFile = null
+      try {
+        zf = new ZipFile(jar.toIO)
+        val toRemove = zf.entries()
+          .asScala
+          .iterator
+          .map(_.getName)
+          .filter(name => toStripPrefixes.exists(name.startsWith))
+          .toSet
+        if (toRemove.isEmpty) None
+        else {
+          os.makeDir.all(destDir)
+          val dest                  = destDir / (jar.last.stripSuffix(".jar") + "-patched.jar")
+          var fos: FileOutputStream = null
+          var zos: ZipOutputStream  = null
+          try {
+            fos = new FileOutputStream(dest.toIO)
+            zos = new ZipOutputStream(fos)
+            val buf = Array.ofDim[Byte](64 * 1024)
+            for (ent <- zf.entries.asScala if !toRemove.contains(ent.getName)) {
+              zos.putNextEntry(ent)
+
+              Using.resource(zf.getInputStream(ent)) { is =>
+                var read = -1
+                while ({
+                  read = is.read(buf)
+                  read >= 0
+                })
+                  zos.write(buf, 0, read)
+              }
+            }
+            zos.finish()
+          }
+          finally {
+            if (zos != null) zos.close()
+            if (fos != null) fos.close()
+          }
+          Some(dest)
+        }
+      }
+      finally
+        if (zf != null)
+          zf.close()
+    }
+
+    def runClasspath = Task {
+      server.compile().classes +: super.runClasspath()
+    }
+
+    private def check(jar: os.Path): Unit = {
+      import java.util.zip._
+      Using.resource(new ZipFile(jar.toIO)) { zf =>
+        val ent = zf.getEntry("META-INF/native-image/reflect-config.json")
+        if (ent != null) {
+          val content = Using.resource(zf.getInputStream(ent)) { is =>
+            is.readAllBytes()
+          }
+          val contentStr = new String(content)
+          if (contentStr.contains("awt"))
+            sys.error(s"Found META-INF/native-image/reflect-config.json with awt in $jar")
+        }
+      }
+    }
+
+    def nativeImageClassPath = Task {
+      val dir           = Task.dest / "patched-jars"
+      val baseClassPath = runClasspath()
+
+      val res = baseClassPath
+        .filter { ref =>
+          !ref.path.last.startsWith("jna-") &&
+          ! {
+            ref.path.last.startsWith("interface-") &&
+            !ref.path.last.startsWith("interface-no-shading_") &&
+            ref.path.last.endsWith(".jar")
+          }
+        }
+        .map { ref =>
+          if (ref.path.last.startsWith("scala-compiler-"))
+            stripFile(ref.path, dir, Seq("scala/tools/nsc/ast/TreeBrowsers"))
+              .map(PathRef(_))
+              .getOrElse(ref)
+          else if (ref.path.last.startsWith("jol-core-"))
+            stripFile(ref.path, dir, Seq("org/openjdk/jol/info/GraphLayout"))
+              .map(PathRef(_))
+              .getOrElse(ref)
+          else if (ref.path.last.startsWith("metals_2.13"))
+            stripFile(ref.path, dir, Seq("scala/meta/internal/metals/Urls"))
+              .map(PathRef(_))
+              .getOrElse(ref)
+          else
+            ref
+        }
+
+      for (ref <- res)
+        if (os.isFile(ref.path))
+          check(ref.path)
+
+      res
+    }
+
+    def lsp4jGraalvmStuff = Task(persistent = true) {
+      val ver         = Deps.lsp4j.dep.versionConstraint.asString
+      val resourceDir = Task.dest / ver
+      val dir =
+        resourceDir / "META-INF" / "native-image" / "io.github.alexarchambault.plasmon" / "org.eclipse.lsp4j"
+      val resourceConfPath = dir / "reflect-config.json"
+      val content = {
+        import java.io._
+        import java.util.zip._
+        val fetch = coursierapi.Fetch.create().addDependencies(
+          coursierapi.Dependency.of(
+            coursierapi.Module.of("org.eclipse.lsp4j", "org.eclipse.lsp4j"),
+            ver
+          )
+        )
+        val files = fetch.fetchResult()
+          .getArtifacts
+          .asScala
+          .toVector
+          .map(e => (e.getKey, e.getValue))
+          .collect {
+            case (a, f) if a.getUrl.contains("/org/eclipse/lsp4j/") =>
+              f
+          }
+        val names = files
+          .flatMap { jar =>
+            Using.resource(new ZipFile(jar)) { zf =>
+              zf.entries()
+                .asScala
+                .flatMap { ent =>
+                  val relPath = ent.getName.split("/").toSeq
+                  if (relPath.last.endsWith(".class"))
+                    relPath match {
+                      case Seq("org", "eclipse", "lsp4j", "jsonrpc", "json", "adapters", name) =>
+                        Iterator(
+                          s"org.eclipse.lsp4j.jsonrpc.json.adapters.${name.stripSuffix(".class")}"
+                        )
+                      case Seq("org", "eclipse", "lsp4j", "jsonrpc", "messages", name) =>
+                        Iterator(
+                          s"org.eclipse.lsp4j.jsonrpc.messages.${name.stripSuffix(".class")}"
+                        )
+                      case Seq("org", "eclipse", "lsp4j", "adapters", name) =>
+                        Iterator(s"org.eclipse.lsp4j.adapters.${name.stripSuffix(".class")}")
+                      case Seq("org", "eclipse", "lsp4j", "services", name) =>
+                        Iterator(s"org.eclipse.lsp4j.services.${name.stripSuffix(".class")}")
+                      case Seq("org", "eclipse", "lsp4j", name) =>
+                        Iterator(s"org.eclipse.lsp4j.${name.stripSuffix(".class")}")
+                      case _ =>
+                        Iterator.empty
+                    }
+                  else
+                    Iterator.empty
+                }
+                .toVector
+            }
+          }
+          .sorted
+        val entries = names.map { name =>
+          ujson.Obj(
+            "name"                    -> name,
+            "allDeclaredConstructors" -> ujson.Bool(true),
+            "allDeclaredFields"       -> ujson.Bool(true),
+            "allDeclaredMethods"      -> ujson.Bool(true),
+            "allDeclaredClasses"      -> ujson.Bool(true)
+          )
+        }
+        val json = ujson.Arr(entries*)
+        (json.render(indent = 2) + "\n").getBytes(StandardCharsets.UTF_8)
+      }
+      lazy val currentContent = os.read.bytes(resourceConfPath)
+      if (!os.exists(resourceConfPath) || !Arrays.equals(currentContent, content)) {
+        System.err.println(s"Writing $resourceConfPath")
+        os.write.over(resourceConfPath, content, createFolders = true)
+      }
+      Seq(PathRef(resourceDir))
+    }
+
+    def bsp4jGraalvmStuff = Task(persistent = true) {
+      val ver         = Deps.lsp4j.dep.versionConstraint.asString
+      val resourceDir = Task.dest / ver
+      val dir =
+        resourceDir / "META-INF" / "native-image" / "io.github.alexarchambault.plasmon" / "ch.epfl.scala.bsp4j"
+      val resourceConfPath = dir / "reflect-config.json"
+      val content = {
+        import java.io._
+        import java.util.zip._
+        val files = server.compileClasspath()
+          .toSeq
+          .map(_.path)
+          .filter(_.last.startsWith("bsp4j"))
+          .filter(_.last.endsWith(".jar"))
+        val names = files
+          .flatMap { jar =>
+            Using.resource(new ZipFile(jar.toIO)) { zf =>
+              zf.entries()
+                .asScala
+                .flatMap { ent =>
+                  val relPath = ent.getName.split("/").toSeq
+                  if (relPath.last.endsWith(".class"))
+                    relPath match {
+                      case Seq("ch", "epfl", "scala", "bsp4j", name)
+                          if name != "Bsp4j.class" && !name.startsWith("Rust") &&
+                          !name.startsWith("Python") && !name.contains("Cargo") &&
+                          !name.startsWith("Cpp") =>
+                        Iterator(
+                          s"ch.epfl.scala.bsp4j.${name.stripSuffix(".class")}"
+                        )
+                      case _ =>
+                        Iterator.empty
+                    }
+                  else
+                    Iterator.empty
+                }
+                .toVector
+            }
+          }
+          .sorted
+        val entries = names.map { name =>
+          ujson.Obj(
+            "name"                    -> name,
+            "allDeclaredConstructors" -> ujson.Bool(true),
+            "allDeclaredFields"       -> ujson.Bool(true),
+            "allDeclaredMethods"      -> ujson.Bool(true),
+            "allDeclaredClasses"      -> ujson.Bool(true)
+          )
+        }
+        val json = ujson.Arr(entries*)
+        (json.render(indent = 2) + "\n").getBytes(StandardCharsets.UTF_8)
+      }
+      lazy val currentContent = os.read.bytes(resourceConfPath)
+      if (!os.exists(resourceConfPath) || !Arrays.equals(currentContent, content)) {
+        System.err.println(s"Writing $resourceConfPath")
+        os.write.over(resourceConfPath, content, createFolders = true)
+      }
+      Seq(PathRef(resourceDir))
+    }
+
+    def resources = Task {
+      super.resources() ++ lsp4jGraalvmStuff() ++ bsp4jGraalvmStuff()
+    }
+
+    def nativeImageName      = "plasmon"
+    def nativeImageMainClass = Task(server.mainClass().get)
+
+    def nativeImageClassPathAsJars = Task {
+      import scala.collection.mutable
+      val seen   = new mutable.HashMap[os.Path, PathRef]
+      var count  = 0
+      val tmpDir = Task.dest
+      nativeImageClassPath().filter(ref => os.exists(ref.path)).map { ref =>
+        if (os.isFile(ref.path)) ref
+        else
+          seen.getOrElseUpdate(
+            ref.path, {
+              assert(os.isDir(ref.path))
+              val jar = tmpDir / s"jar-$count.jar"
+              count += 1
+              os.proc("jar", "cf", jar, ".")
+                .call(cwd = ref.path, stdin = os.Inherit, stdout = os.Inherit)
+              PathRef(jar)
+            }
+          )
+      }
+    }
+
+    def printNativeImageClassPath() = Task.Command[String] {
+      nativeImageClassPathAsJars().map(_.path).mkString(File.pathSeparator)
+    }
+
+    def nativeImageOptions = Task {
+      val ciMemoryOptions =
+        if (System.getenv("CI") == null) Nil
+        else Seq("-J-Xmx7g")
+      val ciOptions =
+        if (System.getenv("CI") == null) Nil
+        else Seq("-H:DeadlockWatchdogInterval=25")
+      ciMemoryOptions ++ super.nativeImageOptions() ++ Seq(
+        "--no-fallback",
+        "-Duser.country=US",
+        "-Duser.language=en",
+        "-J-Duser.country=US",
+        "-J-Duser.language=en",
+        "--report-unsupported-elements-at-runtime",
+        "--initialize-at-build-time=com.google.common.base.Preconditions",
+        "--enable-url-protocols=http,https",
+        "--add-opens=java.base/java.util=ALL-UNNAMED", // needed for TimerThreadsHack
+        "--add-opens=org.graalvm.nativeimage.builder/com.oracle.svm.core.posix.headers=ALL-UNNAMED", // needed for Signal stuff used by libdaemon-jvm
+        s"-Dplasmon.native.disableScala2Pc=$disableScala2Pc",
+        "--enable-native-access=ALL-UNNAMED"
+      ) ++ ciOptions
+    }
+
+    def nativeImagePersist      = System.getenv("CI") != null
+    def nativeImageGraalVmJvmId = "liberica-nik:25.0.0"
+
+    def validatedNativeImage = Task {
+      val ref = nativeImage()
+      BuildCtx.withFilesystemCheckerDisabled {
+        val launcherDir = ref.path / os.up
+        val extraFiles = os.list(launcherDir)
+          .filter(_ != ref.path)
+          .map(_.relativeTo(launcherDir).asSubPath)
+          .filter(_ != os.sub / "working-dir")
+        if (extraFiles.nonEmpty)
+          pprint.err.log(extraFiles)
+        assert(
+          extraFiles.isEmpty,
+          s"Found extra files alongside launcher: ${extraFiles.sorted.map(_.toString).mkString(", ")}"
+        )
+      }
+      ref
+    }
+  }
+}
+
+object integration extends ScalaModule {
+  def scalaVersion = Versions.scala
+  def mvnDeps = Seq(
+    Deps.coursierCache,
+    Deps.coursierInterface,
+    Deps.expecty,
+    Deps.lsp4j,
+    Deps.munit,
+    Deps.osLib,
+    Deps.pprint,
+    mvn"io.github.alexarchambault::test-util:0.1.7",
+    mvn"org.virtuslab:using_directives:1.1.1",
+    mvn"io.get-coursier::dependency:0.2.3",
+    mvn"com.lihaoyi::upickle:4.0.2",
+    mvn"io.github.alexarchambault:is-terminal:0.1.2"
+  )
+
+  def scalacOptions = super.scalacOptions() ++ Seq(
+    "-deprecation",
+    "-Xsource:3",
+    "-feature"
+  )
+
+  def sharedForkArgs = Task {
+    Seq(
+      s"-Dplasmon.integration.projects=${BuildCtx.workspaceRoot / "integration/projects"}",
+      s"-Dplasmon.integration.fixture-dir=${BuildCtx.workspaceRoot / "integration/test/resources/data"}",
+      s"-Dplasmon.integration.generated-resources-dir=${BuildCtx.workspaceRoot / "integration/test/resources/generated"}",
+      s"-Dplasmon.integration.disableScala2Pc=$disableScala2Pc"
+    )
+  }
+
+  object test extends ScalaTests {
+    def testFramework   = "munit.Framework"
+    def testParallelism = false // messes with the output frame
+    def forkArgs = super.forkArgs() ++ sharedForkArgs() ++ Seq(
+      s"-Dplasmon.integration.launcher=${server.launcher().path}",
+      "-Dplasmon.integration.launcher-kind=jvm"
+    )
+    def compileMvnDeps   = Seq(Deps.jsoniterMacros)
+    def generatedSources = super.generatedSources() ++ Seq(constantsFile())
+
+    def constantsFile = Task(persistent = true) {
+      val dir  = Task.dest / "constants"
+      val dest = dir / "IntegrationConstants.scala"
+      val code =
+        s"""package plasmon.integration
+           |
+           |/** Build-time constants. Generated from Mill. */
+           |object IntegrationConstants {
+           |  def scalaCliVersion = "${Versions.scalaCli}"
+           |  def defaultScalaVersion = "${Versions.scala}"
+           |  def scala213 = "${Versions.scala213}"
+           |  def scala3 = "${Versions.scala3}"
+           |
+           |  def millVersion = "${Versions.Test.mill}"
+           |  def millwCommit = "${Versions.Test.millwCommit}"
+           |  def sbtVersion = "${Versions.Test.sbt}"
+           |  def sbtExtrasCommit = s"${Versions.Test.sbtExtrasCommit}"
+           |}
+           |""".stripMargin
+      if (!os.isFile(dest) || os.read(dest) != code) {
+        os.remove.all(dir)
+        os.write.over(dest, code, createFolders = true)
+      }
+      PathRef(dir)
+    }
+  }
+
+  object native extends ScalaTests {
+    def testFramework   = "munit.Framework"
+    def testParallelism = false // messes with the output frame
+    def forkArgs = Task {
+      server.native.validatedNativeImage()
+      super.forkArgs() ++ sharedForkArgs() ++ Seq(
+        s"-Dplasmon.integration.launcher=${server.native.nativeImage().path}",
+        "-Dplasmon.integration.launcher-kind=native"
+      )
+    }
+    def compileMvnDeps = integration.test.compileMvnDeps()
+    def sources = Task {
+      integration.test.sources()
+    }
+    def generatedSources = super.generatedSources() ++ Seq(integration.test.constantsFile())
+  }
+}
+
+object extension extends Module {
+  def packageJson = Task.Sources(os.sub / "package.json")
+  def jsSources   = Task.Sources(os.sub / "src")
+
+  // from https://github.com/VirtusLab/scala-cli/blob/b92d86a02e741a3cea9cc943f59712a5fb385617/modules/build/src/main/scala/scala/build/internal/Runner.scala#L175-L202
+  private def endsWithCaseInsensitive(s: String, suffix: String): Boolean =
+    s.length >= suffix.length &&
+    s.regionMatches(true, s.length - suffix.length, suffix, 0, suffix.length)
+
+  def findInPath(app: String): Option[String] =
+    if (os.FilePath(app).toNIO.getNameCount >= 2) Some(app)
+    else {
+      def pathEntries =
+        Option(System.getenv("PATH"))
+          .iterator
+          .flatMap(_.split(File.pathSeparator).iterator)
+      def pathSep =
+        if (Properties.isWin)
+          Option(System.getenv("PATHEXT"))
+            .iterator
+            .flatMap(_.split(File.pathSeparator).iterator)
+        else Iterator("")
+      def matches = for {
+        dir <- pathEntries
+        if dir.nonEmpty
+        ext <- pathSep
+        app0 = if (endsWithCaseInsensitive(app, ext)) app else app + ext
+        path = os.Path(dir) / app0
+        if java.nio.file.Files.isExecutable(path.toNIO)
+      } yield path.toString
+      matches.find(_ => true)
+    }
+
+  private lazy val npm =
+    if (Properties.isWin) findInPath("npm").getOrElse("npm") else "npm"
+
+  def sources = Task {
+    packageJson() ++ jsSources()
+  }
+
+  def version = Task {
+    val packageJsonPath = packageJson().head.path
+    val content         = os.read(packageJsonPath)
+    ujson.read(content).apply("version").str
+  }
+
+  def vsix = Task {
+    sources()
+    val version0 = version()
+    os.proc(npm, "install")
+      .call(cwd = BuildCtx.workspaceRoot / "extension", stdin = os.Inherit, stdout = os.Inherit)
+    os.proc(npm, "run", "package")
+      .call(cwd = BuildCtx.workspaceRoot / "extension", stdin = os.Inherit, stdout = os.Inherit)
+    val dest = Task.dest / s"plasmon-$version0.vsix"
+    BuildCtx.withFilesystemCheckerDisabled {
+      os.move(
+        BuildCtx.workspaceRoot / "extension" / s"plasmon-$version0.vsix",
+        dest,
+        createFolders = true
+      )
+    }
+    PathRef(dest)
+  }
+
+  def userDataDir = Task(persistent = true) {
+    val dir = Task.dest
+    dir.toString // no PathRef, no need to look into what changed in that directory
+  }
+  def extensionsDir = Task(persistent = true) {
+    val dir = Task.dest
+    dir.toString // no PathRef, no need to look into what changed in that directory
+  }
+
+  object code extends Module {
+    private lazy val code =
+      if (Properties.isWin) extension.findInPath("code").getOrElse("code") else "code"
+
+    def clean() = Task.Command[Unit] {
+      val userDataDir0   = os.Path(userDataDir())
+      val extensionsDir0 = os.Path(extensionsDir())
+      os.remove.all(userDataDir0)
+      os.remove.all(extensionsDir0)
+      os.makeDir.all(userDataDir0)
+      os.makeDir.all(extensionsDir0)
+    }
+    private def runCode(
+      sharedArgs: Seq[os.Shellable],
+      args: Seq[String],
+      env: Map[String, String],
+      cwd: os.Path
+    ): Int = {
+      val proc0 = os.proc(code, sharedArgs, "--wait", args)
+      val proc = proc0.spawn(
+        cwd = cwd,
+        stdin = os.InheritRaw,
+        stdout = os.InheritRaw,
+        env = env
+      )
+      val dirOpt = args.filter(!_.startsWith("-")).lastOption
+        .flatMap { s =>
+          try Some(os.Path(s, cwd))
+          catch {
+            case e: InvalidPathException =>
+              None
+          }
+        }
+        .filter(os.isDir)
+      val tailerOpt = dirOpt.map { dir =>
+        val logFile = dir / ".plasmon" / "log"
+        if (!os.exists(logFile))
+          os.write(logFile, Array.emptyByteArray, createFolders = true)
+        val err = SystemStreams.original.err
+        Tailer.builder()
+          .setStartThread(true)
+          .setTailFromEnd(true)
+          .setReOpen(true)
+          .setPath(logFile.toNIO)
+          .setTailerListener(
+            new TailerListener {
+              override def fileNotFound(): Unit = ()
+              override def fileRotated(): Unit  = ()
+              override def handle(ex: Exception): Unit = {
+                err.println(s"Error tailing $logFile:")
+                ex.printStackTrace(err)
+              }
+              override def handle(line: String): Unit =
+                err.println(line)
+              override def init(tailer: Tailer): Unit = ()
+            }
+          )
+          .get()
+      }
+      try {
+        proc.waitFor()
+        proc.exitCode()
+      }
+      finally
+        tailerOpt.foreach(_.close())
+    }
+    def install() = Task.Command {
+      val vsix0 = vsix().path
+      os.proc(code, "--install-extension", vsix0, "--force")
+        .call(cwd = BuildCtx.workspaceRoot, stdin = os.Inherit, stdout = os.Inherit)
+    }
+    def jvm(args: String*) = Task.Command(exclusive = true) {
+      val vsix0 = vsix().path
+      val sharedArgs = Seq[os.Shellable](
+        "--user-data-dir",
+        os.Path(userDataDir()),
+        "--extensions-dir",
+        os.Path(extensionsDir())
+      )
+      os.proc(code, sharedArgs, "--install-extension", vsix0, "--force")
+        .call(cwd = BuildCtx.workspaceRoot, stdin = os.InheritRaw, stdout = os.InheritRaw)
+
+      val ver = shared.publishVersion()
+
+      val coursierRepoEnv = {
+        val currentOpt = Option(System.getenv("COURSIER_REPOSITORIES")).filter(_.trim.nonEmpty)
+        s"${`local-repo`.localRepo().path.toNIO.toUri.toASCIIString}|${currentOpt.getOrElse("ivy2Local|central")}"
+      }
+
+      runCode(
+        sharedArgs,
+        args,
+        Map(
+          "COURSIER_REPOSITORIES"  -> coursierRepoEnv,
+          "PLASMON_FORCED_VERSION" -> ver,
+          "PLASMON_DEBUG"          -> "false"
+        ),
+        BuildCtx.workspaceRoot
+      )
+    }
+    def native(args: String*) = Task.Command(exclusive = true) {
+      val vsix0 = vsix().path
+      val sharedArgs = Seq[os.Shellable](
+        "--user-data-dir",
+        os.Path(userDataDir()),
+        "--extensions-dir",
+        os.Path(extensionsDir())
+      )
+      os.proc(code, sharedArgs, "--install-extension", vsix0, "--force")
+        .call(cwd = BuildCtx.workspaceRoot, stdin = os.Inherit, stdout = os.Inherit)
+
+      server.native.validatedNativeImage()
+      val nativeLauncher = server.native.nativeImage().path
+
+      runCode(
+        sharedArgs,
+        args,
+        Map(
+          "PLASMON_FORCED_BINARY" -> nativeLauncher.toString,
+          "PLASMON_DEBUG"         -> "false"
+        ),
+        BuildCtx.workspaceRoot
+      )
+    }
+  }
+}
+
+object `settings-edit` extends ScalaJSModule {
+  def scalaVersion   = Versions.scala
+  def scalaJSVersion = Versions.scalaJs
+  def mainClass      = Some("plasmon.settingsedit.SettingsEdit")
+  def moduleKind     = ModuleKind.ESModule
+
+  def packageJson = Task.Source(os.sub / "package.json")
+
+  private lazy val yarn =
+    if (Properties.isWin) extension.findInPath("yarn").getOrElse("yarn") else "yarn"
+  private lazy val node =
+    if (Properties.isWin) extension.findInPath("node").getOrElse("node") else "node"
+
+  def bundle = Task(persistent = true) {
+    val baseDir             = BuildCtx.workspaceRoot / "settings-edit"
+    val originalPackageJson = packageJson().path
+
+    val workingDir   = Task.dest / "working-dir"
+    val packageJson0 = workingDir / "package.json"
+    val nodeModules  = workingDir / "node_modules"
+
+    if (!os.exists(packageJson0) || os.mtime(packageJson0) < os.mtime(originalPackageJson))
+      os.copy.over(originalPackageJson, packageJson0, createFolders = true)
+
+    if (!os.exists(nodeModules) || os.mtime(nodeModules) < os.mtime(packageJson0))
+      os.proc(yarn).call(cwd = workingDir, stdin = os.Inherit, stdout = os.Inherit)
+
+    val esBuildBinary = nodeModules / "esbuild" / "bin" / "esbuild"
+    val originalInput = fastLinkJS().dest.path / "main.js"
+    val input         = workingDir / "main.mjs"
+    val dest          = Task.dest / "settingsEdit.js"
+    if (!os.exists(dest) || os.mtime(dest) < os.mtime(originalInput)) {
+      os.copy.over(originalInput, input, createFolders = true)
+      os.proc(node, esBuildBinary, input, "--bundle", "--platform=node", s"--outfile=$dest")
+        .call(cwd = workingDir, stdin = os.Inherit, stdout = os.Inherit)
+    }
+
+    PathRef(dest)
+  }
+
+  object check extends ScalaModule {
+    def scalaVersion = Versions.scala
+    object test extends ScalaTests {
+      def mvnDeps = super.mvnDeps() ++ Seq(
+        Deps.expecty,
+        Deps.lsp4j,
+        Deps.munit,
+        Deps.osLib,
+        Deps.pprint
+      )
+      def testFramework = "munit.Framework"
+      def forkArgs = super.forkArgs() ++ Seq(
+        s"-Dsettings-edit.launcher=${bundle().path}"
+      )
+    }
+  }
+}
+
+object `local-repo` extends Module {
+
+  def publishModules = Seq[PlasmonPublishModule](
+    server
+  )
+  def version = Task {
+    shared.publishVersion()
+  }
+
+  def localRepo = {
+    val staged = Task.sequence(publishModules.map(_.publishLocalTestRepo))
+
+    Task {
+      val dest = Task.dest
+      for (dir <- staged(); elem <- os.walk(dir.path) if os.isFile(elem))
+        os.copy.over(elem, dest / elem.relativeTo(dir.path).asSubPath, createFolders = true)
+      PathRef(dest)
+    }
+  }
+}
+
+// adapted from https://github.com/VirtusLab/scala-cli/blob/82fc505ee9f58c546f417c7b135a4124fe6fff30/project/settings.sc#L688-L778
+trait FormatNativeImageConf extends JavaModule {
+
+  private def doFormatNativeImageConf(dir: os.Path, format: Boolean): List[os.Path] = {
+    val sortByName = Set("jni-config.json", "reflect-config.json")
+    val files = Seq(
+      "jni-config.json",
+      "proxy-config.json",
+      "reflect-config.json",
+      "resource-config.json"
+    )
+    var needsFormatting = List.empty[os.Path]
+    for (name <- files) {
+      val file = dir / name
+      if (os.isFile(file)) {
+        val content = os.read(file)
+        val json    = ujson.read(content)
+        val updatedJson =
+          if (name == "reflect-config.json")
+            json.arrOpt.fold(json) { arr =>
+              val values =
+                arr.toVector.groupBy(_("name").str).toVector.sortBy(_._1).map(_._2).map { t =>
+                  val entries = t.map(_.obj).reduce(_ addAll _)
+                  if (entries.get("allDeclaredFields") == Some(ujson.Bool(true)))
+                    entries -= "fields"
+                  if (entries.get("allDeclaredMethods") == Some(ujson.Bool(true)))
+                    entries -= "methods"
+                  ujson.Obj(entries)
+                }
+              ujson.Arr(values*)
+            }
+          else if (sortByName(name))
+            json.arrOpt.fold(json) { arr =>
+              val values = arr.toVector.sortBy(_("name").str)
+              ujson.Arr(values*)
+            }
+          else
+            json
+        val updatedContent = updatedJson.render(indent = 2)
+          .linesIterator
+          .filter(_.trim.nonEmpty)
+          .map(_ + "\n")
+          .mkString
+        if (updatedContent != content) {
+          needsFormatting = file :: needsFormatting
+          if (format) {
+            System.err.println(s"Writing $file")
+            os.write.over(file, updatedContent)
+          }
+          else if (System.getenv("CI") != null) {
+            pprint.err.log(file)
+            pprint.err.log(content.length)
+            pprint.err.log(updatedContent.length)
+            val minLen = math.min(content.length, updatedContent.length)
+            val firstIndexOpt = (0 until minLen)
+              .iterator
+              .dropWhile(n => content(n) == updatedContent(n))
+              .find(_ => true)
+            pprint.err.log(firstIndexOpt)
+            pprint.err.log(content.drop(firstIndexOpt.getOrElse(minLen)))
+            pprint.err.log(updatedContent.drop(firstIndexOpt.getOrElse(minLen)))
+          }
+        }
+      }
+    }
+    needsFormatting
+  }
+
+  def nativeImageConfDirs = Task {
+    resources()
+      .map(_.path / "META-INF" / "native-image")
+      .filter(os.exists(_))
+      .flatMap { path =>
+        os.walk(path)
+          .filter(_.last.endsWith("-config.json"))
+          .filter(os.isFile(_))
+          .map(_ / os.up)
+      }
+      .distinct
+  }
+  def checkNativeImageConfFormat() = Task.Command {
+    var needsFormatting = List.empty[os.Path]
+    for (dir <- nativeImageConfDirs())
+      needsFormatting = doFormatNativeImageConf(dir, format = false) ::: needsFormatting
+    if (needsFormatting.nonEmpty) {
+      val msg = s"Error: ${needsFormatting.length} file(s) needs formatting"
+      System.err.println(msg)
+      for (f <- needsFormatting)
+        System.err.println(
+          s"  ${if (f.startsWith(os.pwd)) f.relativeTo(os.pwd).toString else f.toString}"
+        )
+      System.err.println(
+        """Run
+          |  ./mill -i __.formatNativeImageConf
+          |to format them.""".stripMargin
+      )
+      sys.error(msg)
+    }
+    ()
+  }
+  def formatNativeImageConf() = Task.Command {
+    var formattedCount = 0
+    for (dir <- nativeImageConfDirs())
+      formattedCount += doFormatNativeImageConf(dir, format = true).length
+    System.err.println(s"Formatted $formattedCount file(s).")
+    ()
+  }
+}
+
+object ci extends Module {
+  def waitForSync(version: String = PlasmonPublishModule.buildVersion) = Task.Command {
+    Sync.waitForSync(
+      s"${server.pomSettings().organization}:${server.artifactId()}:$version",
+      if (version.endsWith("SNAPSHOT"))
+        Seq("-r", "https://central.sonatype.com/repository/maven-snapshots")
+      else
+        Nil,
+      25
+    )
+  }
+
+  def bootstrapLauncher(version: String = PlasmonPublishModule.buildVersion) = Task.Command {
+    val extraArgs =
+      if (version.endsWith("SNAPSHOT"))
+        Seq("-r", "https://central.sonatype.com/repository/maven-snapshots")
+      else
+        Nil
+    val dest = Task.dest / "bootstrap.jar"
+    os.proc(
+      "cs",
+      "bootstrap",
+      "-o",
+      dest,
+      "-f",
+      s"${server.pomSettings().organization}:${server.artifactId()}:$version",
+      extraArgs
+    ).call(stdin = os.Inherit, stdout = os.Inherit)
+    dest
+  }
+
+  def assemblyLauncher(version: String = PlasmonPublishModule.buildVersion) = Task.Command {
+    val extraArgs =
+      if (version.endsWith("SNAPSHOT"))
+        Seq("-r", "https://central.sonatype.com/repository/maven-snapshots")
+      else
+        Nil
+    val dest = Task.dest / "assembly.jar"
+    os.proc(
+      "cs",
+      "bootstrap",
+      "--assembly",
+      "-o",
+      dest,
+      "-f",
+      s"${server.pomSettings().organization}:${server.artifactId()}:$version",
+      extraArgs
+    )
+    dest
+  }
+
+  def platformBootstrapExtension: String =
+    if (Properties.isWin) ".bat"
+    else ""
+
+  def copyJarLaunchers(
+    version: String = PlasmonPublishModule.buildVersion,
+    directory: String = "artifacts"
+  ) = Task.Command {
+    val bootstrap = bootstrapLauncher(version = version)()
+    val assembly  = assemblyLauncher(version = version)()
+    val dir       = os.Path(directory, BuildCtx.workspaceRoot)
+    os.copy(
+      bootstrap,
+      dir / s"plasmon$platformBootstrapExtension",
+      createFolders = true,
+      replaceExisting = true
+    )
+    os.copy(assembly, dir / "plasmon.jar", createFolders = true, replaceExisting = true)
+  }
+
+  def copyLauncher(directory: String = "artifacts") = Task.Command {
+    val nativeLauncher = server.native.nativeImage().path
+    GitHubReleaseAssets.copyLauncher(nativeLauncher, os.Path(directory, BuildCtx.workspaceRoot))
+  }
+}

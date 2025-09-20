@@ -1,0 +1,6 @@
+[submodule "integration/projects/coursier"]
+	path = integration/projects/coursier
+	url = https://github.com/coursier/coursier.git
+[submodule "integration/projects/mill"]
+	path = integration/projects/mill
+	url = https://github.com/alexarchambault/mill.git

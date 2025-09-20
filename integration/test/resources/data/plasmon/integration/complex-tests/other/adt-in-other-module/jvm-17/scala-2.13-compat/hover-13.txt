@@ -1,0 +1,9 @@
+```scala
+def apply(): ThirdOne
+```
+
+***
+
+Apply the body of this function to the arguments.
+
+**Returns** the result of function application.

@@ -1,0 +1,9 @@
+{
+  "path": ".plasmon/readonly/dependencies/src.zip/java/lang/Thread.java",
+  "line": 265,
+  "colRange": [
+    32,
+    45
+  ],
+  "content": "currentThread"
+}

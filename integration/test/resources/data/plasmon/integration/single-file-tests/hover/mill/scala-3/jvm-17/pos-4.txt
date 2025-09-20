@@ -1,0 +1,38 @@
+```scala
+object ListBuffer: scala.collection.mutable
+```
+
+***
+
+A `Buffer` implementation backed by a list. It provides constant time
+ prepend and append. Most other operations are linear.
+
+
+
+***
+
+**Type Parameters**
+- `A`: the type of this list buffer's elements.
+
+
+***
+
+**See**
+- ["Scala's Collection Library overview"](https://docs.scala-lang.org/overviews/collections-2.13/concrete-mutable-collection-classes.html#list-buffers)
+ section on `List Buffers` for more information.
+A `Buffer` implementation backed by a list. It provides constant time
+ prepend and append. Most other operations are linear.
+
+
+
+***
+
+**Type Parameters**
+- `A`: the type of this list buffer's elements.
+
+
+***
+
+**See**
+- ["Scala's Collection Library overview"](https://docs.scala-lang.org/overviews/collections-2.13/concrete-mutable-collection-classes.html#list-buffers)
+ section on `List Buffers` for more information.

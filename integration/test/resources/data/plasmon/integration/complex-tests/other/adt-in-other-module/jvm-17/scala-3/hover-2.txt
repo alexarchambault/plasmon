@@ -1,0 +1,3 @@
+```scala
+case class Second: Second
+```

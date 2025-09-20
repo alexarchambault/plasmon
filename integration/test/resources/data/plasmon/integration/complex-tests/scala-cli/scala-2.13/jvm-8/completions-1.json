@@ -1,0 +1,60 @@
+{
+  "right": {
+    "isIncomplete": false,
+    "items": [
+      {
+        "label": "mutable",
+        "kind": "Module",
+        "detail": " scala.collection",
+        "preselect": true,
+        "sortText": "00000",
+        "filterText": "mutable",
+        "insertTextFormat": "PlainText",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 3,
+              "character": 21
+            },
+            "end": {
+              "line": 3,
+              "character": 23
+            }
+          },
+          "newText": "mutable"
+        },
+        "data": {
+          "symbol": "scala/collection/mutable/",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "kind": 0
+        }
+      },
+      {
+        "label": "immutable",
+        "kind": "Module",
+        "detail": " scala.collection",
+        "sortText": "00001",
+        "filterText": "immutable",
+        "insertTextFormat": "PlainText",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 3,
+              "character": 21
+            },
+            "end": {
+              "line": 3,
+              "character": 23
+            }
+          },
+          "newText": "immutable"
+        },
+        "data": {
+          "symbol": "scala/collection/immutable/",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "kind": 0
+        }
+      }
+    ]
+  }
+}
