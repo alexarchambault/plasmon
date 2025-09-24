@@ -28,7 +28,6 @@ object Versions {
   def scalaJs = "1.15.0"
 
   def coursier = "2.1.25-M15"
-  def graalvm  = "22.0.2"
   def mtags    = "1.6.1"
   def scalaCli = "1.8.0"
 
