@@ -255,6 +255,20 @@ function createClient(
           client0.onNotification(
             "plasmon/statusUpdate",
             (uri: string, params: StatusEntry[]) => {
+              if (uri === "")
+                statusBarItem?.hide()
+              else if (lastFocusedDocument) {
+                let uri0 = vscode.Uri.parse(uri).toString(true)
+                if (lastFocusedDocument === uri0)
+                  statusBarItem?.show()
+                else {
+                  console.log(`Warning: got status update for ${uri0}, while the last focused document is ${lastFocusedDocument}`)
+                  client0.sendNotification(
+                    "metals/didFocusTextDocument",
+                    lastFocusedDocument
+                  )
+                }
+              }
               for (const params0 of params) {
                 if (params0.id == 'plasmon.summary' && statusBarItem != null) {
                   let text = params0.text
@@ -302,16 +316,6 @@ function createClient(
                     context.subscriptions.splice(index, 1)
                   delete statusItems[params0.id]
                   statusItem.dispose()
-                }
-              }
-              if (lastFocusedDocument) {
-                let uri0 = vscode.Uri.parse(uri).toString(true)
-                if (lastFocusedDocument != uri0) {
-                  console.log(`Warning: got status update for ${uri0}, while the last focused document is ${lastFocusedDocument}`)
-                  client0.sendNotification(
-                    "metals/didFocusTextDocument",
-                    lastFocusedDocument
-                  )
                 }
               }
               return;
@@ -1591,6 +1595,7 @@ export function activate(context: vscode.ExtensionContext) {
 
   context.subscriptions.push(
     vscode.window.onDidChangeWindowState((windowState) => {
+      checkStatusBarAndDocument()
       client?.sendNotification(
         "metals/windowStateDidChange",
         windowState.focused
@@ -1598,18 +1603,39 @@ export function activate(context: vscode.ExtensionContext) {
     })
   )
 
-  context.subscriptions.push(
-    vscode.workspace.onDidOpenTextDocument((document) => {
-      if (document.uri.scheme == 'file') {
+  function checkStatusBarAndDocument() {
+    if (vscode.window.activeTextEditor) {
+      let document = vscode.window.activeTextEditor.document
+      if (document?.uri.scheme == 'file') {
         if (isSupportedLanguage(document.languageId)) {
-          // console.log(`onDidOpenTextDocument: Showing status for ${document.uri} ${document.languageId}`)
+          // console.log(`onDidOpenTextDocument / onDidCloseTextDocument: Showing status for ${document.uri} ${document.languageId}`)
           statusBarItem?.show()
         }
         else {
-          // console.log(`onDidOpenTextDocument: Hiding status for ${document.uri} ${document.languageId}`)
+          // console.log(`onDidOpenTextDocument / onDidCloseTextDocument: Hiding status for ${document.uri} ${document.languageId}`)
           statusBarItem?.hide()
         }
       }
+    }
+    else {
+      console.log(`onDidOpenTextDocument / onDidCloseTextDocument: Hiding status (no open document)`)
+      lastFocusedDocument = undefined
+      statusBarItem?.hide()
+    }
+  }
+
+  context.subscriptions.push(
+    vscode.workspace.onDidOpenTextDocument(() => checkStatusBarAndDocument())
+  )
+
+  context.subscriptions.push(
+    vscode.workspace.onDidCloseTextDocument(() => checkStatusBarAndDocument())
+  )
+
+  context.subscriptions.push(
+    vscode.workspace.onDidOpenNotebookDocument(() => {
+      console.log(`onDidOpenNotebookDocument: Hiding status for notebook`)
+      statusBarItem?.hide()
     })
   )
 
@@ -1618,7 +1644,6 @@ export function activate(context: vscode.ExtensionContext) {
       if (editor && editor.document.uri.scheme == 'file') {
         if (isSupportedLanguage(editor.document.languageId)) {
           // console.log(`onDidChangeActiveTextEditor: Showing status for ${editor.document.uri} ${editor.document.languageId}`)
-          statusBarItem?.show()
           let uriStr = editor.document.uri.toString(true)
           if (lastFocusedDocument != uriStr) {
             lastFocusedDocument = editor.document.uri.toString(true)
@@ -1633,6 +1658,13 @@ export function activate(context: vscode.ExtensionContext) {
           statusBarItem?.hide()
         }
       }
+    })
+  )
+
+  context.subscriptions.push(
+    vscode.window.onDidChangeActiveNotebookEditor(() => {
+      console.log(`onDidChangeActiveNotebookEditor: Hiding status for notebook`)
+      statusBarItem?.hide()
     })
   )
 

@@ -39,10 +39,13 @@ class StatusActor(
       if (proceed) {
         val res = Try {
           val plasmonFileStatus = status.plasmonFileStatus()
-          for ((path, status0) <- plasmonFileStatus) {
-            languageClient.statusUpdate(path.toNIO.toUri.normalize.toASCIIString, status0.asJava)
-            lastUpdateInstant = now
+          plasmonFileStatus match {
+            case Some((path, status0)) =>
+              languageClient.statusUpdate(path.toNIO.toUri.normalize.toASCIIString, status0.asJava)
+            case None =>
+              languageClient.statusUpdate("", Nil.asJava)
           }
+          lastUpdateInstant = now
           plasmonFileStatus
         }
         for (msg <- refreshMessages.iterator ++ unprocessed.iterator; f <- msg.onDone.iterator)
