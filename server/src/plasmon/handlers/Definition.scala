@@ -231,7 +231,9 @@ object Definition {
     // assert(source.isScalaFilename || source.isJavaFilename)
     // server.symbolIndex.indexSource()
 
-    val fromSemDb = fromSemanticDb(
+    val useSemDb = true
+
+    def fromSemDbOpt = fromSemanticDb(
       server.semanticdbs,
       module,
       position,
@@ -241,17 +243,23 @@ object Definition {
       server.patchedSymbolIndex,
       logger
     )
-    fromSemDb match {
-      case Some(value) => Future.successful(value)
-      case None =>
-        fromCompiler(
-          server.presentationCompilers,
-          position,
-          token,
-          logger,
-          server.pools.dummyEc
-        )
-    }
+    def fromCompilerFuture =
+      fromCompiler(
+        server.presentationCompilers,
+        position,
+        token,
+        logger,
+        server.pools.dummyEc
+      )
+    if (useSemDb)
+      fromCompilerFuture.map { fromCompiler =>
+        if (fromCompiler.isEmpty)
+          fromSemDbOpt.getOrElse(fromCompiler)
+        else
+          fromCompiler
+      }(server.pools.definitionProviderEc)
+    else
+      fromCompilerFuture
   }
 
   def definitionHandler(
