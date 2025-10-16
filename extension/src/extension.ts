@@ -495,10 +495,6 @@ export function activate(context: vscode.ExtensionContext) {
       console.log(`Using plasmon JVM per config`)
       serverOptions = jvmServerOptions("0.1.0-SNAPSHOT")
     }
-    else if (process.platform === "win32") {
-      console.log(`Using default plasmon: binary`)
-      serverOptions = binaryServerOptions('C:\\Users\\Alex\\AppData\\Local\\Coursier\\data\\bin\\plasmon.bat')
-    }
     else {
       console.log(`Using default plasmon: binary`)
       serverOptions = binaryServerOptions('plasmon')

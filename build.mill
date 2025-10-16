@@ -29,7 +29,6 @@ object Versions {
 
   def coursier          = "2.1.25-M19"
   def coursierInterface = "1.0.29-M3"
-  def graalvm           = "22.0.2"
   def mtags             = "1.6.1-1"
   def scalaCli          = "1.8.0"
 
