@@ -15,29 +15,29 @@ final case class AggregateSemanticdbs(underlying: List[Semanticdbs])
   override def textDocument(
     path: SourcePath,
     module: GlobalSymbolIndex.Module
-  ): Option[TextDocumentLookup] = {
+  ): Either[String, TextDocumentLookup] = {
     def loop(
       xs: List[Semanticdbs],
       errors: List[TextDocumentLookup]
-    ): Option[TextDocumentLookup] =
+    ): Either[String, TextDocumentLookup] =
       xs match {
         case Nil =>
           errors match {
             case Nil =>
-              None
+              Right(TextDocumentLookup.NotFound(path.uri))
             case head :: Nil =>
-              Some(head)
+              Right(head)
             case errors =>
-              Some(TextDocumentLookup.Aggregate(errors))
+              Right(TextDocumentLookup.Aggregate(errors))
           }
         case head :: tail =>
           head.textDocument(path, module) match {
-            case Some(result) =>
-              if (result.isSuccess) Some(result)
+            case Right(result) =>
+              if (result.isSuccess) Right(result)
               else
                 loop(tail, result :: errors)
-            case None =>
-              loop(tail, errors)
+            case Left(err) =>
+              loop(tail, TextDocumentLookup.Error(new Exception(err), path.uri) :: errors)
           }
       }
     try
@@ -45,7 +45,7 @@ final case class AggregateSemanticdbs(underlying: List[Semanticdbs])
     catch {
       case NonFatal(e) =>
         scribe.error(s"text document: ${path.uri}", e)
-        Some(TextDocumentLookup.Error(e, path.uri))
+        Right(TextDocumentLookup.Error(e, path.uri))
     }
   }
 }

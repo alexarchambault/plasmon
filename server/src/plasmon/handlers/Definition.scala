@@ -212,7 +212,7 @@ object Definition {
           logger.log("No matching URI found for semanticdb (???)")
       }
 
-    val semdbLookup = semanticDbs.textDocument(path, module)
+    val semdbLookup = semanticDbs.textDocument(path, module).toOption
     for (l <- semdbLookup)
       logLookup(l)
     val semdbOpt = semdbLookup.flatMap(_.documentIncludingStale)

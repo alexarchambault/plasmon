@@ -66,7 +66,7 @@ final class PatchedSymbolIndex(
       // Fall back to SemanticDB on disk, if any
 
       def fromSemanticdbs(p: SourcePath): Option[TextDocument] =
-        semanticdbs().textDocument(p, module).flatMap(_.documentIncludingStale)
+        semanticdbs().textDocument(p, module).toOption.flatMap(_.documentIncludingStale)
 
       fromSemanticdbs(path)
         .orElse(

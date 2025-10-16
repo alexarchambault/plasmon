@@ -729,32 +729,43 @@ export function activate(context: vscode.ExtensionContext) {
     })
   )
 
+  function dumpSemdbDetails(detailed: boolean) {
+    interface Resp {
+      targetId: string
+      text: string
+      error: string
+    }
+    let uri = lastFocusedDocument
+    client?.sendRequest(ExecuteCommandRequest.type, { command: "plasmon/debugSemanticdbLookup", arguments: [uri, detailed] }).then(
+      async (resp: Resp) => {
+        console.log(`Response of debugSemanticdbLookup: ${JSON.stringify(resp)}`)
+        if (resp.error) {
+          vscode.window.showErrorMessage(`Error getting semanticdb details: ${resp.error}`, { modal: false })
+        }
+        else {
+          let name = detailed ? "semanticdb-details" : "semanticdb-compact-details"
+          const strUri = `${RO_SCHEME}:${uri}/${name}`
+          documents[strUri] = resp.text
+          const doc = await vscode.workspace.openTextDocument(vscode.Uri.parse(strUri))
+          await vscode.window.showTextDocument(doc, { preview: false })
+        }
+      },
+      (err) => {
+        // FIXME Report that to users
+        console.log(`Error while sending plasmon/debugSemanticdbLookup command for ${uri}: ${err}`)
+      }
+    )
+  }
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand(`plasmon.dump-compact-semanticdb-details`, () => {
+      dumpSemdbDetails(false)
+    })
+  )
+
   context.subscriptions.push(
     vscode.commands.registerCommand(`plasmon.dump-semanticdb-details`, () => {
-      interface Resp {
-        targetId: string
-        text: string
-        error: string
-      }
-      let uri = lastFocusedDocument
-      client?.sendRequest(ExecuteCommandRequest.type, { command: "plasmon/debugSemanticdbLookup", arguments: [uri] }).then(
-        async (resp: Resp) => {
-          console.log(`Response of debugSemanticdbLookup: ${JSON.stringify(resp)}`)
-          if (resp.error) {
-            vscode.window.showErrorMessage(`Error getting semanticdb details: ${resp.error}`, { modal: false })
-          }
-          else {
-            const strUri = `${RO_SCHEME}:${uri}/semanticdb-details`
-            documents[strUri] = resp.text
-            const doc = await vscode.workspace.openTextDocument(vscode.Uri.parse(strUri))
-            await vscode.window.showTextDocument(doc, { preview: false })
-          }
-        },
-        (err) => {
-          // FIXME Report that to users
-          console.log(`Error while sending plasmon/debugSemanticdbLookup command for ${uri}: ${err}`)
-        }
-      )
+      dumpSemdbDetails(true)
     })
   )
 

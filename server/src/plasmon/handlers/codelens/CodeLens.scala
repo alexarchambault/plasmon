@@ -32,6 +32,7 @@ object CodeLens {
   ): Future[Seq[l.CodeLens]] = {
     val semanticdbCodeLenses = semanticdbs
       .textDocument(path, module)
+      .toOption
       .flatMap(_.documentIncludingStale)
       .map { textDocument =>
         codeLensProviders

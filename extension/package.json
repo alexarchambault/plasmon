@@ -64,6 +64,10 @@
         "title": "Plasmon: Dump BSP data for current file"
       },
       {
+        "command": "plasmon.dump-compact-semanticdb-details",
+        "title": "Plasmon: Dump semanticdb compact details for current file"
+      },
+      {
         "command": "plasmon.dump-semanticdb-details",
         "title": "Plasmon: Dump semanticdb details for current file"
       },
