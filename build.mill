@@ -164,7 +164,11 @@ object server extends ScalaModule with PlasmonPublishModule {
     Deps.bsp4j,
     Deps.mtags,
     Deps.mtagsJava,
-    Deps.mtagsScala3,
+    Deps.mtagsScala3
+      // don't let mtags-scala-3 bump mtags Scala 2 dependencies
+      .exclude(("io.github.plasmon-scala", s"mtags_${Versions.scala213}"))
+      .exclude(("io.github.plasmon-scala", s"mtags-shared_${Versions.scala213}"))
+      .exclude(("io.github.plasmon-scala", "mtags-interfaces")),
     Deps.osLib,
     mvn"io.github.alexarchambault::test-util:0.1.7",
     mvn"org.wildfly.common:wildfly-common:1.7.0.Final", // bump this one (pulled by Metals, GraalVM issues with 1.5.4.Final and 1.6.0.Final)
