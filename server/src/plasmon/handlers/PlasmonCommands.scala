@@ -1457,6 +1457,9 @@ object PlasmonCommands {
                     out ++= inverseDeps.toString + nl + nl
                   for (elem <- data.buildTargetSources.get(targetId))
                     out ++= "Sources: " + elem.toString + nl + nl
+                  for (queue <- data.dependencySourcesInfo.get(targetId))
+                    out ++= "Dependency sources: " + nl +
+                      queue.asScala.toVector.map("  " + _ + nl).mkString + nl
                   for (cp <- data.buildTargetClasspath.get(targetId))
                     out ++= "Class path: " + cp.toString + nl + nl
                   for (depMods <- data.buildTargetDependencyModules.get(targetId))

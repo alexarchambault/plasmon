@@ -42,6 +42,9 @@ final class TargetData {
     TrieMap.empty[b.BuildTargetIdentifier, JavaTarget]
   val scalaTargetInfo: MMap[b.BuildTargetIdentifier, ScalaTarget] =
     TrieMap.empty[b.BuildTargetIdentifier, ScalaTarget]
+  val dependencySourcesInfo
+    : MMap[b.BuildTargetIdentifier, ConcurrentLinkedQueue[b.DependencySourcesItem]] =
+    TrieMap.empty
   val inverseDependencies
     : MMap[b.BuildTargetIdentifier, ListBuffer[b.BuildTargetIdentifier]] =
     TrieMap.empty[b.BuildTargetIdentifier, ListBuffer[b.BuildTargetIdentifier]]
@@ -302,6 +305,7 @@ final class TargetData {
     buildTargetInfo.clear()
     javaTargetInfo.clear()
     scalaTargetInfo.clear()
+    dependencySourcesInfo.clear()
     inverseDependencies.clear()
     buildTargetSources.clear()
     buildTargetGeneratedDirs.clear()
@@ -357,6 +361,14 @@ final class TargetData {
       for (info0 <- info(javac.getTarget))
         javaTargetInfo(javac.getTarget) = JavaTarget(info0, javac)
     }
+
+  def addDependencySourceItem(item: b.DependencySourcesItem): Unit = {
+    val queue = dependencySourcesInfo.getOrElseUpdate(
+      item.getTarget,
+      new ConcurrentLinkedQueue
+    )
+    queue.add(item)
+  }
 
   def addDependencySource(
     sourcesJar: os.Path,
