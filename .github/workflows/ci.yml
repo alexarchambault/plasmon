@@ -52,7 +52,7 @@ jobs:
             OS_SHORT: "windows"
           - OS: "macos-13"
             OS_SHORT: "mac"
-          - OS: "macos-14"
+          - OS: "macos-15"
             OS_SHORT: "mac-arm"
           - OS: "ubuntu-24.04-arm"
             OS_SHORT: "linux-arm"
