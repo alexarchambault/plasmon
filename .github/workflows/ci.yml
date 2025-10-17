@@ -74,7 +74,7 @@ jobs:
       run: ./mill -i server.native.writeNativeImageScript0 --scriptDest generate-native-image.bat
     - name: Generate native image
       if: runner.os != 'Windows'
-      run: ./generate-native-image.sh
+      run: jps -ml; ./generate-native-image.sh
     - name: Generate native image (Windows)
       if: runner.os == 'Windows'
       run: ./generate-native-image.bat
