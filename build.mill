@@ -655,7 +655,7 @@ object server extends ScalaModule with PlasmonPublishModule {
     }
 
     def nativeImagePersist      = System.getenv("CI") != null
-    def nativeImageGraalVmJvmId = "liberica-nik:24.0.2"
+    def nativeImageGraalVmJvmId = "liberica-nik:25.0.0"
 
     def validatedNativeImage = Task {
       val ref = nativeImage()
