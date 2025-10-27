@@ -27,10 +27,11 @@ object Versions {
   def scala   = "2.13.16"
   def scalaJs = "1.15.0"
 
-  def coursier = "2.1.25-M15"
-  def graalvm  = "22.0.2"
-  def mtags    = "1.6.1-1"
-  def scalaCli = "1.8.0"
+  def coursier          = "2.1.25-M19"
+  def coursierInterface = "1.0.29-M3"
+  def graalvm           = "22.0.2"
+  def mtags             = "1.6.1-1"
+  def scalaCli          = "1.8.0"
 
   def scala213 = scala
   def scala3   = "3.7.0"
@@ -56,16 +57,18 @@ object Deps {
   def caseApp           = mvn"com.github.alexarchambault::case-app:2.1.0-M26"
   def coursierCache     = mvn"io.get-coursier::coursier-cache:${Versions.coursier}"
   def coursierJvm       = mvn"io.get-coursier::coursier-jvm:${Versions.coursier}"
-  def coursierInterface = mvn"io.get-coursier:interface:1.0.29-M1"
-  def expecty           = mvn"com.eed3si9n.expecty::expecty:0.16.0"
-  def jniUtils          = mvn"io.get-coursier.jniutils:windows-jni-utils:0.3.3"
-  def jsoniterCore      = mvn"com.github.plokhotnyuk.jsoniter-scala::jsoniter-scala-core:2.24.2"
-  def jsoniterMacros    = mvn"com.github.plokhotnyuk.jsoniter-scala::jsoniter-scala-macros:2.24.2"
-  def libdaemonjvm      = mvn"io.github.alexarchambault.libdaemon::libdaemon:0.0.11"
-  def lsp4j             = mvn"org.eclipse.lsp4j:org.eclipse.lsp4j:0.20.1"
-  def lz4Java           = mvn"org.lz4:lz4-java:1.8.0"
-  def mtags             = mvn"io.github.plasmon-scala:::mtags:${Versions.mtags}"
-  def mtagsJava         = mvn"io.github.plasmon-scala::mtags-java:${Versions.mtags}"
+  def coursierInterface = mvn"io.get-coursier:interface:${Versions.coursierInterface}"
+  def coursierInterfaceNoShading =
+    mvn"io.get-coursier::interface-no-shading:${Versions.coursierInterface}"
+  def expecty        = mvn"com.eed3si9n.expecty::expecty:0.16.0"
+  def jniUtils       = mvn"io.get-coursier.jniutils:windows-jni-utils:0.3.3"
+  def jsoniterCore   = mvn"com.github.plokhotnyuk.jsoniter-scala::jsoniter-scala-core:2.24.2"
+  def jsoniterMacros = mvn"com.github.plokhotnyuk.jsoniter-scala::jsoniter-scala-macros:2.24.2"
+  def libdaemonjvm   = mvn"io.github.alexarchambault.libdaemon::libdaemon:0.0.11"
+  def lsp4j          = mvn"org.eclipse.lsp4j:org.eclipse.lsp4j:0.20.1"
+  def lz4Java        = mvn"org.lz4:lz4-java:1.8.0"
+  def mtags          = mvn"io.github.plasmon-scala:::mtags:${Versions.mtags}"
+  def mtagsJava      = mvn"io.github.plasmon-scala::mtags-java:${Versions.mtags}"
   def mtagsScala3 = mvn"io.github.plasmon-scala:scala3-presentation-compiler_3:${Versions.scala3Pc}"
   def munit       = mvn"org.scalameta::munit:1.1.0"
   def osLib       = mvn"com.lihaoyi::os-lib:0.10.7"
@@ -299,6 +302,7 @@ object server extends ScalaModule with PlasmonPublishModule {
       Deps.svm
     )
     def mvnDeps = Seq(
+      Deps.coursierInterfaceNoShading,
       Deps.mtags,
       Deps.semanticdbJavac
     )
@@ -410,7 +414,12 @@ object server extends ScalaModule with PlasmonPublishModule {
 
       val res = baseClassPath
         .filter { ref =>
-          !ref.path.last.startsWith("jna-")
+          !ref.path.last.startsWith("jna-") &&
+          ! {
+            ref.path.last.startsWith("interface-") &&
+            !ref.path.last.startsWith("interface-no-shading-") &&
+            ref.path.last.endsWith(".jar")
+          }
         }
         .map { ref =>
           if (ref.path.last.startsWith("scala-compiler-"))

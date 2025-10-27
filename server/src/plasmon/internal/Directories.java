@@ -1,8 +1,8 @@
 package plasmon.internal;
 
-import coursierapi.shaded.coursier.cache.shaded.dirs.ProjectDirectories;
-import coursierapi.shaded.coursier.cache.shaded.dirs.impl.Windows;
-import coursierapi.shaded.coursier.cache.shaded.dirs.jni.WindowsJni;
+import coursier.paths.shaded.dirs.ProjectDirectories;
+import coursier.paths.shaded.dirs.impl.Windows;
+import coursier.paths.shaded.dirs.jni.WindowsJni;
 
 import java.util.function.Supplier;
 
