@@ -282,7 +282,7 @@ function createClient(
                     backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground')
                   else if (params0.severity == 2)
                     backgroundColor = new vscode.ThemeColor('statusBarItem.errorBackground')
-                  else
+                  else if (params0.severity != 0)
                     console.log(`Error: unrecognized severity value for status update: ${params0.severity}`)
                   if (statusBarItem.backgroundColor != backgroundColor)
                     statusBarItem.backgroundColor = backgroundColor
