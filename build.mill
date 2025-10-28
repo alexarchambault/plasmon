@@ -417,7 +417,7 @@ object server extends ScalaModule with PlasmonPublishModule {
           !ref.path.last.startsWith("jna-") &&
           ! {
             ref.path.last.startsWith("interface-") &&
-            !ref.path.last.startsWith("interface-no-shading-") &&
+            !ref.path.last.startsWith("interface-no-shading_") &&
             ref.path.last.endsWith(".jar")
           }
         }
