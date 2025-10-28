@@ -618,6 +618,11 @@ object server extends ScalaModule with PlasmonPublishModule {
       val ciMemoryOptions =
         if (System.getenv("CI") == null) Nil
         else Seq("-J-Xmx7g")
+      val macCiOptions =
+        if (System.getenv("CI") != null && Properties.isMac)
+          Seq("--no-server", "--parallelism=2", "-J-XX:+UseSerialGC")
+        else
+          Nil
       val ciOptions =
         if (System.getenv("CI") == null) Nil
         else Seq("-H:DeadlockWatchdogInterval=25")
@@ -632,7 +637,7 @@ object server extends ScalaModule with PlasmonPublishModule {
         "--enable-url-protocols=http,https",
         "--add-opens=java.base/java.util=ALL-UNNAMED", // needed for TimerThreadsHack
         "--add-opens=org.graalvm.nativeimage.builder/com.oracle.svm.core.posix.headers=ALL-UNNAMED" // needed for Signal stuff used by libdaemon-jvm
-      ) ++ ciOptions
+      ) ++ macCiOptions ++ ciOptions
     }
 
     def nativeImageShortGraalVmHome: T[PathRef] = Task {
