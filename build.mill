@@ -620,7 +620,7 @@ object server extends ScalaModule with PlasmonPublishModule {
         else Seq("-J-Xmx7g")
       val macCiOptions =
         if (System.getenv("CI") != null && Properties.isMac)
-          Seq("--no-server", "--parallelism=2", "-J-XX:+UseSerialGC")
+          Seq("--no-server", "--parallelism=2")
         else
           Nil
       val ciOptions =
