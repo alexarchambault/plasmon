@@ -35,7 +35,7 @@ object Versions {
 
   def scala213 = scala
   def scala3   = "3.7.3"
-  def scala3Pc = "3.7.3"
+  def scala3Pc = "3.7.3-2"
 
   def sbtBloop = "2.0.13"
   def sbt      = "1.9.9"
@@ -139,6 +139,15 @@ object PlasmonPublishModule {
   }
 
   lazy val buildVersion = computeBuildVersion()
+}
+
+lazy val disableScala2Pc = {
+  def isArm = sys.props("os.arch").toLowerCase(java.util.Locale.ROOT) match {
+    case "aarch64" | "arm64" => true
+    case _                   => false
+  }
+  // Not enough memory on GitHub macos-15 runners to generate the full native-image of the server
+  System.getenv("CI") != null && Properties.isMac && isArm
 }
 
 object server extends ScalaModule with PlasmonPublishModule {
@@ -640,7 +649,8 @@ object server extends ScalaModule with PlasmonPublishModule {
         "--initialize-at-build-time=com.google.common.base.Preconditions",
         "--enable-url-protocols=http,https",
         "--add-opens=java.base/java.util=ALL-UNNAMED", // needed for TimerThreadsHack
-        "--add-opens=org.graalvm.nativeimage.builder/com.oracle.svm.core.posix.headers=ALL-UNNAMED" // needed for Signal stuff used by libdaemon-jvm
+        "--add-opens=org.graalvm.nativeimage.builder/com.oracle.svm.core.posix.headers=ALL-UNNAMED", // needed for Signal stuff used by libdaemon-jvm
+        s"-Dplasmon.native.disableScala2Pc=$disableScala2Pc"
       ) ++ macCiOptions ++ ciOptions
     }
 
@@ -722,7 +732,8 @@ object integration extends ScalaModule {
     Seq(
       s"-Dplasmon.integration.projects=${BuildCtx.workspaceRoot / "integration/projects"}",
       s"-Dplasmon.integration.fixture-dir=${BuildCtx.workspaceRoot / "integration/test/resources/data"}",
-      s"-Dplasmon.integration.generated-resources-dir=${BuildCtx.workspaceRoot / "integration/test/resources/generated"}"
+      s"-Dplasmon.integration.generated-resources-dir=${BuildCtx.workspaceRoot / "integration/test/resources/generated"}",
+      s"-Dplasmon.integration.disableScala2Pc=$disableScala2Pc"
     )
   }
 

@@ -99,7 +99,8 @@ class PresentationCompilers(
   ],
   loggerManager: plasmon.Logger.Manager,
   refreshStatus: () => Unit,
-  languageClient: PlasmonLanguageClient
+  languageClient: PlasmonLanguageClient,
+  scala2Compat: Boolean
 )(implicit ec: ExecutionContextExecutorService)
     extends AutoCloseable {
 
@@ -1190,43 +1191,70 @@ class PresentationCompilers(
     previousValue != null
   }
 
-  private def resolve(targetId: b.BuildTargetIdentifier, scalaVersion: String): MakeCompiler = {
+  private lazy val scala3Library = {
+    val files = coursierapi.Fetch.create()
+      .addDependencies(
+        coursierapi.Dependency.of("org.scala-lang", "scala3-library_3", "3.7.3")
+          .withTransitive(false)
+      )
+      .fetch()
+      .asScala
+    assert(files.length == 1)
+    os.Path(files.head, os.pwd)
+  }
+
+  private def resolve(
+    targetId: b.BuildTargetIdentifier,
+    scalaVersion: String
+  ): (MakeCompiler, Seq[os.Path]) = {
     val idSuffix   = BspUtil.targetShortId(bspData, targetId)
     val nameSuffix = BspUtil.targetShortId(bspData, targetId)
     val id         = s"interactive-$scalaVersion-$idSuffix"
     val label      = s"Interactive $nameSuffix"
     def logger()   = loggerManager.create(id, label).consumer
-    MakeCompiler {
-      javaHome =>
-        val pc
-          : scala.meta.pc.PresentationCompiler with scala.meta.internal.pc.HasCompilerAccess =
-          if (scalaVersion.startsWith("2.13.")) {
-            scribe.info("Loading Scala 2 PC")
-            new Scala2PresentationCompiler(javaHome.toNIO, () => logger(), targetId.module)
-          }
-          else if (scalaVersion.startsWith("3.")) {
-            scribe.info("Loading Scala 3 PC")
-            new Scala3PresentationCompiler(javaHome.toNIO, () => logger(), targetId.module)
-          }
-          else {
-            scribe.error(s"Was asked presentation compiler for Scala $scalaVersion")
-            new Scala2PresentationCompiler(javaHome.toNIO, () => logger(), targetId.module)
-          }
-        pc.compilerAccess.beforeAccess { (reqId, name, uri) =>
-          interactiveCompilersStatuses.put(pc, (name, uri))
-          refreshStatus()
-          languageClient.progress(
-            PlasmonLanguageClient.ProgressDetails(id, label, reqId, name, done = false)
-          )
-        }
-        pc.compilerAccess.afterAccess { (reqId, name, uri) =>
-          interactiveCompilersStatuses.remove(pc, (name, uri))
-          refreshStatus()
-          languageClient.progress(
-            PlasmonLanguageClient.ProgressDetails(id, label, reqId, name, done = true)
-          )
-        }
+    def setupPc(pc0: PresentationCompiler with pc.HasCompilerAccess): Unit = {
+      pc0.compilerAccess.beforeAccess { (reqId, name, uri) =>
+        interactiveCompilersStatuses.put(pc0, (name, uri))
+        refreshStatus()
+        languageClient.progress(
+          PlasmonLanguageClient.ProgressDetails(id, label, reqId, name, done = false)
+        )
+      }
+      pc0.compilerAccess.afterAccess { (reqId, name, uri) =>
+        interactiveCompilersStatuses.remove(pc0, (name, uri))
+        refreshStatus()
+        languageClient.progress(
+          PlasmonLanguageClient.ProgressDetails(id, label, reqId, name, done = true)
+        )
+      }
+    }
+    if ((scala2Compat && scalaVersion.startsWith("2.")) || scalaVersion.startsWith("3.")) {
+      val makeCompiler = MakeCompiler { javaHome =>
+        scribe.info("Loading Scala 3 PC")
+        val pc = new Scala3PresentationCompiler(javaHome.toNIO, () => logger(), targetId.module)
+        setupPc(pc)
         pc
+      }
+      val extraCp =
+        if (scalaVersion.startsWith("2.")) Seq(scala3Library)
+        else Nil
+      (makeCompiler, extraCp)
+    }
+    else {
+      val makeCompiler = MakeCompiler { javaHome =>
+        scribe.error(s"Was asked presentation compiler for Scala $scalaVersion")
+        val pc0 = new Scala2PresentationCompilerHandler().create(
+          javaHome.toNIO,
+          () => logger(),
+          targetId.module
+        ) match {
+          case pc1: PresentationCompiler with pc.HasCompilerAccess => pc1
+          case _                                                   => ???
+        }
+        setupPc(pc0)
+        pc0
+      }
+      (makeCompiler, Nil)
     }
   }
 
@@ -1238,8 +1266,8 @@ class PresentationCompilers(
     f: (PresentationCompilerKey, () => MtagsPresentationCompiler) => Option[T]
   ): Option[T] =
     bspData.scalaTarget(targetId).flatMap { scalaTarget =>
-      val scalaVersion = scalaTarget.scalaVersion
-      val mtags        = resolve(scalaTarget.info.getId, scalaVersion)
+      val scalaVersion            = scalaTarget.scalaVersion
+      val (mtags, extraClassPath) = resolve(scalaTarget.info.getId, scalaVersion)
 
       def default() = {
         scribe.info(
@@ -1253,7 +1281,7 @@ class PresentationCompilers(
           javaHome,
           symbolSearch,
           completionItemPriority(),
-          Nil,
+          extraClassPath,
           workspace,
           ec,
           sh,

@@ -1,0 +1,14 @@
+```scala
+def println(x: Any): Unit
+```
+
+***
+
+Prints out an object to the default output, followed by a newline character.
+
+
+
+***
+
+**Parameters**
+- `x`: the object to print.

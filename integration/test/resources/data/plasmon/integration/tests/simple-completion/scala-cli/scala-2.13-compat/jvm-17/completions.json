@@ -1,0 +1,595 @@
+{
+  "right": {
+    "isIncomplete": false,
+    "items": [
+      {
+        "label": "print(x$0: Object): Unit",
+        "kind": "Method",
+        "tags": [],
+        "detail": "(x$0: Object): Unit",
+        "sortText": "00000",
+        "filterText": "print",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 2,
+              "character": 13
+            },
+            "end": {
+              "line": 2,
+              "character": 15
+            }
+          },
+          "newText": "print($0)"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "java/io/PrintStream#print(+8).",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "kind": 3
+        }
+      },
+      {
+        "label": "print(x$0: String): Unit",
+        "kind": "Method",
+        "tags": [],
+        "detail": "(x$0: String): Unit",
+        "sortText": "00001",
+        "filterText": "print",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 2,
+              "character": 13
+            },
+            "end": {
+              "line": 2,
+              "character": 15
+            }
+          },
+          "newText": "print($0)"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "java/io/PrintStream#print(+7).",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "kind": 3
+        }
+      },
+      {
+        "label": "print(x$0: Boolean): Unit",
+        "kind": "Method",
+        "tags": [],
+        "detail": "(x$0: Boolean): Unit",
+        "sortText": "00002",
+        "filterText": "print",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 2,
+              "character": 13
+            },
+            "end": {
+              "line": 2,
+              "character": 15
+            }
+          },
+          "newText": "print($0)"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "java/io/PrintStream#print().",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "kind": 3
+        }
+      },
+      {
+        "label": "print(x$0: Char): Unit",
+        "kind": "Method",
+        "tags": [],
+        "detail": "(x$0: Char): Unit",
+        "sortText": "00003",
+        "filterText": "print",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 2,
+              "character": 13
+            },
+            "end": {
+              "line": 2,
+              "character": 15
+            }
+          },
+          "newText": "print($0)"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "java/io/PrintStream#print(+1).",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "kind": 3
+        }
+      },
+      {
+        "label": "print(x$0: Array[Char]): Unit",
+        "kind": "Method",
+        "tags": [],
+        "detail": "(x$0: Array[Char]): Unit",
+        "sortText": "00004",
+        "filterText": "print",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 2,
+              "character": 13
+            },
+            "end": {
+              "line": 2,
+              "character": 15
+            }
+          },
+          "newText": "print($0)"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "java/io/PrintStream#print(+6).",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "kind": 3
+        }
+      },
+      {
+        "label": "print(x$0: Double): Unit",
+        "kind": "Method",
+        "tags": [],
+        "detail": "(x$0: Double): Unit",
+        "sortText": "00005",
+        "filterText": "print",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 2,
+              "character": 13
+            },
+            "end": {
+              "line": 2,
+              "character": 15
+            }
+          },
+          "newText": "print($0)"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "java/io/PrintStream#print(+5).",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "kind": 3
+        }
+      },
+      {
+        "label": "print(x$0: Float): Unit",
+        "kind": "Method",
+        "tags": [],
+        "detail": "(x$0: Float): Unit",
+        "sortText": "00006",
+        "filterText": "print",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 2,
+              "character": 13
+            },
+            "end": {
+              "line": 2,
+              "character": 15
+            }
+          },
+          "newText": "print($0)"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "java/io/PrintStream#print(+4).",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "kind": 3
+        }
+      },
+      {
+        "label": "print(x$0: Int): Unit",
+        "kind": "Method",
+        "tags": [],
+        "detail": "(x$0: Int): Unit",
+        "sortText": "00007",
+        "filterText": "print",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 2,
+              "character": 13
+            },
+            "end": {
+              "line": 2,
+              "character": 15
+            }
+          },
+          "newText": "print($0)"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "java/io/PrintStream#print(+2).",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "kind": 3
+        }
+      },
+      {
+        "label": "print(x$0: Long): Unit",
+        "kind": "Method",
+        "tags": [],
+        "detail": "(x$0: Long): Unit",
+        "sortText": "00008",
+        "filterText": "print",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 2,
+              "character": 13
+            },
+            "end": {
+              "line": 2,
+              "character": 15
+            }
+          },
+          "newText": "print($0)"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "java/io/PrintStream#print(+3).",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "kind": 3
+        }
+      },
+      {
+        "label": "printf(x$0: String, x$1: Object*): PrintStream",
+        "kind": "Method",
+        "tags": [],
+        "detail": "(x$0: String, x$1: Object*): PrintStream",
+        "sortText": "00009",
+        "filterText": "printf",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 2,
+              "character": 13
+            },
+            "end": {
+              "line": 2,
+              "character": 15
+            }
+          },
+          "newText": "printf($0)"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "java/io/PrintStream#printf().",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "kind": 3
+        }
+      },
+      {
+        "label": "printf(x$0: Locale, x$1: String, x$2: Object*): PrintStream",
+        "kind": "Method",
+        "tags": [],
+        "detail": "(x$0: Locale, x$1: String, x$2: Object*): PrintStream",
+        "sortText": "00010",
+        "filterText": "printf",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 2,
+              "character": 13
+            },
+            "end": {
+              "line": 2,
+              "character": 15
+            }
+          },
+          "newText": "printf($0)"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "java/io/PrintStream#printf(+1).",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "kind": 3
+        }
+      },
+      {
+        "label": "println(): Unit",
+        "kind": "Method",
+        "tags": [],
+        "detail": "(): Unit",
+        "sortText": "00011",
+        "filterText": "println",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 2,
+              "character": 13
+            },
+            "end": {
+              "line": 2,
+              "character": 15
+            }
+          },
+          "newText": "println()"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "java/io/PrintStream#println().",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "kind": 3
+        }
+      },
+      {
+        "label": "println(x$0: Object): Unit",
+        "kind": "Method",
+        "tags": [],
+        "detail": "(x$0: Object): Unit",
+        "sortText": "00012",
+        "filterText": "println",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 2,
+              "character": 13
+            },
+            "end": {
+              "line": 2,
+              "character": 15
+            }
+          },
+          "newText": "println($0)"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "java/io/PrintStream#println(+9).",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "kind": 3
+        }
+      },
+      {
+        "label": "println(x$0: String): Unit",
+        "kind": "Method",
+        "tags": [],
+        "detail": "(x$0: String): Unit",
+        "sortText": "00013",
+        "filterText": "println",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 2,
+              "character": 13
+            },
+            "end": {
+              "line": 2,
+              "character": 15
+            }
+          },
+          "newText": "println($0)"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "java/io/PrintStream#println(+8).",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "kind": 3
+        }
+      },
+      {
+        "label": "println(x$0: Boolean): Unit",
+        "kind": "Method",
+        "tags": [],
+        "detail": "(x$0: Boolean): Unit",
+        "sortText": "00014",
+        "filterText": "println",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 2,
+              "character": 13
+            },
+            "end": {
+              "line": 2,
+              "character": 15
+            }
+          },
+          "newText": "println($0)"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "java/io/PrintStream#println(+1).",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "kind": 3
+        }
+      },
+      {
+        "label": "println(x$0: Char): Unit",
+        "kind": "Method",
+        "tags": [],
+        "detail": "(x$0: Char): Unit",
+        "sortText": "00015",
+        "filterText": "println",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 2,
+              "character": 13
+            },
+            "end": {
+              "line": 2,
+              "character": 15
+            }
+          },
+          "newText": "println($0)"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "java/io/PrintStream#println(+2).",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "kind": 3
+        }
+      },
+      {
+        "label": "println(x$0: Array[Char]): Unit",
+        "kind": "Method",
+        "tags": [],
+        "detail": "(x$0: Array[Char]): Unit",
+        "sortText": "00016",
+        "filterText": "println",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 2,
+              "character": 13
+            },
+            "end": {
+              "line": 2,
+              "character": 15
+            }
+          },
+          "newText": "println($0)"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "java/io/PrintStream#println(+7).",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "kind": 3
+        }
+      },
+      {
+        "label": "println(x$0: Double): Unit",
+        "kind": "Method",
+        "tags": [],
+        "detail": "(x$0: Double): Unit",
+        "sortText": "00017",
+        "filterText": "println",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 2,
+              "character": 13
+            },
+            "end": {
+              "line": 2,
+              "character": 15
+            }
+          },
+          "newText": "println($0)"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "java/io/PrintStream#println(+6).",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "kind": 3
+        }
+      },
+      {
+        "label": "println(x$0: Float): Unit",
+        "kind": "Method",
+        "tags": [],
+        "detail": "(x$0: Float): Unit",
+        "sortText": "00018",
+        "filterText": "println",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 2,
+              "character": 13
+            },
+            "end": {
+              "line": 2,
+              "character": 15
+            }
+          },
+          "newText": "println($0)"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "java/io/PrintStream#println(+5).",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "kind": 3
+        }
+      },
+      {
+        "label": "println(x$0: Int): Unit",
+        "kind": "Method",
+        "tags": [],
+        "detail": "(x$0: Int): Unit",
+        "sortText": "00019",
+        "filterText": "println",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 2,
+              "character": 13
+            },
+            "end": {
+              "line": 2,
+              "character": 15
+            }
+          },
+          "newText": "println($0)"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "java/io/PrintStream#println(+3).",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "kind": 3
+        }
+      },
+      {
+        "label": "println(x$0: Long): Unit",
+        "kind": "Method",
+        "tags": [],
+        "detail": "(x$0: Long): Unit",
+        "sortText": "00020",
+        "filterText": "println",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 2,
+              "character": 13
+            },
+            "end": {
+              "line": 2,
+              "character": 15
+            }
+          },
+          "newText": "println($0)"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "java/io/PrintStream#println(+4).",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "kind": 3
+        }
+      }
+    ]
+  }
+}

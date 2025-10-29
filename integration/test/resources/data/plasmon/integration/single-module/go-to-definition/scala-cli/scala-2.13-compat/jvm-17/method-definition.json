@@ -1,0 +1,9 @@
+{
+  "path": "foo/Definitions.scala",
+  "line": 3,
+  "colRange": [
+    6,
+    11
+  ],
+  "content": "count"
+}

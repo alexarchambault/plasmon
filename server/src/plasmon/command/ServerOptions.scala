@@ -23,7 +23,9 @@ final case class ServerOptions(
     ignoreBuildTargetDidChange: Boolean = false,
   scalaCli: Option[String] = None,
   bestEffort: Option[Boolean] = None,
-  suspendWatcher: Boolean = true
+  suspendWatcher: Boolean = true,
+  @HelpMessage("Handle Scala 2 using the Scala 3 PC - might be enabled by default and with no possibility of deactivation")
+    scala2Compat: Option[Boolean] = None
 )
 // format: on
 

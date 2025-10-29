@@ -56,6 +56,18 @@ object TestUtil {
         sys.error("plasmon.integration.generated-resources-dir not set")
       }
 
+  lazy val disableScala2Pc =
+    sys.props
+      .get("plasmon.integration.disableScala2Pc")
+      .map {
+        case "true"  => true
+        case "false" => false
+        case other   => sys.error(s"Malformed plasmon.integration.disableScala2Pc value: '$other'")
+      }
+      .getOrElse {
+        sys.error("plasmon.integration.disableScala2Pc not set")
+      }
+
   def withWorkspaceServerPositionsCount[T](
     projectName: String = "test-project",
     client: l.services.LanguageClient = new MockLanguageClient {},
@@ -547,18 +559,29 @@ object TestUtil {
     } yield (buildTool, jvm, testNameSuffix)
 
   lazy val scalaVersionBuildToolJvmValues
-    : Seq[(Option[Labelled[String]], SingleModuleBuildTool, Labelled[String], String)] =
+    : Seq[(
+      Option[Labelled[String]],
+      Seq[String],
+      SingleModuleBuildTool,
+      Labelled[String],
+      String
+    )] =
     for {
       buildTool <- buildTools
-      scalaVersion <- Seq(
-        Labelled("2.13", IntegrationConstants.scala213),
-        Labelled("3", IntegrationConstants.scala3)
-      )
+      (scalaVersion, serverOpt) <- {
+        val maybeScala213 =
+          if (disableScala2Pc) Nil
+          else Seq((Labelled("2.13", IntegrationConstants.scala213), Nil))
+        maybeScala213 ++ Seq(
+          (Labelled("2.13-compat", IntegrationConstants.scala213), Seq("--scala2-compat=true")),
+          (Labelled("3", IntegrationConstants.scala3), Nil)
+        )
+      }
       jvm <- jvmValues
       if jvm.label != "8" || buildTool != SingleModuleBuildTool.Mill // issue with Mill 0.11.7 and BSP, that requires Java >= 11
       testNameSuffix =
         s" ${buildTool.displayName} Scala ${scalaVersion.label} Java ${jvm.label}"
-    } yield (Some(scalaVersion), buildTool, jvm, testNameSuffix)
+    } yield (Some(scalaVersion), serverOpt, buildTool, jvm, testNameSuffix)
 
   lazy val projectsDir = {
     val path = sys.props.getOrElse(

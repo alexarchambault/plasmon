@@ -29,15 +29,18 @@ class Tests extends PlasmonSuite {
     }
   }
 
-  for ((scalaVersionOpt, buildTool, jvm, testNameSuffix) <- scalaVersionBuildToolJvmValues)
+  for (
+    (scalaVersionOpt, serverOpt, buildTool, jvm, testNameSuffix) <- scalaVersionBuildToolJvmValues
+  )
     test("simple" + testNameSuffix) {
-      simpleTest(buildTool, scalaVersionOpt, jvm)
+      simpleTest(buildTool, scalaVersionOpt, jvm, serverOpt)
     }
 
   private def simpleTest(
     buildTool: SingleModuleBuildTool,
     scalaVersionOpt: Option[Labelled[String]],
-    jvm: Labelled[String]
+    jvm: Labelled[String],
+    serverOpt: Seq[String]
   ): Unit = {
 
     val header = scalaVersionOpt.fold("") { scalaVersion =>
@@ -65,7 +68,7 @@ class Tests extends PlasmonSuite {
     )
 
     withWorkspaceServerPositions(
-      extraServerOpts = Seq("--jvm", jvm.value, "--suspend-watcher=false"),
+      extraServerOpts = Seq("--jvm", jvm.value, "--suspend-watcher=false") ++ serverOpt,
       timeout = Some(buildTool.defaultTimeout)
     )(files: _*) {
       (workspace, remoteServer, positions, osOpt) =>

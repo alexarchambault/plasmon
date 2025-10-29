@@ -9,7 +9,9 @@ import scala.jdk.CollectionConverters.*
 class CompletionTests extends PlasmonSuite {
   import CompletionTests.*
 
-  for ((scalaVersionOpt, buildTool, jvm, testNameSuffix) <- scalaVersionBuildToolJvmValues)
+  for (
+    (scalaVersionOpt, serverOpt, buildTool, jvm, testNameSuffix) <- scalaVersionBuildToolJvmValues
+  )
     test("chains" + testNameSuffix) {
       completionChainTest(
         Seq(
@@ -19,16 +21,20 @@ class CompletionTests extends PlasmonSuite {
         ),
         buildTool,
         scalaVersionOpt = scalaVersionOpt,
-        jvm = jvm
+        jvm = jvm,
+        serverOpt = serverOpt
       )
     }
 
-  for ((scalaVersionOpt, buildTool, jvm, testNameSuffix) <- scalaVersionBuildToolJvmValues)
+  for (
+    (scalaVersionOpt, serverOpt, buildTool, jvm, testNameSuffix) <- scalaVersionBuildToolJvmValues
+  )
     test(s"import" + testNameSuffix) {
       classPathSearchCompletionTest(
         scalaVersionOpt,
         buildTool,
         jvm,
+        serverOpt,
         Seq(
           CompletionTest("ListBuffer", "ListBuffe", "list-buffer"),
           CompletionTest("AtomicInteger", "AtomicIntege", "atomic-integer")
@@ -40,6 +46,7 @@ class CompletionTests extends PlasmonSuite {
     scalaVersionOpt: Option[Labelled[String]],
     buildTool: SingleModuleBuildTool,
     jvm: Labelled[String],
+    serverOpt: Seq[String],
     testInputs: Seq[CompletionTest]
   ): Unit = {
     val header = scalaVersionOpt.map(_.value).fold("")(sv => s"""//> using scala "$sv"""")
@@ -60,7 +67,7 @@ class CompletionTests extends PlasmonSuite {
     )
 
     withWorkspaceServerPositions(
-      extraServerOpts = Seq("--jvm", jvm.value),
+      extraServerOpts = Seq("--jvm", jvm.value) ++ serverOpt,
       timeout = Some(buildTool.defaultTimeout)
     )(files: _*) {
       (workspace, remoteServer, positions, osOpt) =>
@@ -93,7 +100,8 @@ class CompletionTests extends PlasmonSuite {
     inputs: Seq[Seq[String]],
     buildTool: SingleModuleBuildTool,
     scalaVersionOpt: Option[Labelled[String]],
-    jvm: Labelled[String]
+    jvm: Labelled[String],
+    serverOpt: Seq[String]
   ): Unit = {
 
     val header = scalaVersionOpt match {
@@ -123,7 +131,7 @@ class CompletionTests extends PlasmonSuite {
     )
 
     withWorkspaceServerPositions(
-      extraServerOpts = Seq("--jvm", jvm.value, "--suspend-watcher=false"),
+      extraServerOpts = Seq("--jvm", jvm.value, "--suspend-watcher=false") ++ serverOpt,
       timeout = Some(buildTool.defaultTimeout)
     )(files: _*) {
       (workspace, remoteServer, positions0, osOpt) =>

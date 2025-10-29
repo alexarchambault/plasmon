@@ -66,7 +66,8 @@ final class Server(
   val logJsonrpcInput: Boolean,
   val tools: BuildTool.Tools,
   val enableBestEffortMode: Boolean,
-  val reindexSource: os.Path => Unit
+  val reindexSource: os.Path => Unit,
+  scala2Compat: Boolean
 ) extends IndexerServerLike with BspServersServerLike with AutoCloseable {
 
   private var initializeParamsOpt0 = Option.empty[l.InitializeParams]
@@ -263,7 +264,8 @@ final class Server(
       ).consumer,
     loggerManager = loggerManager,
     refreshStatus = refreshStatus,
-    languageClient = languageClient
+    languageClient = languageClient,
+    scala2Compat = scala2Compat
   )(pools.compilerEces)
 
   // stateless

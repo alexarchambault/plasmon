@@ -43,6 +43,7 @@ import plasmon.bsp.BuildTool
 import com.google.gson.JsonDeserializer
 import scala.concurrent.Await
 import plasmon.watch.WatchEvent
+import plasmon.pc.Scala2PresentationCompilerHandler
 
 object Server extends caseapp.Command[ServerOptions] {
 
@@ -226,6 +227,28 @@ object Server extends caseapp.Command[ServerOptions] {
       }
     ))
 
+    val scala2Compat =
+      if (new Scala2PresentationCompilerHandler().available()) {
+        scribe.info("Scala 2 PC available")
+        options.scala2Compat match {
+          case Some(value) =>
+            scribe.info(
+              if (value) "Scala 2 PC enabled via command-line"
+              else "Scala 2 PC disabled via command-line"
+            )
+            value
+          case None =>
+            scribe.info("Enabling Scala 2 PC use")
+            false
+        }
+      }
+      else {
+        scribe.info("Scala 2 PC not available")
+        if (options.scala2Compat.contains(false))
+          scribe.warn("Scala 2 PC use requested on command-line, but Scala 2 PC not available")
+        true
+      }
+
     var indexer: Indexer = null
     lazy val server: plasmon.Server = new plasmon.Server(
       javaHome,
@@ -251,7 +274,8 @@ object Server extends caseapp.Command[ServerOptions] {
       logJsonrpcInput = options.logJsonrpcInput.getOrElse(false),
       tools = tools,
       enableBestEffortMode = options.bestEffort.getOrElse(true),
-      reindexSource = indexer.reindexWorkspaceSource(_)
+      reindexSource = indexer.reindexWorkspaceSource(_),
+      scala2Compat = scala2Compat
     )
 
     indexer = new Indexer(server)

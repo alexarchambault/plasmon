@@ -79,19 +79,28 @@ class BasicTests extends PlasmonSuite {
          |""".stripMargin
   }
 
-  for ((scalaVersionOpt, buildTool, jvm, testNameSuffix) <- scalaVersionBuildToolJvmValues)
+  for (
+    (scalaVersionOpt, serverOpt, buildTool, jvm, testNameSuffix) <- scalaVersionBuildToolJvmValues
+  )
     test("test" + testNameSuffix) {
-      mainTest(scalaVersionOpt, buildTool, jvm)
+      mainTest(scalaVersionOpt, buildTool, jvm, serverOpt)
     }
 
   test(s"test Scala CLI Java ${jvmValues.head.label} twice") {
-    mainTest(Some(defaultScalaVersion), SingleModuleBuildTool.ScalaCli, jvmValues.head, count = 2)
+    mainTest(
+      Some(defaultScalaVersion),
+      SingleModuleBuildTool.ScalaCli,
+      jvmValues.head,
+      Nil,
+      count = 2
+    )
   }
 
   private def mainTest(
     scalaVersionOpt: Option[Labelled[String]],
     buildTool: SingleModuleBuildTool,
     jvm: Labelled[String],
+    serverOpt: Seq[String],
     count: Int = 1
   ): Unit = {
     val header = scalaVersionOpt.map(_.value).fold("")(sv => s"""//> using scala "$sv"""")
@@ -177,7 +186,7 @@ class BasicTests extends PlasmonSuite {
     withWorkspaceServerPositionsCount(
       client = languageClient,
       clientCapabilities = clientCapabilities,
-      extraServerOpts = Seq("--jvm", jvm.value, "--import-persisted-targets=false"),
+      extraServerOpts = Seq("--jvm", jvm.value, "--import-persisted-targets=false") ++ serverOpt,
       count = count,
       timeout = Some(buildTool.defaultTimeout)
     )(files: _*) {

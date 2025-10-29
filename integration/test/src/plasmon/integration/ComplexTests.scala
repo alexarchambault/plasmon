@@ -5,15 +5,18 @@ import plasmon.integration.TestUtil.*
 
 class ComplexTests extends PlasmonSuite {
 
-  for ((scalaVersionOpt, buildTool, jvm, testNameSuffix) <- scalaVersionBuildToolJvmValues)
+  for (
+    (scalaVersionOpt, serverOpt, buildTool, jvm, testNameSuffix) <- scalaVersionBuildToolJvmValues
+  )
     test(testNameSuffix.dropWhile(_.isSpaceChar)) {
-      complexTest(buildTool, scalaVersionOpt, jvm)
+      complexTest(buildTool, scalaVersionOpt, jvm, serverOpt)
     }
 
   def complexTest(
     buildTool: SingleModuleBuildTool,
     scalaVersionOpt: Option[Labelled[String]],
-    jvm: Labelled[String]
+    jvm: Labelled[String],
+    serverOpt: Seq[String]
   ): Unit = {
     val header = scalaVersionOpt match {
       case Some(scalaVersion) =>
@@ -40,7 +43,7 @@ class ComplexTests extends PlasmonSuite {
     val (sourceFile, files) = buildTool.singleFile(os.sub / "Foo.scala", source)
 
     withWorkspaceServerPositions(
-      extraServerOpts = Seq("--jvm", jvm.value),
+      extraServerOpts = Seq("--jvm", jvm.value) ++ serverOpt,
       timeout = Some(buildTool.defaultTimeout)
     )(files: _*) {
       (workspace, remoteServer, positions, osOpt) =>

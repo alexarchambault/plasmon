@@ -1,0 +1,7 @@
+```scala
+def currentThread(): Thread
+```
+
+***
+
+Returns a reference to the currently executing thread object.

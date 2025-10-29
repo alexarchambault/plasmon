@@ -1,0 +1,46 @@
+[
+  {
+    "range": {
+      "start": {
+        "line": 4,
+        "character": 10
+      },
+      "end": {
+        "line": 4,
+        "character": 17
+      }
+    },
+    "command": {
+      "title": "$(arrow-up) hasNext",
+      "command": "goto",
+      "arguments": [
+        {
+          "symbol": "scala/collection/Iterator#hasNext().",
+          "module": "buildTarget:file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e"
+        }
+      ]
+    }
+  },
+  {
+    "range": {
+      "start": {
+        "line": 5,
+        "character": 10
+      },
+      "end": {
+        "line": 5,
+        "character": 14
+      }
+    },
+    "command": {
+      "title": "$(arrow-up) next",
+      "command": "goto",
+      "arguments": [
+        {
+          "symbol": "scala/collection/Iterator#next().",
+          "module": "buildTarget:file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e"
+        }
+      ]
+    }
+  }
+]
