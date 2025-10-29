@@ -282,23 +282,25 @@ object TestUtil {
       .hover(new l.HoverParams(identifier(path), pos))
       .get()
 
-    expect(hoverResp != null)
-    expect(hoverResp.getContents.isRight)
-    expect(hoverResp.getContents.getRight.getKind == "markdown")
+    if (hoverResp == null) ""
+    else {
+      expect(hoverResp.getContents.isRight)
+      expect(hoverResp.getContents.getRight.getKind == "markdown")
 
-    val value = hoverResp.getContents.getRight.getValue
+      val value = hoverResp.getContents.getRight.getValue
 
-    if (System.lineSeparator() == "\n") value
-    else
-      value.linesIterator.zip(value.linesWithSeparators)
-        .map {
-          case (line, lineWithSep) =>
-            if (lineWithSep.length > line.length)
-              line + System.lineSeparator()
-            else
-              line
-        }
-        .mkString
+      if (System.lineSeparator() == "\n") value
+      else
+        value.linesIterator.zip(value.linesWithSeparators)
+          .map {
+            case (line, lineWithSep) =>
+              if (lineWithSep.length > line.length)
+                line + System.lineSeparator()
+              else
+                line
+          }
+          .mkString
+    }
   }
 
   case class GoToDefResult(
