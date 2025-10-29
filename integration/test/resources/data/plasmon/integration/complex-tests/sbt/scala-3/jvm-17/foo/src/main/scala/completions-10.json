@@ -1,6 +1,6 @@
 {
   "right": {
-    "isIncomplete": false,
+    "isIncomplete": true,
     "items": [
       {
         "label": "append(x$0: CharSequence): PrintStream",
@@ -1067,10 +1067,10 @@
         }
       },
       {
-        "label": "nn: err.type \u0026 PrintStream",
+        "label": "nn: err.type",
         "kind": "Method",
         "tags": [],
-        "detail": ": err.type \u0026 PrintStream",
+        "detail": ": err.type",
         "sortText": "00038",
         "filterText": "nn",
         "insertTextFormat": "Snippet",
@@ -1374,90 +1374,6 @@
         "additionalTextEdits": [],
         "data": {
           "symbol": "scala/Any#toString().",
-          "target": "file:/workspace/#foo/Compile",
-          "kind": 3
-        }
-      },
-      {
-        "label": "wait(): Unit",
-        "kind": "Method",
-        "tags": [],
-        "detail": "(): Unit",
-        "sortText": "00049",
-        "filterText": "wait",
-        "insertTextFormat": "Snippet",
-        "textEdit": {
-          "range": {
-            "start": {
-              "line": 12,
-              "character": 13
-            },
-            "end": {
-              "line": 12,
-              "character": 13
-            }
-          },
-          "newText": "wait()"
-        },
-        "additionalTextEdits": [],
-        "data": {
-          "symbol": "java/lang/Object#wait().",
-          "target": "file:/workspace/#foo/Compile",
-          "kind": 3
-        }
-      },
-      {
-        "label": "wait(x$0: Long): Unit",
-        "kind": "Method",
-        "tags": [],
-        "detail": "(x$0: Long): Unit",
-        "sortText": "00050",
-        "filterText": "wait",
-        "insertTextFormat": "Snippet",
-        "textEdit": {
-          "range": {
-            "start": {
-              "line": 12,
-              "character": 13
-            },
-            "end": {
-              "line": 12,
-              "character": 13
-            }
-          },
-          "newText": "wait($0)"
-        },
-        "additionalTextEdits": [],
-        "data": {
-          "symbol": "java/lang/Object#wait(+1).",
-          "target": "file:/workspace/#foo/Compile",
-          "kind": 3
-        }
-      },
-      {
-        "label": "wait(x$0: Long, x$1: Int): Unit",
-        "kind": "Method",
-        "tags": [],
-        "detail": "(x$0: Long, x$1: Int): Unit",
-        "sortText": "00051",
-        "filterText": "wait",
-        "insertTextFormat": "Snippet",
-        "textEdit": {
-          "range": {
-            "start": {
-              "line": 12,
-              "character": 13
-            },
-            "end": {
-              "line": 12,
-              "character": 13
-            }
-          },
-          "newText": "wait($0)"
-        },
-        "additionalTextEdits": [],
-        "data": {
-          "symbol": "java/lang/Object#wait(+2).",
           "target": "file:/workspace/#foo/Compile",
           "kind": 3
         }

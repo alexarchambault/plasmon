@@ -3,39 +3,11 @@
     "isIncomplete": false,
     "items": [
       {
-        "label": "ListBuffer[A](elems: A*): ListBuffer[A]",
-        "kind": "Method",
-        "tags": [],
-        "detail": "[A](elems: A*): ListBuffer[A]",
-        "sortText": "00000",
-        "filterText": "ListBuffer",
-        "insertTextFormat": "Snippet",
-        "textEdit": {
-          "range": {
-            "start": {
-              "line": 4,
-              "character": 29
-            },
-            "end": {
-              "line": 4,
-              "character": 31
-            }
-          },
-          "newText": "ListBuffer($0)"
-        },
-        "additionalTextEdits": [],
-        "data": {
-          "symbol": "scala/collection/IterableFactory#apply().",
-          "target": "file:///workspace/foo",
-          "kind": 3
-        }
-      },
-      {
         "label": "LinkedHashSet[A](elems: A*): LinkedHashSet[A]",
         "kind": "Method",
         "tags": [],
         "detail": "[A](elems: A*): LinkedHashSet[A]",
-        "sortText": "00001",
+        "sortText": "00000",
         "filterText": "LinkedHashSet",
         "insertTextFormat": "Snippet",
         "textEdit": {
@@ -50,6 +22,34 @@
             }
           },
           "newText": "LinkedHashSet($0)"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/IterableFactory#apply().",
+          "target": "file:///workspace/foo",
+          "kind": 3
+        }
+      },
+      {
+        "label": "ListBuffer[A](elems: A*): ListBuffer[A]",
+        "kind": "Method",
+        "tags": [],
+        "detail": "[A](elems: A*): ListBuffer[A]",
+        "sortText": "00001",
+        "filterText": "ListBuffer",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 4,
+              "character": 29
+            },
+            "end": {
+              "line": 4,
+              "character": 31
+            }
+          },
+          "newText": "ListBuffer($0)"
         },
         "additionalTextEdits": [],
         "data": {

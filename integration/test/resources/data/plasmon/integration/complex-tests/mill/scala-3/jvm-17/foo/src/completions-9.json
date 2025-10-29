@@ -3,11 +3,39 @@
     "isIncomplete": false,
     "items": [
       {
+        "label": "ListSet[A](elems: A*): ListSet[A]",
+        "kind": "Method",
+        "tags": [],
+        "detail": "[A](elems: A*): ListSet[A]",
+        "sortText": "00000",
+        "filterText": "ListSet",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 9,
+              "character": 29
+            },
+            "end": {
+              "line": 9,
+              "character": 30
+            }
+          },
+          "newText": "ListSet($0)"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/IterableFactory#apply().",
+          "target": "file:///workspace/foo",
+          "kind": 3
+        }
+      },
+      {
         "label": "LazyList[A](elems: A*): LazyList[A]",
         "kind": "Method",
         "tags": [],
         "detail": "[A](elems: A*): LazyList[A]",
-        "sortText": "00000",
+        "sortText": "00001",
         "filterText": "LazyList",
         "insertTextFormat": "Snippet",
         "textEdit": {
@@ -35,7 +63,7 @@
         "kind": "Method",
         "tags": [],
         "detail": "[A](elems: A*): List[A]",
-        "sortText": "00001",
+        "sortText": "00002",
         "filterText": "List",
         "insertTextFormat": "Snippet",
         "textEdit": {
@@ -50,34 +78,6 @@
             }
           },
           "newText": "List($0)"
-        },
-        "additionalTextEdits": [],
-        "data": {
-          "symbol": "scala/collection/IterableFactory#apply().",
-          "target": "file:///workspace/foo",
-          "kind": 3
-        }
-      },
-      {
-        "label": "ListSet[A](elems: A*): ListSet[A]",
-        "kind": "Method",
-        "tags": [],
-        "detail": "[A](elems: A*): ListSet[A]",
-        "sortText": "00002",
-        "filterText": "ListSet",
-        "insertTextFormat": "Snippet",
-        "textEdit": {
-          "range": {
-            "start": {
-              "line": 9,
-              "character": 29
-            },
-            "end": {
-              "line": 9,
-              "character": 30
-            }
-          },
-          "newText": "ListSet($0)"
         },
         "additionalTextEdits": [],
         "data": {
@@ -1174,118 +1174,6 @@
         "additionalTextEdits": [],
         "data": {
           "symbol": "scala/collection/immutable/package.Traversable.",
-          "target": "file:///workspace/foo",
-          "kind": 3
-        }
-      },
-      {
-        "label": "equals(x$1: Any): Boolean",
-        "kind": "Method",
-        "tags": [],
-        "detail": "(x$1: Any): Boolean",
-        "sortText": "00042",
-        "filterText": "equals",
-        "insertTextFormat": "Snippet",
-        "textEdit": {
-          "range": {
-            "start": {
-              "line": 9,
-              "character": 29
-            },
-            "end": {
-              "line": 9,
-              "character": 30
-            }
-          },
-          "newText": "equals($0)"
-        },
-        "additionalTextEdits": [],
-        "data": {
-          "symbol": "scala/Predef.ArrowAssoc#equals().",
-          "target": "file:///workspace/foo",
-          "kind": 3
-        }
-      },
-      {
-        "label": "equals(x$1: Any): Boolean",
-        "kind": "Method",
-        "tags": [],
-        "detail": "(x$1: Any): Boolean",
-        "sortText": "00043",
-        "filterText": "equals",
-        "insertTextFormat": "Snippet",
-        "textEdit": {
-          "range": {
-            "start": {
-              "line": 9,
-              "character": 29
-            },
-            "end": {
-              "line": 9,
-              "character": 30
-            }
-          },
-          "newText": "equals($0)"
-        },
-        "additionalTextEdits": [],
-        "data": {
-          "symbol": "scala/Predef.Ensuring#equals().",
-          "target": "file:///workspace/foo",
-          "kind": 3
-        }
-      },
-      {
-        "label": "equals(x$1: Any): Boolean",
-        "kind": "Method",
-        "tags": [],
-        "detail": "(x$1: Any): Boolean",
-        "sortText": "00044",
-        "filterText": "equals",
-        "insertTextFormat": "Snippet",
-        "textEdit": {
-          "range": {
-            "start": {
-              "line": 9,
-              "character": 29
-            },
-            "end": {
-              "line": 9,
-              "character": 30
-            }
-          },
-          "newText": "equals($0)"
-        },
-        "additionalTextEdits": [],
-        "data": {
-          "symbol": "scala/Predef.StringFormat#equals().",
-          "target": "file:///workspace/foo",
-          "kind": 3
-        }
-      },
-      {
-        "label": "getClass[X0 \u003e: Any.this.type](): Class[? \u003c: X0]",
-        "kind": "Method",
-        "tags": [],
-        "detail": "[X0 \u003e: Any.this.type](): Class[? \u003c: X0]",
-        "sortText": "00045",
-        "filterText": "getClass",
-        "insertTextFormat": "Snippet",
-        "textEdit": {
-          "range": {
-            "start": {
-              "line": 9,
-              "character": 29
-            },
-            "end": {
-              "line": 9,
-              "character": 30
-            }
-          },
-          "newText": "getClass()"
-        },
-        "additionalTextEdits": [],
-        "data": {
-          "symbol": "scala/Any#getClass().",
           "target": "file:///workspace/foo",
           "kind": 3
         }
