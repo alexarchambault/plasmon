@@ -14,7 +14,7 @@ import mill.scalajslib.api.ModuleKind
 
 import java.io.File
 import java.nio.charset.StandardCharsets
-import java.util.Arrays
+import java.util.{Arrays, Locale}
 
 import scala.jdk.CollectionConverters._
 import scala.util.{Properties, Using}
@@ -24,12 +24,12 @@ import coursier.cache.FileCache
 import plasmonbuild.*
 
 object Versions {
-  def scala   = "2.13.16"
-  def scalaJs = "1.15.0"
+  def scala   = "2.13.17"
+  def scalaJs = "1.20.1"
 
   def coursier          = "2.1.25-M19"
   def coursierInterface = "1.0.29-M3"
-  def mtags             = "1.6.1-1"
+  def mtags             = "1.6.3-1"
   def scalaCli          = "1.8.0"
 
   def scala213 = scala
@@ -48,7 +48,7 @@ object Versions {
 }
 
 object Deps {
-  def acyclic = mvn"com.lihaoyi:::acyclic:0.3.16"
+  def acyclic = mvn"com.lihaoyi:::acyclic:0.3.19"
   def bloopRifle =
     mvn"io.github.alexarchambault.bleep:bloop-rifle_2.13:1.5.17-sc-2"
       .exclude(("ch.epfl.scala", "bsp4j"))
@@ -79,6 +79,28 @@ object Deps {
 
 object shared extends Module {
   def publishVersion = Task.Input(PlasmonPublishModule.computeBuildVersion())
+}
+
+trait PlasmonJavaModule extends JavaModule {
+  def jvmRelease = "17"
+  def javacOptions = Task {
+    super.javacOptions() ++ Seq(
+      "--release",
+      jvmRelease,
+      "-Xlint:unchecked"
+    )
+  }
+}
+
+trait PlasmonScalaModule extends ScalaModule with PlasmonJavaModule {
+  def scalacOptions = Task {
+    super.scalacOptions() ++ Seq(
+      "-deprecation",
+      "-feature",
+      "--release",
+      jvmRelease
+    )
+  }
 }
 
 trait PlasmonPublishModule extends PublishModule {
@@ -149,7 +171,7 @@ lazy val disableScala2Pc = {
   System.getenv("CI") != null && Properties.isMac && isArm
 }
 
-object server extends ScalaModule with PlasmonPublishModule {
+object server extends PlasmonScalaModule with PlasmonPublishModule {
   def scalaVersion = Versions.scala
   def compileMvnDeps = Seq(
     Deps.acyclic,

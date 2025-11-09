@@ -12,4 +12,6 @@ private object InlayHintsOption {
   case object ByNameParameters    extends InlayHintsOption
   case object NamedParameters     extends InlayHintsOption
   case object HintsInPatternMatch extends InlayHintsOption
+  case object ClosingLabels       extends InlayHintsOption
+  case object HintsXRayMode       extends InlayHintsOption
 }

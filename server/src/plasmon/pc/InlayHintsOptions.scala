@@ -17,4 +17,8 @@ private case class InlayHintsOptions(options: Map[InlayHintsOption, Boolean]) {
     options.getOrElse(InlayHintsOption.NamedParameters, false)
   def hintsInPatternMatch: Boolean =
     options.getOrElse(InlayHintsOption.HintsInPatternMatch, false)
+  def closingLabels: Boolean =
+    options.getOrElse(InlayHintsOption.ClosingLabels, false)
+  def hintsXRayMode: Boolean =
+    options.getOrElse(InlayHintsOption.HintsXRayMode, false)
 }
