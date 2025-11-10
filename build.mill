@@ -1172,6 +1172,8 @@ object ci extends Module {
       "-o",
       dest,
       "-f",
+      "-M",
+      server.mainClass().getOrElse(sys.error("server.mainClass not defined")),
       s"${server.pomSettings().organization}:${server.artifactId()}:$version",
       extraArgs
     ).call(stdin = os.Inherit, stdout = os.Inherit)
