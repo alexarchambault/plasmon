@@ -82,13 +82,6 @@ jobs:
     - name: Generate native image (Windows)
       if: runner.os == 'Windows'
       run: ./generate-native-image.bat
-    - name: Test
-      run: ./mill -i integration.native.testForked
-    - name: Diff
-      shell: bash
-      run: |
-        git diff
-        git diff-index HEAD --quiet || ( echo "Some test data differ"; exit 1 )
     - name: Copy artifacts
       run: ./mill ci.copyLauncher --directory artifacts/
     - uses: actions/attest-build-provenance@v3
@@ -101,6 +94,13 @@ jobs:
         path: artifacts/
         if-no-files-found: error
         retention-days: 2
+    - name: Test
+      run: ./mill -i integration.native.testForked
+    - name: Diff
+      shell: bash
+      run: |
+        git diff
+        git diff-index HEAD --quiet || ( echo "Some test data differ"; exit 1 )
 
   publish:
     if: github.event_name == 'push'
