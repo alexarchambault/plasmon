@@ -50,7 +50,7 @@ final class InteractiveSemanticdbs(
   override def textDocument(
     source: SourcePath,
     module: GlobalSymbolIndex.Module
-  ): Option[TextDocumentLookup] = textDocument(source, unsavedContents = None, module)
+  ): Either[String, TextDocumentLookup] = textDocument(source, unsavedContents = None, module)
 
   def onClose(path: os.Path): Unit =
     textDocumentCache.remove(path)
@@ -59,11 +59,11 @@ final class InteractiveSemanticdbs(
     sourcePath: SourcePath,
     unsavedContents: Option[String],
     module: GlobalSymbolIndex.Module
-  ): Option[TextDocumentLookup] =
+  ): Either[String, TextDocumentLookup] =
     sourcePath match {
       case _: SourcePath.ZipEntry =>
         // FIXME We should actually proceed here
-        None
+        Left("No interactive semanticdbs for zip entries")
       case p: SourcePath.Standard =>
         val source = os.Path(p.path)
         lazy val sourceText =
@@ -72,59 +72,55 @@ final class InteractiveSemanticdbs(
             else None
           }
         def shouldTryCalculateInteractiveSemanticdb =
-          source.isSameFileSystem(workspace) && (
-            unsavedContents.isDefined ||
-            source.isInReadonlyDirectory(workspace) || // dependencies
-            source.isSbt ||                            // sbt files
-            source.isMill ||                           // mill files
-            // starts with shebang
-            sourceText.exists(_.startsWith(Shebang.shebang))
-          )
+          unsavedContents.isDefined ||
+          source.isInReadonlyDirectory(workspace) || // dependencies
+          source.isSbt ||                            // sbt files
+          source.isMill ||                           // mill files
+          // starts with shebang
+          sourceText.exists(_.startsWith(Shebang.shebang))
 
         // anything aside from `*.scala`, `*.sbt`, `*.mill`, `*.sc`, `*.java` file
         def isExcludedFile = !source.isScalaFilename && !source.isJavaFilename
 
-        if (isExcludedFile || !shouldTryCalculateInteractiveSemanticdb)
-          None
-        else {
-          val result = textDocumentCache.compute(
-            source,
-            (path, existingDoc) =>
-              unsavedContents.orElse(sourceText) match {
+        if (isExcludedFile)
+          Left("No interactive semanticdb, not a Scala or Java file")
+        else if (!source.isSameFileSystem(workspace))
+          Left("Not in the main file system")
+        else if (!shouldTryCalculateInteractiveSemanticdb)
+          Left("Not a file we should compute interactive semanticdbs for")
+        else
+          unsavedContents.orElse(sourceText) match {
+            case None => Left(s"No content for $source")
+            case Some(text) =>
+              val adjustedText =
+                if (text.startsWith(Shebang.shebang))
+                  "//" + text.drop(2)
+                else text
+              def sha            = MD5.compute(adjustedText)
+              val existingDocOpt = Option(textDocumentCache.get(source)).filter(_.md5 == sha)
+              existingDocOpt match {
                 case None =>
-                  scribe.warn(s"No content for $source")
-                  null
-                case Some(text) =>
-                  val adjustedText =
-                    if (text.startsWith(Shebang.shebang))
-                      "//" + text.drop(2)
-                    else text
-                  def sha = MD5.compute(adjustedText)
-                  if (existingDoc == null || existingDoc.md5 != sha)
-                    Try(computeInteractiveSemanticdb(
-                      path,
-                      adjustedText,
-                      new b.BuildTargetIdentifier(module.targetId)
-                    )) match {
-                      case Success(doc) =>
-                        if (doc == null)
-                          scribe.warn(s"Got null semantic DB when compiling $path")
-                        else if (!source.isDependencySource(workspace))
+                  Try(computeInteractiveSemanticdb(
+                    source,
+                    adjustedText,
+                    new b.BuildTargetIdentifier(module.targetId)
+                  )) match {
+                    case Success(doc) =>
+                      if (doc == null)
+                        scribe.warn(s"Got null semantic DB when compiling $source")
+                      else {
+                        textDocumentCache.put(source, doc)
+                        if (!source.isDependencySource(workspace))
                           onNewSemanticdb(module, source, doc)
+                      }
 
-                        doc
-                      case Failure(ex) =>
-                        scribe.warn(
-                          s"Error when compiling $path for interactive semantic DB",
-                          ex
-                        )
-                        null
-                    }
-                  else
-                    existingDoc
+                      Right(TextDocumentLookup.Success(doc, source))
+                    case Failure(ex) =>
+                      Right(TextDocumentLookup.Error(ex, source.toNIO.toUri.toASCIIString))
+                  }
+                case Some(existingDoc) =>
+                  Right(TextDocumentLookup.Success(existingDoc, source))
               }
-          )
-          TextDocumentLookup.fromOption(source, Option(result))
-        }
+          }
     }
 }

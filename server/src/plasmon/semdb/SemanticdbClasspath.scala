@@ -31,7 +31,7 @@ final case class SemanticdbClasspath(
   def textDocument(
     scalaOrJavaPath: SourcePath,
     module: GlobalSymbolIndex.Module
-  ): Option[TextDocumentLookup] =
+  ): Either[String, TextDocumentLookup] =
     Semanticdbs.loadTextDocument(
       scalaOrJavaPath,
       sourceroot,
@@ -44,7 +44,7 @@ final case class SemanticdbClasspath(
         //   .map(AbsolutePath(_))
         //   .map(FoundSemanticDbPath(_, None))
         ???
-    ).toOption
+    )
 }
 
 object SemanticdbClasspath {

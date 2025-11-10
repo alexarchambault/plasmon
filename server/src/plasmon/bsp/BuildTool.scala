@@ -104,6 +104,7 @@ object BuildTool {
       else s"Sbt via Bloop in $relPath"
     }
 
+    def commandName: os.Shellable = SbtDist.sbtLauncher
     def launcher(tools: Tools) =
       BuildServerLauncher(
         BuildServerInfo.Bloop(workspace),
@@ -155,7 +156,7 @@ object BuildTool {
               else s"No need to update ${pathAsUserFriendlyString(os.Path(pluginFile.toNIO))}"
             }
           Bloop.prepare(
-            os.proc("java", "-jar", os.home / "projects/metals/metals/src/main/resources/sbt-launch.jar", "-Dbloop.export-jar-classifiers=sources", "bloopInstall"),
+            os.proc(commandName, "-Dbloop.export-jar-classifiers=sources", "bloopInstall"),
             workspace,
             logger,
             force = force

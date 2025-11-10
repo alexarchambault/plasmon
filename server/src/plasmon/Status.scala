@@ -530,7 +530,7 @@ class Status(
                             compilerUpdate(
                               "Missing semantic info",
                               buildTarget = Some(buildTarget),
-                              severity = 2,
+                              severity = 1,
                               commandOpt = Some(
                                 PlasmonLanguageClient.Command(
                                   title = "Get semanticdb lookup result",

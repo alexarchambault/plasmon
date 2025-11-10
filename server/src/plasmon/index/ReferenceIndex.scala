@@ -193,7 +193,7 @@ final class ReferenceIndex(
     includeSynthetics: s.Synthetic => Boolean = _ => true
   )(implicit ctx: SourcePath.Context): Future[List[ReferencesResult]] = {
     val source         = params.getTextDocument.getUri.osPathFromUri
-    val textDoc        = semanticdbs().textDocument(source, module)
+    val textDoc        = semanticdbs().textDocument(source, module).toOption
     val supportsPcRefs = bspData.inverseSources(source).nonEmpty
     val textDocOpt: Option[s.TextDocument] =
       if (supportsPcRefs) textDoc.flatMap(_.toOption) else textDoc.flatMap(_.documentIncludingStale)
@@ -321,6 +321,7 @@ final class ReferenceIndex(
           source = location.getUri.osPathFromUri
           definitionDoc <- semanticdbs()
             .textDocument(source, module) // is that the right module?
+            .toOption
             .flatMap(_.documentIncludingStale)
         } yield (source, definitionDoc)
 
@@ -434,6 +435,7 @@ final class ReferenceIndex(
       (sourcePath, sourcePathTargetId) <- pathsFor(definitionBuildTargets, isSymbol)
       semanticdb <- semanticdbs()
         .textDocument(sourcePath, sourcePathTargetId.module)
+        .toOption
         .flatMap(_.documentIncludingStale)
         .iterator
       semanticdbDistance = buffers.tokenEditDistance(module, sourcePath, semanticdb.text, trees)

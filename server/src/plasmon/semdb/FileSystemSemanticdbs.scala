@@ -25,12 +25,18 @@ final class FileSystemSemanticdbs(
   override def textDocument(
     source: SourcePath,
     module: GlobalSymbolIndex.Module
-  ): Option[TextDocumentLookup] =
+  ): Either[String, TextDocumentLookup] =
     source match {
-      case z: SourcePath.ZipEntry => None
+      case z: SourcePath.ZipEntry => Left("No file system semanticdb for zip entries")
       case p: SourcePath.Standard =>
-        val file = os.Path(p.path)
-        bspData.inverseSources(file).flatMap(textDocument0(file, _).toOption)
+        module match {
+          case t: GlobalSymbolIndex.BuildTarget =>
+            val file = os.Path(p.path)
+            textDocument0(file, new b.BuildTargetIdentifier(t.targetId))
+          case _: GlobalSymbolIndex.Standalone =>
+            // standalone compiler not used in plasmon
+            sys.error("Cannot happen")
+        }
     }
 
   def textDocument0(

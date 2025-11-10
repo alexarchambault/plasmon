@@ -20,11 +20,11 @@ trait Semanticdbs {
   def textDocument(
     path: SourcePath,
     module: GlobalSymbolIndex.Module
-  ): Option[TextDocumentLookup]
+  ): Either[String, TextDocumentLookup]
   final def textDocument(
     path: os.Path,
     module: GlobalSymbolIndex.Module
-  ): Option[TextDocumentLookup] =
+  ): Either[String, TextDocumentLookup] =
     textDocument(SourcePath.Standard(path.toNIO), module)
 }
 object Semanticdbs {

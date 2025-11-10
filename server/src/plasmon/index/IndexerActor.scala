@@ -572,7 +572,8 @@ class IndexerActor(
     // remove cached symbols from Jars
     // that are not used
     for {
-      item      <- dependencySources.getItems.asScala
+      item <- dependencySources.getItems.asScala
+      _ = data.addDependencySourceItem(item)
       sourceUri <- Option(item.getSources).toList.flatMap(_.asScala)
     }
       data.addDependencySource(sourceUri.osPathFromUri, item.getTarget)

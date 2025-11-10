@@ -42,34 +42,37 @@ final class TargetData {
     TrieMap.empty[b.BuildTargetIdentifier, JavaTarget]
   val scalaTargetInfo: MMap[b.BuildTargetIdentifier, ScalaTarget] =
     TrieMap.empty[b.BuildTargetIdentifier, ScalaTarget]
+  val dependencySourcesInfo
+    : MMap[b.BuildTargetIdentifier, ConcurrentLinkedQueue[b.DependencySourcesItem]] =
+    TrieMap.empty
   val inverseDependencies
     : MMap[b.BuildTargetIdentifier, ListBuffer[b.BuildTargetIdentifier]] =
-    TrieMap.empty[b.BuildTargetIdentifier, ListBuffer[b.BuildTargetIdentifier]]
+    TrieMap.empty
   val buildTargetSources: MMap[b.BuildTargetIdentifier, JSet[os.Path]] =
-    TrieMap.empty[b.BuildTargetIdentifier, JSet[os.Path]]
+    TrieMap.empty
   val buildTargetClasspath: MMap[b.BuildTargetIdentifier, List[String]] =
-    TrieMap.empty[b.BuildTargetIdentifier, List[String]]
+    TrieMap.empty
   val buildTargetDependencyModules
     : MMap[b.BuildTargetIdentifier, List[b.MavenDependencyModule]] =
-    TrieMap.empty[b.BuildTargetIdentifier, List[b.MavenDependencyModule]]
+    TrieMap.empty
   val inverseDependencySources: MMap[os.Path, Set[b.BuildTargetIdentifier]] =
-    TrieMap.empty[os.Path, Set[b.BuildTargetIdentifier]]
+    TrieMap.empty
   val buildTargetGeneratedDirs: MMap[os.Path, Unit] =
-    TrieMap.empty[os.Path, Unit]
+    TrieMap.empty
   val buildTargetGeneratedFiles: MMap[os.Path, Unit] =
-    TrieMap.empty[os.Path, Unit]
+    TrieMap.empty
   val sourceJarNameToJarFile: MMap[String, os.Path] =
-    TrieMap.empty[String, os.Path]
+    TrieMap.empty
   val isSourceRoot: JSet[os.Path] =
-    concurrentHashSet[os.Path]()
+    concurrentHashSet()
   // if workspace contains symlinks, original source items are kept here and source items dealiased
   val originalSourceItems: JSet[os.Path] =
-    concurrentHashSet[os.Path]()
+    concurrentHashSet()
   val sourceItemFiles: JSet[os.Path] =
-    concurrentHashSet[os.Path]()
+    concurrentHashSet()
 
   val targetToWorkspace: MMap[b.BuildTargetIdentifier, os.Path] =
-    new mutable.HashMap[b.BuildTargetIdentifier, os.Path]
+    new mutable.HashMap
 
   var buildServerOpt               = Option.empty[PlasmonBuildServer]
   var buildClientOpt               = Option.empty[PlasmonBuildClientImpl]
@@ -81,7 +84,7 @@ final class TargetData {
     ]]
 
   val actualSources: MMap[os.Path, MappedSource] =
-    TrieMap.empty[os.Path, MappedSource]
+    TrieMap.empty
 
   def sourceBuildTargets(
     sourceItem: os.Path
@@ -266,7 +269,7 @@ final class TargetData {
 
     val queue = sourceItemsToBuildTarget.getOrElseUpdate(
       dealiased,
-      new ConcurrentLinkedQueue()
+      new ConcurrentLinkedQueue
     )
     queue.add(buildTarget)
     sourceBuildTargetsCache.clear()
@@ -302,6 +305,7 @@ final class TargetData {
     buildTargetInfo.clear()
     javaTargetInfo.clear()
     scalaTargetInfo.clear()
+    dependencySourcesInfo.clear()
     inverseDependencies.clear()
     buildTargetSources.clear()
     buildTargetGeneratedDirs.clear()
@@ -357,6 +361,14 @@ final class TargetData {
       for (info0 <- info(javac.getTarget))
         javaTargetInfo(javac.getTarget) = JavaTarget(info0, javac)
     }
+
+  def addDependencySourceItem(item: b.DependencySourcesItem): Unit = {
+    val queue = dependencySourcesInfo.getOrElseUpdate(
+      item.getTarget,
+      new ConcurrentLinkedQueue
+    )
+    queue.add(item)
+  }
 
   def addDependencySource(
     sourcesJar: os.Path,

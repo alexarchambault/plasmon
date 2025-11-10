@@ -42,6 +42,12 @@ import org.eclipse.{lsp4j => l}
 import scala.meta.pc.CancelToken
 import plasmon.ide.CancelTokens
 import scala.meta.internal.metals.EmptyCancelToken
+import scala.meta.internal.metap.DocumentPrinter
+import scala.meta.cli.Reporter
+import java.io.PrintStream
+import scala.meta.metap.Settings
+import scala.meta.metap.Format
+import scala.meta.internal.semanticdb.SymbolOccurrence
 
 object PlasmonCommands {
 
@@ -1451,6 +1457,9 @@ object PlasmonCommands {
                     out ++= inverseDeps.toString + nl + nl
                   for (elem <- data.buildTargetSources.get(targetId))
                     out ++= "Sources: " + elem.toString + nl + nl
+                  for (queue <- data.dependencySourcesInfo.get(targetId))
+                    out ++= "Dependency sources: " + nl +
+                      queue.asScala.toVector.map("  " + _ + nl).mkString + nl
                   for (cp <- data.buildTargetClasspath.get(targetId))
                     out ++= "Class path: " + cp.toString + nl + nl
                   for (depMods <- data.buildTargetDependencyModules.get(targetId))
@@ -1472,26 +1481,63 @@ object PlasmonCommands {
         }
       },
       CommandHandler.of("plasmon/debugSemanticdbLookup") { (params, logger) =>
-        params.asFileUri("plasmon/debugSemanticdbLookup") { file =>
-          val buildTargetOpt = server.bspData.inverseSources(file)
-          val contentOrError =
-            buildTargetOpt.toRight(s"No build target found for $file").map { targetId =>
-              val res = server.fileSystemSemanticdbs.textDocument0(file, targetId)
-              val text = res match {
-                case Left(err) =>
-                  "Error: " + err
-                case Right(value) =>
-                  value.toString
+        params.asValues[String, Boolean]("plasmon/debugSemanticdbLookup") {
+          case (fileUri, detailed) =>
+            val file           = fileUri.osPathFromUri
+            val buildTargetOpt = server.bspData.inverseSources(file)
+            val contentOrError =
+              buildTargetOpt.toRight(s"No build target found for $file").map { targetId =>
+                val res = server.semanticdbs.textDocument(file, targetId.module)
+                val text = res match {
+                  case Left(err) =>
+                    "Lookup error: " + err
+                  case Right(value) =>
+                    value.documentIncludingStaleE match {
+                      case Left(err) =>
+                        "Error: " + err
+                      case Right(doc0) =>
+                        val baos     = new ByteArrayOutputStream
+                        val ps       = new PrintStream(baos, true, StandardCharsets.UTF_8)
+                        val reporter = Reporter().withOut(ps).withErr(ps)
+                        val settings = Settings().withFormat(
+                          if (detailed) Format.Detailed
+                          else Format.Compact
+                        )
+                        val printer = new DocumentPrinter(settings, reporter, doc0) {
+                          // Seems the mill-moduledefs plugin is around, at least with Plasmon JVM,
+                          // and adds mill.moduledefs.Scaladoc annotations with weird positions,
+                          // which makes the default printer crash when it tries to read the
+                          // code at these invalid positions.
+                          // I couldn't manage to disable that plugin, so instead we ignore
+                          // the IllegalArgumentException from here.
+                          override def pprint(occ: SymbolOccurrence): Unit = {
+                            // Should be the same as 'super.pprint(occ)', except
+                            // we handle the IllegalArgumentException
+                            opt(occ.range)(pprint)
+                            val subString =
+                              try doc.substring(occ.range)
+                              catch {
+                                case _: IllegalArgumentException =>
+                                  Some("<ignored IllegalArgumentException>")
+                              }
+                            opt(": ", subString)(out.print)
+                            pprint(occ.role)
+                            out.println(occ.symbol)
+                          }
+                        }
+                        printer.print()
+                        new String(baos.toByteArray, StandardCharsets.UTF_8)
+                    }
+                }
+                (targetId, text)
               }
-              (targetId, text)
+            val resp = contentOrError match {
+              case Left(err) =>
+                DebugSemanticdbLookupResp("", "", err)
+              case Right((targetId, out)) =>
+                DebugSemanticdbLookupResp(targetId.getUri, out, "")
             }
-          val resp = contentOrError match {
-            case Left(err) =>
-              DebugSemanticdbLookupResp("", "", err)
-            case Right((targetId, out)) =>
-              DebugSemanticdbLookupResp(targetId.getUri, out, "")
-          }
-          CompletableFuture.completedFuture(writeToGson(resp))
+            CompletableFuture.completedFuture(writeToGson(resp))
         }
       },
       CommandHandler.of("plasmon/debugPresentationCompiler") { (params, logger) =>
