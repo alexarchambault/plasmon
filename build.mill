@@ -1226,4 +1226,9 @@ object ci extends Module {
     val nativeLauncher = server.native.nativeImage().path
     GitHubReleaseAssets.copyLauncher(nativeLauncher, os.Path(directory, BuildCtx.workspaceRoot))
   }
+
+  def uploadLaunchers(directory: String = "artifacts") = Task.Command {
+    val version = PlasmonPublishModule.buildVersion
+    GitHubReleaseAssets.uploadLaunchers(version, os.Path(directory, BuildCtx.workspaceRoot))
+  }
 }
