@@ -21,8 +21,6 @@ jobs:
         include:
           - OS: "windows-latest"
             OS_SHORT: "windows"
-          - OS: "macos-13"
-            OS_SHORT: "mac"
           - OS: "macos-15"
             OS_SHORT: "mac-arm"
           - OS: "ubuntu-24.04-arm"
@@ -113,10 +111,6 @@ jobs:
     - uses: actions/download-artifact@v5
       with:
         name: launchers-windows
-        path: artifacts/
-    - uses: actions/download-artifact@v5
-      with:
-        name: launchers-mac
         path: artifacts/
     - uses: actions/download-artifact@v5
       with:
