@@ -578,12 +578,14 @@ class PresentationCompilers(
       val pcParams = CompilerInlayHintsParams(
         rangeParams,
         inferredTypes = options.inferredType,
-        implicitParameters = options.implicitArguments,
-        implicitConversions = options.implicitConversions,
         typeParameters = options.typeParameters,
+        implicitParameters = options.implicitArguments,
+        hintsXRayMode = options.hintsXRayMode,
         byNameParameters = options.byNameParameters,
+        implicitConversions = options.implicitConversions,
+        namedParameters = options.namedParameters,
         hintsInPatternMatch = options.hintsInPatternMatch,
-        namedParameters = options.namedParameters
+        closingLabels = options.closingLabels
       )
 
       pc0

@@ -4,14 +4,14 @@ override def map[B](f: URL => B): Vector[B]
 
 ***
 
-Builds a new collection by applying a function to all elements of this collection.
+Builds a new $coll by applying a function to all elements of this collection.
 
 
 
 ***
 
 **Type Parameters**
-- `B`: the element type of the returned collection.
+- `B`: the element type of the returned $coll.
 
 
 ***
@@ -19,7 +19,7 @@ Builds a new collection by applying a function to all elements of this collectio
 **Parameters**
 - `f`: the function to apply to each element.
 
-**Returns** a new collection resulting from applying the given function
+**Returns** a new $coll resulting from applying the given function
                `f` to each element of this collection and collecting the results.
 
 ***
