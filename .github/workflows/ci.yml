@@ -59,6 +59,13 @@ jobs:
         path: artifacts/
         if-no-files-found: error
         retention-days: 2
+    - name: Test
+      run: ./mill -i integration.native.testForked
+    - name: Diff
+      shell: bash
+      run: |
+        git diff
+        git diff-index HEAD --quiet || ( echo "Some test data differ"; exit 1 )
 
   generate-jar-launcher:
     name: Upload JAR launcher
