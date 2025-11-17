@@ -140,14 +140,7 @@ object PlasmonPublishModule {
   lazy val buildVersion = computeBuildVersion()
 }
 
-lazy val disableScala2Pc = {
-  def isArm = sys.props("os.arch").toLowerCase(java.util.Locale.ROOT) match {
-    case "aarch64" | "arm64" => true
-    case _                   => false
-  }
-  // Not enough memory on GitHub macos-15 runners to generate the full native-image of the server
-  System.getenv("CI") != null && Properties.isMac && isArm
-}
+def disableScala2Pc = false
 
 object server extends ScalaModule with PlasmonPublishModule {
   def scalaVersion = Versions.scala
