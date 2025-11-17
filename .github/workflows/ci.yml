@@ -56,7 +56,7 @@ jobs:
             OS_SHORT: "windows"
           - OS: "macos-15-intel"
             OS_SHORT: "mac"
-          - OS: "macos-15"
+          - OS: "macos-15-xlarge"
             OS_SHORT: "mac-arm"
           - OS: "ubuntu-24.04-arm"
             OS_SHORT: "linux-arm"
