@@ -1,4 +1,4 @@
-//| mill-version: 1.0.5
+//| mill-version: 1.1.0-RC3
 
 import mill.api.SystemStreams
 import org.apache.commons.io.input.TailerListener
@@ -82,6 +82,8 @@ object shared extends Module {
 }
 
 trait PlasmonPublishModule extends PublishModule {
+
+  def jvmId = "17"
 
   def docJar = Task {
     val jar  = Task.dest / "empty.jar"
