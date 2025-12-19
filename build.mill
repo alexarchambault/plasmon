@@ -48,7 +48,7 @@ object Versions {
 }
 
 object Deps {
-  def acyclic = mvn"com.lihaoyi:::acyclic:0.3.16"
+  def acyclic = mvn"com.lihaoyi:::acyclic:0.3.20"
   def bloopRifle =
     mvn"io.github.alexarchambault.bleep:bloop-rifle_2.13:1.5.17-sc-2"
       .exclude(("ch.epfl.scala", "bsp4j"))
