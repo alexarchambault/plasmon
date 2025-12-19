@@ -26,7 +26,7 @@
         "additionalTextEdits": [],
         "data": {
           "symbol": "scala/collection/IterableFactory#apply().",
-          "target": "file:///workspace/foo",
+          "target": "file:/workspace/#foo/Compile",
           "kind": 3
         }
       },
@@ -54,35 +54,7 @@
         "additionalTextEdits": [],
         "data": {
           "symbol": "scala/collection/IterableFactory#apply().",
-          "target": "file:///workspace/foo",
-          "kind": 3
-        }
-      },
-      {
-        "label": "List[A](elems: A*): List[A]",
-        "kind": "Method",
-        "tags": [],
-        "detail": "[A](elems: A*): List[A]",
-        "sortText": "00002",
-        "filterText": "List",
-        "insertTextFormat": "Snippet",
-        "textEdit": {
-          "range": {
-            "start": {
-              "line": 10,
-              "character": 29
-            },
-            "end": {
-              "line": 10,
-              "character": 30
-            }
-          },
-          "newText": "List($0)"
-        },
-        "additionalTextEdits": [],
-        "data": {
-          "symbol": "scala/collection/IterableFactory#apply().",
-          "target": "file:///workspace/foo",
+          "target": "file:/workspace/#foo/Compile",
           "kind": 3
         }
       },
@@ -91,7 +63,7 @@
         "kind": "Method",
         "tags": [],
         "detail": "[A](elems: A*): ListSet[A]",
-        "sortText": "00003",
+        "sortText": "00002",
         "filterText": "ListSet",
         "insertTextFormat": "Snippet",
         "textEdit": {
@@ -110,7 +82,35 @@
         "additionalTextEdits": [],
         "data": {
           "symbol": "scala/collection/IterableFactory#apply().",
-          "target": "file:///workspace/foo",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 3
+        }
+      },
+      {
+        "label": "List[A](elems: A*): List[A]",
+        "kind": "Method",
+        "tags": [],
+        "detail": "[A](elems: A*): List[A]",
+        "sortText": "00003",
+        "filterText": "List",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 10,
+              "character": 29
+            },
+            "end": {
+              "line": 10,
+              "character": 30
+            }
+          },
+          "newText": "List($0)"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/IterableFactory#apply().",
+          "target": "file:/workspace/#foo/Compile",
           "kind": 3
         }
       },
@@ -138,7 +138,7 @@
         "additionalTextEdits": [],
         "data": {
           "symbol": "scala/collection/MapFactory#apply().",
-          "target": "file:///workspace/foo",
+          "target": "file:/workspace/#foo/Compile",
           "kind": 3
         }
       },
@@ -166,7 +166,7 @@
         "additionalTextEdits": [],
         "data": {
           "symbol": "scala/collection/SeqFactory.Delegate#apply().",
-          "target": "file:///workspace/foo",
+          "target": "file:/workspace/#foo/Compile",
           "kind": 3
         }
       },
@@ -194,7 +194,7 @@
         "additionalTextEdits": [],
         "data": {
           "symbol": "scala/collection/immutable/LongMap.apply().",
-          "target": "file:///workspace/foo",
+          "target": "file:/workspace/#foo/Compile",
           "kind": 3
         }
       },
@@ -222,7 +222,7 @@
         "additionalTextEdits": [],
         "data": {
           "symbol": "scala/collection/immutable/ListMap#`\u003cinit\u003e`().",
-          "target": "file:///workspace/foo",
+          "target": "file:/workspace/#foo/Compile",
           "kind": 3
         }
       },
@@ -250,7 +250,7 @@
         "additionalTextEdits": [],
         "data": {
           "symbol": "scala/collection/immutable/ListSet#`\u003cinit\u003e`().",
-          "target": "file:///workspace/foo",
+          "target": "file:/workspace/#foo/Compile",
           "kind": 3
         }
       },
@@ -278,7 +278,7 @@
         "additionalTextEdits": [],
         "data": {
           "symbol": "scala/collection/immutable/LazyList.",
-          "target": "file:///workspace/foo",
+          "target": "file:/workspace/#foo/Compile",
           "kind": 3
         }
       },
@@ -306,7 +306,7 @@
         "additionalTextEdits": [],
         "data": {
           "symbol": "scala/collection/immutable/LazyListIterable.",
-          "target": "file:///workspace/foo",
+          "target": "file:/workspace/#foo/Compile",
           "kind": 3
         }
       },
@@ -334,7 +334,7 @@
         "additionalTextEdits": [],
         "data": {
           "symbol": "scala/collection/immutable/LinearSeq.",
-          "target": "file:///workspace/foo",
+          "target": "file:/workspace/#foo/Compile",
           "kind": 3
         }
       },
@@ -362,7 +362,7 @@
         "additionalTextEdits": [],
         "data": {
           "symbol": "scala/collection/immutable/List.",
-          "target": "file:///workspace/foo",
+          "target": "file:/workspace/#foo/Compile",
           "kind": 3
         }
       },
@@ -390,7 +390,7 @@
         "additionalTextEdits": [],
         "data": {
           "symbol": "scala/collection/immutable/ListMap.",
-          "target": "file:///workspace/foo",
+          "target": "file:/workspace/#foo/Compile",
           "kind": 3
         }
       },
@@ -418,7 +418,7 @@
         "additionalTextEdits": [],
         "data": {
           "symbol": "scala/collection/immutable/ListSet.",
-          "target": "file:///workspace/foo",
+          "target": "file:/workspace/#foo/Compile",
           "kind": 3
         }
       },
@@ -446,7 +446,7 @@
         "additionalTextEdits": [],
         "data": {
           "symbol": "scala/collection/immutable/LongMap.",
-          "target": "file:///workspace/foo",
+          "target": "file:/workspace/#foo/Compile",
           "kind": 3
         }
       },
@@ -474,7 +474,7 @@
         "additionalTextEdits": [],
         "data": {
           "symbol": "scala/collection/immutable/ListMapBuilder#`\u003cinit\u003e`().",
-          "target": "file:///workspace/foo",
+          "target": "file:/workspace/#foo/Compile",
           "kind": 3
         }
       },
@@ -502,7 +502,7 @@
         "additionalTextEdits": [],
         "data": {
           "symbol": "scala/collection/immutable/LongMapEntryIterator#`\u003cinit\u003e`().",
-          "target": "file:///workspace/foo",
+          "target": "file:/workspace/#foo/Compile",
           "kind": 3
         }
       },
@@ -530,7 +530,7 @@
         "additionalTextEdits": [],
         "data": {
           "symbol": "scala/collection/immutable/LongMapKeyIterator#`\u003cinit\u003e`().",
-          "target": "file:///workspace/foo",
+          "target": "file:/workspace/#foo/Compile",
           "kind": 3
         }
       },
@@ -558,7 +558,7 @@
         "additionalTextEdits": [],
         "data": {
           "symbol": "scala/collection/immutable/LongMapValueIterator#`\u003cinit\u003e`().",
-          "target": "file:///workspace/foo",
+          "target": "file:/workspace/#foo/Compile",
           "kind": 3
         }
       },
@@ -586,7 +586,7 @@
         "additionalTextEdits": [],
         "data": {
           "symbol": "scala/collection/immutable/LongVectorStepper#`\u003cinit\u003e`().",
-          "target": "file:///workspace/foo",
+          "target": "file:/workspace/#foo/Compile",
           "kind": 3
         }
       },
@@ -614,7 +614,7 @@
         "additionalTextEdits": [],
         "data": {
           "symbol": "scala/collection/IterableFactory.Delegate#apply().",
-          "target": "file:///workspace/foo",
+          "target": "file:/workspace/#foo/Compile",
           "kind": 3
         }
       },
@@ -642,7 +642,7 @@
         "additionalTextEdits": [],
         "data": {
           "symbol": "scala/collection/LinearSeqOps#apply().",
-          "target": "file:///workspace/foo",
+          "target": "file:/workspace/#foo/Compile",
           "kind": 3
         }
       },
@@ -670,7 +670,7 @@
         "additionalTextEdits": [],
         "data": {
           "symbol": "scala/collection/immutable/IndexedSeqDefaults.",
-          "target": "file:///workspace/foo",
+          "target": "file:/workspace/#foo/Compile",
           "kind": 3
         }
       },
@@ -698,7 +698,7 @@
         "additionalTextEdits": [],
         "data": {
           "symbol": "scala/collection/immutable/Iterable.",
-          "target": "file:///workspace/foo",
+          "target": "file:/workspace/#foo/Compile",
           "kind": 3
         }
       },
@@ -726,7 +726,7 @@
         "additionalTextEdits": [],
         "data": {
           "symbol": "scala/collection/immutable/Nil.",
-          "target": "file:///workspace/foo",
+          "target": "file:/workspace/#foo/Compile",
           "kind": 3
         }
       },
@@ -754,7 +754,7 @@
         "additionalTextEdits": [],
         "data": {
           "symbol": "scala/collection/immutable/DoubleVectorStepper#`\u003cinit\u003e`().",
-          "target": "file:///workspace/foo",
+          "target": "file:/workspace/#foo/Compile",
           "kind": 3
         }
       },
@@ -782,7 +782,7 @@
         "additionalTextEdits": [],
         "data": {
           "symbol": "scala/collection/immutable/HashCollisionMapNode#`\u003cinit\u003e`().",
-          "target": "file:///workspace/foo",
+          "target": "file:/workspace/#foo/Compile",
           "kind": 3
         }
       },
@@ -810,7 +810,7 @@
         "additionalTextEdits": [],
         "data": {
           "symbol": "scala/collection/immutable/HashCollisionSetNode#`\u003cinit\u003e`().",
-          "target": "file:///workspace/foo",
+          "target": "file:/workspace/#foo/Compile",
           "kind": 3
         }
       },
@@ -838,7 +838,7 @@
         "additionalTextEdits": [],
         "data": {
           "symbol": "scala/collection/immutable/HashMapBuilder#`\u003cinit\u003e`().",
-          "target": "file:///workspace/foo",
+          "target": "file:/workspace/#foo/Compile",
           "kind": 3
         }
       },
@@ -866,7 +866,7 @@
         "additionalTextEdits": [],
         "data": {
           "symbol": "scala/collection/immutable/HashSetBuilder#`\u003cinit\u003e`().",
-          "target": "file:///workspace/foo",
+          "target": "file:/workspace/#foo/Compile",
           "kind": 3
         }
       },
@@ -894,7 +894,7 @@
         "additionalTextEdits": [],
         "data": {
           "symbol": "scala/collection/immutable/IntMapValueIterator#`\u003cinit\u003e`().",
-          "target": "file:///workspace/foo",
+          "target": "file:/workspace/#foo/Compile",
           "kind": 3
         }
       },
@@ -922,7 +922,7 @@
         "additionalTextEdits": [],
         "data": {
           "symbol": "scala/collection/immutable/MapBuilderImpl#`\u003cinit\u003e`().",
-          "target": "file:///workspace/foo",
+          "target": "file:/workspace/#foo/Compile",
           "kind": 3
         }
       },
@@ -950,7 +950,7 @@
         "additionalTextEdits": [],
         "data": {
           "symbol": "scala/collection/immutable/MapKeyValueTupleHashIterator#`\u003cinit\u003e`().",
-          "target": "file:///workspace/foo",
+          "target": "file:/workspace/#foo/Compile",
           "kind": 3
         }
       },
@@ -978,7 +978,7 @@
         "additionalTextEdits": [],
         "data": {
           "symbol": "scala/collection/immutable/MapKeyValueTupleIterator#`\u003cinit\u003e`().",
-          "target": "file:///workspace/foo",
+          "target": "file:/workspace/#foo/Compile",
           "kind": 3
         }
       },
@@ -1006,7 +1006,7 @@
         "additionalTextEdits": [],
         "data": {
           "symbol": "scala/collection/immutable/MapKeyValueTupleReverseIterator#`\u003cinit\u003e`().",
-          "target": "file:///workspace/foo",
+          "target": "file:/workspace/#foo/Compile",
           "kind": 3
         }
       },
@@ -1034,7 +1034,7 @@
         "additionalTextEdits": [],
         "data": {
           "symbol": "scala/collection/immutable/MapNodeRemoveAllSetNodeIterator#`\u003cinit\u003e`().",
-          "target": "file:///workspace/foo",
+          "target": "file:/workspace/#foo/Compile",
           "kind": 3
         }
       },
@@ -1062,7 +1062,7 @@
         "additionalTextEdits": [],
         "data": {
           "symbol": "scala/collection/immutable/MapValueIterator#`\u003cinit\u003e`().",
-          "target": "file:///workspace/foo",
+          "target": "file:/workspace/#foo/Compile",
           "kind": 3
         }
       },
@@ -1090,7 +1090,7 @@
         "additionalTextEdits": [],
         "data": {
           "symbol": "scala/collection/immutable/SetBuilderImpl#`\u003cinit\u003e`().",
-          "target": "file:///workspace/foo",
+          "target": "file:/workspace/#foo/Compile",
           "kind": 3
         }
       },
@@ -1118,7 +1118,7 @@
         "additionalTextEdits": [],
         "data": {
           "symbol": "scala/collection/immutable/VectorBuilder#`\u003cinit\u003e`().",
-          "target": "file:///workspace/foo",
+          "target": "file:/workspace/#foo/Compile",
           "kind": 3
         }
       },
@@ -1146,7 +1146,7 @@
         "additionalTextEdits": [],
         "data": {
           "symbol": "scala/collection/immutable/VectorMapBuilder#`\u003cinit\u003e`().",
-          "target": "file:///workspace/foo",
+          "target": "file:/workspace/#foo/Compile",
           "kind": 3
         }
       },
@@ -1174,7 +1174,7 @@
         "additionalTextEdits": [],
         "data": {
           "symbol": "scala/collection/immutable/VectorSliceBuilder#`\u003cinit\u003e`().",
-          "target": "file:///workspace/foo",
+          "target": "file:/workspace/#foo/Compile",
           "kind": 3
         }
       },
@@ -1202,7 +1202,7 @@
         "additionalTextEdits": [],
         "data": {
           "symbol": "scala/collection/IterableFactory.Delegate#apply().",
-          "target": "file:///workspace/foo",
+          "target": "file:/workspace/#foo/Compile",
           "kind": 3
         }
       },
@@ -1230,7 +1230,7 @@
         "additionalTextEdits": [],
         "data": {
           "symbol": "scala/collection/immutable/package.Traversable.",
-          "target": "file:///workspace/foo",
+          "target": "file:/workspace/#foo/Compile",
           "kind": 3
         }
       }

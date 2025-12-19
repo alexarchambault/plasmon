@@ -13,11 +13,11 @@
         "textEdit": {
           "range": {
             "start": {
-              "line": 9,
+              "line": 10,
               "character": 29
             },
             "end": {
-              "line": 9,
+              "line": 10,
               "character": 30
             }
           },
@@ -31,49 +31,21 @@
         }
       },
       {
-        "label": "List[A](elems: A*): List[A]",
-        "kind": "Method",
-        "tags": [],
-        "detail": "[A](elems: A*): List[A]",
-        "sortText": "00001",
-        "filterText": "List",
-        "insertTextFormat": "Snippet",
-        "textEdit": {
-          "range": {
-            "start": {
-              "line": 9,
-              "character": 29
-            },
-            "end": {
-              "line": 9,
-              "character": 30
-            }
-          },
-          "newText": "List($0)"
-        },
-        "additionalTextEdits": [],
-        "data": {
-          "symbol": "scala/collection/IterableFactory#apply().",
-          "target": "file:/workspace/#foo/Compile",
-          "kind": 3
-        }
-      },
-      {
         "label": "ListSet[A](elems: A*): ListSet[A]",
         "kind": "Method",
         "tags": [],
         "detail": "[A](elems: A*): ListSet[A]",
-        "sortText": "00002",
+        "sortText": "00001",
         "filterText": "ListSet",
         "insertTextFormat": "Snippet",
         "textEdit": {
           "range": {
             "start": {
-              "line": 9,
+              "line": 10,
               "character": 29
             },
             "end": {
-              "line": 9,
+              "line": 10,
               "character": 30
             }
           },
@@ -87,21 +59,77 @@
         }
       },
       {
+        "label": "List[A](elems: A*): List[A]",
+        "kind": "Method",
+        "tags": [],
+        "detail": "[A](elems: A*): List[A]",
+        "sortText": "00002",
+        "filterText": "List",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 10,
+              "character": 29
+            },
+            "end": {
+              "line": 10,
+              "character": 30
+            }
+          },
+          "newText": "List($0)"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/IterableFactory#apply().",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 3
+        }
+      },
+      {
+        "label": "LazyListIterable[A](elems: A*): LazyListIterable[A]",
+        "kind": "Method",
+        "tags": [],
+        "detail": "[A](elems: A*): LazyListIterable[A]",
+        "sortText": "00003",
+        "filterText": "LazyListIterable",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 10,
+              "character": 29
+            },
+            "end": {
+              "line": 10,
+              "character": 30
+            }
+          },
+          "newText": "LazyListIterable($0)"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/IterableFactory#apply().",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 3
+        }
+      },
+      {
         "label": "ListMap[K, V](elems: (K, V)*): ListMap[K, V]",
         "kind": "Method",
         "tags": [],
         "detail": "[K, V](elems: (K, V)*): ListMap[K, V]",
-        "sortText": "00003",
+        "sortText": "00004",
         "filterText": "ListMap",
         "insertTextFormat": "Snippet",
         "textEdit": {
           "range": {
             "start": {
-              "line": 9,
+              "line": 10,
               "character": 29
             },
             "end": {
-              "line": 9,
+              "line": 10,
               "character": 30
             }
           },
@@ -119,17 +147,17 @@
         "kind": "Method",
         "tags": [],
         "detail": "[A](elems: A*): LinearSeq[A]",
-        "sortText": "00004",
+        "sortText": "00005",
         "filterText": "LinearSeq",
         "insertTextFormat": "Snippet",
         "textEdit": {
           "range": {
             "start": {
-              "line": 9,
+              "line": 10,
               "character": 29
             },
             "end": {
-              "line": 9,
+              "line": 10,
               "character": 30
             }
           },
@@ -147,17 +175,17 @@
         "kind": "Method",
         "tags": [],
         "detail": "[T](elems: (Long, T)*): LongMap[T]",
-        "sortText": "00005",
+        "sortText": "00006",
         "filterText": "LongMap",
         "insertTextFormat": "Snippet",
         "textEdit": {
           "range": {
             "start": {
-              "line": 9,
+              "line": 10,
               "character": 29
             },
             "end": {
-              "line": 9,
+              "line": 10,
               "character": 30
             }
           },
@@ -175,17 +203,17 @@
         "kind": "Constructor",
         "tags": [],
         "detail": "[K, V]: ListMap[K, V]",
-        "sortText": "00006",
+        "sortText": "00007",
         "filterText": "ListMap",
         "insertTextFormat": "Snippet",
         "textEdit": {
           "range": {
             "start": {
-              "line": 9,
+              "line": 10,
               "character": 2
             },
             "end": {
-              "line": 9,
+              "line": 10,
               "character": 30
             }
           },
@@ -203,17 +231,17 @@
         "kind": "Constructor",
         "tags": [],
         "detail": "[A]: ListSet[A]",
-        "sortText": "00007",
+        "sortText": "00008",
         "filterText": "ListSet",
         "insertTextFormat": "Snippet",
         "textEdit": {
           "range": {
             "start": {
-              "line": 9,
+              "line": 10,
               "character": 2
             },
             "end": {
-              "line": 9,
+              "line": 10,
               "character": 30
             }
           },
@@ -231,17 +259,17 @@
         "kind": "Module",
         "tags": [],
         "detail": " scala.collection.immutable",
-        "sortText": "00008",
+        "sortText": "00009",
         "filterText": "LazyList",
         "insertTextFormat": "Snippet",
         "textEdit": {
           "range": {
             "start": {
-              "line": 9,
+              "line": 10,
               "character": 29
             },
             "end": {
-              "line": 9,
+              "line": 10,
               "character": 30
             }
           },
@@ -255,21 +283,49 @@
         }
       },
       {
+        "label": "LazyListIterable scala.collection.immutable",
+        "kind": "Module",
+        "tags": [],
+        "detail": " scala.collection.immutable",
+        "sortText": "00010",
+        "filterText": "LazyListIterable",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 10,
+              "character": 29
+            },
+            "end": {
+              "line": 10,
+              "character": 30
+            }
+          },
+          "newText": "LazyListIterable"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/immutable/LazyListIterable.",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 3
+        }
+      },
+      {
         "label": "LinearSeq scala.collection.immutable",
         "kind": "Module",
         "tags": [],
         "detail": " scala.collection.immutable",
-        "sortText": "00009",
+        "sortText": "00011",
         "filterText": "LinearSeq",
         "insertTextFormat": "Snippet",
         "textEdit": {
           "range": {
             "start": {
-              "line": 9,
+              "line": 10,
               "character": 29
             },
             "end": {
-              "line": 9,
+              "line": 10,
               "character": 30
             }
           },
@@ -287,17 +343,17 @@
         "kind": "Module",
         "tags": [],
         "detail": " scala.collection.immutable",
-        "sortText": "00010",
+        "sortText": "00012",
         "filterText": "List",
         "insertTextFormat": "Snippet",
         "textEdit": {
           "range": {
             "start": {
-              "line": 9,
+              "line": 10,
               "character": 29
             },
             "end": {
-              "line": 9,
+              "line": 10,
               "character": 30
             }
           },
@@ -315,17 +371,17 @@
         "kind": "Module",
         "tags": [],
         "detail": " scala.collection.immutable",
-        "sortText": "00011",
+        "sortText": "00013",
         "filterText": "ListMap",
         "insertTextFormat": "Snippet",
         "textEdit": {
           "range": {
             "start": {
-              "line": 9,
+              "line": 10,
               "character": 29
             },
             "end": {
-              "line": 9,
+              "line": 10,
               "character": 30
             }
           },
@@ -343,17 +399,17 @@
         "kind": "Module",
         "tags": [],
         "detail": " scala.collection.immutable",
-        "sortText": "00012",
+        "sortText": "00014",
         "filterText": "ListSet",
         "insertTextFormat": "Snippet",
         "textEdit": {
           "range": {
             "start": {
-              "line": 9,
+              "line": 10,
               "character": 29
             },
             "end": {
-              "line": 9,
+              "line": 10,
               "character": 30
             }
           },
@@ -371,17 +427,17 @@
         "kind": "Module",
         "tags": [],
         "detail": " scala.collection.immutable",
-        "sortText": "00013",
+        "sortText": "00015",
         "filterText": "LongMap",
         "insertTextFormat": "Snippet",
         "textEdit": {
           "range": {
             "start": {
-              "line": 9,
+              "line": 10,
               "character": 29
             },
             "end": {
-              "line": 9,
+              "line": 10,
               "character": 30
             }
           },
@@ -399,17 +455,17 @@
         "kind": "Constructor",
         "tags": [],
         "detail": "[K, V]: ListMapBuilder[K, V]",
-        "sortText": "00014",
+        "sortText": "00016",
         "filterText": "ListMapBuilder",
         "insertTextFormat": "Snippet",
         "textEdit": {
           "range": {
             "start": {
-              "line": 9,
+              "line": 10,
               "character": 29
             },
             "end": {
-              "line": 9,
+              "line": 10,
               "character": 30
             }
           },
@@ -427,17 +483,17 @@
         "kind": "Constructor",
         "tags": [],
         "detail": "[V](it: LongMap[V]): LongMapEntryIterator[V]",
-        "sortText": "00015",
+        "sortText": "00017",
         "filterText": "LongMapEntryIterator",
         "insertTextFormat": "Snippet",
         "textEdit": {
           "range": {
             "start": {
-              "line": 9,
+              "line": 10,
               "character": 29
             },
             "end": {
-              "line": 9,
+              "line": 10,
               "character": 30
             }
           },
@@ -455,17 +511,17 @@
         "kind": "Constructor",
         "tags": [],
         "detail": "[V](it: LongMap[V]): LongMapKeyIterator[V]",
-        "sortText": "00016",
+        "sortText": "00018",
         "filterText": "LongMapKeyIterator",
         "insertTextFormat": "Snippet",
         "textEdit": {
           "range": {
             "start": {
-              "line": 9,
+              "line": 10,
               "character": 29
             },
             "end": {
-              "line": 9,
+              "line": 10,
               "character": 30
             }
           },
@@ -483,17 +539,17 @@
         "kind": "Constructor",
         "tags": [],
         "detail": "[V](it: LongMap[V]): LongMapValueIterator[V]",
-        "sortText": "00017",
+        "sortText": "00019",
         "filterText": "LongMapValueIterator",
         "insertTextFormat": "Snippet",
         "textEdit": {
           "range": {
             "start": {
-              "line": 9,
+              "line": 10,
               "character": 29
             },
             "end": {
-              "line": 9,
+              "line": 10,
               "character": 30
             }
           },
@@ -511,17 +567,17 @@
         "kind": "Constructor",
         "tags": [],
         "detail": "(it: NewVectorIterator[Long]): LongVectorStepper",
-        "sortText": "00018",
+        "sortText": "00020",
         "filterText": "LongVectorStepper",
         "insertTextFormat": "Snippet",
         "textEdit": {
           "range": {
             "start": {
-              "line": 9,
+              "line": 10,
               "character": 29
             },
             "end": {
-              "line": 9,
+              "line": 10,
               "character": 30
             }
           },
@@ -539,17 +595,17 @@
         "kind": "Method",
         "tags": [],
         "detail": "[A](elems: A*): scala.collection.immutable.Iterable[A]",
-        "sortText": "00019",
+        "sortText": "00021",
         "filterText": "Iterable",
         "insertTextFormat": "Snippet",
         "textEdit": {
           "range": {
             "start": {
-              "line": 9,
+              "line": 10,
               "character": 29
             },
             "end": {
-              "line": 9,
+              "line": 10,
               "character": 30
             }
           },
@@ -567,17 +623,17 @@
         "kind": "Method",
         "tags": [],
         "detail": "(n: Int): Nothing",
-        "sortText": "00020",
+        "sortText": "00022",
         "filterText": "Nil",
         "insertTextFormat": "Snippet",
         "textEdit": {
           "range": {
             "start": {
-              "line": 9,
+              "line": 10,
               "character": 29
             },
             "end": {
-              "line": 9,
+              "line": 10,
               "character": 30
             }
           },
@@ -595,17 +651,17 @@
         "kind": "Module",
         "tags": [],
         "detail": " scala.collection.immutable",
-        "sortText": "00021",
+        "sortText": "00023",
         "filterText": "IndexedSeqDefaults",
         "insertTextFormat": "Snippet",
         "textEdit": {
           "range": {
             "start": {
-              "line": 9,
+              "line": 10,
               "character": 29
             },
             "end": {
-              "line": 9,
+              "line": 10,
               "character": 30
             }
           },
@@ -623,17 +679,17 @@
         "kind": "Module",
         "tags": [],
         "detail": " scala.collection.immutable",
-        "sortText": "00022",
+        "sortText": "00024",
         "filterText": "Iterable",
         "insertTextFormat": "Snippet",
         "textEdit": {
           "range": {
             "start": {
-              "line": 9,
+              "line": 10,
               "character": 29
             },
             "end": {
-              "line": 9,
+              "line": 10,
               "character": 30
             }
           },
@@ -651,17 +707,17 @@
         "kind": "Module",
         "tags": [],
         "detail": " scala.collection.immutable",
-        "sortText": "00023",
+        "sortText": "00025",
         "filterText": "Nil",
         "insertTextFormat": "Snippet",
         "textEdit": {
           "range": {
             "start": {
-              "line": 9,
+              "line": 10,
               "character": 29
             },
             "end": {
-              "line": 9,
+              "line": 10,
               "character": 30
             }
           },
@@ -679,17 +735,17 @@
         "kind": "Constructor",
         "tags": [],
         "detail": "(it: NewVectorIterator[Double]): DoubleVectorStepper",
-        "sortText": "00024",
+        "sortText": "00026",
         "filterText": "DoubleVectorStepper",
         "insertTextFormat": "Snippet",
         "textEdit": {
           "range": {
             "start": {
-              "line": 9,
+              "line": 10,
               "character": 29
             },
             "end": {
-              "line": 9,
+              "line": 10,
               "character": 30
             }
           },
@@ -707,17 +763,17 @@
         "kind": "Constructor",
         "tags": [],
         "detail": "[K, V](originalHash: Int, hash: Int, content: Vector[(K, V @uncheckedVariance)]): HashCollisionMapNode[K, V]",
-        "sortText": "00025",
+        "sortText": "00027",
         "filterText": "HashCollisionMapNode",
         "insertTextFormat": "Snippet",
         "textEdit": {
           "range": {
             "start": {
-              "line": 9,
+              "line": 10,
               "character": 29
             },
             "end": {
-              "line": 9,
+              "line": 10,
               "character": 30
             }
           },
@@ -735,17 +791,17 @@
         "kind": "Constructor",
         "tags": [],
         "detail": "[A](originalHash: Int, hash: Int, content: Vector[A]): HashCollisionSetNode[A]",
-        "sortText": "00026",
+        "sortText": "00028",
         "filterText": "HashCollisionSetNode",
         "insertTextFormat": "Snippet",
         "textEdit": {
           "range": {
             "start": {
-              "line": 9,
+              "line": 10,
               "character": 29
             },
             "end": {
-              "line": 9,
+              "line": 10,
               "character": 30
             }
           },
@@ -763,17 +819,17 @@
         "kind": "Constructor",
         "tags": [],
         "detail": "[K, V]: HashMapBuilder[K, V]",
-        "sortText": "00027",
+        "sortText": "00029",
         "filterText": "HashMapBuilder",
         "insertTextFormat": "Snippet",
         "textEdit": {
           "range": {
             "start": {
-              "line": 9,
+              "line": 10,
               "character": 29
             },
             "end": {
-              "line": 9,
+              "line": 10,
               "character": 30
             }
           },
@@ -791,17 +847,17 @@
         "kind": "Constructor",
         "tags": [],
         "detail": "[A]: HashSetBuilder[A]",
-        "sortText": "00028",
+        "sortText": "00030",
         "filterText": "HashSetBuilder",
         "insertTextFormat": "Snippet",
         "textEdit": {
           "range": {
             "start": {
-              "line": 9,
+              "line": 10,
               "character": 29
             },
             "end": {
-              "line": 9,
+              "line": 10,
               "character": 30
             }
           },
@@ -819,17 +875,17 @@
         "kind": "Constructor",
         "tags": [],
         "detail": "[V](it: IntMap[V]): IntMapValueIterator[V]",
-        "sortText": "00029",
+        "sortText": "00031",
         "filterText": "IntMapValueIterator",
         "insertTextFormat": "Snippet",
         "textEdit": {
           "range": {
             "start": {
-              "line": 9,
+              "line": 10,
               "character": 29
             },
             "end": {
-              "line": 9,
+              "line": 10,
               "character": 30
             }
           },
@@ -847,17 +903,17 @@
         "kind": "Constructor",
         "tags": [],
         "detail": "[K, V]: MapBuilderImpl[K, V]",
-        "sortText": "00030",
+        "sortText": "00032",
         "filterText": "MapBuilderImpl",
         "insertTextFormat": "Snippet",
         "textEdit": {
           "range": {
             "start": {
-              "line": 9,
+              "line": 10,
               "character": 29
             },
             "end": {
-              "line": 9,
+              "line": 10,
               "character": 30
             }
           },
@@ -875,17 +931,17 @@
         "kind": "Constructor",
         "tags": [],
         "detail": "[K, V](rootNode: MapNode[K, V]): MapKeyValueTupleHashIterator[K, V]",
-        "sortText": "00031",
+        "sortText": "00033",
         "filterText": "MapKeyValueTupleHashIterator",
         "insertTextFormat": "Snippet",
         "textEdit": {
           "range": {
             "start": {
-              "line": 9,
+              "line": 10,
               "character": 29
             },
             "end": {
-              "line": 9,
+              "line": 10,
               "character": 30
             }
           },
@@ -903,17 +959,17 @@
         "kind": "Constructor",
         "tags": [],
         "detail": "[K, V](rootNode: MapNode[K, V]): MapKeyValueTupleIterator[K, V]",
-        "sortText": "00032",
+        "sortText": "00034",
         "filterText": "MapKeyValueTupleIterator",
         "insertTextFormat": "Snippet",
         "textEdit": {
           "range": {
             "start": {
-              "line": 9,
+              "line": 10,
               "character": 29
             },
             "end": {
-              "line": 9,
+              "line": 10,
               "character": 30
             }
           },
@@ -931,17 +987,17 @@
         "kind": "Constructor",
         "tags": [],
         "detail": "[K, V](rootNode: MapNode[K, V]): MapKeyValueTupleReverseIterator[K, V]",
-        "sortText": "00033",
+        "sortText": "00035",
         "filterText": "MapKeyValueTupleReverseIterator",
         "insertTextFormat": "Snippet",
         "textEdit": {
           "range": {
             "start": {
-              "line": 9,
+              "line": 10,
               "character": 29
             },
             "end": {
-              "line": 9,
+              "line": 10,
               "character": 30
             }
           },
@@ -959,17 +1015,17 @@
         "kind": "Constructor",
         "tags": [],
         "detail": "[K](rootSetNode: SetNode[K]): MapNodeRemoveAllSetNodeIterator[K]",
-        "sortText": "00034",
+        "sortText": "00036",
         "filterText": "MapNodeRemoveAllSetNodeIterator",
         "insertTextFormat": "Snippet",
         "textEdit": {
           "range": {
             "start": {
-              "line": 9,
+              "line": 10,
               "character": 29
             },
             "end": {
-              "line": 9,
+              "line": 10,
               "character": 30
             }
           },
@@ -987,17 +1043,17 @@
         "kind": "Constructor",
         "tags": [],
         "detail": "[K, V](rootNode: MapNode[K, V]): MapValueIterator[K, V]",
-        "sortText": "00035",
+        "sortText": "00037",
         "filterText": "MapValueIterator",
         "insertTextFormat": "Snippet",
         "textEdit": {
           "range": {
             "start": {
-              "line": 9,
+              "line": 10,
               "character": 29
             },
             "end": {
-              "line": 9,
+              "line": 10,
               "character": 30
             }
           },
@@ -1015,17 +1071,17 @@
         "kind": "Constructor",
         "tags": [],
         "detail": "[A]: SetBuilderImpl[A]",
-        "sortText": "00036",
+        "sortText": "00038",
         "filterText": "SetBuilderImpl",
         "insertTextFormat": "Snippet",
         "textEdit": {
           "range": {
             "start": {
-              "line": 9,
+              "line": 10,
               "character": 29
             },
             "end": {
-              "line": 9,
+              "line": 10,
               "character": 30
             }
           },
@@ -1043,17 +1099,17 @@
         "kind": "Constructor",
         "tags": [],
         "detail": "[A]: VectorBuilder[A]",
-        "sortText": "00037",
+        "sortText": "00039",
         "filterText": "VectorBuilder",
         "insertTextFormat": "Snippet",
         "textEdit": {
           "range": {
             "start": {
-              "line": 9,
+              "line": 10,
               "character": 29
             },
             "end": {
-              "line": 9,
+              "line": 10,
               "character": 30
             }
           },
@@ -1071,17 +1127,17 @@
         "kind": "Constructor",
         "tags": [],
         "detail": "[K, V]: VectorMapBuilder[K, V]",
-        "sortText": "00038",
+        "sortText": "00040",
         "filterText": "VectorMapBuilder",
         "insertTextFormat": "Snippet",
         "textEdit": {
           "range": {
             "start": {
-              "line": 9,
+              "line": 10,
               "character": 29
             },
             "end": {
-              "line": 9,
+              "line": 10,
               "character": 30
             }
           },
@@ -1099,17 +1155,17 @@
         "kind": "Constructor",
         "tags": [],
         "detail": "(lo: Int, hi: Int): VectorSliceBuilder",
-        "sortText": "00039",
+        "sortText": "00041",
         "filterText": "VectorSliceBuilder",
         "insertTextFormat": "Snippet",
         "textEdit": {
           "range": {
             "start": {
-              "line": 9,
+              "line": 10,
               "character": 29
             },
             "end": {
-              "line": 9,
+              "line": 10,
               "character": 30
             }
           },
@@ -1127,17 +1183,17 @@
         "kind": "Method",
         "tags": [],
         "detail": "[A](elems: A*): scala.collection.immutable.Iterable[A]",
-        "sortText": "00040",
+        "sortText": "00042",
         "filterText": "Traversable",
         "insertTextFormat": "Snippet",
         "textEdit": {
           "range": {
             "start": {
-              "line": 9,
+              "line": 10,
               "character": 29
             },
             "end": {
-              "line": 9,
+              "line": 10,
               "character": 30
             }
           },
@@ -1155,17 +1211,17 @@
         "kind": "Field",
         "tags": [],
         "detail": " scala.collection.immutable",
-        "sortText": "00041",
+        "sortText": "00043",
         "filterText": "Traversable",
         "insertTextFormat": "Snippet",
         "textEdit": {
           "range": {
             "start": {
-              "line": 9,
+              "line": 10,
               "character": 29
             },
             "end": {
-              "line": 9,
+              "line": 10,
               "character": 30
             }
           },
@@ -1174,118 +1230,6 @@
         "additionalTextEdits": [],
         "data": {
           "symbol": "scala/collection/immutable/package.Traversable.",
-          "target": "file:/workspace/#foo/Compile",
-          "kind": 3
-        }
-      },
-      {
-        "label": "equals(x$1: Any): Boolean",
-        "kind": "Method",
-        "tags": [],
-        "detail": "(x$1: Any): Boolean",
-        "sortText": "00042",
-        "filterText": "equals",
-        "insertTextFormat": "Snippet",
-        "textEdit": {
-          "range": {
-            "start": {
-              "line": 9,
-              "character": 29
-            },
-            "end": {
-              "line": 9,
-              "character": 30
-            }
-          },
-          "newText": "equals($0)"
-        },
-        "additionalTextEdits": [],
-        "data": {
-          "symbol": "scala/Predef.ArrowAssoc#equals().",
-          "target": "file:/workspace/#foo/Compile",
-          "kind": 3
-        }
-      },
-      {
-        "label": "equals(x$1: Any): Boolean",
-        "kind": "Method",
-        "tags": [],
-        "detail": "(x$1: Any): Boolean",
-        "sortText": "00043",
-        "filterText": "equals",
-        "insertTextFormat": "Snippet",
-        "textEdit": {
-          "range": {
-            "start": {
-              "line": 9,
-              "character": 29
-            },
-            "end": {
-              "line": 9,
-              "character": 30
-            }
-          },
-          "newText": "equals($0)"
-        },
-        "additionalTextEdits": [],
-        "data": {
-          "symbol": "scala/Predef.Ensuring#equals().",
-          "target": "file:/workspace/#foo/Compile",
-          "kind": 3
-        }
-      },
-      {
-        "label": "equals(x$1: Any): Boolean",
-        "kind": "Method",
-        "tags": [],
-        "detail": "(x$1: Any): Boolean",
-        "sortText": "00044",
-        "filterText": "equals",
-        "insertTextFormat": "Snippet",
-        "textEdit": {
-          "range": {
-            "start": {
-              "line": 9,
-              "character": 29
-            },
-            "end": {
-              "line": 9,
-              "character": 30
-            }
-          },
-          "newText": "equals($0)"
-        },
-        "additionalTextEdits": [],
-        "data": {
-          "symbol": "scala/Predef.StringFormat#equals().",
-          "target": "file:/workspace/#foo/Compile",
-          "kind": 3
-        }
-      },
-      {
-        "label": "getClass[X0 \u003e: Any.this.type](): Class[? \u003c: X0]",
-        "kind": "Method",
-        "tags": [],
-        "detail": "[X0 \u003e: Any.this.type](): Class[? \u003c: X0]",
-        "sortText": "00045",
-        "filterText": "getClass",
-        "insertTextFormat": "Snippet",
-        "textEdit": {
-          "range": {
-            "start": {
-              "line": 9,
-              "character": 29
-            },
-            "end": {
-              "line": 9,
-              "character": 30
-            }
-          },
-          "newText": "getClass()"
-        },
-        "additionalTextEdits": [],
-        "data": {
-          "symbol": "scala/Any#getClass().",
           "target": "file:/workspace/#foo/Compile",
           "kind": 3
         }
