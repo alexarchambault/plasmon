@@ -6,7 +6,7 @@ object TestParams {
 
   private def isCI = System.getenv("CI") != null
 
-  def enableSilentOutput = !Properties.isWin
+  def enableSilentOutput = true
   // Also disabled on CI for now, as that can be *very* verbose
   def printOutputOnError = !enableSilentOutput
 
