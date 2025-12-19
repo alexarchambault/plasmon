@@ -208,8 +208,8 @@ object Definition {
         case err: TextDocumentLookup.Error =>
           logger.log("Error looking for semanticdb:")
           logger.log(err.e)
-        case _: TextDocumentLookup.NoMatchingUri =>
-          logger.log("No matching URI found for semanticdb (???)")
+        case n: TextDocumentLookup.NoMatchingUri =>
+          logger.log(s"No matching URI found for semanticdb ($n)")
       }
 
     val semdbLookup = semanticDbs.textDocument(path, module).toOption

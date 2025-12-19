@@ -13,11 +13,11 @@
         "textEdit": {
           "range": {
             "start": {
-              "line": 6,
+              "line": 7,
               "character": 2
             },
             "end": {
-              "line": 6,
+              "line": 7,
               "character": 6
             }
           },
@@ -41,11 +41,11 @@
         "textEdit": {
           "range": {
             "start": {
-              "line": 6,
+              "line": 7,
               "character": 2
             },
             "end": {
-              "line": 6,
+              "line": 7,
               "character": 6
             }
           },
@@ -69,11 +69,11 @@
         "textEdit": {
           "range": {
             "start": {
-              "line": 6,
+              "line": 7,
               "character": 2
             },
             "end": {
-              "line": 6,
+              "line": 7,
               "character": 6
             }
           },
@@ -97,11 +97,11 @@
         "textEdit": {
           "range": {
             "start": {
-              "line": 6,
+              "line": 7,
               "character": 2
             },
             "end": {
-              "line": 6,
+              "line": 7,
               "character": 6
             }
           },

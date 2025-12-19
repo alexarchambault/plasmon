@@ -26,6 +26,7 @@ class DiagnosticsTests extends PlasmonSuite {
     val (sourceFile, files) = buildTool.singleFile(
       os.sub / "Foo.scala",
       s"""//> using scala "${scalaVersion._1}"
+         |//> using jvm "${jvm.value}"
          |object Foo {
          |  val n = 2
          |  zz

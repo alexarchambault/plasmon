@@ -49,7 +49,10 @@ class CompletionTests extends PlasmonSuite {
     serverOpt: Seq[String],
     testInputs: Seq[CompletionTest]
   ): Unit = {
-    val header = scalaVersionOpt.map(_.value).fold("")(sv => s"""//> using scala "$sv"""")
+    val header = (
+      scalaVersionOpt.map(_.value).map(sv => s"""//> using scala "$sv"""") ++
+        Seq(s"""//> using jvm "${jvm.value}"""")
+    ).mkString(System.lineSeparator())
     val (actualPath, files) = buildTool.singleModule(
       "test-mod",
       testInputs
@@ -107,6 +110,7 @@ class CompletionTests extends PlasmonSuite {
     val header = scalaVersionOpt match {
       case Some(scalaVersion) =>
         s"""//> using scala ${scalaVersion.value}
+           |//> using jvm ${jvm.value}
            |""".stripMargin
       case None => ""
     }

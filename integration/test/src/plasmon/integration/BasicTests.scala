@@ -30,10 +30,11 @@ class BasicTests extends PlasmonSuite {
     )
   }
 
-  private def fileContentFor(scalaVersionOpt: Option[String]): String = {
+  private def fileContentFor(jvm: String, scalaVersionOpt: Option[String]): String = {
     val scalaVersion = scalaVersionOpt.getOrElse(defaultScalaVersion.value)
     if (scalaVersion.startsWith("2."))
       s"""//> using scala "$scalaVersion"
+         |//> using jvm "$jvm"
          |//> using lib "com.lihaoyi::os-lib:0.9.1"
          |
          |import sca<1>la.colle<2>ction.mut<3>able.List<4>Buffer
@@ -63,6 +64,7 @@ class BasicTests extends PlasmonSuite {
          |""".stripMargin
     else
       s"""//> using scala "$scalaVersion"
+         |//> using jvm "$jvm"
          |//> using lib "com.lihaoyi::os-lib:0.9.1"
          |
          |import sca<1>la.colle<2>ction.mut<3>able.List<4>Buffer
@@ -117,11 +119,14 @@ class BasicTests extends PlasmonSuite {
     serverOpt: Seq[String],
     count: Int = 1
   ): Unit = {
-    val header = scalaVersionOpt.map(_.value).fold("")(sv => s"""//> using scala "$sv"""")
+    val header = (
+      scalaVersionOpt.map(_.value).map(sv => s"""//> using scala "$sv"""") ++
+        Seq(s"""//> using jvm "${jvm.value}"""")
+    ).mkString(System.lineSeparator())
     val (actualPath, files) = buildTool.singleModule(
       "test-mod",
       Map(
-        os.sub / "Foo.scala" -> fileContentFor(scalaVersionOpt.map(_.value)),
+        os.sub / "Foo.scala" -> fileContentFor(jvm.value, scalaVersionOpt.map(_.value)),
         os.sub / "SigHelp.scala" ->
           s"""$header
              |object SigHelp {

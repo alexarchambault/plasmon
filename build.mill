@@ -40,8 +40,8 @@ object Versions {
   def sbt      = "1.9.9"
 
   object Test {
-    def mill            = "1.0.0-RC2-4-784a1c"
-    def millwCommit     = "784a1c04d0b9a58760d3a056921dfafa96be9193"
+    def mill            = "1.1.0-RC3"
+    def millwCommit     = "e4ed599eb825a3ea95f3faa2e9097e74cc47c594"
     def sbt             = "1.9.9"
     def sbtExtrasCommit = "e3e7378fa325f942da4b0688c83fc42e28bd67f1"
   }

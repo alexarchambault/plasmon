@@ -13,11 +13,11 @@
         "textEdit": {
           "range": {
             "start": {
-              "line": 3,
+              "line": 4,
               "character": 21
             },
             "end": {
-              "line": 3,
+              "line": 4,
               "character": 23
             }
           },
@@ -39,11 +39,11 @@
         "textEdit": {
           "range": {
             "start": {
-              "line": 3,
+              "line": 4,
               "character": 21
             },
             "end": {
-              "line": 3,
+              "line": 4,
               "character": 23
             }
           },

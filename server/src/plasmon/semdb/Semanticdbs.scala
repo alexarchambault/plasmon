@@ -75,7 +75,14 @@ object Semanticdbs {
   ): Either[String, TextDocumentLookup] = {
     val reluri = scalaRelativePath.toUri(isDirectory = false).toString
     val sdocs  = loadTextDocuments(semanticdbPath)
-    sdocs.documents.find(_.uri.replace("\\", "/") == reluri) match {
+    val docOpt =
+      sdocs.documents.find(_.uri.replace("\\", "/") == reluri).orElse {
+        if (scalaPath.last.endsWith(".java"))
+          sdocs.documents.find(_.uri.replace("\\", "/").endsWith("/" + reluri))
+        else
+          None
+      }
+    docOpt match {
       case None =>
         Right(
           TextDocumentLookup.NoMatchingUri(
