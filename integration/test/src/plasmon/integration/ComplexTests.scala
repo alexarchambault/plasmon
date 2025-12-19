@@ -115,7 +115,7 @@ class ComplexTests extends PlasmonSuite {
     val mainFile = os.sub / "bar/src/bar/Test.scala"
 
     val files = Seq(
-      os.sub / "build.sc" ->
+      os.sub / "build.mill" ->
         s"""import mill._
            |import mill.scalalib._
            |

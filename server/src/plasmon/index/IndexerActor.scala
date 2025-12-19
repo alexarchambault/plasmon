@@ -175,6 +175,8 @@ class IndexerActor(
           }
           targetData.reset()
 
+          val isMill = conn.params.getDisplayName == "mill-bsp"
+
           val (targets, depSourcesRes) =
             inState(stateName(), Some(logger), progress = s"Fetching BSP data for ${conn.name}") {
               logger.timed(s"Fetching BSP data for ${conn.name}") {
@@ -183,7 +185,8 @@ class IndexerActor(
                   buildServer,
                   info,
                   targetData,
-                  server.jdkCp.map(_.toNIO.toUri.toASCIIString).toList
+                  server.jdkCp.map(_.toNIO.toUri.toASCIIString).toList,
+                  millHack = isMill
                 )
                 targetData.resetConnections(
                   targets0
@@ -406,7 +409,8 @@ class IndexerActor(
     buildServer: PlasmonBuildServer,
     info: BuildServerInfo,
     targetData: TargetData,
-    jdkCp: List[String]
+    jdkCp: List[String],
+    millHack: Boolean
   ): (b.WorkspaceBuildTargetsResult, Seq[b.BuildTarget], b.DependencySourcesResult) = {
 
     val workspaceBuildTargetsResp    = buildServer.workspaceBuildTargets.get()
@@ -460,7 +464,9 @@ class IndexerActor(
     targetData.addScalacOptions(
       postProcessScalacOptionResult(
         buildServer.buildTargetScalacOptions(new b.ScalacOptionsParams(targetList)).get(),
-        jdkCp
+        jdkCp,
+        millHack,
+        info.workspace
       )
     )
     // sbt is a pile of … and just doesn't do anything when sent a request it doesn't support
@@ -469,7 +475,9 @@ class IndexerActor(
       targetData.addJavacOptions(
         postProcessJavacOptionResult(
           buildServer.buildTargetJavacOptions(new b.JavacOptionsParams(targetList)).get(),
-          jdkCp
+          jdkCp,
+          millHack,
+          info.workspace
         )
       )
 
@@ -820,9 +828,44 @@ class IndexerActor(
   private lazy val scalaReflect213 =
     jarOf("org.scala-lang", "scala-reflect", Properties.versionNumberString)
 
+  private def classPathMillHack(
+    classDir: String,
+    classPath: List[String],
+    workspace: os.Path
+  ): Option[List[String]] = {
+    val usesCompiledClassesAndSemanticDbFilesDest = {
+      val classDir0 = classDir.osPathFromUri
+      classDir0.startsWith(workspace) &&
+      classDir0.subRelativeTo(workspace).segments.contains("compiledClassesAndSemanticDbFiles.dest")
+    }
+    if (usesCompiledClassesAndSemanticDbFilesDest) {
+      var didUpdateClasspath = false
+      val maybeUpdatedClasspath = classPath.map { uri =>
+        var uri0 = uri
+        val path = uri.osPathFromUri
+        if (path.startsWith(workspace)) {
+          val subPath = path.subRelativeTo(workspace)
+          if (subPath.endsWith(os.rel / "compile.dest/classes") && !os.exists(path)) {
+            val updatedSubPath = subPath / os.up / os.up / "compiledClassesAndSemanticDbFiles.dest"
+            val updatedPath    = workspace / updatedSubPath
+            didUpdateClasspath = true
+            uri0 = updatedPath.toNIO.toUri.toASCIIString
+          }
+        }
+        uri0
+      }
+      if (didUpdateClasspath) Some(maybeUpdatedClasspath)
+      else None
+    }
+    else
+      None
+  }
+
   private def postProcessScalacOptionResult(
     res: b.ScalacOptionsResult,
-    extraCp: List[String]
+    extraCp: List[String],
+    millHack: Boolean,
+    workspace: os.Path
   ): b.ScalacOptionsResult = {
     for (item <- res.getItems.asScala.toList) {
       var didUpdateClasspath = false
@@ -839,6 +882,11 @@ class IndexerActor(
         else
           elem
       }
+      if (millHack)
+        for (cp <- classPathMillHack(item.getClassDirectory, updatedClasspath, workspace)) {
+          didUpdateClasspath = true
+          updatedClasspath = cp
+        }
       if (extraCp.nonEmpty) {
         didUpdateClasspath = true
         updatedClasspath = updatedClasspath ::: extraCp
@@ -851,13 +899,25 @@ class IndexerActor(
 
   private def postProcessJavacOptionResult(
     res: b.JavacOptionsResult,
-    extraCp: List[String]
+    extraCp: List[String],
+    millHack: Boolean,
+    workspace: os.Path
   ): b.JavacOptionsResult = {
-    if (extraCp.nonEmpty)
-      for (item <- res.getItems.asScala.toList) {
-        val updatedClasspath = item.getClasspath.asScala.toList ::: extraCp
-        item.setClasspath(updatedClasspath.asJava)
+    for (item <- res.getItems.asScala.toList) {
+      var didUpdateClasspath = false
+      var updatedClasspath   = item.getClasspath.asScala.toList
+      if (millHack)
+        for (cp <- classPathMillHack(item.getClassDirectory, updatedClasspath, workspace)) {
+          didUpdateClasspath = true
+          updatedClasspath = cp
+        }
+      if (extraCp.nonEmpty) {
+        didUpdateClasspath = true
+        updatedClasspath = updatedClasspath ::: extraCp
       }
+      if (didUpdateClasspath)
+        item.setClasspath(updatedClasspath.asJava)
+    }
     res
   }
 }
