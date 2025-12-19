@@ -34,7 +34,7 @@ case class ScalaTarget(
       case other =>
         val dialect =
           ScalaVersions.dialectForScalaVersion(other, includeSource3 = false)
-        dialect match {
+        dialect.withAllowCaptureChecking(false) match {
           case Scala213 if containsSource3 =>
             Scala213Source3
           case Scala212 if containsSource3 =>
@@ -46,8 +46,10 @@ case class ScalaTarget(
                 .exists(_.startsWith("-Ykind-projector")) =>
             dialect.withAllowStarAsTypePlaceholder(true)
           case Scala3 =>
-            // set to false since this needs an additional compiler option
-            Scala3.withAllowStarAsTypePlaceholder(false)
+            Scala3
+              // set to false since this needs an additional compiler option
+              .withAllowStarAsTypePlaceholder(false)
+              .withAllowCaptureChecking(true)
           case other => other
         }
     }

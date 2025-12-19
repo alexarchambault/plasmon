@@ -927,11 +927,207 @@
         }
       },
       {
+        "label": "asInstanceOf[X0]: X0",
+        "kind": "Method",
+        "tags": [],
+        "detail": "[X0]: X0",
+        "sortText": "00033",
+        "filterText": "asInstanceOf",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 13,
+              "character": 13
+            },
+            "end": {
+              "line": 13,
+              "character": 13
+            }
+          },
+          "newText": "asInstanceOf"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/Any#asInstanceOf().",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 3
+        }
+      },
+      {
+        "label": "equals(x$0: Any): Boolean",
+        "kind": "Method",
+        "tags": [],
+        "detail": "(x$0: Any): Boolean",
+        "sortText": "00034",
+        "filterText": "equals",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 13,
+              "character": 13
+            },
+            "end": {
+              "line": 13,
+              "character": 13
+            }
+          },
+          "newText": "equals($0)"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/Any#equals().",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 3
+        }
+      },
+      {
+        "label": "getClass[X0 \u003e: err.type](): Class[? \u003c: X0]",
+        "kind": "Method",
+        "tags": [],
+        "detail": "[X0 \u003e: err.type](): Class[? \u003c: X0]",
+        "sortText": "00035",
+        "filterText": "getClass",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 13,
+              "character": 13
+            },
+            "end": {
+              "line": 13,
+              "character": 13
+            }
+          },
+          "newText": "getClass()"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/Any#getClass().",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 3
+        }
+      },
+      {
+        "label": "hashCode(): Int",
+        "kind": "Method",
+        "tags": [],
+        "detail": "(): Int",
+        "sortText": "00036",
+        "filterText": "hashCode",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 13,
+              "character": 13
+            },
+            "end": {
+              "line": 13,
+              "character": 13
+            }
+          },
+          "newText": "hashCode()"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/Any#hashCode().",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 3
+        }
+      },
+      {
+        "label": "isInstanceOf[X0]: Boolean",
+        "kind": "Method",
+        "tags": [],
+        "detail": "[X0]: Boolean",
+        "sortText": "00037",
+        "filterText": "isInstanceOf",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 13,
+              "character": 13
+            },
+            "end": {
+              "line": 13,
+              "character": 13
+            }
+          },
+          "newText": "isInstanceOf"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/Any#isInstanceOf().",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 3
+        }
+      },
+      {
+        "label": "synchronized[X0](x$0: X0): X0",
+        "kind": "Method",
+        "tags": [],
+        "detail": "[X0](x$0: X0): X0",
+        "sortText": "00038",
+        "filterText": "synchronized",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 13,
+              "character": 13
+            },
+            "end": {
+              "line": 13,
+              "character": 13
+            }
+          },
+          "newText": "synchronized($0)"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "java/lang/Object#synchronized().",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 3
+        }
+      },
+      {
+        "label": "toString(): String",
+        "kind": "Method",
+        "tags": [],
+        "detail": "(): String",
+        "sortText": "00039",
+        "filterText": "toString",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 13,
+              "character": 13
+            },
+            "end": {
+              "line": 13,
+              "character": 13
+            }
+          },
+          "newText": "toString()"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/Any#toString().",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 3
+        }
+      },
+      {
         "label": "-\u003e[B](y: B): (PrintStream, B)",
         "kind": "Method",
         "tags": [],
         "detail": "[B](y: B): (PrintStream, B)",
-        "sortText": "00033",
+        "sortText": "00040",
         "filterText": "-\u003e",
         "insertTextFormat": "Snippet",
         "textEdit": {
@@ -959,7 +1155,7 @@
         "kind": "Method",
         "tags": [],
         "detail": "(cond: Boolean): PrintStream",
-        "sortText": "00034",
+        "sortText": "00041",
         "filterText": "ensuring",
         "insertTextFormat": "Snippet",
         "textEdit": {
@@ -987,7 +1183,7 @@
         "kind": "Method",
         "tags": [],
         "detail": "(cond: PrintStream \u003d\u003e Boolean): PrintStream",
-        "sortText": "00035",
+        "sortText": "00042",
         "filterText": "ensuring",
         "insertTextFormat": "Snippet",
         "textEdit": {
@@ -1015,7 +1211,7 @@
         "kind": "Method",
         "tags": [],
         "detail": "(cond: Boolean, msg: \u003d\u003e Any): PrintStream",
-        "sortText": "00036",
+        "sortText": "00043",
         "filterText": "ensuring",
         "insertTextFormat": "Snippet",
         "textEdit": {
@@ -1043,7 +1239,7 @@
         "kind": "Method",
         "tags": [],
         "detail": "(cond: PrintStream \u003d\u003e Boolean, msg: \u003d\u003e Any): PrintStream",
-        "sortText": "00037",
+        "sortText": "00044",
         "filterText": "ensuring",
         "insertTextFormat": "Snippet",
         "textEdit": {
@@ -1067,69 +1263,13 @@
         }
       },
       {
-        "label": "nn: err.type",
-        "kind": "Method",
-        "tags": [],
-        "detail": ": err.type",
-        "sortText": "00038",
-        "filterText": "nn",
-        "insertTextFormat": "Snippet",
-        "textEdit": {
-          "range": {
-            "start": {
-              "line": 13,
-              "character": 13
-            },
-            "end": {
-              "line": 13,
-              "character": 13
-            }
-          },
-          "newText": "nn"
-        },
-        "additionalTextEdits": [],
-        "data": {
-          "symbol": "scala/Predef.nn().",
-          "target": "file:/workspace/#foo/Compile",
-          "kind": 3
-        }
-      },
-      {
-        "label": "runtimeChecked: err.type",
-        "kind": "Method",
-        "tags": [],
-        "detail": ": err.type",
-        "sortText": "00039",
-        "filterText": "runtimeChecked",
-        "insertTextFormat": "Snippet",
-        "textEdit": {
-          "range": {
-            "start": {
-              "line": 13,
-              "character": 13
-            },
-            "end": {
-              "line": 13,
-              "character": 13
-            }
-          },
-          "newText": "runtimeChecked"
-        },
-        "additionalTextEdits": [],
-        "data": {
-          "symbol": "scala/Predef.runtimeChecked().",
-          "target": "file:/workspace/#foo/Compile",
-          "kind": 3
-        }
-      },
-      {
         "label": "formatted(fmtstr: String): String",
         "kind": "Method",
         "tags": [
           "Deprecated"
         ],
         "detail": "(fmtstr: String): String",
-        "sortText": "00040",
+        "sortText": "00045",
         "filterText": "formatted",
         "insertTextFormat": "Snippet",
         "textEdit": {
@@ -1159,7 +1299,7 @@
           "Deprecated"
         ],
         "detail": "[B](y: B): (PrintStream, B)",
-        "sortText": "00041",
+        "sortText": "00046",
         "filterText": "→",
         "insertTextFormat": "Snippet",
         "textEdit": {
@@ -1178,202 +1318,6 @@
         "additionalTextEdits": [],
         "data": {
           "symbol": "scala/Predef.ArrowAssoc#`→`().",
-          "target": "file:/workspace/#foo/Compile",
-          "kind": 3
-        }
-      },
-      {
-        "label": "asInstanceOf[X0]: X0",
-        "kind": "Method",
-        "tags": [],
-        "detail": "[X0]: X0",
-        "sortText": "00042",
-        "filterText": "asInstanceOf",
-        "insertTextFormat": "Snippet",
-        "textEdit": {
-          "range": {
-            "start": {
-              "line": 13,
-              "character": 13
-            },
-            "end": {
-              "line": 13,
-              "character": 13
-            }
-          },
-          "newText": "asInstanceOf"
-        },
-        "additionalTextEdits": [],
-        "data": {
-          "symbol": "scala/Any#asInstanceOf().",
-          "target": "file:/workspace/#foo/Compile",
-          "kind": 3
-        }
-      },
-      {
-        "label": "equals(x$0: Any): Boolean",
-        "kind": "Method",
-        "tags": [],
-        "detail": "(x$0: Any): Boolean",
-        "sortText": "00043",
-        "filterText": "equals",
-        "insertTextFormat": "Snippet",
-        "textEdit": {
-          "range": {
-            "start": {
-              "line": 13,
-              "character": 13
-            },
-            "end": {
-              "line": 13,
-              "character": 13
-            }
-          },
-          "newText": "equals($0)"
-        },
-        "additionalTextEdits": [],
-        "data": {
-          "symbol": "scala/Any#equals().",
-          "target": "file:/workspace/#foo/Compile",
-          "kind": 3
-        }
-      },
-      {
-        "label": "getClass[X0 \u003e: err.type](): Class[? \u003c: X0]",
-        "kind": "Method",
-        "tags": [],
-        "detail": "[X0 \u003e: err.type](): Class[? \u003c: X0]",
-        "sortText": "00044",
-        "filterText": "getClass",
-        "insertTextFormat": "Snippet",
-        "textEdit": {
-          "range": {
-            "start": {
-              "line": 13,
-              "character": 13
-            },
-            "end": {
-              "line": 13,
-              "character": 13
-            }
-          },
-          "newText": "getClass()"
-        },
-        "additionalTextEdits": [],
-        "data": {
-          "symbol": "scala/Any#getClass().",
-          "target": "file:/workspace/#foo/Compile",
-          "kind": 3
-        }
-      },
-      {
-        "label": "hashCode(): Int",
-        "kind": "Method",
-        "tags": [],
-        "detail": "(): Int",
-        "sortText": "00045",
-        "filterText": "hashCode",
-        "insertTextFormat": "Snippet",
-        "textEdit": {
-          "range": {
-            "start": {
-              "line": 13,
-              "character": 13
-            },
-            "end": {
-              "line": 13,
-              "character": 13
-            }
-          },
-          "newText": "hashCode()"
-        },
-        "additionalTextEdits": [],
-        "data": {
-          "symbol": "scala/Any#hashCode().",
-          "target": "file:/workspace/#foo/Compile",
-          "kind": 3
-        }
-      },
-      {
-        "label": "isInstanceOf[X0]: Boolean",
-        "kind": "Method",
-        "tags": [],
-        "detail": "[X0]: Boolean",
-        "sortText": "00046",
-        "filterText": "isInstanceOf",
-        "insertTextFormat": "Snippet",
-        "textEdit": {
-          "range": {
-            "start": {
-              "line": 13,
-              "character": 13
-            },
-            "end": {
-              "line": 13,
-              "character": 13
-            }
-          },
-          "newText": "isInstanceOf"
-        },
-        "additionalTextEdits": [],
-        "data": {
-          "symbol": "scala/Any#isInstanceOf().",
-          "target": "file:/workspace/#foo/Compile",
-          "kind": 3
-        }
-      },
-      {
-        "label": "synchronized[X0](x$0: X0): X0",
-        "kind": "Method",
-        "tags": [],
-        "detail": "[X0](x$0: X0): X0",
-        "sortText": "00047",
-        "filterText": "synchronized",
-        "insertTextFormat": "Snippet",
-        "textEdit": {
-          "range": {
-            "start": {
-              "line": 13,
-              "character": 13
-            },
-            "end": {
-              "line": 13,
-              "character": 13
-            }
-          },
-          "newText": "synchronized($0)"
-        },
-        "additionalTextEdits": [],
-        "data": {
-          "symbol": "java/lang/Object#synchronized().",
-          "target": "file:/workspace/#foo/Compile",
-          "kind": 3
-        }
-      },
-      {
-        "label": "toString(): String",
-        "kind": "Method",
-        "tags": [],
-        "detail": "(): String",
-        "sortText": "00048",
-        "filterText": "toString",
-        "insertTextFormat": "Snippet",
-        "textEdit": {
-          "range": {
-            "start": {
-              "line": 13,
-              "character": 13
-            },
-            "end": {
-              "line": 13,
-              "character": 13
-            }
-          },
-          "newText": "toString()"
-        },
-        "additionalTextEdits": [],
-        "data": {
-          "symbol": "scala/Any#toString().",
           "target": "file:/workspace/#foo/Compile",
           "kind": 3
         }
