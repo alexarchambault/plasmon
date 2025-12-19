@@ -13,11 +13,11 @@
         "textEdit": {
           "range": {
             "start": {
-              "line": 2,
+              "line": 3,
               "character": 2
             },
             "end": {
-              "line": 2,
+              "line": 3,
               "character": 14
             }
           },
@@ -27,11 +27,11 @@
           {
             "range": {
               "start": {
-                "line": 1,
+                "line": 2,
                 "character": 0
               },
               "end": {
-                "line": 1,
+                "line": 2,
                 "character": 0
               }
             },
@@ -54,11 +54,11 @@
         "textEdit": {
           "range": {
             "start": {
-              "line": 2,
+              "line": 3,
               "character": 2
             },
             "end": {
-              "line": 2,
+              "line": 3,
               "character": 14
             }
           },
@@ -68,11 +68,11 @@
           {
             "range": {
               "start": {
-                "line": 1,
+                "line": 2,
                 "character": 0
               },
               "end": {
-                "line": 1,
+                "line": 2,
                 "character": 0
               }
             },
@@ -95,11 +95,11 @@
         "textEdit": {
           "range": {
             "start": {
-              "line": 2,
+              "line": 3,
               "character": 2
             },
             "end": {
-              "line": 2,
+              "line": 3,
               "character": 14
             }
           },
@@ -109,11 +109,11 @@
           {
             "range": {
               "start": {
-                "line": 1,
+                "line": 2,
                 "character": 0
               },
               "end": {
-                "line": 1,
+                "line": 2,
                 "character": 0
               }
             },

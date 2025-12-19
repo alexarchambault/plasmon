@@ -45,6 +45,7 @@ class Tests extends PlasmonSuite {
 
     val header = scalaVersionOpt.fold("") { scalaVersion =>
       s"""//> using scala "${scalaVersion.value}"
+         |//> using jvm "${jvm.value}"
          |""".stripMargin
     }
 

@@ -119,7 +119,7 @@ object SingleModuleBuildTool {
   case object Mill extends SingleModuleBuildTool {
     def id          = "mill"
     def displayName = "Mill"
-    private def scalaBuildSc(moduleName: String, sources: Seq[String]): String = {
+    private def scalaBuildMill(moduleName: String, sources: Seq[String]): String = {
       val sv = sources.iterator
         .flatMap(source => scalaVersion(source).iterator)
         .find(_ => true)
@@ -139,13 +139,14 @@ object SingleModuleBuildTool {
          |import mill.scalalib._
          |
          |object `$moduleName` extends ScalaModule {
+         |  def jvmId = ""
          |  def scalaVersion = "$sv"
          |  $depsPart
          |}
          |
          |""".stripMargin
     }
-    private def javaBuildSc(moduleName: String, sources: Seq[String]): String = {
+    private def javaBuildMill(moduleName: String, sources: Seq[String]): String = {
       val deps = sources.flatMap(dependencies(_))
       val q    = "\""
       val nl   = System.lineSeparator()
@@ -165,11 +166,11 @@ object SingleModuleBuildTool {
          |""".stripMargin
     }
     def singleFile(path: os.SubPath, source: String): (os.SubPath, Seq[(os.SubPath, String)]) = {
-      val buildSc0 =
-        if (path.last.endsWith(".java")) javaBuildSc("foo", Seq(source))
-        else scalaBuildSc("foo", Seq(source))
+      val buildMill0 =
+        if (path.last.endsWith(".java")) javaBuildMill("foo", Seq(source))
+        else scalaBuildMill("foo", Seq(source))
       val path0 = os.sub / "foo/src" / path
-      (path0, Seq(path0 -> source, (os.sub / "build.sc") -> buildSc0))
+      (path0, Seq(path0 -> source, (os.sub / "build.mill") -> buildMill0))
     }
     def singleModule(
       moduleName: String,
@@ -185,11 +186,11 @@ object SingleModuleBuildTool {
         case (path, content) =>
           (pathFor(path), content)
       }
-      val buildSc0 =
+      val buildMill0 =
         if (files.keysIterator.forall(_.last.endsWith(".java")))
-          javaBuildSc(moduleName, sortedFiles.map(_._2))
-        else scalaBuildSc(moduleName, sortedFiles.map(_._2))
-      (map, files0 ++ Seq((os.sub / "build.sc", buildSc0)))
+          javaBuildMill(moduleName, sortedFiles.map(_._2))
+        else scalaBuildMill(moduleName, sortedFiles.map(_._2))
+      (map, files0 ++ Seq((os.sub / "build.mill", buildMill0)))
     }
 
     private lazy val millwPath = {

@@ -21,6 +21,7 @@ class ComplexTests extends PlasmonSuite {
     val header = scalaVersionOpt match {
       case Some(scalaVersion) =>
         s"""//> using scala ${scalaVersion.value}
+           |//> using jvm ${jvm.value}
            |""".stripMargin
       case None => ""
     }
