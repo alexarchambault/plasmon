@@ -24,8 +24,8 @@ import coursier.cache.FileCache
 import plasmonbuild.*
 
 object Versions {
-  def scala   = "2.13.16"
-  def scalaJs = "1.15.0"
+  def scala   = "2.13.17"
+  def scalaJs = "1.20.1"
 
   def coursier          = "2.1.25-M19"
   def coursierInterface = "1.0.29-M3"
@@ -48,7 +48,7 @@ object Versions {
 }
 
 object Deps {
-  def acyclic = mvn"com.lihaoyi:::acyclic:0.3.16"
+  def acyclic = mvn"com.lihaoyi:::acyclic:0.3.20"
   def bloopRifle =
     mvn"io.github.alexarchambault.bleep:bloop-rifle_2.13:1.5.17-sc-2"
       .exclude(("ch.epfl.scala", "bsp4j"))

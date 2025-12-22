@@ -3,533 +3,141 @@
     "isIncomplete": false,
     "items": [
       {
-        "label": "Iterable[A](elems: A*): Iterable[A]",
+        "label": "LazyList[A](elems: A*): LazyList[A]",
         "kind": "Method",
         "tags": [],
-        "detail": "[A](elems: A*): Iterable[A]",
+        "detail": "[A](elems: A*): LazyList[A]",
         "sortText": "00000",
-        "filterText": "Iterable",
+        "filterText": "LazyList",
         "insertTextFormat": "Snippet",
         "textEdit": {
           "range": {
             "start": {
-              "line": 9,
-              "character": 19
+              "line": 10,
+              "character": 29
             },
             "end": {
-              "line": 9,
-              "character": 20
+              "line": 10,
+              "character": 30
             }
           },
-          "newText": "Iterable($0)"
+          "newText": "LazyList($0)"
         },
         "additionalTextEdits": [],
         "data": {
-          "symbol": "scala/collection/IterableFactory.Delegate#apply().",
+          "symbol": "scala/collection/IterableFactory#apply().",
           "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
           "kind": 3
         }
       },
       {
-        "label": "Iterator[A](xs: A*): Iterator[A]",
+        "label": "List[A](elems: A*): List[A]",
         "kind": "Method",
         "tags": [],
-        "detail": "[A](xs: A*): Iterator[A]",
+        "detail": "[A](elems: A*): List[A]",
         "sortText": "00001",
-        "filterText": "Iterator",
+        "filterText": "List",
         "insertTextFormat": "Snippet",
         "textEdit": {
           "range": {
             "start": {
-              "line": 9,
-              "character": 19
+              "line": 10,
+              "character": 29
             },
             "end": {
-              "line": 9,
-              "character": 20
+              "line": 10,
+              "character": 30
             }
           },
-          "newText": "Iterator($0)"
+          "newText": "List($0)"
         },
         "additionalTextEdits": [],
         "data": {
-          "symbol": "scala/collection/Iterator.apply().",
+          "symbol": "scala/collection/IterableFactory#apply().",
           "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
           "kind": 3
         }
       },
       {
-        "label": "IndexedSeq[A](elems: A*): scala.collection.IndexedSeq[A]",
+        "label": "ListSet[A](elems: A*): ListSet[A]",
         "kind": "Method",
         "tags": [],
-        "detail": "[A](elems: A*): scala.collection.IndexedSeq[A]",
+        "detail": "[A](elems: A*): ListSet[A]",
         "sortText": "00002",
-        "filterText": "IndexedSeq",
+        "filterText": "ListSet",
         "insertTextFormat": "Snippet",
         "textEdit": {
           "range": {
             "start": {
-              "line": 9,
-              "character": 19
+              "line": 10,
+              "character": 29
             },
             "end": {
-              "line": 9,
-              "character": 20
+              "line": 10,
+              "character": 30
             }
           },
-          "newText": "IndexedSeq($0)"
+          "newText": "ListSet($0)"
         },
         "additionalTextEdits": [],
         "data": {
-          "symbol": "scala/collection/SeqFactory.Delegate#apply().",
+          "symbol": "scala/collection/IterableFactory#apply().",
           "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
           "kind": 3
         }
       },
       {
-        "label": "IndexedSeq scala.collection",
-        "kind": "Module",
+        "label": "LazyListIterable[A](elems: A*): LazyListIterable[A]",
+        "kind": "Method",
         "tags": [],
-        "detail": " scala.collection",
+        "detail": "[A](elems: A*): LazyListIterable[A]",
         "sortText": "00003",
-        "filterText": "IndexedSeq",
+        "filterText": "LazyListIterable",
         "insertTextFormat": "Snippet",
         "textEdit": {
           "range": {
             "start": {
-              "line": 9,
-              "character": 19
+              "line": 10,
+              "character": 29
             },
             "end": {
-              "line": 9,
-              "character": 20
+              "line": 10,
+              "character": 30
             }
           },
-          "newText": "IndexedSeq"
+          "newText": "LazyListIterable($0)"
         },
         "additionalTextEdits": [],
         "data": {
-          "symbol": "scala/collection/IndexedSeq.",
+          "symbol": "scala/collection/IterableFactory#apply().",
           "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
           "kind": 3
         }
       },
       {
-        "label": "IndexedSeqView scala.collection",
-        "kind": "Module",
+        "label": "ListMap[K, V](elems: (K, V)*): ListMap[K, V]",
+        "kind": "Method",
         "tags": [],
-        "detail": " scala.collection",
+        "detail": "[K, V](elems: (K, V)*): ListMap[K, V]",
         "sortText": "00004",
-        "filterText": "IndexedSeqView",
+        "filterText": "ListMap",
         "insertTextFormat": "Snippet",
         "textEdit": {
           "range": {
             "start": {
-              "line": 9,
-              "character": 19
+              "line": 10,
+              "character": 29
             },
             "end": {
-              "line": 9,
-              "character": 20
+              "line": 10,
+              "character": 30
             }
           },
-          "newText": "IndexedSeqView"
+          "newText": "ListMap($0)"
         },
         "additionalTextEdits": [],
         "data": {
-          "symbol": "scala/collection/IndexedSeqView.",
-          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
-          "kind": 3
-        }
-      },
-      {
-        "label": "IntStepper scala.collection",
-        "kind": "Module",
-        "tags": [],
-        "detail": " scala.collection",
-        "sortText": "00005",
-        "filterText": "IntStepper",
-        "insertTextFormat": "Snippet",
-        "textEdit": {
-          "range": {
-            "start": {
-              "line": 9,
-              "character": 19
-            },
-            "end": {
-              "line": 9,
-              "character": 20
-            }
-          },
-          "newText": "IntStepper"
-        },
-        "additionalTextEdits": [],
-        "data": {
-          "symbol": "scala/collection/IntStepper.",
-          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
-          "kind": 3
-        }
-      },
-      {
-        "label": "Iterable scala.collection",
-        "kind": "Module",
-        "tags": [],
-        "detail": " scala.collection",
-        "sortText": "00006",
-        "filterText": "Iterable",
-        "insertTextFormat": "Snippet",
-        "textEdit": {
-          "range": {
-            "start": {
-              "line": 9,
-              "character": 19
-            },
-            "end": {
-              "line": 9,
-              "character": 20
-            }
-          },
-          "newText": "Iterable"
-        },
-        "additionalTextEdits": [],
-        "data": {
-          "symbol": "scala/collection/Iterable.",
-          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
-          "kind": 3
-        }
-      },
-      {
-        "label": "IterableFactory scala.collection",
-        "kind": "Module",
-        "tags": [],
-        "detail": " scala.collection",
-        "sortText": "00007",
-        "filterText": "IterableFactory",
-        "insertTextFormat": "Snippet",
-        "textEdit": {
-          "range": {
-            "start": {
-              "line": 9,
-              "character": 19
-            },
-            "end": {
-              "line": 9,
-              "character": 20
-            }
-          },
-          "newText": "IterableFactory"
-        },
-        "additionalTextEdits": [],
-        "data": {
-          "symbol": "scala/collection/IterableFactory.",
-          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
-          "kind": 3
-        }
-      },
-      {
-        "label": "IterableOnce scala.collection",
-        "kind": "Module",
-        "tags": [],
-        "detail": " scala.collection",
-        "sortText": "00008",
-        "filterText": "IterableOnce",
-        "insertTextFormat": "Snippet",
-        "textEdit": {
-          "range": {
-            "start": {
-              "line": 9,
-              "character": 19
-            },
-            "end": {
-              "line": 9,
-              "character": 20
-            }
-          },
-          "newText": "IterableOnce"
-        },
-        "additionalTextEdits": [],
-        "data": {
-          "symbol": "scala/collection/IterableOnce.",
-          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
-          "kind": 3
-        }
-      },
-      {
-        "label": "IterableOps scala.collection",
-        "kind": "Module",
-        "tags": [],
-        "detail": " scala.collection",
-        "sortText": "00009",
-        "filterText": "IterableOps",
-        "insertTextFormat": "Snippet",
-        "textEdit": {
-          "range": {
-            "start": {
-              "line": 9,
-              "character": 19
-            },
-            "end": {
-              "line": 9,
-              "character": 20
-            }
-          },
-          "newText": "IterableOps"
-        },
-        "additionalTextEdits": [],
-        "data": {
-          "symbol": "scala/collection/IterableOps.",
-          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
-          "kind": 3
-        }
-      },
-      {
-        "label": "Iterator scala.collection",
-        "kind": "Module",
-        "tags": [],
-        "detail": " scala.collection",
-        "sortText": "00010",
-        "filterText": "Iterator",
-        "insertTextFormat": "Snippet",
-        "textEdit": {
-          "range": {
-            "start": {
-              "line": 9,
-              "character": 19
-            },
-            "end": {
-              "line": 9,
-              "character": 20
-            }
-          },
-          "newText": "Iterator"
-        },
-        "additionalTextEdits": [],
-        "data": {
-          "symbol": "scala/collection/Iterator.",
-          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
-          "kind": 3
-        }
-      },
-      {
-        "label": "IterableOnceExtensionMethods[A](it: IterableOnce[A]): IterableOnceExtensionMethods[A]",
-        "kind": "Method",
-        "tags": [],
-        "detail": "[A](it: IterableOnce[A]): IterableOnceExtensionMethods[A]",
-        "sortText": "00011",
-        "filterText": "IterableOnceExtensionMethods",
-        "insertTextFormat": "Snippet",
-        "textEdit": {
-          "range": {
-            "start": {
-              "line": 9,
-              "character": 19
-            },
-            "end": {
-              "line": 9,
-              "character": 20
-            }
-          },
-          "newText": "IterableOnceExtensionMethods($0)"
-        },
-        "additionalTextEdits": [],
-        "data": {
-          "symbol": "scala/collection/IterableOnceExtensionMethods.apply().",
-          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
-          "kind": 3
-        }
-      },
-      {
-        "label": "IndexedSeqSlidingIterator[A, CC[_$$2], C](s: IndexedSeqOps[A, CC, C], size: Int, step: Int): IndexedSeqSlidingIterator[A, CC, C]",
-        "kind": "Constructor",
-        "tags": [],
-        "detail": "[A, CC[_$$2], C](s: IndexedSeqOps[A, CC, C], size: Int, step: Int): IndexedSeqSlidingIterator[A, CC, C]",
-        "sortText": "00012",
-        "filterText": "IndexedSeqSlidingIterator",
-        "insertTextFormat": "Snippet",
-        "textEdit": {
-          "range": {
-            "start": {
-              "line": 9,
-              "character": 19
-            },
-            "end": {
-              "line": 9,
-              "character": 20
-            }
-          },
-          "newText": "IndexedSeqSlidingIterator"
-        },
-        "additionalTextEdits": [],
-        "data": {
-          "symbol": "scala/collection/IndexedSeqSlidingIterator#`\u003cinit\u003e`().",
-          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
-          "kind": 3
-        }
-      },
-      {
-        "label": "IterableOnceExtensionMethods scala.collection",
-        "kind": "Module",
-        "tags": [],
-        "detail": " scala.collection",
-        "sortText": "00013",
-        "filterText": "IterableOnceExtensionMethods",
-        "insertTextFormat": "Snippet",
-        "textEdit": {
-          "range": {
-            "start": {
-              "line": 9,
-              "character": 19
-            },
-            "end": {
-              "line": 9,
-              "character": 20
-            }
-          },
-          "newText": "IterableOnceExtensionMethods"
-        },
-        "additionalTextEdits": [],
-        "data": {
-          "symbol": "scala/collection/IterableOnceExtensionMethods.",
-          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
-          "kind": 3
-        }
-      },
-      {
-        "label": "immutable scala.collection",
-        "kind": "Module",
-        "tags": [],
-        "detail": " scala.collection",
-        "sortText": "00014",
-        "filterText": "immutable",
-        "insertTextFormat": "Snippet",
-        "textEdit": {
-          "range": {
-            "start": {
-              "line": 9,
-              "character": 19
-            },
-            "end": {
-              "line": 9,
-              "character": 20
-            }
-          },
-          "newText": "immutable"
-        },
-        "additionalTextEdits": [],
-        "data": {
-          "symbol": "scala/collection/immutable/",
-          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
-          "kind": 3
-        }
-      },
-      {
-        "label": "LazyZip2[El1, El2, C1](src: C1, coll1: Iterable[El1], coll2: Iterable[El2]): LazyZip2[El1, El2, C1]",
-        "kind": "Method",
-        "tags": [],
-        "detail": "[El1, El2, C1](src: C1, coll1: Iterable[El1], coll2: Iterable[El2]): LazyZip2[El1, El2, C1]",
-        "sortText": "00015",
-        "filterText": "LazyZip2",
-        "insertTextFormat": "Snippet",
-        "textEdit": {
-          "range": {
-            "start": {
-              "line": 9,
-              "character": 19
-            },
-            "end": {
-              "line": 9,
-              "character": 20
-            }
-          },
-          "newText": "LazyZip2($0)"
-        },
-        "additionalTextEdits": [],
-        "data": {
-          "symbol": "scala/collection/LazyZip2.apply().",
-          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
-          "kind": 3
-        }
-      },
-      {
-        "label": "LazyZip3[El1, El2, El3, C1](src: C1, coll1: Iterable[El1], coll2: Iterable[El2], coll3: Iterable[El3]): LazyZip3[El1, El2, El3, C1]",
-        "kind": "Method",
-        "tags": [],
-        "detail": "[El1, El2, El3, C1](src: C1, coll1: Iterable[El1], coll2: Iterable[El2], coll3: Iterable[El3]): LazyZip3[El1, El2, El3, C1]",
-        "sortText": "00016",
-        "filterText": "LazyZip3",
-        "insertTextFormat": "Snippet",
-        "textEdit": {
-          "range": {
-            "start": {
-              "line": 9,
-              "character": 19
-            },
-            "end": {
-              "line": 9,
-              "character": 20
-            }
-          },
-          "newText": "LazyZip3($0)"
-        },
-        "additionalTextEdits": [],
-        "data": {
-          "symbol": "scala/collection/LazyZip3.apply().",
-          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
-          "kind": 3
-        }
-      },
-      {
-        "label": "LazyZip4[El1, El2, El3, El4, C1](src: C1, coll1: Iterable[El1], coll2: Iterable[El2], coll3: Iterable[El3], coll4: Iterable[El4]): LazyZip4[El1, El2, El3, El4, C1]",
-        "kind": "Method",
-        "tags": [],
-        "detail": "[El1, El2, El3, El4, C1](src: C1, coll1: Iterable[El1], coll2: Iterable[El2], coll3: Iterable[El3], coll4: Iterable[El4]): LazyZip4[El1, El2, El3, El4, C1]",
-        "sortText": "00017",
-        "filterText": "LazyZip4",
-        "insertTextFormat": "Snippet",
-        "textEdit": {
-          "range": {
-            "start": {
-              "line": 9,
-              "character": 19
-            },
-            "end": {
-              "line": 9,
-              "character": 20
-            }
-          },
-          "newText": "LazyZip4($0)"
-        },
-        "additionalTextEdits": [],
-        "data": {
-          "symbol": "scala/collection/LazyZip4.apply().",
-          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
-          "kind": 3
-        }
-      },
-      {
-        "label": "MapView[K, V](elems: (K, V)*): MapView[K, V]",
-        "kind": "Method",
-        "tags": [],
-        "detail": "[K, V](elems: (K, V)*): MapView[K, V]",
-        "sortText": "00018",
-        "filterText": "MapView",
-        "insertTextFormat": "Snippet",
-        "textEdit": {
-          "range": {
-            "start": {
-              "line": 9,
-              "character": 19
-            },
-            "end": {
-              "line": 9,
-              "character": 20
-            }
-          },
-          "newText": "MapView($0)"
-        },
-        "additionalTextEdits": [],
-        "data": {
-          "symbol": "scala/collection/MapView.apply().",
+          "symbol": "scala/collection/MapFactory#apply().",
           "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
           "kind": 3
         }
@@ -539,18 +147,18 @@
         "kind": "Method",
         "tags": [],
         "detail": "[A](elems: A*): LinearSeq[A]",
-        "sortText": "00019",
+        "sortText": "00005",
         "filterText": "LinearSeq",
         "insertTextFormat": "Snippet",
         "textEdit": {
           "range": {
             "start": {
-              "line": 9,
-              "character": 19
+              "line": 10,
+              "character": 29
             },
             "end": {
-              "line": 9,
-              "character": 20
+              "line": 10,
+              "character": 30
             }
           },
           "newText": "LinearSeq($0)"
@@ -563,641 +171,445 @@
         }
       },
       {
-        "label": "BitSet(xs: Int*): BitSet",
+        "label": "LongMap[T](elems: (Long, T)*): LongMap[T]",
         "kind": "Method",
         "tags": [],
-        "detail": "(xs: Int*): BitSet",
-        "sortText": "00020",
-        "filterText": "BitSet",
+        "detail": "[T](elems: (Long, T)*): LongMap[T]",
+        "sortText": "00006",
+        "filterText": "LongMap",
         "insertTextFormat": "Snippet",
         "textEdit": {
           "range": {
             "start": {
-              "line": 9,
-              "character": 19
+              "line": 10,
+              "character": 29
             },
             "end": {
-              "line": 9,
-              "character": 20
+              "line": 10,
+              "character": 30
             }
           },
-          "newText": "BitSet($0)"
+          "newText": "LongMap($0)"
         },
         "additionalTextEdits": [],
         "data": {
-          "symbol": "scala/collection/SpecificIterableFactory#apply().",
+          "symbol": "scala/collection/immutable/LongMap.apply().",
           "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
           "kind": 3
         }
       },
       {
-        "label": "StringOps(s: String): StringOps",
-        "kind": "Method",
+        "label": "new ListMap[K, V]: ListMap[K, V]",
+        "kind": "Constructor",
         "tags": [],
-        "detail": "(s: String): StringOps",
-        "sortText": "00021",
-        "filterText": "StringOps",
+        "detail": "[K, V]: ListMap[K, V]",
+        "sortText": "00007",
+        "filterText": "ListMap",
         "insertTextFormat": "Snippet",
         "textEdit": {
           "range": {
             "start": {
-              "line": 9,
-              "character": 19
+              "line": 10,
+              "character": 2
             },
             "end": {
-              "line": 9,
-              "character": 20
+              "line": 10,
+              "character": 30
             }
           },
-          "newText": "StringOps($0)"
+          "newText": "new scala.collection.immutable.ListMap"
         },
         "additionalTextEdits": [],
         "data": {
-          "symbol": "scala/collection/StringOps.apply().",
+          "symbol": "scala/collection/immutable/ListMap#`\u003cinit\u003e`().",
           "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
           "kind": 3
         }
       },
       {
-        "label": "View[A](xs: A*): View[A]",
-        "kind": "Method",
+        "label": "new ListSet[A]: ListSet[A]",
+        "kind": "Constructor",
         "tags": [],
-        "detail": "[A](xs: A*): View[A]",
-        "sortText": "00022",
-        "filterText": "View",
+        "detail": "[A]: ListSet[A]",
+        "sortText": "00008",
+        "filterText": "ListSet",
         "insertTextFormat": "Snippet",
         "textEdit": {
           "range": {
             "start": {
-              "line": 9,
-              "character": 19
+              "line": 10,
+              "character": 2
             },
             "end": {
-              "line": 9,
-              "character": 20
+              "line": 10,
+              "character": 30
             }
           },
-          "newText": "View($0)"
+          "newText": "new scala.collection.immutable.ListSet"
         },
         "additionalTextEdits": [],
         "data": {
-          "symbol": "scala/collection/View.apply().",
+          "symbol": "scala/collection/immutable/ListSet#`\u003cinit\u003e`().",
           "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
           "kind": 3
         }
       },
       {
-        "label": "BitSet scala.collection",
+        "label": "LazyList scala.collection.immutable",
         "kind": "Module",
         "tags": [],
-        "detail": " scala.collection",
-        "sortText": "00023",
-        "filterText": "BitSet",
+        "detail": " scala.collection.immutable",
+        "sortText": "00009",
+        "filterText": "LazyList",
         "insertTextFormat": "Snippet",
         "textEdit": {
           "range": {
             "start": {
-              "line": 9,
-              "character": 19
+              "line": 10,
+              "character": 29
             },
             "end": {
-              "line": 9,
-              "character": 20
+              "line": 10,
+              "character": 30
             }
           },
-          "newText": "BitSet"
+          "newText": "LazyList"
         },
         "additionalTextEdits": [],
         "data": {
-          "symbol": "scala/collection/BitSet.",
+          "symbol": "scala/collection/immutable/LazyList.",
           "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
           "kind": 3
         }
       },
       {
-        "label": "BitSetOps scala.collection",
+        "label": "LazyListIterable scala.collection.immutable",
         "kind": "Module",
         "tags": [],
-        "detail": " scala.collection",
-        "sortText": "00024",
-        "filterText": "BitSetOps",
+        "detail": " scala.collection.immutable",
+        "sortText": "00010",
+        "filterText": "LazyListIterable",
         "insertTextFormat": "Snippet",
         "textEdit": {
           "range": {
             "start": {
-              "line": 9,
-              "character": 19
+              "line": 10,
+              "character": 29
             },
             "end": {
-              "line": 9,
-              "character": 20
+              "line": 10,
+              "character": 30
             }
           },
-          "newText": "BitSetOps"
+          "newText": "LazyListIterable"
         },
         "additionalTextEdits": [],
         "data": {
-          "symbol": "scala/collection/BitSetOps.",
+          "symbol": "scala/collection/immutable/LazyListIterable.",
           "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
           "kind": 3
         }
       },
       {
-        "label": "BuildFrom scala.collection",
+        "label": "LinearSeq scala.collection.immutable",
         "kind": "Module",
         "tags": [],
-        "detail": " scala.collection",
-        "sortText": "00025",
-        "filterText": "BuildFrom",
-        "insertTextFormat": "Snippet",
-        "textEdit": {
-          "range": {
-            "start": {
-              "line": 9,
-              "character": 19
-            },
-            "end": {
-              "line": 9,
-              "character": 20
-            }
-          },
-          "newText": "BuildFrom"
-        },
-        "additionalTextEdits": [],
-        "data": {
-          "symbol": "scala/collection/BuildFrom.",
-          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
-          "kind": 3
-        }
-      },
-      {
-        "label": "ClassTagIterableFactory scala.collection",
-        "kind": "Module",
-        "tags": [],
-        "detail": " scala.collection",
-        "sortText": "00026",
-        "filterText": "ClassTagIterableFactory",
-        "insertTextFormat": "Snippet",
-        "textEdit": {
-          "range": {
-            "start": {
-              "line": 9,
-              "character": 19
-            },
-            "end": {
-              "line": 9,
-              "character": 20
-            }
-          },
-          "newText": "ClassTagIterableFactory"
-        },
-        "additionalTextEdits": [],
-        "data": {
-          "symbol": "scala/collection/ClassTagIterableFactory.",
-          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
-          "kind": 3
-        }
-      },
-      {
-        "label": "EvidenceIterableFactory scala.collection",
-        "kind": "Module",
-        "tags": [],
-        "detail": " scala.collection",
-        "sortText": "00027",
-        "filterText": "EvidenceIterableFactory",
-        "insertTextFormat": "Snippet",
-        "textEdit": {
-          "range": {
-            "start": {
-              "line": 9,
-              "character": 19
-            },
-            "end": {
-              "line": 9,
-              "character": 20
-            }
-          },
-          "newText": "EvidenceIterableFactory"
-        },
-        "additionalTextEdits": [],
-        "data": {
-          "symbol": "scala/collection/EvidenceIterableFactory.",
-          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
-          "kind": 3
-        }
-      },
-      {
-        "label": "LazyZip2 scala.collection",
-        "kind": "Module",
-        "tags": [],
-        "detail": " scala.collection",
-        "sortText": "00028",
-        "filterText": "LazyZip2",
-        "insertTextFormat": "Snippet",
-        "textEdit": {
-          "range": {
-            "start": {
-              "line": 9,
-              "character": 19
-            },
-            "end": {
-              "line": 9,
-              "character": 20
-            }
-          },
-          "newText": "LazyZip2"
-        },
-        "additionalTextEdits": [],
-        "data": {
-          "symbol": "scala/collection/LazyZip2.",
-          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
-          "kind": 3
-        }
-      },
-      {
-        "label": "LazyZip3 scala.collection",
-        "kind": "Module",
-        "tags": [],
-        "detail": " scala.collection",
-        "sortText": "00029",
-        "filterText": "LazyZip3",
-        "insertTextFormat": "Snippet",
-        "textEdit": {
-          "range": {
-            "start": {
-              "line": 9,
-              "character": 19
-            },
-            "end": {
-              "line": 9,
-              "character": 20
-            }
-          },
-          "newText": "LazyZip3"
-        },
-        "additionalTextEdits": [],
-        "data": {
-          "symbol": "scala/collection/LazyZip3.",
-          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
-          "kind": 3
-        }
-      },
-      {
-        "label": "LazyZip4 scala.collection",
-        "kind": "Module",
-        "tags": [],
-        "detail": " scala.collection",
-        "sortText": "00030",
-        "filterText": "LazyZip4",
-        "insertTextFormat": "Snippet",
-        "textEdit": {
-          "range": {
-            "start": {
-              "line": 9,
-              "character": 19
-            },
-            "end": {
-              "line": 9,
-              "character": 20
-            }
-          },
-          "newText": "LazyZip4"
-        },
-        "additionalTextEdits": [],
-        "data": {
-          "symbol": "scala/collection/LazyZip4.",
-          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
-          "kind": 3
-        }
-      },
-      {
-        "label": "LinearSeq scala.collection",
-        "kind": "Module",
-        "tags": [],
-        "detail": " scala.collection",
-        "sortText": "00031",
+        "detail": " scala.collection.immutable",
+        "sortText": "00011",
         "filterText": "LinearSeq",
         "insertTextFormat": "Snippet",
         "textEdit": {
           "range": {
             "start": {
-              "line": 9,
-              "character": 19
+              "line": 10,
+              "character": 29
             },
             "end": {
-              "line": 9,
-              "character": 20
+              "line": 10,
+              "character": 30
             }
           },
           "newText": "LinearSeq"
         },
         "additionalTextEdits": [],
         "data": {
-          "symbol": "scala/collection/LinearSeq.",
+          "symbol": "scala/collection/immutable/LinearSeq.",
           "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
           "kind": 3
         }
       },
       {
-        "label": "MapView scala.collection",
+        "label": "List scala.collection.immutable",
         "kind": "Module",
         "tags": [],
-        "detail": " scala.collection",
-        "sortText": "00032",
-        "filterText": "MapView",
+        "detail": " scala.collection.immutable",
+        "sortText": "00012",
+        "filterText": "List",
         "insertTextFormat": "Snippet",
         "textEdit": {
           "range": {
             "start": {
-              "line": 9,
-              "character": 19
+              "line": 10,
+              "character": 29
             },
             "end": {
-              "line": 9,
-              "character": 20
+              "line": 10,
+              "character": 30
             }
           },
-          "newText": "MapView"
+          "newText": "List"
         },
         "additionalTextEdits": [],
         "data": {
-          "symbol": "scala/collection/MapView.",
+          "symbol": "scala/collection/immutable/List.",
           "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
           "kind": 3
         }
       },
       {
-        "label": "Searching scala.collection",
+        "label": "ListMap scala.collection.immutable",
         "kind": "Module",
         "tags": [],
-        "detail": " scala.collection",
-        "sortText": "00033",
-        "filterText": "Searching",
+        "detail": " scala.collection.immutable",
+        "sortText": "00013",
+        "filterText": "ListMap",
         "insertTextFormat": "Snippet",
         "textEdit": {
           "range": {
             "start": {
-              "line": 9,
-              "character": 19
+              "line": 10,
+              "character": 29
             },
             "end": {
-              "line": 9,
-              "character": 20
+              "line": 10,
+              "character": 30
             }
           },
-          "newText": "Searching"
+          "newText": "ListMap"
         },
         "additionalTextEdits": [],
         "data": {
-          "symbol": "scala/collection/Searching.",
+          "symbol": "scala/collection/immutable/ListMap.",
           "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
           "kind": 3
         }
       },
       {
-        "label": "SeqView scala.collection",
+        "label": "ListSet scala.collection.immutable",
         "kind": "Module",
         "tags": [],
-        "detail": " scala.collection",
-        "sortText": "00034",
-        "filterText": "SeqView",
+        "detail": " scala.collection.immutable",
+        "sortText": "00014",
+        "filterText": "ListSet",
         "insertTextFormat": "Snippet",
         "textEdit": {
           "range": {
             "start": {
-              "line": 9,
-              "character": 19
+              "line": 10,
+              "character": 29
             },
             "end": {
-              "line": 9,
-              "character": 20
+              "line": 10,
+              "character": 30
             }
           },
-          "newText": "SeqView"
+          "newText": "ListSet"
         },
         "additionalTextEdits": [],
         "data": {
-          "symbol": "scala/collection/SeqView.",
+          "symbol": "scala/collection/immutable/ListSet.",
           "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
           "kind": 3
         }
       },
       {
-        "label": "SortedIterableFactory scala.collection",
+        "label": "LongMap scala.collection.immutable",
         "kind": "Module",
         "tags": [],
-        "detail": " scala.collection",
-        "sortText": "00035",
-        "filterText": "SortedIterableFactory",
+        "detail": " scala.collection.immutable",
+        "sortText": "00015",
+        "filterText": "LongMap",
         "insertTextFormat": "Snippet",
         "textEdit": {
           "range": {
             "start": {
-              "line": 9,
-              "character": 19
+              "line": 10,
+              "character": 29
             },
             "end": {
-              "line": 9,
-              "character": 20
+              "line": 10,
+              "character": 30
             }
           },
-          "newText": "SortedIterableFactory"
+          "newText": "LongMap"
         },
         "additionalTextEdits": [],
         "data": {
-          "symbol": "scala/collection/SortedIterableFactory.",
+          "symbol": "scala/collection/immutable/LongMap.",
           "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
           "kind": 3
         }
       },
       {
-        "label": "StringOps scala.collection",
-        "kind": "Module",
-        "tags": [],
-        "detail": " scala.collection",
-        "sortText": "00036",
-        "filterText": "StringOps",
-        "insertTextFormat": "Snippet",
-        "textEdit": {
-          "range": {
-            "start": {
-              "line": 9,
-              "character": 19
-            },
-            "end": {
-              "line": 9,
-              "character": 20
-            }
-          },
-          "newText": "StringOps"
-        },
-        "additionalTextEdits": [],
-        "data": {
-          "symbol": "scala/collection/StringOps.",
-          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
-          "kind": 3
-        }
-      },
-      {
-        "label": "View scala.collection",
-        "kind": "Module",
-        "tags": [],
-        "detail": " scala.collection",
-        "sortText": "00037",
-        "filterText": "View",
-        "insertTextFormat": "Snippet",
-        "textEdit": {
-          "range": {
-            "start": {
-              "line": 9,
-              "character": 19
-            },
-            "end": {
-              "line": 9,
-              "character": 20
-            }
-          },
-          "newText": "View"
-        },
-        "additionalTextEdits": [],
-        "data": {
-          "symbol": "scala/collection/View.",
-          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
-          "kind": 3
-        }
-      },
-      {
-        "label": "StringView(s: String): StringView",
-        "kind": "Method",
-        "tags": [],
-        "detail": "(s: String): StringView",
-        "sortText": "00038",
-        "filterText": "StringView",
-        "insertTextFormat": "Snippet",
-        "textEdit": {
-          "range": {
-            "start": {
-              "line": 9,
-              "character": 19
-            },
-            "end": {
-              "line": 9,
-              "character": 20
-            }
-          },
-          "newText": "StringView($0)"
-        },
-        "additionalTextEdits": [],
-        "data": {
-          "symbol": "scala/collection/StringView.apply().",
-          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
-          "kind": 3
-        }
-      },
-      {
-        "label": "LinearSeqIterator[A](coll: LinearSeqOps[A, LinearSeq, LinearSeq[A]]): LinearSeqIterator[A]",
+        "label": "ListMapBuilder[K, V]: ListMapBuilder[K, V]",
         "kind": "Constructor",
         "tags": [],
-        "detail": "[A](coll: LinearSeqOps[A, LinearSeq, LinearSeq[A]]): LinearSeqIterator[A]",
-        "sortText": "00039",
-        "filterText": "LinearSeqIterator",
+        "detail": "[K, V]: ListMapBuilder[K, V]",
+        "sortText": "00016",
+        "filterText": "ListMapBuilder",
         "insertTextFormat": "Snippet",
         "textEdit": {
           "range": {
             "start": {
-              "line": 9,
-              "character": 19
+              "line": 10,
+              "character": 29
             },
             "end": {
-              "line": 9,
-              "character": 20
+              "line": 10,
+              "character": 30
             }
           },
-          "newText": "LinearSeqIterator"
+          "newText": "ListMapBuilder"
         },
         "additionalTextEdits": [],
         "data": {
-          "symbol": "scala/collection/LinearSeqIterator#`\u003cinit\u003e`().",
+          "symbol": "scala/collection/immutable/ListMapBuilder#`\u003cinit\u003e`().",
           "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
           "kind": 3
         }
       },
       {
-        "label": "StringView scala.collection",
-        "kind": "Module",
+        "label": "LongMapEntryIterator[V](it: LongMap[V]): LongMapEntryIterator[V]",
+        "kind": "Constructor",
         "tags": [],
-        "detail": " scala.collection",
-        "sortText": "00040",
-        "filterText": "StringView",
+        "detail": "[V](it: LongMap[V]): LongMapEntryIterator[V]",
+        "sortText": "00017",
+        "filterText": "LongMapEntryIterator",
         "insertTextFormat": "Snippet",
         "textEdit": {
           "range": {
             "start": {
-              "line": 9,
-              "character": 19
+              "line": 10,
+              "character": 29
             },
             "end": {
-              "line": 9,
-              "character": 20
+              "line": 10,
+              "character": 30
             }
           },
-          "newText": "StringView"
+          "newText": "LongMapEntryIterator"
         },
         "additionalTextEdits": [],
         "data": {
-          "symbol": "scala/collection/StringView.",
+          "symbol": "scala/collection/immutable/LongMapEntryIterator#`\u003cinit\u003e`().",
           "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
           "kind": 3
         }
       },
       {
-        "label": "generic scala.collection",
-        "kind": "Module",
+        "label": "LongMapKeyIterator[V](it: LongMap[V]): LongMapKeyIterator[V]",
+        "kind": "Constructor",
         "tags": [],
-        "detail": " scala.collection",
-        "sortText": "00041",
-        "filterText": "generic",
+        "detail": "[V](it: LongMap[V]): LongMapKeyIterator[V]",
+        "sortText": "00018",
+        "filterText": "LongMapKeyIterator",
         "insertTextFormat": "Snippet",
         "textEdit": {
           "range": {
             "start": {
-              "line": 9,
-              "character": 19
+              "line": 10,
+              "character": 29
             },
             "end": {
-              "line": 9,
-              "character": 20
+              "line": 10,
+              "character": 30
             }
           },
-          "newText": "generic"
+          "newText": "LongMapKeyIterator"
         },
         "additionalTextEdits": [],
         "data": {
-          "symbol": "scala/collection/generic/",
+          "symbol": "scala/collection/immutable/LongMapKeyIterator#`\u003cinit\u003e`().",
           "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
           "kind": 3
         }
       },
       {
-        "label": "GenIterable[A](elems: A*): Iterable[A]",
+        "label": "LongMapValueIterator[V](it: LongMap[V]): LongMapValueIterator[V]",
+        "kind": "Constructor",
+        "tags": [],
+        "detail": "[V](it: LongMap[V]): LongMapValueIterator[V]",
+        "sortText": "00019",
+        "filterText": "LongMapValueIterator",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 10,
+              "character": 29
+            },
+            "end": {
+              "line": 10,
+              "character": 30
+            }
+          },
+          "newText": "LongMapValueIterator"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/immutable/LongMapValueIterator#`\u003cinit\u003e`().",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "kind": 3
+        }
+      },
+      {
+        "label": "LongVectorStepper(it: NewVectorIterator[Long]): LongVectorStepper",
+        "kind": "Constructor",
+        "tags": [],
+        "detail": "(it: NewVectorIterator[Long]): LongVectorStepper",
+        "sortText": "00020",
+        "filterText": "LongVectorStepper",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 10,
+              "character": 29
+            },
+            "end": {
+              "line": 10,
+              "character": 30
+            }
+          },
+          "newText": "LongVectorStepper"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/immutable/LongVectorStepper#`\u003cinit\u003e`().",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "kind": 3
+        }
+      },
+      {
+        "label": "Iterable[A](elems: A*): scala.collection.immutable.Iterable[A]",
         "kind": "Method",
         "tags": [],
-        "detail": "[A](elems: A*): Iterable[A]",
-        "sortText": "00042",
-        "filterText": "GenIterable",
+        "detail": "[A](elems: A*): scala.collection.immutable.Iterable[A]",
+        "sortText": "00021",
+        "filterText": "Iterable",
         "insertTextFormat": "Snippet",
         "textEdit": {
           "range": {
             "start": {
-              "line": 9,
-              "character": 19
+              "line": 10,
+              "character": 29
             },
             "end": {
-              "line": 9,
-              "character": 20
+              "line": 10,
+              "character": 30
             }
           },
-          "newText": "GenIterable($0)"
+          "newText": "Iterable($0)"
         },
         "additionalTextEdits": [],
         "data": {
@@ -1207,29 +619,617 @@
         }
       },
       {
-        "label": "GenIterable scala.collection",
-        "kind": "Field",
+        "label": "Nil(n: Int): Nothing",
+        "kind": "Method",
         "tags": [],
-        "detail": " scala.collection",
-        "sortText": "00043",
-        "filterText": "GenIterable",
+        "detail": "(n: Int): Nothing",
+        "sortText": "00022",
+        "filterText": "Nil",
         "insertTextFormat": "Snippet",
         "textEdit": {
           "range": {
             "start": {
-              "line": 9,
-              "character": 19
+              "line": 10,
+              "character": 29
             },
             "end": {
-              "line": 9,
-              "character": 20
+              "line": 10,
+              "character": 30
             }
           },
-          "newText": "GenIterable"
+          "newText": "Nil($0)"
         },
         "additionalTextEdits": [],
         "data": {
-          "symbol": "scala/collection/package.GenIterable.",
+          "symbol": "scala/collection/LinearSeqOps#apply().",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "kind": 3
+        }
+      },
+      {
+        "label": "IndexedSeqDefaults scala.collection.immutable",
+        "kind": "Module",
+        "tags": [],
+        "detail": " scala.collection.immutable",
+        "sortText": "00023",
+        "filterText": "IndexedSeqDefaults",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 10,
+              "character": 29
+            },
+            "end": {
+              "line": 10,
+              "character": 30
+            }
+          },
+          "newText": "IndexedSeqDefaults"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/immutable/IndexedSeqDefaults.",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "kind": 3
+        }
+      },
+      {
+        "label": "Iterable scala.collection.immutable",
+        "kind": "Module",
+        "tags": [],
+        "detail": " scala.collection.immutable",
+        "sortText": "00024",
+        "filterText": "Iterable",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 10,
+              "character": 29
+            },
+            "end": {
+              "line": 10,
+              "character": 30
+            }
+          },
+          "newText": "Iterable"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/immutable/Iterable.",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "kind": 3
+        }
+      },
+      {
+        "label": "Nil scala.collection.immutable",
+        "kind": "Module",
+        "tags": [],
+        "detail": " scala.collection.immutable",
+        "sortText": "00025",
+        "filterText": "Nil",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 10,
+              "character": 29
+            },
+            "end": {
+              "line": 10,
+              "character": 30
+            }
+          },
+          "newText": "Nil"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/immutable/Nil.",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "kind": 3
+        }
+      },
+      {
+        "label": "DoubleVectorStepper(it: NewVectorIterator[Double]): DoubleVectorStepper",
+        "kind": "Constructor",
+        "tags": [],
+        "detail": "(it: NewVectorIterator[Double]): DoubleVectorStepper",
+        "sortText": "00026",
+        "filterText": "DoubleVectorStepper",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 10,
+              "character": 29
+            },
+            "end": {
+              "line": 10,
+              "character": 30
+            }
+          },
+          "newText": "DoubleVectorStepper"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/immutable/DoubleVectorStepper#`\u003cinit\u003e`().",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "kind": 3
+        }
+      },
+      {
+        "label": "HashCollisionMapNode[K, V](originalHash: Int, hash: Int, content: Vector[(K, V @uncheckedVariance)]): HashCollisionMapNode[K, V]",
+        "kind": "Constructor",
+        "tags": [],
+        "detail": "[K, V](originalHash: Int, hash: Int, content: Vector[(K, V @uncheckedVariance)]): HashCollisionMapNode[K, V]",
+        "sortText": "00027",
+        "filterText": "HashCollisionMapNode",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 10,
+              "character": 29
+            },
+            "end": {
+              "line": 10,
+              "character": 30
+            }
+          },
+          "newText": "HashCollisionMapNode"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/immutable/HashCollisionMapNode#`\u003cinit\u003e`().",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "kind": 3
+        }
+      },
+      {
+        "label": "HashCollisionSetNode[A](originalHash: Int, hash: Int, content: Vector[A]): HashCollisionSetNode[A]",
+        "kind": "Constructor",
+        "tags": [],
+        "detail": "[A](originalHash: Int, hash: Int, content: Vector[A]): HashCollisionSetNode[A]",
+        "sortText": "00028",
+        "filterText": "HashCollisionSetNode",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 10,
+              "character": 29
+            },
+            "end": {
+              "line": 10,
+              "character": 30
+            }
+          },
+          "newText": "HashCollisionSetNode"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/immutable/HashCollisionSetNode#`\u003cinit\u003e`().",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "kind": 3
+        }
+      },
+      {
+        "label": "HashMapBuilder[K, V]: HashMapBuilder[K, V]",
+        "kind": "Constructor",
+        "tags": [],
+        "detail": "[K, V]: HashMapBuilder[K, V]",
+        "sortText": "00029",
+        "filterText": "HashMapBuilder",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 10,
+              "character": 29
+            },
+            "end": {
+              "line": 10,
+              "character": 30
+            }
+          },
+          "newText": "HashMapBuilder"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/immutable/HashMapBuilder#`\u003cinit\u003e`().",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "kind": 3
+        }
+      },
+      {
+        "label": "HashSetBuilder[A]: HashSetBuilder[A]",
+        "kind": "Constructor",
+        "tags": [],
+        "detail": "[A]: HashSetBuilder[A]",
+        "sortText": "00030",
+        "filterText": "HashSetBuilder",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 10,
+              "character": 29
+            },
+            "end": {
+              "line": 10,
+              "character": 30
+            }
+          },
+          "newText": "HashSetBuilder"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/immutable/HashSetBuilder#`\u003cinit\u003e`().",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "kind": 3
+        }
+      },
+      {
+        "label": "IntMapValueIterator[V](it: IntMap[V]): IntMapValueIterator[V]",
+        "kind": "Constructor",
+        "tags": [],
+        "detail": "[V](it: IntMap[V]): IntMapValueIterator[V]",
+        "sortText": "00031",
+        "filterText": "IntMapValueIterator",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 10,
+              "character": 29
+            },
+            "end": {
+              "line": 10,
+              "character": 30
+            }
+          },
+          "newText": "IntMapValueIterator"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/immutable/IntMapValueIterator#`\u003cinit\u003e`().",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "kind": 3
+        }
+      },
+      {
+        "label": "MapBuilderImpl[K, V]: MapBuilderImpl[K, V]",
+        "kind": "Constructor",
+        "tags": [],
+        "detail": "[K, V]: MapBuilderImpl[K, V]",
+        "sortText": "00032",
+        "filterText": "MapBuilderImpl",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 10,
+              "character": 29
+            },
+            "end": {
+              "line": 10,
+              "character": 30
+            }
+          },
+          "newText": "MapBuilderImpl"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/immutable/MapBuilderImpl#`\u003cinit\u003e`().",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "kind": 3
+        }
+      },
+      {
+        "label": "MapKeyValueTupleHashIterator[K, V](rootNode: MapNode[K, V]): MapKeyValueTupleHashIterator[K, V]",
+        "kind": "Constructor",
+        "tags": [],
+        "detail": "[K, V](rootNode: MapNode[K, V]): MapKeyValueTupleHashIterator[K, V]",
+        "sortText": "00033",
+        "filterText": "MapKeyValueTupleHashIterator",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 10,
+              "character": 29
+            },
+            "end": {
+              "line": 10,
+              "character": 30
+            }
+          },
+          "newText": "MapKeyValueTupleHashIterator"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/immutable/MapKeyValueTupleHashIterator#`\u003cinit\u003e`().",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "kind": 3
+        }
+      },
+      {
+        "label": "MapKeyValueTupleIterator[K, V](rootNode: MapNode[K, V]): MapKeyValueTupleIterator[K, V]",
+        "kind": "Constructor",
+        "tags": [],
+        "detail": "[K, V](rootNode: MapNode[K, V]): MapKeyValueTupleIterator[K, V]",
+        "sortText": "00034",
+        "filterText": "MapKeyValueTupleIterator",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 10,
+              "character": 29
+            },
+            "end": {
+              "line": 10,
+              "character": 30
+            }
+          },
+          "newText": "MapKeyValueTupleIterator"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/immutable/MapKeyValueTupleIterator#`\u003cinit\u003e`().",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "kind": 3
+        }
+      },
+      {
+        "label": "MapKeyValueTupleReverseIterator[K, V](rootNode: MapNode[K, V]): MapKeyValueTupleReverseIterator[K, V]",
+        "kind": "Constructor",
+        "tags": [],
+        "detail": "[K, V](rootNode: MapNode[K, V]): MapKeyValueTupleReverseIterator[K, V]",
+        "sortText": "00035",
+        "filterText": "MapKeyValueTupleReverseIterator",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 10,
+              "character": 29
+            },
+            "end": {
+              "line": 10,
+              "character": 30
+            }
+          },
+          "newText": "MapKeyValueTupleReverseIterator"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/immutable/MapKeyValueTupleReverseIterator#`\u003cinit\u003e`().",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "kind": 3
+        }
+      },
+      {
+        "label": "MapNodeRemoveAllSetNodeIterator[K](rootSetNode: SetNode[K]): MapNodeRemoveAllSetNodeIterator[K]",
+        "kind": "Constructor",
+        "tags": [],
+        "detail": "[K](rootSetNode: SetNode[K]): MapNodeRemoveAllSetNodeIterator[K]",
+        "sortText": "00036",
+        "filterText": "MapNodeRemoveAllSetNodeIterator",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 10,
+              "character": 29
+            },
+            "end": {
+              "line": 10,
+              "character": 30
+            }
+          },
+          "newText": "MapNodeRemoveAllSetNodeIterator"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/immutable/MapNodeRemoveAllSetNodeIterator#`\u003cinit\u003e`().",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "kind": 3
+        }
+      },
+      {
+        "label": "MapValueIterator[K, V](rootNode: MapNode[K, V]): MapValueIterator[K, V]",
+        "kind": "Constructor",
+        "tags": [],
+        "detail": "[K, V](rootNode: MapNode[K, V]): MapValueIterator[K, V]",
+        "sortText": "00037",
+        "filterText": "MapValueIterator",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 10,
+              "character": 29
+            },
+            "end": {
+              "line": 10,
+              "character": 30
+            }
+          },
+          "newText": "MapValueIterator"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/immutable/MapValueIterator#`\u003cinit\u003e`().",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "kind": 3
+        }
+      },
+      {
+        "label": "SetBuilderImpl[A]: SetBuilderImpl[A]",
+        "kind": "Constructor",
+        "tags": [],
+        "detail": "[A]: SetBuilderImpl[A]",
+        "sortText": "00038",
+        "filterText": "SetBuilderImpl",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 10,
+              "character": 29
+            },
+            "end": {
+              "line": 10,
+              "character": 30
+            }
+          },
+          "newText": "SetBuilderImpl"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/immutable/SetBuilderImpl#`\u003cinit\u003e`().",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "kind": 3
+        }
+      },
+      {
+        "label": "VectorBuilder[A]: VectorBuilder[A]",
+        "kind": "Constructor",
+        "tags": [],
+        "detail": "[A]: VectorBuilder[A]",
+        "sortText": "00039",
+        "filterText": "VectorBuilder",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 10,
+              "character": 29
+            },
+            "end": {
+              "line": 10,
+              "character": 30
+            }
+          },
+          "newText": "VectorBuilder"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/immutable/VectorBuilder#`\u003cinit\u003e`().",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "kind": 3
+        }
+      },
+      {
+        "label": "VectorMapBuilder[K, V]: VectorMapBuilder[K, V]",
+        "kind": "Constructor",
+        "tags": [],
+        "detail": "[K, V]: VectorMapBuilder[K, V]",
+        "sortText": "00040",
+        "filterText": "VectorMapBuilder",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 10,
+              "character": 29
+            },
+            "end": {
+              "line": 10,
+              "character": 30
+            }
+          },
+          "newText": "VectorMapBuilder"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/immutable/VectorMapBuilder#`\u003cinit\u003e`().",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "kind": 3
+        }
+      },
+      {
+        "label": "VectorSliceBuilder(lo: Int, hi: Int): VectorSliceBuilder",
+        "kind": "Constructor",
+        "tags": [],
+        "detail": "(lo: Int, hi: Int): VectorSliceBuilder",
+        "sortText": "00041",
+        "filterText": "VectorSliceBuilder",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 10,
+              "character": 29
+            },
+            "end": {
+              "line": 10,
+              "character": 30
+            }
+          },
+          "newText": "VectorSliceBuilder"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/immutable/VectorSliceBuilder#`\u003cinit\u003e`().",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "kind": 3
+        }
+      },
+      {
+        "label": "Traversable[A](elems: A*): scala.collection.immutable.Iterable[A]",
+        "kind": "Method",
+        "tags": [],
+        "detail": "[A](elems: A*): scala.collection.immutable.Iterable[A]",
+        "sortText": "00042",
+        "filterText": "Traversable",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 10,
+              "character": 29
+            },
+            "end": {
+              "line": 10,
+              "character": 30
+            }
+          },
+          "newText": "Traversable($0)"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/IterableFactory.Delegate#apply().",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "kind": 3
+        }
+      },
+      {
+        "label": "Traversable scala.collection.immutable",
+        "kind": "Field",
+        "tags": [],
+        "detail": " scala.collection.immutable",
+        "sortText": "00043",
+        "filterText": "Traversable",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 10,
+              "character": 29
+            },
+            "end": {
+              "line": 10,
+              "character": 30
+            }
+          },
+          "newText": "Traversable"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/immutable/package.Traversable.",
           "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
           "kind": 3
         }
