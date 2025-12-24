@@ -8,7 +8,7 @@ import scala.jdk.CollectionConverters.*
 import com.virtuslab.using_directives.custom.model.Path
 import com.virtuslab.using_directives.custom.model.StringValue
 import java.io.OutputStream
-import scala.concurrent.duration.{DurationInt, FiniteDuration}
+import scala.concurrent.duration.{DurationInt, FiniteDuration, IntMult}
 
 abstract class SingleModuleBuildTool extends Product with Serializable {
   def id: String
@@ -33,8 +33,7 @@ abstract class SingleModuleBuildTool extends Product with Serializable {
   def isSlow: Boolean                  = false
 
   final def defaultTimeout: FiniteDuration =
-    if (isSlow) 2.minutes
-    else 1.minute
+    (if (isSlow) 2 else 1) * TestUtil.baseTimeout
 }
 
 object SingleModuleBuildTool {

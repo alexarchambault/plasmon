@@ -1,6 +1,6 @@
 package plasmon.integration
 
-import scala.concurrent.duration.{Duration, DurationInt}
+import scala.concurrent.duration.{Duration, DurationInt, IntMult}
 import scala.concurrent.{Await, Future}
 import scala.util.{Failure, Success, Try}
 
@@ -65,7 +65,8 @@ trait PlasmonSuite extends munit.FunSuite {
     }
   }
 
-  override def munitTimeout: Duration = 2.minutes
+  override def munitTimeout: Duration =
+    (2 * (1 + retryCount)) * TestUtil.baseTimeout
 }
 
 object PlasmonSuite {

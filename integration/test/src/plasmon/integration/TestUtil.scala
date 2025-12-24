@@ -25,6 +25,7 @@ import scala.reflect.ClassTag
 import scala.util.Properties
 import java.util.Arrays
 import scala.annotation.nowarn
+import scala.concurrent.duration.Duration
 
 object TestUtil {
 
@@ -68,11 +69,20 @@ object TestUtil {
         sys.error("plasmon.integration.disableScala2Pc not set")
       }
 
+  lazy val baseTimeout = Option(System.getenv("PLASMON_TIMEOUT_OVERRIDE"))
+    .map(Duration(_))
+    .map {
+      case f: FiniteDuration => f
+      case other =>
+        sys.error(s"PLASMON_TIMEOUT_OVERRIDE must be finite (got $other)")
+    }
+    .getOrElse(1.minute)
+
   def withWorkspaceServerPositionsCount[T](
     projectName: String = "test-project",
     client: l.services.LanguageClient = new MockLanguageClient {},
     clientCapabilities: l.ClientCapabilities = new l.ClientCapabilities,
-    timeout: Option[FiniteDuration] = Some(1.minute),
+    timeout: Option[FiniteDuration] = Some(baseTimeout),
     extraServerOpts: Seq[String] = Nil,
     count: Int = 1
   )(
@@ -102,7 +112,7 @@ object TestUtil {
     projectName: String = "test-project",
     client: l.services.LanguageClient = new MockLanguageClient {},
     clientCapabilities: l.ClientCapabilities = new l.ClientCapabilities,
-    timeout: Option[FiniteDuration] = Some(1.minute),
+    timeout: Option[FiniteDuration] = Some(baseTimeout),
     extraServerOpts: Seq[String] = Nil,
     count: Int = 1
   )(
@@ -133,7 +143,7 @@ object TestUtil {
     client: l.services.LanguageClient = new MockLanguageClient {},
     clientCapabilities: l.ClientCapabilities = new l.ClientCapabilities,
     shutdownServer: Boolean = true,
-    timeout: Option[FiniteDuration] = Some(1.minute),
+    timeout: Option[FiniteDuration] = Some(baseTimeout),
     extraServerOpts: Seq[String] = Nil,
     workspaceOpt: Option[os.Path] = None,
     count: Int = 1
