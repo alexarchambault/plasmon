@@ -3,219 +3,11 @@
     "isIncomplete": false,
     "items": [
       {
-        "label": "IndexedSeq scala.collection",
+        "label": "BitSet scala.collection",
         "kind": "Module",
         "detail": " scala.collection",
         "preselect": true,
         "sortText": "00000",
-        "filterText": "IndexedSeq",
-        "insertTextFormat": "Snippet",
-        "textEdit": {
-          "range": {
-            "start": {
-              "line": 9,
-              "character": 19
-            },
-            "end": {
-              "line": 9,
-              "character": 20
-            }
-          },
-          "newText": "IndexedSeq"
-        },
-        "data": {
-          "symbol": "scala/collection/IndexedSeq.",
-          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
-          "kind": 0
-        }
-      },
-      {
-        "label": "IndexedSeqView scala.collection",
-        "kind": "Module",
-        "detail": " scala.collection",
-        "sortText": "00001",
-        "filterText": "IndexedSeqView",
-        "insertTextFormat": "Snippet",
-        "textEdit": {
-          "range": {
-            "start": {
-              "line": 9,
-              "character": 19
-            },
-            "end": {
-              "line": 9,
-              "character": 20
-            }
-          },
-          "newText": "IndexedSeqView"
-        },
-        "data": {
-          "symbol": "scala/collection/IndexedSeqView.",
-          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
-          "kind": 0
-        }
-      },
-      {
-        "label": "IntStepper scala.collection",
-        "kind": "Module",
-        "detail": " scala.collection",
-        "sortText": "00002",
-        "filterText": "IntStepper",
-        "insertTextFormat": "Snippet",
-        "textEdit": {
-          "range": {
-            "start": {
-              "line": 9,
-              "character": 19
-            },
-            "end": {
-              "line": 9,
-              "character": 20
-            }
-          },
-          "newText": "IntStepper"
-        },
-        "data": {
-          "symbol": "scala/collection/IntStepper.",
-          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
-          "kind": 0
-        }
-      },
-      {
-        "label": "Iterable scala.collection",
-        "kind": "Module",
-        "detail": " scala.collection",
-        "sortText": "00003",
-        "filterText": "Iterable",
-        "insertTextFormat": "Snippet",
-        "textEdit": {
-          "range": {
-            "start": {
-              "line": 9,
-              "character": 19
-            },
-            "end": {
-              "line": 9,
-              "character": 20
-            }
-          },
-          "newText": "Iterable"
-        },
-        "data": {
-          "symbol": "scala/collection/Iterable.",
-          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
-          "kind": 0
-        }
-      },
-      {
-        "label": "IterableFactory scala.collection",
-        "kind": "Module",
-        "detail": " scala.collection",
-        "sortText": "00004",
-        "filterText": "IterableFactory",
-        "insertTextFormat": "Snippet",
-        "textEdit": {
-          "range": {
-            "start": {
-              "line": 9,
-              "character": 19
-            },
-            "end": {
-              "line": 9,
-              "character": 20
-            }
-          },
-          "newText": "IterableFactory"
-        },
-        "data": {
-          "symbol": "scala/collection/IterableFactory.",
-          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
-          "kind": 0
-        }
-      },
-      {
-        "label": "IterableOnce scala.collection",
-        "kind": "Module",
-        "detail": " scala.collection",
-        "sortText": "00005",
-        "filterText": "IterableOnce",
-        "insertTextFormat": "Snippet",
-        "textEdit": {
-          "range": {
-            "start": {
-              "line": 9,
-              "character": 19
-            },
-            "end": {
-              "line": 9,
-              "character": 20
-            }
-          },
-          "newText": "IterableOnce"
-        },
-        "data": {
-          "symbol": "scala/collection/IterableOnce.",
-          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
-          "kind": 0
-        }
-      },
-      {
-        "label": "IterableOps scala.collection",
-        "kind": "Module",
-        "detail": " scala.collection",
-        "sortText": "00006",
-        "filterText": "IterableOps",
-        "insertTextFormat": "Snippet",
-        "textEdit": {
-          "range": {
-            "start": {
-              "line": 9,
-              "character": 19
-            },
-            "end": {
-              "line": 9,
-              "character": 20
-            }
-          },
-          "newText": "IterableOps"
-        },
-        "data": {
-          "symbol": "scala/collection/IterableOps.",
-          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
-          "kind": 0
-        }
-      },
-      {
-        "label": "Iterator scala.collection",
-        "kind": "Module",
-        "detail": " scala.collection",
-        "sortText": "00007",
-        "filterText": "Iterator",
-        "insertTextFormat": "Snippet",
-        "textEdit": {
-          "range": {
-            "start": {
-              "line": 9,
-              "character": 19
-            },
-            "end": {
-              "line": 9,
-              "character": 20
-            }
-          },
-          "newText": "Iterator"
-        },
-        "data": {
-          "symbol": "scala/collection/Iterator.",
-          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
-          "kind": 0
-        }
-      },
-      {
-        "label": "BitSet scala.collection",
-        "kind": "Module",
-        "detail": " scala.collection",
-        "sortText": "00008",
         "filterText": "BitSet",
         "insertTextFormat": "Snippet",
         "textEdit": {
@@ -241,7 +33,7 @@
         "label": "BitSetOps scala.collection",
         "kind": "Module",
         "detail": " scala.collection",
-        "sortText": "00009",
+        "sortText": "00001",
         "filterText": "BitSetOps",
         "insertTextFormat": "Snippet",
         "textEdit": {
@@ -267,7 +59,7 @@
         "label": "BuildFrom scala.collection",
         "kind": "Module",
         "detail": " scala.collection",
-        "sortText": "00010",
+        "sortText": "00002",
         "filterText": "BuildFrom",
         "insertTextFormat": "Snippet",
         "textEdit": {
@@ -293,7 +85,7 @@
         "label": "ClassTagIterableFactory scala.collection",
         "kind": "Module",
         "detail": " scala.collection",
-        "sortText": "00011",
+        "sortText": "00003",
         "filterText": "ClassTagIterableFactory",
         "insertTextFormat": "Snippet",
         "textEdit": {
@@ -319,7 +111,7 @@
         "label": "EvidenceIterableFactory scala.collection",
         "kind": "Module",
         "detail": " scala.collection",
-        "sortText": "00012",
+        "sortText": "00004",
         "filterText": "EvidenceIterableFactory",
         "insertTextFormat": "Snippet",
         "textEdit": {
@@ -337,6 +129,214 @@
         },
         "data": {
           "symbol": "scala/collection/EvidenceIterableFactory.",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "kind": 0
+        }
+      },
+      {
+        "label": "IndexedSeq scala.collection",
+        "kind": "Module",
+        "detail": " scala.collection",
+        "sortText": "00005",
+        "filterText": "IndexedSeq",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 9,
+              "character": 19
+            },
+            "end": {
+              "line": 9,
+              "character": 20
+            }
+          },
+          "newText": "IndexedSeq"
+        },
+        "data": {
+          "symbol": "scala/collection/IndexedSeq.",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "kind": 0
+        }
+      },
+      {
+        "label": "IndexedSeqView scala.collection",
+        "kind": "Module",
+        "detail": " scala.collection",
+        "sortText": "00006",
+        "filterText": "IndexedSeqView",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 9,
+              "character": 19
+            },
+            "end": {
+              "line": 9,
+              "character": 20
+            }
+          },
+          "newText": "IndexedSeqView"
+        },
+        "data": {
+          "symbol": "scala/collection/IndexedSeqView.",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "kind": 0
+        }
+      },
+      {
+        "label": "IntStepper scala.collection",
+        "kind": "Module",
+        "detail": " scala.collection",
+        "sortText": "00007",
+        "filterText": "IntStepper",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 9,
+              "character": 19
+            },
+            "end": {
+              "line": 9,
+              "character": 20
+            }
+          },
+          "newText": "IntStepper"
+        },
+        "data": {
+          "symbol": "scala/collection/IntStepper.",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "kind": 0
+        }
+      },
+      {
+        "label": "Iterable scala.collection",
+        "kind": "Module",
+        "detail": " scala.collection",
+        "sortText": "00008",
+        "filterText": "Iterable",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 9,
+              "character": 19
+            },
+            "end": {
+              "line": 9,
+              "character": 20
+            }
+          },
+          "newText": "Iterable"
+        },
+        "data": {
+          "symbol": "scala/collection/Iterable.",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "kind": 0
+        }
+      },
+      {
+        "label": "IterableFactory scala.collection",
+        "kind": "Module",
+        "detail": " scala.collection",
+        "sortText": "00009",
+        "filterText": "IterableFactory",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 9,
+              "character": 19
+            },
+            "end": {
+              "line": 9,
+              "character": 20
+            }
+          },
+          "newText": "IterableFactory"
+        },
+        "data": {
+          "symbol": "scala/collection/IterableFactory.",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "kind": 0
+        }
+      },
+      {
+        "label": "IterableOnce scala.collection",
+        "kind": "Module",
+        "detail": " scala.collection",
+        "sortText": "00010",
+        "filterText": "IterableOnce",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 9,
+              "character": 19
+            },
+            "end": {
+              "line": 9,
+              "character": 20
+            }
+          },
+          "newText": "IterableOnce"
+        },
+        "data": {
+          "symbol": "scala/collection/IterableOnce.",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "kind": 0
+        }
+      },
+      {
+        "label": "IterableOps scala.collection",
+        "kind": "Module",
+        "detail": " scala.collection",
+        "sortText": "00011",
+        "filterText": "IterableOps",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 9,
+              "character": 19
+            },
+            "end": {
+              "line": 9,
+              "character": 20
+            }
+          },
+          "newText": "IterableOps"
+        },
+        "data": {
+          "symbol": "scala/collection/IterableOps.",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "kind": 0
+        }
+      },
+      {
+        "label": "Iterator scala.collection",
+        "kind": "Module",
+        "detail": " scala.collection",
+        "sortText": "00012",
+        "filterText": "Iterator",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 9,
+              "character": 19
+            },
+            "end": {
+              "line": 9,
+              "character": 20
+            }
+          },
+          "newText": "Iterator"
+        },
+        "data": {
+          "symbol": "scala/collection/Iterator.",
           "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
           "kind": 0
         }
