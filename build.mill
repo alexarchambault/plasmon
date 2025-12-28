@@ -622,13 +622,10 @@ object server extends ScalaModule with PlasmonPublishModule {
     }
 
     def nativeImageOptions = Task {
-      val ciMemoryOptions =
-        if (System.getenv("CI") == null) Nil
-        else Seq("-J-Xmx7g")
       val ciOptions =
         if (System.getenv("CI") == null) Nil
         else Seq("-H:DeadlockWatchdogInterval=25")
-      ciMemoryOptions ++ super.nativeImageOptions() ++ Seq(
+      super.nativeImageOptions() ++ Seq(
         "--no-fallback",
         "-Duser.country=US",
         "-Duser.language=en",
