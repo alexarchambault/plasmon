@@ -146,6 +146,14 @@ object PlasmonPublishModule {
 
 def disableScala2Pc = false
 
+def enableTestParallelism =
+  System.getenv("CI") != null /* messes with the output frame locally */ && {
+    sys.props("os.arch").toLowerCase(java.util.Locale.ROOT) match {
+      case "arm64" | "aarch64" => true
+      case _                   => false
+    }
+  }
+
 object server extends ScalaModule with PlasmonPublishModule {
   def scalaVersion = Versions.scala
   def compileMvnDeps = Seq(
@@ -700,7 +708,7 @@ object integration extends ScalaModule {
 
   object test extends ScalaTests {
     def testFramework   = "munit.Framework"
-    def testParallelism = false // messes with the output frame
+    def testParallelism = enableTestParallelism
     def forkArgs = super.forkArgs() ++ sharedForkArgs() ++ Seq(
       s"-Dplasmon.integration.launcher=${server.launcher().path}",
       "-Dplasmon.integration.launcher-kind=jvm"
@@ -737,7 +745,7 @@ object integration extends ScalaModule {
 
   object native extends ScalaTests {
     def testFramework   = "munit.Framework"
-    def testParallelism = false // messes with the output frame
+    def testParallelism = enableTestParallelism
     def forkArgs = Task {
       server.native.validatedNativeImage()
       super.forkArgs() ++ sharedForkArgs() ++ Seq(
