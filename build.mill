@@ -45,6 +45,8 @@ object Versions {
     def sbt             = "1.9.9"
     def sbtExtrasCommit = "e3e7378fa325f942da4b0688c83fc42e28bd67f1"
   }
+
+  def libericaNik = "25.0.0"
 }
 
 object Deps {
@@ -642,7 +644,7 @@ object server extends ScalaModule with PlasmonPublishModule {
     }
 
     def nativeImagePersist      = System.getenv("CI") != null
-    def nativeImageGraalVmJvmId = "liberica-nik:25.0.0"
+    def nativeImageGraalVmJvmId = s"liberica-nik:${Versions.libericaNik}"
 
     def validatedNativeImage = Task {
       val ref = nativeImage()
