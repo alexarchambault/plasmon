@@ -46,7 +46,7 @@ object Versions {
     def sbtExtrasCommit = "e3e7378fa325f942da4b0688c83fc42e28bd67f1"
   }
 
-  def libericaNik = "25.0.0"
+  def libericaNik = "25.0.1"
 }
 
 object Deps {
