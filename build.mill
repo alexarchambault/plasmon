@@ -45,6 +45,8 @@ object Versions {
     def sbt             = "1.9.9"
     def sbtExtrasCommit = "e3e7378fa325f942da4b0688c83fc42e28bd67f1"
   }
+
+  def libericaNik = "25.0.1"
 }
 
 object Deps {
@@ -143,6 +145,14 @@ object PlasmonPublishModule {
 }
 
 def disableScala2Pc = false
+
+def enableTestParallelism =
+  System.getenv("CI") != null /* messes with the output frame locally */ && {
+    sys.props("os.arch").toLowerCase(java.util.Locale.ROOT) match {
+      case "arm64" | "aarch64" => true
+      case _                   => false
+    }
+  }
 
 object server extends ScalaModule with PlasmonPublishModule {
   def scalaVersion = Versions.scala
@@ -622,13 +632,10 @@ object server extends ScalaModule with PlasmonPublishModule {
     }
 
     def nativeImageOptions = Task {
-      val ciMemoryOptions =
-        if (System.getenv("CI") == null) Nil
-        else Seq("-J-Xmx7g")
       val ciOptions =
         if (System.getenv("CI") == null) Nil
         else Seq("-H:DeadlockWatchdogInterval=25")
-      ciMemoryOptions ++ super.nativeImageOptions() ++ Seq(
+      super.nativeImageOptions() ++ Seq(
         "--no-fallback",
         "-Duser.country=US",
         "-Duser.language=en",
@@ -645,7 +652,7 @@ object server extends ScalaModule with PlasmonPublishModule {
     }
 
     def nativeImagePersist      = System.getenv("CI") != null
-    def nativeImageGraalVmJvmId = "liberica-nik:25.0.0"
+    def nativeImageGraalVmJvmId = s"liberica-nik:${Versions.libericaNik}"
 
     def validatedNativeImage = Task {
       val ref = nativeImage()
@@ -701,7 +708,7 @@ object integration extends ScalaModule {
 
   object test extends ScalaTests {
     def testFramework   = "munit.Framework"
-    def testParallelism = false // messes with the output frame
+    def testParallelism = enableTestParallelism
     def forkArgs = super.forkArgs() ++ sharedForkArgs() ++ Seq(
       s"-Dplasmon.integration.launcher=${server.launcher().path}",
       "-Dplasmon.integration.launcher-kind=jvm"
@@ -738,7 +745,7 @@ object integration extends ScalaModule {
 
   object native extends ScalaTests {
     def testFramework   = "munit.Framework"
-    def testParallelism = false // messes with the output frame
+    def testParallelism = enableTestParallelism
     def forkArgs = Task {
       server.native.validatedNativeImage()
       super.forkArgs() ++ sharedForkArgs() ++ Seq(
