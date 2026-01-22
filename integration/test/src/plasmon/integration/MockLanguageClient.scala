@@ -13,7 +13,8 @@ import scala.collection.mutable
 
 // This needs to be a trait. The lsp4j reflection stuff is unhappy if it's a class
 // (it finds duplicated methods…)
-trait MockLanguageClient extends LanguageClient with MockLanguageClient.Stuff {
+trait MockLanguageClient extends LanguageClient with MockLanguageClient.Stuff
+    with MockLanguageClient.NoAnnotationsOverrides {
 
   private var outputStream0: OutputStream = System.err
   def outputStream: OutputStream          = outputStream0
@@ -72,5 +73,42 @@ object MockLanguageClient {
     def statusUpdate(uri: String, updates: JList[Object]): Unit
     @JsonNotification("plasmon/progress")
     def progress(details: Object): Unit
+  }
+
+  // without this, it seems Scala 3 adds the same kind of thing automatically,
+  // but adding back the original annotations, which confuses lsp4j (that complains
+  // about duplicated stuff)
+  trait NoAnnotationsOverrides extends LanguageClient {
+    override def showDocument(params: l.ShowDocumentParams)
+      : CompletableFuture[l.ShowDocumentResult] =
+      super.showDocument(params)
+    override def createProgress(params: l.WorkDoneProgressCreateParams): CompletableFuture[Void] =
+      super.createProgress(params)
+    override def notifyProgress(params: l.ProgressParams): Unit =
+      super.notifyProgress(params)
+    override def logTrace(params: l.LogTraceParams): Unit =
+      super.logTrace(params)
+    override def registerCapability(params: l.RegistrationParams): CompletableFuture[Void] =
+      super.registerCapability(params)
+    override def unregisterCapability(params: l.UnregistrationParams): CompletableFuture[Void] =
+      super.unregisterCapability(params)
+    override def workspaceFolders(): CompletableFuture[JList[l.WorkspaceFolder]] =
+      super.workspaceFolders()
+    override def configuration(configurationParams: l.ConfigurationParams)
+      : CompletableFuture[JList[Object]] =
+      super.configuration(configurationParams)
+    override def refreshSemanticTokens(): CompletableFuture[Void] =
+      super.refreshSemanticTokens()
+    override def refreshCodeLenses(): CompletableFuture[Void] =
+      super.refreshCodeLenses()
+    override def refreshDiagnostics(): CompletableFuture[Void] =
+      super.refreshDiagnostics()
+    override def refreshInlayHints(): CompletableFuture[Void] =
+      super.refreshInlayHints()
+    override def refreshInlineValues(): CompletableFuture[Void] =
+      super.refreshInlineValues()
+    override def applyEdit(applyEditParams: l.ApplyWorkspaceEditParams)
+      : CompletableFuture[l.ApplyWorkspaceEditResponse] =
+      super.applyEdit(applyEditParams)
   }
 }

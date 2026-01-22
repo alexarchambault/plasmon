@@ -100,7 +100,7 @@ object CodeLens {
                 )
               )
           }(server.pools.definitionProviderEc).asJavaObject
-        }(ArgParser.gson[GotoCommandParams])
+        }(using ArgParser.gson[GotoCommandParams])
       }
     )
 

@@ -11,7 +11,7 @@ import java.nio.file.Paths
 import java.util.concurrent.{CompletableFuture, CountDownLatch, TimeUnit}
 
 import scala.jdk.CollectionConverters.*
-import scala.language.reflectiveCalls
+import scala.reflect.Selectable.reflectiveSelectable
 
 class BasicTests extends PlasmonSuite {
 
@@ -160,8 +160,13 @@ class BasicTests extends PlasmonSuite {
       )
     )
     val updated = new CountDownLatch(1)
-    val languageClient = new MockLanguageClient {
+    val languageClient: MockLanguageClient {
+      def osOpt: Option[OutputStream]; def withOsOpt(osOpt0: Option[OutputStream]): Unit
+    } = new MockLanguageClient {
       var osOpt = Option.empty[OutputStream]
+      def withOsOpt(osOpt0: Option[OutputStream]): Unit = {
+        osOpt = osOpt0
+      }
       override def applyEdit(applyEditParams: l.ApplyWorkspaceEditParams)
         : CompletableFuture[l.ApplyWorkspaceEditResponse] = {
         osOpt.getOrElse(System.err).pprint(applyEditParams)
@@ -210,7 +215,7 @@ class BasicTests extends PlasmonSuite {
       timeout = Some(buildTool.defaultTimeout)
     )(files: _*) {
       (workspace, server, positions, osOpt, runCount) =>
-        languageClient.osOpt = osOpt
+        languageClient.withOsOpt(osOpt)
 
         buildTool.setup(workspace, osOpt, readOnlyToplevelSymbolsCache = runCount > 0)
 

@@ -24,7 +24,7 @@ import coursier.cache.FileCache
 import plasmonbuild.*
 
 object Versions {
-  def scala   = "2.13.18"
+  def scala2  = "2.13.18"
   def scalaJs = "1.20.1"
 
   def coursier          = "2.1.25-M19"
@@ -32,8 +32,8 @@ object Versions {
   def mtags             = "1.6.5-1"
   def scalaCli          = "1.11.0"
 
-  def scala213 = scala
-  def scala3   = "3.8.0-RC3"
+  def scala213 = scala2
+  def scala    = "3.8.0-RC3"
   def scala3Pc = "3.8.0-RC3"
 
   def sbtBloop = "2.0.13"
@@ -50,17 +50,16 @@ object Versions {
 }
 
 object Deps {
-  def acyclic = mvn"com.lihaoyi:::acyclic:0.3.20"
   def bloopRifle =
     mvn"io.github.alexarchambault.bleep:bloop-rifle_2.13:1.5.17-sc-2"
       .exclude(("ch.epfl.scala", "bsp4j"))
   def bsp4j             = mvn"io.github.plasmon-scala:bsp4j:2.2.0-M3"
   def caseApp           = mvn"com.github.alexarchambault::case-app:2.1.0-M26"
-  def coursierCache     = mvn"io.get-coursier::coursier-cache:${Versions.coursier}"
-  def coursierJvm       = mvn"io.get-coursier::coursier-jvm:${Versions.coursier}"
+  def coursierCache     = mvn"io.get-coursier:coursier-cache_2.13:${Versions.coursier}"
+  def coursierJvm       = mvn"io.get-coursier:coursier-jvm_2.13:${Versions.coursier}"
   def coursierInterface = mvn"io.get-coursier:interface:${Versions.coursierInterface}"
   def coursierInterfaceNoShading =
-    mvn"io.get-coursier::interface-no-shading:${Versions.coursierInterface}"
+    mvn"io.get-coursier:interface-no-shading_2.13:${Versions.coursierInterface}"
   def expecty        = mvn"com.eed3si9n.expecty::expecty:0.16.0"
   def jniUtils       = mvn"io.get-coursier.jniutils:windows-jni-utils:0.3.3"
   def jsoniterCore   = mvn"com.github.plokhotnyuk.jsoniter-scala::jsoniter-scala-core:2.24.2"
@@ -68,12 +67,12 @@ object Deps {
   def libdaemonjvm   = mvn"io.github.alexarchambault.libdaemon::libdaemon:0.0.11"
   def lsp4j          = mvn"org.eclipse.lsp4j:org.eclipse.lsp4j:0.20.1"
   def lz4Java        = mvn"org.lz4:lz4-java:1.8.0"
-  def mtags          = mvn"io.github.plasmon-scala:::mtags:${Versions.mtags}"
-  def mtagsJava      = mvn"io.github.plasmon-scala::mtags-java:${Versions.mtags}"
-  def mtagsScala3 = mvn"io.github.plasmon-scala:scala3-presentation-compiler_3:${Versions.scala3Pc}"
-  def munit       = mvn"org.scalameta::munit:1.1.0"
-  def osLib       = mvn"com.lihaoyi::os-lib:0.10.7"
-  def pprint      = mvn"com.lihaoyi::pprint:0.8.1"
+  def mtagsScala2    = mvn"io.github.plasmon-scala:mtags_${Versions.scala2}:${Versions.mtags}"
+  def mtagsJava      = mvn"io.github.plasmon-scala:mtags-java_2.13:${Versions.mtags}"
+  def mtags  = mvn"io.github.plasmon-scala:scala3-presentation-compiler_3:${Versions.scala3Pc}"
+  def munit  = mvn"org.scalameta::munit:1.1.0"
+  def osLib  = mvn"com.lihaoyi::os-lib:0.10.7"
+  def pprint = mvn"com.lihaoyi::pprint:0.8.1"
   def semanticdbJavac  = mvn"com.sourcegraph:semanticdb-javac:0.9.6"
   def semanticDbScalac = mvn"org.scalameta:::semanticdb-scalac:4.13.3"
   def svm              = mvn"org.graalvm.nativeimage:svm:24.0.2"
@@ -157,12 +156,11 @@ def enableTestParallelism =
 object server extends ScalaModule with PlasmonPublishModule {
   def scalaVersion = Versions.scala
   def compileMvnDeps = Seq(
-    Deps.acyclic,
     Deps.jsoniterMacros,
     Deps.svm
   )
   def scalacPluginMvnDeps = Task {
-    super.scalacPluginMvnDeps() // ++ Seq(Deps.acyclic)
+    super.scalacPluginMvnDeps()
   }
   def mvnDeps = Seq(
     Deps.bloopRifle,
@@ -175,9 +173,9 @@ object server extends ScalaModule with PlasmonPublishModule {
     Deps.lsp4j,
     Deps.lz4Java,
     Deps.bsp4j,
-    Deps.mtags,
+    Deps.mtagsScala2,
     Deps.mtagsJava,
-    Deps.mtagsScala3
+    Deps.mtags
       // don't let mtags-scala-3 bump mtags Scala 2 dependencies
       .exclude(("io.github.plasmon-scala", s"mtags_${Versions.scala213}"))
       .exclude(("io.github.plasmon-scala", s"mtags-shared_${Versions.scala213}"))
@@ -198,7 +196,6 @@ object server extends ScalaModule with PlasmonPublishModule {
   )
   def scalacOptions = super.scalacOptions() ++ Seq(
     "-deprecation",
-    // "-P:acyclic:force",
     "-Xsource:3",
     "-Ytasty-reader",
     "-feature"
@@ -219,8 +216,8 @@ object server extends ScalaModule with PlasmonPublishModule {
          |  def organization = "${pomSettings().organization}"
          |  def moduleName = "${artifactId()}"
          |  def version = "${publishVersion()}"
-         |  def scala2Version = "${Versions.scala}"
-         |  def scalaVersion = "${Versions.scala3}"
+         |  def scala2Version = "${Versions.scala2}"
+         |  def scalaVersion = "${Versions.scala}"
          |  def bloopVersion = "${Deps.bloopRifle.dep.versionConstraint.asString}"
          |  def bspVersion = "${Deps.bsp4j.dep.versionConstraint.asString}"
          |  def mtagsVersion = "${Versions.mtags}"
@@ -425,11 +422,18 @@ object server extends ScalaModule with PlasmonPublishModule {
       }
     }
 
+    // From Scala CLI
+    def scala3GraalProcessorClassPath: T[Seq[PathRef]] = Task {
+      defaultResolver().classpath(
+        Seq(mvn"org.virtuslab.scala-cli:scala3-graal-processor_3:1.9.1")
+      )
+    }
+
     def nativeImageClassPath = Task {
       val dir           = Task.dest / "patched-jars"
       val baseClassPath = runClasspath()
 
-      val res = baseClassPath
+      val patchedClassPath = baseClassPath
         .filter { ref =>
           !ref.path.last.startsWith("jna-") &&
           ! {
@@ -455,11 +459,26 @@ object server extends ScalaModule with PlasmonPublishModule {
             ref
         }
 
-      for (ref <- res)
+      for (ref <- patchedClassPath)
         if (os.isFile(ref.path))
           check(ref.path)
 
-      res
+      // We need to post-process the class path this way because of
+      // pre-Scala 3.3 dependencies, whose lazy val-s need this to
+      // work fine from native images.
+      mill.util.Jvm
+        .callProcess(
+          mainClass = "scala.cli.graal.CoursierCacheProcessor",
+          classPath = scala3GraalProcessorClassPath().map(_.path).toList,
+          mainArgs = Seq(
+            (Task.dest / "native-cp").toString,
+            patchedClassPath.map(_.path).mkString(File.pathSeparator)
+          )
+        )
+        .out.trim()
+        .split(File.pathSeparator)
+        .toSeq
+        .map(p => PathRef(os.Path(p)))
     }
 
     def lsp4jGraalvmStuff = Task(persistent = true) {
@@ -727,7 +746,7 @@ object integration extends ScalaModule {
            |  def scalaCliVersion = "${Versions.scalaCli}"
            |  def defaultScalaVersion = "${Versions.scala}"
            |  def scala213 = "${Versions.scala213}"
-           |  def scala3 = "${Versions.scala3}"
+           |  def scala3 = "${Versions.scala}"
            |
            |  def millVersion = "${Versions.Test.mill}"
            |  def millwCommit = "${Versions.Test.millwCommit}"
