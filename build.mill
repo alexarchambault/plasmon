@@ -29,7 +29,7 @@ object Versions {
 
   def coursier          = "2.1.25-M19"
   def coursierInterface = "1.0.29-M3"
-  def mtags             = "1.6.4-1"
+  def mtags             = "1.6.5-1"
   def scalaCli          = "1.11.0"
 
   def scala213 = scala
