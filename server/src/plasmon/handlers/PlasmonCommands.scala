@@ -473,7 +473,7 @@ object PlasmonCommands {
             server.bspServers.list.map(_._1).toSet,
             server.tools
           )
-        val resp = writeToGson(buildTools)(BuildToolOrModule.seqCodec)
+        val resp = writeToGson(buildTools)(using BuildToolOrModule.seqCodec)
         CompletableFuture.completedFuture(resp)
       }
     },
@@ -489,7 +489,7 @@ object PlasmonCommands {
             server.tools
           )
         val modules = listModules(workspace, fileOpt, server)
-        val resp    = writeToGson(buildTools ++ modules)(BuildToolOrModule.seqCodec)
+        val resp    = writeToGson(buildTools ++ modules)(using BuildToolOrModule.seqCodec)
         CompletableFuture.completedFuture(resp)
       }
     },
@@ -932,7 +932,7 @@ object PlasmonCommands {
             Nil
         }
 
-        CompletableFuture.completedFuture(writeToGson(actions)(ModuleAction.seqCodec))
+        CompletableFuture.completedFuture(writeToGson(actions)(using ModuleAction.seqCodec))
       }
     },
     CommandHandler.of("plasmon/loadModule", refreshStatus = true) { (params, logger) =>
@@ -1026,7 +1026,7 @@ object PlasmonCommands {
               )
             else
               Nil
-          val elem = writeToGson(actions)(Action.seqCodec)
+          val elem = writeToGson(actions)(using Action.seqCodec)
           CompletableFuture.completedFuture(elem)
         }
       },
@@ -1148,7 +1148,7 @@ object PlasmonCommands {
               (if (hasMainCompiler) mainActions else noMainActions) ++
                 (if (hasCompletionCompiler) completionActions else noCompletionActions)
           }
-          val elem = writeToGson(actions)(Action.seqCodec)
+          val elem = writeToGson(actions)(using Action.seqCodec)
           CompletableFuture.completedFuture(elem)
         }
       },

@@ -1,5 +1,5 @@
 ```scala
-class DynamicVariable[T]
+class DynamicVariable: DynamicVariable
 ```
 
 ***

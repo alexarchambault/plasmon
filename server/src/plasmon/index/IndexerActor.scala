@@ -814,20 +814,6 @@ class IndexerActor(
     }
   }
 
-  private def jarOf(org: String, name: String, ver: String) = {
-    val files = coursierapi.Fetch.create()
-      .addDependencies(coursierapi.Dependency.of(org, name, ver).withTransitive(false))
-      .fetch()
-      .asScala
-      .toList
-    assert(files.length == 1)
-    files.head.toPath.toUri.toASCIIString
-  }
-  private lazy val scalaLibrary213 =
-    jarOf("org.scala-lang", "scala-library", Properties.versionNumberString)
-  private lazy val scalaReflect213 =
-    jarOf("org.scala-lang", "scala-reflect", Properties.versionNumberString)
-
   private def classPathMillHack(
     classDir: String,
     classPath: List[String],
@@ -869,19 +855,7 @@ class IndexerActor(
   ): b.ScalacOptionsResult = {
     for (item <- res.getItems.asScala.toList) {
       var didUpdateClasspath = false
-      var updatedClasspath = item.getClasspath.asScala.toList.map { elem =>
-        val path = elem.osPathFromUri
-        if (path.last.startsWith("scala-library-2.13.") && path.last.endsWith(".jar")) {
-          didUpdateClasspath = true
-          scalaLibrary213
-        }
-        else if (path.last.startsWith("scala-reflect-2.13.") && path.last.endsWith(".jar")) {
-          didUpdateClasspath = true
-          scalaReflect213
-        }
-        else
-          elem
-      }
+      var updatedClasspath   = item.getClasspath.asScala.toList
       if (millHack)
         for (cp <- classPathMillHack(item.getClassDirectory, updatedClasspath, workspace)) {
           didUpdateClasspath = true
