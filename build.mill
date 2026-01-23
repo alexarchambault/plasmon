@@ -33,8 +33,8 @@ object Versions {
   def scalaCli          = "1.11.0"
 
   def scala213 = scala2
-  def scala    = "3.8.0"
-  def scala3Pc = "3.8.0"
+  def scala    = "3.8.1"
+  def scala3Pc = "3.8.1"
 
   def sbtBloop = "2.0.13"
   def sbt      = "1.9.9"
