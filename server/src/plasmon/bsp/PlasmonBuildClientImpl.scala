@@ -231,6 +231,16 @@ class PlasmonBuildClientImpl(
   def close(): Unit = {
     diagnostics.close()
   }
+
+  def asJson: PlasmonBuildClientImpl.AsJson =
+    PlasmonBuildClientImpl.AsJson(
+      diagnostics = diagnostics.asJson,
+      requestCount = requestCount.get(),
+      compilationClients = compilationClients0.map {
+        case (k, v) =>
+          (k, v.toString)
+      }
+    )
 }
 
 object PlasmonBuildClientImpl {
@@ -252,4 +262,10 @@ object PlasmonBuildClientImpl {
   // quite ineffective, but does the job
   private def readFromGson[T: JsonValueCodec](obj: Object, gson: Gson = new Gson): T =
     readFromString[T](gson.toJson(obj))
+
+  final case class AsJson(
+    diagnostics: Diagnostics.AsJson,
+    requestCount: Int,
+    compilationClients: Map[String, String]
+  )
 }

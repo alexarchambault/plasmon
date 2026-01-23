@@ -27,6 +27,8 @@ import plasmon.index.SymbolSearchIndex
 import plasmon.ide.PatchedSymbolIndex
 import plasmon.PlasmonEnrichments.XtensionOsPath
 import plasmon.PlasmonEnrichments.StringThingExtensions
+import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
+import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 
 class SymbolSearchImpl(
   docs: Docstrings,
@@ -138,4 +140,14 @@ class SymbolSearchImpl(
       visitor,
       GlobalSymbolIndex.Module.fromString(moduleString)
     )
+
+  def asJson: SymbolSearchImpl.AsJson =
+    SymbolSearchImpl.AsJson()
+}
+
+object SymbolSearchImpl {
+  final case class AsJson()
+
+  given JsonValueCodec[AsJson] =
+    JsonCodecMaker.make
 }

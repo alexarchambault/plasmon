@@ -46,6 +46,8 @@ import plasmon.ide.AdjustRange
 import plasmon.ide.TokenEditDistance
 import scala.meta.internal.mtags.Mtags
 import plasmon.semdb.TextDocumentLookup
+import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
+import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 
 final class ReferenceIndex(
   workspace: os.Path,
@@ -576,6 +578,8 @@ final class ReferenceIndex(
     buf.result().toSeq
   }
 
+  def asJson: ReferenceIndex.AsJson =
+    ReferenceIndex.AsJson()
 }
 
 object ReferenceIndex {
@@ -695,4 +699,9 @@ object ReferenceIndex {
     id: b.BuildTargetIdentifier,
     bloom: BloomFilter[CharSequence]
   )
+
+  final case class AsJson()
+
+  given JsonValueCodec[AsJson] =
+    JsonCodecMaker.make
 }

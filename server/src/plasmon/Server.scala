@@ -34,6 +34,7 @@ import scala.meta.internal.metals.ClasspathSearch
 
 import plasmon.index.{BspData, ReferenceIndex, SymbolSearchIndex}
 import plasmon.pc.PresentationCompilers
+import plasmon.render.JsonCodecs.given
 import plasmon.semdb.{
   AggregateSemanticdbs,
   FileSystemSemanticdbs,
@@ -46,6 +47,18 @@ import scala.meta.internal.pc.PresentationCompilerConfigImpl
 import scala.meta.internal.metals.JdkSources
 import scala.meta.internal.semanticdb.TextDocument
 import scala.meta.internal.mtags.GlobalSymbolIndex
+import com.github.plokhotnyuk.jsoniter_scala.core.writeToString
+import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
+import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
+import com.github.plokhotnyuk.jsoniter_scala.core.JsonWriter
+import com.github.plokhotnyuk.jsoniter_scala.core.JsonReader
+import com.google.gson.Gson
+import java.nio.charset.StandardCharsets
+import scala.reflect.ClassTag
+import com.github.plokhotnyuk.jsoniter_scala.core.WriterConfig
+import com.google.gson.GsonBuilder
+import com.google.gson.FormattingStyle
+import plasmon.bsp.BspServersActor
 
 // Many things here inspired by https://github.com/scalameta/metals/blob/030641d97ca5b982144898a54c3b60b2c08b9614/metals/src/main/scala/scala/meta/metals/MetalsLanguageServer.scala
 // and earlier version of that file
@@ -132,8 +145,8 @@ final class Server(
   val bspData: BspData = new BspData(os.pwd, bspServers)
 
   // stateful
-  private var isLanguageClientInstantiated = false
-  private def underlyingLanguageClient(): PlasmonLanguageClient =
+  private[plasmon] var isLanguageClientInstantiated = false
+  private[plasmon] def underlyingLanguageClient(): PlasmonLanguageClient =
     (clientOpt, initializeParamsOpt0) match {
       case (Some(client), Some(initializeParams)) =>
         new PlasmonConfiguredLanguageClient(client, initializeParams)(pools.configLcEc)
@@ -148,7 +161,7 @@ final class Server(
   val workspace: () => os.Path =
     () => workspaceOpt().getOrElse(sys.error("no workspace"))
 
-  private var clientOpt: Option[PlasmonLanguageClient] = None
+  private[plasmon] var clientOpt: Option[PlasmonLanguageClient] = None
   def setClient(client: PlasmonLanguageClient): Unit = {
     clientOpt = Some(client)
     if (isLanguageClientInstantiated)
@@ -232,9 +245,9 @@ final class Server(
         Some(path.toOs)
     }
 
-  private lazy val jdkContext = new SourcePath.Context
+  private[plasmon] lazy val jdkContext = new SourcePath.Context
 
-  private lazy val javaFileManager = new CustomFileManager(
+  private[plasmon] lazy val javaFileManager = new CustomFileManager(
     javaHome.toNIO,
     JavaMetalsGlobal.COMPILER.getStandardFileManager(null, null, null),
     jdkContext
@@ -438,7 +451,7 @@ final class Server(
     bspServers.close()
   }
 
-  lazy val fileWatcher: FileWatcher =
+  lazy val fileWatcher: ProjectFileWatcher =
     new ProjectFileWatcher(
       () => workingDir,
       bspData,
@@ -743,6 +756,38 @@ final class Server(
     jdkContext.reset()
     javaFileManager.resetCache()
   }
+
+  def debugJson: String = {
+    val str = writeToString(
+      Server.ServerJson(
+        javaHome = javaHome.toString,
+        bloopJavaHome = bloopJavaHome().toString,
+        workspaceOpt = workspaceOpt().map(_.toString),
+        workingDir = workingDir.toString,
+        logJsonrpcInput = logJsonrpcInput,
+        tools = tools.tools,
+        enableBestEffortMode = enableBestEffortMode,
+        scala2Compat = scala2Compat,
+        initParams = initializeParamsOpt0,
+        bspServers = bspServers.actor.asJson,
+        bspData = bspData.asJson,
+        isLanguageClientInstantiated = isLanguageClientInstantiated,
+        client = clientOpt.map(_.toString),
+        editorState = editorState.asJson,
+        compilations = compilations.asJson,
+        jdkCp = jdkCp,
+        jdkSources = jdkSources,
+        presentationCompilers = presentationCompilers.asJson,
+        parserQueue = parserQueue.asJson,
+        interactiveSemanticdbs = interactiveSemanticdbs.asJson,
+        referenceIndex = referenceIndex.asJson,
+        symbolSearchIndex = symbolSearchIndex.asJson,
+        status = status.asJson,
+        fileWatcher = fileWatcher.asJson
+      )
+    )
+    ujson.reformat(str, indent = 2)
+  }
 }
 
 object Server {
@@ -824,5 +869,37 @@ object Server {
         .map(_._1)
       fileChanges ++ finalBuildTargetEvents
     }
+  }
+
+  final case class ServerJson(
+    javaHome: String,
+    bloopJavaHome: String,
+    workspaceOpt: Option[String],
+    workingDir: String,
+    logJsonrpcInput: Boolean,
+    tools: Map[String, Seq[String]],
+    enableBestEffortMode: Boolean,
+    scala2Compat: Boolean,
+    initParams: Option[l.InitializeParams],
+    bspServers: BspServersActor.AsJson,
+    bspData: BspData.AsJson,
+    isLanguageClientInstantiated: Boolean,
+    client: Option[String],
+    editorState: EditorState.AsJson,
+    compilations: Compilations.AsJson,
+    jdkCp: Seq[os.Path],
+    jdkSources: Option[os.Path],
+    presentationCompilers: PresentationCompilers.AsJson,
+    parserQueue: ParserQueue.AsJson,
+    interactiveSemanticdbs: InteractiveSemanticdbs.AsJson,
+    referenceIndex: ReferenceIndex.AsJson,
+    symbolSearchIndex: SymbolSearchIndex.AsJson,
+    status: Status.AsJson,
+    fileWatcher: ProjectFileWatcher.AsJson
+  )
+
+  object ServerJson {
+    given JsonValueCodec[ServerJson] =
+      JsonCodecMaker.make
   }
 }

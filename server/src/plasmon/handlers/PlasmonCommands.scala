@@ -48,6 +48,8 @@ import java.io.PrintStream
 import scala.meta.metap.Settings
 import scala.meta.metap.Format
 import scala.meta.internal.semanticdb.SymbolOccurrence
+import plasmon.languageclient.PlasmonConfiguredLanguageClient
+import java.util.concurrent.atomic.AtomicInteger
 
 object PlasmonCommands {
 
@@ -1340,6 +1342,18 @@ object PlasmonCommands {
       JsonCodecMaker.make
   }
 
+  private final case class DebugServerStateResp(
+    text: String,
+    id: String
+  )
+  private object DebugServerStateResp {
+    private val counter = new AtomicInteger
+    def nextId(): String =
+      counter.getAndIncrement().toString
+    implicit lazy val codec: JsonValueCodec[DebugServerStateResp] =
+      JsonCodecMaker.make
+  }
+
   def debugCommands(server: Server) =
     Seq(
       // TODO Merge debugSymbolIndex and debugFullTree?
@@ -1539,6 +1553,13 @@ object PlasmonCommands {
             }
             CompletableFuture.completedFuture(writeToGson(resp))
         }
+      },
+      CommandHandler.of("plasmon/debugServerState") { (params, logger) =>
+        val resp = DebugServerStateResp(
+          text = ServerState.state(server),
+          id = DebugServerStateResp.nextId()
+        )
+        CompletableFuture.completedFuture(writeToGson(resp))
       },
       CommandHandler.of("plasmon/debugPresentationCompiler") { (params, logger) =>
         params.as[Boolean]("plasmon/debugPresentationCompiler") { enable =>

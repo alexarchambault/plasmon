@@ -52,64 +52,72 @@ class BspServersActor(
     }
   }
 
-  override def runBatch(msgs: Seq[Message]): Unit = {
-    super.runBatch(msgs)
-    msgs.foreach {
-      case add: Message.Add =>
-        val res = Try {
-          val maybeError = tryAdd(
-            add.buildTool,
-            add.launchers,
-            add.log,
-            add.bspPool,
-            add.bloopThreads
-          )
-          maybeError match {
-            case Left(err) =>
-              scribe.error(s"Error adding build tool ${add.buildTool}: $err")
-            case Right(()) =>
-          }
-          maybeError
-        }
-        add.onDone(res)
-      case addAllFromFile: Message.AddAllFromFile =>
-        def proceed(): Try[Unit] =
-          Try {
-            val buildTools = inState(
-              "Reading saved BSP servers from disk",
-              progress = "Reading saved BSP servers from disk"
-            ) {
-              Persist.load(addAllFromFile.path, server.tools)
+  var activeMessages: Seq[Message] = Nil
+
+  override def runBatch(msgs: Seq[Message]): Unit =
+    try {
+      assert(activeMessages.isEmpty)
+      activeMessages = msgs
+      super.runBatch(msgs)
+      msgs.foreach {
+        case add: Message.Add =>
+          val res = Try {
+            val maybeError = tryAdd(
+              add.buildTool,
+              add.launchers,
+              add.log,
+              add.bspPool,
+              add.bloopThreads
+            )
+            maybeError match {
+              case Left(err) =>
+                scribe.error(s"Error adding build tool ${add.buildTool}: $err")
+              case Right(()) =>
             }
-            for (buildTool <- buildTools) {
-              val maybeError = tryAdd(
-                buildTool,
-                buildTool.extraLaunchers :+ buildTool.launcher(server.tools),
-                addAllFromFile.log,
-                addAllFromFile.bspPool,
-                addAllFromFile.bloopThreads
-              )
-              maybeError match {
-                case Left(err) =>
-                  scribe.error(s"Error adding build tool $buildTool: $err")
-                case Right(()) =>
+            maybeError
+          }
+          add.onDone(res)
+        case addAllFromFile: Message.AddAllFromFile =>
+          def proceed(): Try[Unit] =
+            Try {
+              val buildTools = inState(
+                "Reading saved BSP servers from disk",
+                progress = "Reading saved BSP servers from disk"
+              ) {
+                Persist.load(addAllFromFile.path, server.tools)
+              }
+              for (buildTool <- buildTools) {
+                val maybeError = tryAdd(
+                  buildTool,
+                  buildTool.extraLaunchers :+ buildTool.launcher(server.tools),
+                  addAllFromFile.log,
+                  addAllFromFile.bspPool,
+                  addAllFromFile.bloopThreads
+                )
+                maybeError match {
+                  case Left(err) =>
+                    scribe.error(s"Error adding build tool $buildTool: $err")
+                  case Right(()) =>
+                }
               }
             }
-          }
-        val res = addAllFromFile.state match {
-          case Some(state) =>
-            inState(state) {
+          val res = addAllFromFile.state match {
+            case Some(state) =>
+              inState(state) {
+                proceed()
+              }
+            case None =>
               proceed()
-            }
-          case None =>
-            proceed()
-        }
-        addAllFromFile.onDone(res)
-      case remove0: Message.Remove =>
-        val res = Try(remove(remove0.info, remove0.hard))
-        remove0.onDone(res)
+          }
+          addAllFromFile.onDone(res)
+        case remove0: Message.Remove =>
+          val res = Try(remove(remove0.info, remove0.hard))
+          remove0.onDone(res)
+      }
     }
-  }
+    finally {
+      activeMessages = Nil
+    }
 
   private def tryAdd(
     buildTool: BuildTool,
@@ -223,6 +231,20 @@ class BspServersActor(
   //   }
   //   ???
   // }
+
+  def asJson: BspServersActor.AsJson = {
+    val state0 = state()
+    BspServersActor.AsJson(
+      connections = connections.map {
+        case (buildTool, conns) =>
+          (buildTool, conns.map(_.asJson))
+      },
+      state = state0._1,
+      stateLogger = state0._2.map(_.toString),
+      awaitingMessages = awaitingMessages.toSeq.map(_.toString),
+      activeMessages = activeMessages.map(_.toString)
+    )
+  }
 }
 
 object BspServersActor {
@@ -268,4 +290,12 @@ object BspServersActor {
       loggerManager.create(s"bsp-output-$id-$pathPart", label + " (output)" + labelSuffix)
     (mainLogger, outputLogger)
   }
+
+  final case class AsJson(
+    connections: Seq[(BuildTool, Seq[BspConnection.AsJson])],
+    state: Seq[String],
+    stateLogger: Option[String],
+    awaitingMessages: Seq[String],
+    activeMessages: Seq[String]
+  )
 }

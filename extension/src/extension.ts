@@ -757,6 +757,27 @@ export function activate(context: vscode.ExtensionContext) {
     )
   }
 
+  function dumpServerState() {
+    interface Resp {
+      text: string
+      id: string
+    }
+    let uri = lastFocusedDocument
+    client?.sendRequest(ExecuteCommandRequest.type, { command: "plasmon/debugServerState" }).then(
+      async (resp: Resp) => {
+        console.log(`Response of debugServerState: ${JSON.stringify(resp)}`)
+        const strUri = `${RO_SCHEME}:server-state.json?id=${resp.id}`
+        documents[strUri] = resp.text
+        const doc = await vscode.workspace.openTextDocument(vscode.Uri.parse(strUri))
+        await vscode.window.showTextDocument(doc, { preview: false })
+      },
+      (err) => {
+        // FIXME Report that to users
+        console.log(`Error while sending plasmon/debugServerState command for ${uri}: ${err}`)
+      }
+    )
+  }
+
   context.subscriptions.push(
     vscode.commands.registerCommand(`plasmon.dump-compact-semanticdb-details`, () => {
       dumpSemdbDetails(false)
@@ -766,6 +787,12 @@ export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(
     vscode.commands.registerCommand(`plasmon.dump-semanticdb-details`, () => {
       dumpSemdbDetails(true)
+    })
+  )
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand(`plasmon.dump-server-state`, () => {
+      dumpServerState()
     })
   )
 

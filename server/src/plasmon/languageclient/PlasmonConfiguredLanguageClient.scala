@@ -23,7 +23,7 @@ class PlasmonConfiguredLanguageClient(
   override def showMessage(params: l.MessageParams): Unit =
     underlying.showMessage(params)
 
-  private val pendingShowMessage = new AtomicBoolean(false)
+  private[plasmon] val pendingShowMessage = new AtomicBoolean(false)
   override def showMessageRequest(params: l.ShowMessageRequestParams)
     : CompletableFuture[l.MessageActionItem] = {
     pendingShowMessage.set(true)

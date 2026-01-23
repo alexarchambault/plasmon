@@ -16,6 +16,10 @@ import java.util.concurrent.CompletableFuture
 import scala.jdk.CollectionConverters._
 
 import plasmon.index.BspData
+import plasmon.render.JsonCodecs.given
+import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
+import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
+import scala.util.Try
 
 final class Compilations(
   bspData: BspData,
@@ -182,6 +186,29 @@ final class Compilations(
       }
     while (!update()) {}
   }
+
+  def asJson: Compilations.AsJson =
+    Compilations.AsJson(
+      queues = queues.map {
+        case (k, v) =>
+          (k.toString, v.toSeq.map(_.asJson))
+      },
+      running = running.toMap.map {
+        case (k, (v0, v1)) =>
+          val v1Value =
+            if (v1.isCancelled())
+              Left("[cancelled]")
+            else if (v1.isDone())
+              Try(v1.get()).toEither.left.map(ex => s"Failed: $ex")
+            else
+              Left("[on-going]")
+          (k.toString, (v0.asJson, v1Value))
+      },
+      latestCompilations = latestCompilations.toMap.map {
+        case (k, v) =>
+          (k.getUri, v)
+      }
+    )
 }
 
 object Compilations {
@@ -198,5 +225,30 @@ object Compilations {
   private final case class Compilation(
     targets: Seq[b.BuildTargetIdentifier],
     promise: Promise[b.CompileResult]
+  ) {
+    def asJson: CompilationAsJson =
+      CompilationAsJson(
+        targets = targets,
+        promise = promise.future.value
+          .map {
+            case Success(value) => Right(value)
+            case Failure(ex)    => Left(s"Exception: $ex")
+          }
+          .getOrElse(Left("[on-going]"))
+      )
+  }
+
+  final case class CompilationAsJson(
+    targets: Seq[b.BuildTargetIdentifier],
+    promise: Either[String, b.CompileResult]
   )
+
+  final case class AsJson(
+    queues: ListMap[String, Seq[CompilationAsJson]],
+    running: Map[String, (CompilationAsJson, Either[String, b.CompileResult])],
+    latestCompilations: Map[String, (Option[PastCompilation], Option[OnGoingCompilation])]
+  )
+
+  given JsonValueCodec[AsJson] =
+    JsonCodecMaker.make
 }

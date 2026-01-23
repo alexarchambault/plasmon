@@ -8,6 +8,8 @@ import scala.xml.XML
 
 import plasmon.PlasmonEnrichments.*
 import java.util.zip.ZipFile
+import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
+import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 
 /** Responsible for disabling unsupported compiler plugins.
   *
@@ -72,4 +74,14 @@ class CompilerPlugins {
         }
       }
     }
+
+  def asJson: CompilerPlugins.AsJson =
+    CompilerPlugins.AsJson()
+}
+
+object CompilerPlugins {
+  final case class AsJson()
+
+  given JsonValueCodec[AsJson] =
+    JsonCodecMaker.make
 }

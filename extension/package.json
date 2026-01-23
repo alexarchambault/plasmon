@@ -72,6 +72,10 @@
         "title": "Plasmon: Dump semanticdb details for current file"
       },
       {
+        "command": "plasmon.dump-server-state",
+        "title": "Plasmon: Dump server state"
+      },
+      {
         "command": "plasmon.test-progress",
         "title": "Plasmon: Test progress"
       },

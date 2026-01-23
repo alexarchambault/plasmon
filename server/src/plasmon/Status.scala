@@ -24,6 +24,8 @@ import plasmon.pc.PresentationCompilers
 
 import plasmon.PlasmonEnrichments._
 import scala.jdk.CollectionConverters._
+import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
+import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 
 class Status(
   server: Server,
@@ -610,6 +612,8 @@ class Status(
     sharedUpdates ++ fileUpdates
   }
 
+  def asJson: Status.AsJson =
+    Status.AsJson()
 }
 
 object Status {
@@ -713,4 +717,8 @@ object Status {
         None
   }
 
+  final case class AsJson()
+
+  given JsonValueCodec[AsJson] =
+    JsonCodecMaker.make
 }

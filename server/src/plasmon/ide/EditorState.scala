@@ -1,5 +1,9 @@
 package plasmon.ide
 
+import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
+import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
+import plasmon.render.JsonCodecs.given
+
 final class EditorState(
   val buffers: Buffers,
   var focusedDocument: Option[os.Path],
@@ -17,4 +21,24 @@ final class EditorState(
     buffers.remove(path)
     trees.didClose(path)
   }
+
+  def asJson: EditorState.AsJson =
+    EditorState.AsJson(
+      buffers = buffers.asJson,
+      focusedDocument = focusedDocument,
+      fingerprints = fingerprints.asJson,
+      trees = trees.asJson
+    )
+}
+
+object EditorState {
+  final case class AsJson(
+    buffers: Buffers.AsJson,
+    focusedDocument: Option[os.Path],
+    fingerprints: MutableMd5Fingerprints.AsJson,
+    trees: Trees.AsJson
+  )
+
+  given JsonValueCodec[AsJson] =
+    JsonCodecMaker.make
 }

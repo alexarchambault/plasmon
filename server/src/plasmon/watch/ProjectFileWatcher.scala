@@ -27,6 +27,8 @@ import com.swoval.files.PathWatchers.Event.Kind
 import plasmon.index.BspData
 import scala.util.Success
 import scala.concurrent.Promise
+import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
+import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 
 /** Watch selected files and execute a callback on file events.
   *
@@ -93,6 +95,9 @@ final class ProjectFileWatcher(
           watchEventQueue
         )
       )
+
+  def asJson: ProjectFileWatcher.AsJson =
+    ProjectFileWatcher.AsJson()
 }
 
 object ProjectFileWatcher {
@@ -300,4 +305,9 @@ object ProjectFileWatcher {
   }
 
   private def macOsMaxWatchRoots: Int = 32
+
+  final case class AsJson()
+
+  given JsonValueCodec[AsJson] =
+    JsonCodecMaker.make
 }

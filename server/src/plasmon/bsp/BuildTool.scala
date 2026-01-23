@@ -9,6 +9,8 @@ import java.security.MessageDigest
 import java.nio.charset.StandardCharsets
 import java.math.BigInteger
 import scala.util.Properties
+import plasmon.servercommand.BuildToolAdd.buildTool
+import plasmon.render.JsonCodecs.{given, *}
 
 sealed abstract class BuildTool extends Product with Serializable {
   def launcher(tools: BuildTool.Tools): BuildServerLauncher
@@ -29,6 +31,9 @@ sealed abstract class BuildTool extends Product with Serializable {
 }
 
 object BuildTool {
+
+  given JsonValueCodec[BuildTool] =
+    JsonCodecMaker.make
 
   final case class Mill(workspace: os.Path) extends BuildTool {
     def id = Mill.id
