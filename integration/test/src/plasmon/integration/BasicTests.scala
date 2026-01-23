@@ -15,11 +15,8 @@ import scala.reflect.Selectable.reflectiveSelectable
 
 class BasicTests extends PlasmonSuite {
 
-  private lazy val (defaultScalaVersion, defaultServerOpt) =
-    if (disableScala2Pc)
-      (scala213Compat, compatServerOpt)
-    else
-      (scala213, Nil)
+  private lazy val defaultScalaVersion =
+    if (disableScala2Pc) scala213Compat else scala213
 
   private lazy val scalaVersions = {
     val scala213Values =

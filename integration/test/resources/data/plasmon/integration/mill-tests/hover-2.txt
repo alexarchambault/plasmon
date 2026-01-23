@@ -15,5 +15,5 @@ An empty collection
 ***
 **Expression type**
 ```scala
-Seq[Nothing]
+Seq[String]
 ```

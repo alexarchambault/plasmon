@@ -9,8 +9,7 @@ import scala.concurrent.duration.{DurationInt, FiniteDuration}
 
 class MillTests extends PlasmonSuite {
 
-  val millSources      = projectsDir / "mill"
-  def millScalaVersion = "2.13.14"
+  val millSources = projectsDir / "mill"
 
   override def munitTimeout: FiniteDuration =
     if (System.getenv("CI") == null)
@@ -52,7 +51,11 @@ class MillTests extends PlasmonSuite {
     }
 
   private def hoverTest(): Unit =
-    withWorkspaceAndServer(timeout = Some(munitTimeout), workspaceOpt = Some(millSources))() {
+    withWorkspaceAndServer(
+      timeout = Some(munitTimeout),
+      workspaceOpt = Some(millSources),
+      extraServerOpts = if (disableScala2Pc) compatServerOpt else Nil
+    )() {
       (workingDir, server, _, osOpt, _) =>
         init(workingDir, osOpt)
 
