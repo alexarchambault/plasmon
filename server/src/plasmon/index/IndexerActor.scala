@@ -348,13 +348,13 @@ class IndexerActor(
 
       val endTime         = Instant.now()
       val durationSeconds = ChronoUnit.SECONDS.between(startTime, endTime)
-      logger.log(
+      logger.log {
+        val seconds = if (durationSeconds == 1) "second" else "seconds"
         s"""
-           |  Indexing done, took $durationSeconds ${if (durationSeconds == 1) "second"
-          else "seconds"}
+           |  Indexing done, took $durationSeconds $seconds
            |
            |""".stripMargin
-      )
+      }
 
       val openedFiles = server.editorState.buffers.open.toVector
       if (openedFiles.nonEmpty) {

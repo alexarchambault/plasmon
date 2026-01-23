@@ -54,8 +54,10 @@ object Definition {
           if (locations.isEmpty)
             logger.log("No location found via presentation compiler")
           else {
-            logger.log(s"Found ${locations.length} ${if (locations.lengthCompare(1) > 0) "locations"
-              else "location"}")
+            logger.log(
+              s"Found ${locations.length} " +
+                (if (locations.lengthCompare(1) > 0) "locations" else "location")
+            )
             for (loc <- locations)
               logger.log(s"  $loc")
           }
@@ -177,8 +179,10 @@ object Definition {
           if (locations.isEmpty)
             logger.log("No location found for symbol")
           else {
-            logger.log(s"Found ${locations.length} ${if (locations.lengthCompare(1) > 0) "locations"
-              else "location"}")
+            logger.log(
+              s"Found ${locations.length} " +
+                (if (locations.lengthCompare(1) > 0) "locations" else "location")
+            )
             for (loc <- locations)
               logger.log(s"  $loc")
           }

@@ -54,7 +54,8 @@ object ThreadUtil {
       pool = fixedThreadPool(namePrefix, size)
       f(pool)
     }
-    finally if (pool != null)
+    finally
+      if (pool != null)
         pool.shutdown()
   }
 
@@ -68,7 +69,8 @@ object ThreadUtil {
       pool = cachedThreadPool(namePrefix)
       f(pool)
     }
-    finally if (pool != null)
+    finally
+      if (pool != null)
         pool.shutdown()
   }
 

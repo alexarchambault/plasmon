@@ -474,7 +474,7 @@ export function activate(context: vscode.ExtensionContext) {
   function jvmServerOptions(version: string): ServerOptions {
     return {
       command: "cs",
-      args: ["launch", `io.github.alexarchambault.plasmon:server_2.13:${version}`, "--jvm", "24", "--"].concat(serverArgs),
+      args: ["launch", `io.github.alexarchambault.plasmon:server_3:${version}`, "--jvm", "24", "--"].concat(serverArgs),
       options: {}
     }
   }
