@@ -1,4 +1,4 @@
-//| mill-version: 1.1.0-RC3
+//| mill-version: 1.1.0
 
 import mill.api.SystemStreams
 import org.apache.commons.io.input.TailerListener
