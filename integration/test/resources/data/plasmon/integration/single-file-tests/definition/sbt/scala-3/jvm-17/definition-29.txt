@@ -1,5 +1,5 @@
 {
-  "path": ".plasmon/readonly/dependencies/scala-library-3.8.0-RC3-sources.jar/scala/collection/IterableOnce.scala",
+  "path": ".plasmon/readonly/dependencies/scala-library-3.8.0-sources.jar/scala/collection/IterableOnce.scala",
   "line": 1477,
   "colRange": [
     6,

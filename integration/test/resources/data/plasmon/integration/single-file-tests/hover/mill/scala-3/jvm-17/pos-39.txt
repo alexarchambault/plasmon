@@ -4,7 +4,7 @@ def empty[A]: ListBuffer[A]
 
 ***
 
-An empty collection
+An empty collection.
 
 
 ***
