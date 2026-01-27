@@ -176,8 +176,6 @@ class PresentationCompilers(
       elem  <- Option(cache.remove(key))
     } elem.shutdown()
 
-  private val worksheetsDigests = new TrieMap[os.Path, String]
-
   private val cache           = jcache.asScala
   private val completionCache = jCompletionCache.asScala
   private def buildTargetPCFromCache(
@@ -211,7 +209,6 @@ class PresentationCompilers(
       v.shutdown()
     cache.clear()
     completionCache.clear()
-    worksheetsDigests.clear()
     outlineFilesProvider.clear()
   }
 
