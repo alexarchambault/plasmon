@@ -44,6 +44,7 @@ import com.google.gson.JsonDeserializer
 import scala.concurrent.Await
 import plasmon.watch.WatchEvent
 import plasmon.pc.Scala2PresentationCompilerHandler
+import plasmon.internal.DisableScala2Pc
 
 object Server extends caseapp.Command[ServerOptions] {
 
@@ -228,7 +229,7 @@ object Server extends caseapp.Command[ServerOptions] {
     ))
 
     val scala2Compat =
-      if (new Scala2PresentationCompilerHandler().available()) {
+      if (!Constants.disableScala2Pc || new Scala2PresentationCompilerHandler().available()) {
         scribe.info("Scala 2 PC available")
         options.scala2Compat match {
           case Some(value) =>
@@ -238,8 +239,12 @@ object Server extends caseapp.Command[ServerOptions] {
             )
             value
           case None =>
-            scribe.info("Enabling Scala 2 PC use")
-            false
+            val compat = Constants.disableScala2Pc || (new DisableScala2Pc()).getAsBoolean
+            scribe.info(
+              if (compat) "Disabling Scala 2 PC use"
+              else "Enabling Scala 2 PC use"
+            )
+            compat
         }
       }
       else {
