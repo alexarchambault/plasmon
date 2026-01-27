@@ -62,7 +62,7 @@ object Definition {
               logger.log(s"  $loc")
           }
         case Failure(_) =>
-      }(dummyEc)
+      }(using dummyEc)
       f
     }
     else {
@@ -261,7 +261,7 @@ object Definition {
           fromSemDbOpt.getOrElse(fromCompiler)
         else
           fromCompiler
-      }(server.pools.definitionProviderEc)
+      }(using server.pools.definitionProviderEc)
     else
       fromCompilerFuture
   }
@@ -281,8 +281,8 @@ object Definition {
             if (source.isScalaFilename || source.isJavaFilename)
               CancelTokens.future { token =>
                 definitionResult(targetId.module, server, params, logger, token)
-                  .map(_.asJava)(definitionStuffEc)
-              }(cancelTokensEces)
+                  .map(_.asJava)(using definitionStuffEc)
+              }(using cancelTokensEces)
             else
               CompletableFuture.completedFuture(Nil.asJava)
           case None =>

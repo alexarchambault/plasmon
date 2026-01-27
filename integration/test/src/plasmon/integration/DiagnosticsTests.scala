@@ -9,7 +9,7 @@ import java.nio.file.Paths
 
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, Promise}
-import scala.language.reflectiveCalls
+import scala.reflect.Selectable.reflectiveSelectable
 
 class DiagnosticsTests extends PlasmonSuite {
 
@@ -56,7 +56,7 @@ class DiagnosticsTests extends PlasmonSuite {
       client = client,
       extraServerOpts = Seq("--jvm", jvm.value),
       timeout = Some(buildTool.defaultTimeout)
-    )(files: _*) {
+    )(files*) {
       (workspace, _, _, osOpt) =>
 
         client.setWorkspace(workspace)

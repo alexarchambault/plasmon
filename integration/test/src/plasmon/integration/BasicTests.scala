@@ -210,7 +210,7 @@ class BasicTests extends PlasmonSuite {
       extraServerOpts = Seq("--jvm", jvm.value, "--import-persisted-targets=false") ++ serverOpt,
       count = count,
       timeout = Some(buildTool.defaultTimeout)
-    )(files: _*) {
+    )(files*) {
       (workspace, server, positions, osOpt, runCount) =>
         languageClient.withOsOpt(osOpt)
 

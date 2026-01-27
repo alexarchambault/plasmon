@@ -112,7 +112,7 @@ class PresentationCompilers(
   import PresentationCompilers.*
 
   val interactiveCompilersStatuses = new ConcurrentHashMap[
-    scala.meta.pc.PresentationCompiler with scala.meta.internal.pc.HasCompilerAccess,
+    scala.meta.pc.PresentationCompiler & scala.meta.internal.pc.HasCompilerAccess,
     (String, String)
   ]
 
@@ -1219,7 +1219,7 @@ class PresentationCompilers(
     val id         = s"interactive-$scalaVersion-$idSuffix"
     val label      = s"Interactive $nameSuffix"
     def logger()   = loggerManager.create(id, label).consumer
-    def setupPc(pc0: PresentationCompiler with pc.HasCompilerAccess): Unit = {
+    def setupPc(pc0: PresentationCompiler & pc.HasCompilerAccess): Unit = {
       pc0.compilerAccess.beforeAccess { (reqId, name, uri) =>
         interactiveCompilersStatuses.put(pc0, (name, uri))
         refreshStatus()
@@ -1255,8 +1255,8 @@ class PresentationCompilers(
           () => logger(),
           targetId.module
         ) match {
-          case pc1: PresentationCompiler with pc.HasCompilerAccess => pc1
-          case _                                                   => ???
+          case pc1: (PresentationCompiler & pc.HasCompilerAccess) => pc1
+          case _                                                  => ???
         }
         setupPc(pc0)
         pc0
@@ -1808,7 +1808,7 @@ object PresentationCompilers {
   private object InlayHintCompat {
     // for compatibility with old inlay hint data
     def maybeFixInlayHintData(hint: l.InlayHint, uri: String): Unit =
-      if (hint.getData.isInstanceOf[Array[_]])
+      if (hint.getData.isInstanceOf[Array[?]])
         try {
           val labelParts = hint
             .getData

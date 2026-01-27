@@ -48,7 +48,7 @@ import plasmon.internal.DisableScala2Pc
 
 object Server extends caseapp.Command[ServerOptions] {
 
-  def remoteCommands = Seq[ServerCommand[_]](
+  def remoteCommands = Seq[ServerCommand[?]](
     About,
     Check,
     Import,
@@ -274,7 +274,7 @@ object Server extends caseapp.Command[ServerOptions] {
           case Success(()) =>
           case Failure(ex) =>
             scribe.error(s"Error re-indexing things", ex)
-        }(pools.dummyEc)
+        }(using pools.dummyEc)
       },
       logJsonrpcInput = options.logJsonrpcInput.getOrElse(false),
       tools = tools,
@@ -382,14 +382,14 @@ object Server extends caseapp.Command[ServerOptions] {
           case Success(()) =>
           case Failure(ex) =>
             scribe.error("Error initializing server", ex)
-        }(pools.dummyEc)
+        }(using pools.dummyEc)
       }
 
       if (Option(params.getCapabilities.getWorkspace).forall(_.getDidChangeWatchedFiles == null))
         scribe.info("Client doesn't support file watching")
 
       for (heartBeatPeriod <- heartBeatPeriodOpt) {
-        var f: ScheduledFuture[_] = null
+        var f: ScheduledFuture[?] = null
         val runnable = heartBeatRunnable(
           heartBeatPeriod,
           noMoreClientSince => {

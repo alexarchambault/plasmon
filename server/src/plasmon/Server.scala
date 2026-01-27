@@ -279,7 +279,7 @@ final class Server(
     refreshStatus = refreshStatus,
     languageClient = languageClient,
     scala2Compat = scala2Compat
-  )(pools.compilerEces)
+  )(using pools.compilerEces)
 
   // stateless
   def patchedSymbolIndex: PatchedSymbolIndex = new PatchedSymbolIndex(
