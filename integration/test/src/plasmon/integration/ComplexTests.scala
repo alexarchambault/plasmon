@@ -81,7 +81,7 @@ class ComplexTests extends PlasmonSuite {
                   sv.value.startsWith("3.") || sv.label.endsWith("-compat")
                 )
               if (nonDeterministic)
-                (1 to 5).map(_.toString).map(path(_))
+                (1 to 10).map(_.toString).map(path(_))
               else
                 Nil
             },
