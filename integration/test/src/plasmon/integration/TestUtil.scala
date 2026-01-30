@@ -89,7 +89,7 @@ object TestUtil {
     content: (os.SubPath, String)*
   )(f: (os.Path, LanguageServer, Positions, Option[OutputStream], Int) => T): T = {
 
-    val pos = Positions.of(content: _*)
+    val pos = Positions.of(content*)
     val updatedContent = content.map {
       case (path, _) =>
         path -> (pos.content(path): os.Source)
@@ -102,7 +102,7 @@ object TestUtil {
       timeout = timeout,
       extraServerOpts = extraServerOpts,
       count = count
-    )(updatedContent: _*) {
+    )(updatedContent*) {
       (workspace, remoteServer, _, osOpt, runCount) =>
         f(workspace, remoteServer, pos, osOpt, runCount)
     }
@@ -125,7 +125,7 @@ object TestUtil {
       timeout,
       extraServerOpts,
       count
-    )(content: _*) {
+    )(content*) {
       (workspace, remoteServer, pos, osOpt, _) =>
         f(workspace, remoteServer, pos, osOpt)
     }
@@ -189,7 +189,7 @@ object TestUtil {
       cleanUp = TestParams.cleanUpAfterTests,
       newOutputFrame = () => new OutputFrame(widthShift = -7)
     )(
-      content.map { case (p, s) => (workingDir / p, s) }: _*
+      content.map { case (p, s) => (workingDir / p, s) }*
     ) {
       (tmpDir, subProc, ignoreSubProcExit, output, runCount) =>
         val workspace = workspaceOpt.getOrElse(tmpDir / workingDir)

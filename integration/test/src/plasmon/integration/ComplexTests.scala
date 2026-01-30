@@ -46,7 +46,7 @@ class ComplexTests extends PlasmonSuite {
     withWorkspaceServerPositions(
       extraServerOpts = Seq("--jvm", jvm.value) ++ serverOpt,
       timeout = Some(buildTool.defaultTimeout)
-    )(files: _*) {
+    )(files*) {
       (workspace, remoteServer, positions, osOpt) =>
 
         buildTool.setup(workspace, osOpt, compiles = false)
@@ -163,7 +163,7 @@ class ComplexTests extends PlasmonSuite {
     withWorkspaceServerPositions(
       extraServerOpts = Seq("--jvm", jvm.value) ++ serverOpt,
       timeout = Some(SingleModuleBuildTool.Mill.defaultTimeout)
-    )(files: _*) {
+    )(files*) {
       (workspace, server, positions, osOpt) =>
         SingleModuleBuildTool.Mill.millSetup(
           workspace,

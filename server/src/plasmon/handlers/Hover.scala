@@ -17,8 +17,8 @@ object Hover {
     RequestHandler.of[HoverExtParams, l.Hover]("textDocument/hover") { (params, logger) =>
       CancelTokens.future { token =>
         server.presentationCompilers.hover(params, token)
-          .map(_.map(_.toLsp()).orNull)(hoverStuffEc)
-      }(cancelTokensEces)
+          .map(_.map(_.toLsp()).orNull)(using hoverStuffEc)
+      }(using cancelTokensEces)
     }
 
   def handlers(

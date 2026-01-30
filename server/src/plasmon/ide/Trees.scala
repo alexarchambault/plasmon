@@ -18,6 +18,8 @@ import scala.meta.internal.mtags.SourcePath
 import plasmon.PlasmonEnrichments._
 import scala.meta.internal.mtags.GlobalSymbolIndex
 import plasmon.index.BspData
+import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
+import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 
 /** Manages parsing of Scala source files into Scalameta syntax trees.
   *
@@ -186,4 +188,21 @@ final class Trees(
           new ParseException(Position.None, msg)
         )
     }
+
+  def asJson: Trees.AsJson =
+    Trees.AsJson(
+      trees = trees.toMap.map {
+        case (k, v) =>
+          (k.toString, v.toString)
+      }
+    )
+}
+
+object Trees {
+  final case class AsJson(
+    trees: Map[String, String]
+  )
+
+  given JsonValueCodec[AsJson] =
+    JsonCodecMaker.make
 }

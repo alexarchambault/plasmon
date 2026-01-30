@@ -2,6 +2,9 @@ package plasmon.bsp
 
 import scala.util.Properties
 import plasmon.Logger
+import plasmon.render.JsonCodecs.given
+import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
+import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 
 sealed abstract class BuildServerInfo extends Product with Serializable {
   def `type`: String
@@ -16,6 +19,10 @@ sealed abstract class BuildServerInfo extends Product with Serializable {
 }
 
 object BuildServerInfo {
+
+  given JsonValueCodec[BuildServerInfo] =
+    JsonCodecMaker.make
+
   final case class Bsp(
     workspace: os.Path,
     bspFile: Either[os.Path, os.SubPath],

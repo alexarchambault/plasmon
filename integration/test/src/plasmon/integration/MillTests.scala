@@ -31,7 +31,7 @@ class MillTests extends PlasmonSuite {
     super.test(options) {
       os.remove.all(millSources / ".plasmon")
       body
-    }(loc)
+    }(using loc)
 
   private val source6 = millSources / "runner/src/mill/runner/MillMain.scala"
   private val pos6    = new l.Position(194, 27)

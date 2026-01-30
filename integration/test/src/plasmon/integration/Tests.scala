@@ -71,7 +71,7 @@ class Tests extends PlasmonSuite {
     withWorkspaceServerPositions(
       extraServerOpts = Seq("--jvm", jvm.value, "--suspend-watcher=false") ++ serverOpt,
       timeout = Some(buildTool.defaultTimeout)
-    )(files: _*) {
+    )(files*) {
       (workspace, remoteServer, positions, osOpt) =>
 
         buildTool.setup(workspace, osOpt)

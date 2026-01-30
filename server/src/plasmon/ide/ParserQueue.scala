@@ -10,6 +10,8 @@ import scala.concurrent.Future
 import plasmon.bsp.PlasmonBuildClientImpl
 import scala.meta.Dialect
 import scala.meta.internal.mtags.GlobalSymbolIndex
+import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
+import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 
 class ParserQueue(
   buffers: Buffers,
@@ -65,6 +67,9 @@ class ParserQueue(
   def close(): Unit = {
     parserThread.interrupt()
   }
+
+  def asJson: ParserQueue.AsJson =
+    ParserQueue.AsJson()
 }
 
 object ParserQueue {
@@ -75,4 +80,9 @@ object ParserQueue {
     buildClient: PlasmonBuildClientImpl,
     dialect: Dialect
   )
+
+  final case class AsJson()
+
+  given JsonValueCodec[AsJson] =
+    JsonCodecMaker.make
 }

@@ -8,6 +8,9 @@ import java.nio.charset.StandardCharsets
 import plasmon.servercommand.BspUtil
 
 import scala.annotation.nowarn
+import plasmon.render.JsonCodecs.{given, *}
+import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
+import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 
 sealed abstract class BuildServerProcess extends Product with Serializable with AutoCloseable {
   def managedProcess: Boolean
@@ -18,6 +21,27 @@ sealed abstract class BuildServerProcess extends Product with Serializable with 
 }
 
 object BuildServerProcess {
+
+  given JsonValueCodec[os.SubProcess] =
+    stringCodec.bimap(
+      _ => ???,
+      p => {
+        var extra = Seq.empty[(String, String)]
+        val isAlive = p.isAlive()
+        extra = extra :+ ("isAlive" -> isAlive.toString)
+        if (isAlive)
+          extra = extra :+ ("PID" -> p.wrapped.pid().toString)
+        s"$p (${extra.map { case (k, v) => s"$k: $v" }.mkString(", ")})"
+      }
+    )
+  given JsonValueCodec[Thread] =
+    stringCodec.bimap(_ => ???, _.toString)
+  given JsonValueCodec[BspConnection] =
+    stringCodec.bimap(_ => ???, _.toString)
+
+  given JsonValueCodec[BuildServerProcess] =
+    JsonCodecMaker.make
+
   final case class Process(proc: os.SubProcess, watchThread: Thread) extends BuildServerProcess {
     def managedProcess = true
     def close(): Unit = {

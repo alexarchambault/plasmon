@@ -14,6 +14,8 @@ import scala.meta.internal.mtags.Md5Fingerprints
 import scala.meta.io.AbsolutePath
 
 import plasmon.PlasmonEnrichments.*
+import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
+import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 
 final class MutableMd5Fingerprints extends Md5Fingerprints {
   private val fingerprints = new ConcurrentHashMap[os.Path, ConcurrentLinkedQueue[Fingerprint]]
@@ -84,11 +86,21 @@ final class MutableMd5Fingerprints extends Md5Fingerprints {
   }
 
   override def toString: String = s"Md5FingerprintProvider($fingerprints)"
+
+  def asJson: MutableMd5Fingerprints.AsJson =
+    MutableMd5Fingerprints.AsJson(
+      fingerprints = fingerprints.asScala.toMap.map {
+        case (k, v) =>
+          (k.toString, v.asScala.toSeq)
+      }
+    )
 }
 
-case class Fingerprint(text: String, md5: String) {
-  def isEmpty: Boolean = md5.isEmpty
-}
-object Fingerprint {
-  def empty: Fingerprint = Fingerprint("", "")
+object MutableMd5Fingerprints {
+  final case class AsJson(
+    fingerprints: Map[String, Seq[Fingerprint]]
+  )
+
+  given JsonValueCodec[AsJson] =
+    JsonCodecMaker.make
 }

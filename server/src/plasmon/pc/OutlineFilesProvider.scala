@@ -14,6 +14,8 @@ import scala.meta.internal.metals.ScalaVersions
 import plasmon.PlasmonEnrichments._
 import plasmon.index.BspData
 import plasmon.ide.Buffers
+import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
+import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 
 private class OutlineFilesProvider(
   bspData: BspData,
@@ -88,10 +90,18 @@ private class OutlineFilesProvider(
 
   private def buildTargetId(id: String): Option[b.BuildTargetIdentifier] =
     Option(id).filter(_.nonEmpty).map(new b.BuildTargetIdentifier(_))
+
+  def asJson: OutlineFilesProvider.AsJson =
+    OutlineFilesProvider.AsJson()
 }
 
 private object OutlineFilesProvider {
   sealed trait PcRestartReason
   case object InverseDependency              extends PcRestartReason
   case class DidCompile(wasSuccess: Boolean) extends PcRestartReason
+
+  final case class AsJson()
+
+  given JsonValueCodec[AsJson] =
+    JsonCodecMaker.make
 }

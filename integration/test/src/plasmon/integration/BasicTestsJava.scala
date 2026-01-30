@@ -52,7 +52,7 @@ class BasicTestsJava extends PlasmonSuite {
     withWorkspaceServerPositions(
       extraServerOpts = Seq("--jvm", jvm.value),
       timeout = Some(2 * buildTool.defaultTimeout)
-    )(files: _*) {
+    )(files*) {
       (workspace, server, positions, osOpt) =>
 
         buildTool.setup(workspace, osOpt)

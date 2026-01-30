@@ -8,10 +8,12 @@ import scala.meta.internal.mtags.GlobalSymbolIndex;
 import scala.meta.internal.pc.ScalaPresentationCompiler;
 import scala.meta.pc.PresentationCompiler;
 
+import plasmon.internal.DisableScala2Pc;
+
 public class Scala2PresentationCompilerHandler {
 
   public boolean available() {
-    return true;
+    return !(new DisableScala2Pc()).getAsBoolean();
   }
 
   public PresentationCompiler create(

@@ -25,6 +25,8 @@ import scala.meta.internal.metals.PackageIndex
 import plasmon.index.BspData
 import scala.meta.internal.metals.StringBloomFilter
 import plasmon.PlasmonEnrichments.*
+import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
+import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 
 // MOSTLY INTERNAL TO SymbolSearchImpl
 
@@ -350,6 +352,9 @@ final class SymbolSearchIndex(
           new PreferredScalaVersionOrdering(preferredScalaVersions.toSet)
       }
   }
+
+  def asJson: SymbolSearchIndex.AsJson =
+    SymbolSearchIndex.AsJson()
 }
 
 object SymbolSearchIndex {
@@ -364,4 +369,9 @@ object SymbolSearchIndex {
     // show that it still uses <5mb in total.
     symbols: Seq[WorkspaceSymbolInformation]
   )
+
+  final case class AsJson()
+
+  given JsonValueCodec[AsJson] =
+    JsonCodecMaker.make
 }

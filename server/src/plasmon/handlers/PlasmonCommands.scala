@@ -48,6 +48,8 @@ import java.io.PrintStream
 import scala.meta.metap.Settings
 import scala.meta.metap.Format
 import scala.meta.internal.semanticdb.SymbolOccurrence
+import plasmon.languageclient.PlasmonConfiguredLanguageClient
+import java.util.concurrent.atomic.AtomicInteger
 
 object PlasmonCommands {
 
@@ -449,7 +451,7 @@ object PlasmonCommands {
               case Success(()) =>
               case Failure(ex) =>
                 scribe.error("Error re-indexing", ex)
-            }(pools.dummyEc)
+            }(using pools.dummyEc)
             ()
         }
         val resp = BuildToolRestartResponse(
@@ -579,7 +581,7 @@ object PlasmonCommands {
                     case Success(()) =>
                     case Failure(ex) =>
                       scribe.error("Error re-indexing", ex)
-                  }(pools.dummyEc)
+                  }(using pools.dummyEc)
                 // FIXME We don't really check that everything went right here
                 LoadBuildToolResult(success = true, None)
               case None =>
@@ -636,7 +638,7 @@ object PlasmonCommands {
           case Success(()) =>
           case Failure(ex) =>
             scribe.error("Error re-indexing", ex)
-        }(pools.dummyEc)
+        }(using pools.dummyEc)
       }
       CompletableFuture.completedFuture(writeToGson(UnloadAllModulesResponse(removedCount)))
     },
@@ -664,7 +666,7 @@ object PlasmonCommands {
           case Success(()) =>
           case Failure(ex) =>
             scribe.error("Error re-indexing", ex)
-        }(pools.dummyEc)
+        }(using pools.dummyEc)
       }
       CompletableFuture.completedFuture(
         writeToGson(
@@ -686,8 +688,8 @@ object PlasmonCommands {
               case Success(_) =>
               case Failure(ex) =>
                 scribe.error(s"Compiling $file failed", ex)
-            }(server.pools.compilationEc)
-            f.map[Object](_ => null)(server.pools.dummyEc).asJava
+            }(using server.pools.compilationEc)
+            f.map[Object](_ => null)(using server.pools.dummyEc).asJava
         }
       }
     },
@@ -747,8 +749,8 @@ object PlasmonCommands {
         case Success(_) =>
         case Failure(ex) =>
           scribe.error("Compiling all files failed", ex)
-      }(server.pools.compilationEc)
-      f.map[Object](_ => null)(server.pools.dummyEc).asJava
+      }(using server.pools.compilationEc)
+      f.map[Object](_ => null)(using server.pools.dummyEc).asJava
     },
     CommandHandler.of("plasmon/cleanAll", refreshStatus = true) { (_, _) =>
       ???
@@ -767,20 +769,20 @@ object PlasmonCommands {
                 scribe.info(s"Re-importing build ${conn.name} for $file")
                 prepareSteps.foreach(_(conn.logger, true))
                 restartBuildTool(server, pools, buildTool, conn.info, conn.name, hard = false)
-              }(pools.bspEces) // use another pool?
+              }(using pools.bspEces) // use another pool?
               f.onComplete {
                 case Success(()) =>
                   indexer.reIndex().onComplete {
                     case Success(()) =>
                     case Failure(ex) =>
                       scribe.error("Error re-indexing", ex)
-                  }(pools.dummyEc)
+                  }(using pools.dummyEc)
                   scribe.info(s"Done re-importing build ${conn.name} for $file")
                 case Failure(ex) =>
                   scribe.error(s"Error re-importing build ${conn.name} for $file", ex)
                   conn.logger.log("Error re-importing build")
                   conn.logger.log(ex)
-              }(pools.bspEces)
+              }(using pools.bspEces)
               ReImportResponse(s"Re-importing ${conn.name}", Some(conn.logger.channel.id))
             }
         }
@@ -950,7 +952,7 @@ object PlasmonCommands {
                   case Success(()) =>
                   case Failure(ex) =>
                     scribe.error("Error re-indexing", ex)
-                }(pools.dummyEc)
+                }(using pools.dummyEc)
               }
               else
                 scribe.info(s"Module already added: $targetId")
@@ -979,7 +981,7 @@ object PlasmonCommands {
                   case Success(()) =>
                   case Failure(ex) =>
                     scribe.error("Error re-indexing", ex)
-                }(pools.dummyEc)
+                }(using pools.dummyEc)
               }
               else
                 scribe.info(s"Module wasn't loaded: $targetId")
@@ -1035,7 +1037,7 @@ object PlasmonCommands {
           case Success(()) =>
           case Failure(ex) =>
             scribe.error("Error re-indexing", ex)
-        }(pools.dummyEc)
+        }(using pools.dummyEc)
         CompletableFuture.completedFuture(null)
       }
     )
@@ -1242,7 +1244,7 @@ object PlasmonCommands {
                   )
                   val interrupted0: Boolean = compilerOrNull.compilerOpt
                     .collect {
-                      case pc: PresentationCompiler with HasCompilerAccess =>
+                      case pc: (PresentationCompiler & HasCompilerAccess) =>
                         pc
                     }
                     .exists(_.compilerAccess.interrupt())
@@ -1340,6 +1342,18 @@ object PlasmonCommands {
       JsonCodecMaker.make
   }
 
+  private final case class DebugServerStateResp(
+    text: String,
+    id: String
+  )
+  private object DebugServerStateResp {
+    private val counter = new AtomicInteger
+    def nextId(): String =
+      counter.getAndIncrement().toString
+    implicit lazy val codec: JsonValueCodec[DebugServerStateResp] =
+      JsonCodecMaker.make
+  }
+
   def debugCommands(server: Server) =
     Seq(
       // TODO Merge debugSymbolIndex and debugFullTree?
@@ -1426,7 +1440,7 @@ object PlasmonCommands {
                     ""
                   )
                   writeToGson(resp): Object
-                }(server.pools.dummyEc)
+                }(using server.pools.dummyEc)
                 .asJava
           }
         }
@@ -1539,6 +1553,13 @@ object PlasmonCommands {
             }
             CompletableFuture.completedFuture(writeToGson(resp))
         }
+      },
+      CommandHandler.of("plasmon/debugServerState") { (params, logger) =>
+        val resp = DebugServerStateResp(
+          text = ServerState.state(server),
+          id = DebugServerStateResp.nextId()
+        )
+        CompletableFuture.completedFuture(writeToGson(resp))
       },
       CommandHandler.of("plasmon/debugPresentationCompiler") { (params, logger) =>
         params.as[Boolean]("plasmon/debugPresentationCompiler") { enable =>

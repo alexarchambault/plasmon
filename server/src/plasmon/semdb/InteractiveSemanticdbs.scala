@@ -20,6 +20,8 @@ import plasmon.PlasmonEnrichments._
 import plasmon.ide.Buffers
 import plasmon.semdb.Semanticdbs
 import scala.meta.internal.mtags.GlobalSymbolIndex
+import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
+import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 
 /** Produces SemanticDBs on-demand by using the presentation compiler.
   *
@@ -123,4 +125,14 @@ final class InteractiveSemanticdbs(
               }
           }
     }
+
+  def asJson: InteractiveSemanticdbs.AsJson =
+    InteractiveSemanticdbs.AsJson()
+}
+
+object InteractiveSemanticdbs {
+  final case class AsJson()
+
+  given JsonValueCodec[AsJson] =
+    JsonCodecMaker.make
 }

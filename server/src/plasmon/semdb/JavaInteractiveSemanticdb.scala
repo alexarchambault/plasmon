@@ -235,10 +235,10 @@ object JavaInteractiveSemanticdb {
         if (pluginJars.isEmpty)
           logger.accept("No plugin JARs")
         else {
-          logger.accept(
-            s"${pluginJars.length} plugin ${if (pluginJars.length == 1) "JAR"
-              else "JARs"}"
-          )
+          logger.accept {
+            val jars = if (pluginJars.length == 1) "JAR" else "JARs"
+            s"${pluginJars.length} plugin $jars"
+          }
           for (jar <- pluginJars)
             logger.accept(s"  $jar")
           logger.accept("")

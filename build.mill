@@ -1,4 +1,4 @@
-//| mill-version: 1.1.0-RC3
+//| mill-version: 1.1.0
 
 import mill.api.SystemStreams
 import org.apache.commons.io.input.TailerListener
@@ -224,6 +224,8 @@ object server extends ScalaModule with PlasmonPublishModule {
          |  def scalametaVersion = "${Deps.semanticDbScalac.dep.versionConstraint.asString}"
          |  def sbtBloopVersion = "${Versions.sbtBloop}"
          |  def defaultSbtVersion = "${Versions.sbt}"
+         |
+         |  def disableScala2Pc = $disableScala2Pc
          |}
          |""".stripMargin
     if (!os.isFile(dest) || os.read(dest) != code) {
@@ -665,7 +667,7 @@ object server extends ScalaModule with PlasmonPublishModule {
         "--enable-url-protocols=http,https",
         "--add-opens=java.base/java.util=ALL-UNNAMED", // needed for TimerThreadsHack
         "--add-opens=org.graalvm.nativeimage.builder/com.oracle.svm.core.posix.headers=ALL-UNNAMED", // needed for Signal stuff used by libdaemon-jvm
-        s"-Dplasmon.native.disableScala2Pc=$disableScala2Pc",
+        s"-Dplasmon.disableScala2Pc=$disableScala2Pc",
         "--enable-native-access=ALL-UNNAMED"
       ) ++ ciOptions
     }

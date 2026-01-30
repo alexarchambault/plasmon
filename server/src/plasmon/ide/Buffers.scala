@@ -8,6 +8,8 @@ import scala.collection.concurrent.TrieMap
 import scala.meta.inputs.Input
 import scala.meta.internal.mtags.SourcePath
 import scala.meta.internal.mtags.GlobalSymbolIndex
+import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
+import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 
 /** Manages in-memory text contents of unsaved files in the editor.
   */
@@ -52,4 +54,20 @@ case class Buffers(
     )
   }
 
+  def asJson: Buffers.AsJson =
+    Buffers.AsJson(
+      map = map.toMap.map {
+        case (k, v) =>
+          (k.toString, v)
+      }
+    )
+}
+
+object Buffers {
+  final case class AsJson(
+    map: Map[String, String]
+  )
+
+  given JsonValueCodec[AsJson] =
+    JsonCodecMaker.make
 }

@@ -26,6 +26,9 @@ import plasmon.ide.TokenEditDistance
 import plasmon.ide.Directories
 import scala.meta.internal.mtags.GlobalSymbolIndex
 import plasmon.index.BspData
+import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
+import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
+import plasmon.render.JsonCodecs.given
 
 /** Converts diagnostics from the build server and Scalameta parser into LSP diagnostics.
   *
@@ -285,6 +288,27 @@ private final class Diagnostics(
     for (path <- paths)
       didDelete(path)
   }
+
+  def asJson: Diagnostics.AsJson =
+    Diagnostics.AsJson(
+      diagnostics = diagnostics.toMap.map {
+        case (p, l) =>
+          (p.toString, l.asScala.toSeq)
+      },
+      syntaxError = syntaxError.toMap.map {
+        case (p, l) =>
+          (p.toString, l)
+      },
+      snapshots = snapshots.toMap.map {
+        case (p, f) =>
+          (p.toString, (f.path, f.value))
+      },
+      lastPublished = Option(lastPublished.get()),
+      diagnosticsBuffer = diagnosticsBuffer.asScala.toSeq.map {
+        case (mod, p) =>
+          (mod.asString, p)
+      }
+    )
 }
 
 private object Diagnostics {
@@ -301,4 +325,15 @@ private object Diagnostics {
     def toJsonObject: JsonObject =
       data.toJson.getAsJsonObject
   }
+
+  final case class AsJson(
+    diagnostics: Map[String, Seq[l.Diagnostic]],
+    syntaxError: Map[String, Seq[l.Diagnostic]],
+    snapshots: Map[String, (String, String)],
+    lastPublished: Option[os.Path],
+    diagnosticsBuffer: Seq[(String, os.Path)]
+  )
+
+  given JsonValueCodec[AsJson] =
+    JsonCodecMaker.make
 }

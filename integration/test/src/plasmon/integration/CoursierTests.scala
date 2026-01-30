@@ -33,7 +33,7 @@ class CoursierTests extends PlasmonSuite {
     super.test(options) {
       os.remove.all(coursierSources / ".plasmon")
       body
-    }(loc)
+    }(using loc)
 
   private val isCi = System.getenv("CI") != null
 

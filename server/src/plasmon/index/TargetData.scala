@@ -28,6 +28,9 @@ import java.lang.{Boolean => JBoolean}
 import java.util.{Collections, HashSet => JHashSet, Set => JSet}
 import java.util.concurrent.ConcurrentHashMap
 import plasmon.bsp.PlasmonBuildClientImpl
+import plasmon.render.JsonCodecs.given
+import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
+import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 
 final class TargetData {
 
@@ -405,6 +408,71 @@ final class TargetData {
       buildTarget  <- buildTargets
     }
       linkSourceFile(buildTarget, source)
+
+  def asJson: TargetData.AsJson =
+    TargetData.AsJson(
+      sourceItemsToBuildTarget = sourceItemsToBuildTarget.toMap.map {
+        case (p, t) =>
+          (p.toString, t.asScala.toSeq)
+      },
+      buildTargetInfo = buildTargetInfo.toMap.map {
+        case (p, inf) =>
+          (p.getUri, inf)
+      },
+      javaTargetInfo = javaTargetInfo.toMap.map {
+        case (p, info) =>
+          (p.getUri, info)
+      },
+      scalaTargetInfo = scalaTargetInfo.toMap.map {
+        case (p, info) =>
+          (p.getUri, info)
+      },
+      dependencySourcesInfo = dependencySourcesInfo.toMap.map {
+        case (p, info) =>
+          (p.getUri, info.asScala.toSeq)
+      },
+      inverseDependencies = inverseDependencies.toMap.map {
+        case (p, info) =>
+          (p.getUri, info.toSeq)
+      },
+      buildTargetSources = buildTargetSources.toMap.map {
+        case (k, v) =>
+          (k.getUri, v.asScala.toSeq)
+      },
+      buildTargetClasspath = buildTargetClasspath.toMap.map {
+        case (k, v) =>
+          (k.getUri, v)
+      },
+      buildTargetDependencyModules = buildTargetDependencyModules.toMap.map {
+        case (k, v) =>
+          (k.getUri, v)
+      },
+      inverseDependencySources = inverseDependencySources.toMap.map {
+        case (k, v) =>
+          (k.toString, v.toSeq.sortBy(_.getUri))
+      },
+      buildTargetGeneratedDirs = buildTargetGeneratedDirs.keySet.toSeq.sortBy(_.toString),
+      buildTargetGeneratedFiles = buildTargetGeneratedFiles.keySet.toSeq.sortBy(_.toString),
+      sourceJarNameToJarFile = sourceJarNameToJarFile.toMap,
+      isSourceRoot = isSourceRoot.asScala.toSeq.sortBy(_.toString),
+      originalSourceItems = originalSourceItems.asScala.toSeq.sortBy(_.toString),
+      sourceItemFiles = sourceItemFiles.asScala.toSeq.sortBy(_.toString),
+      targetToWorkspace = targetToWorkspace.toMap.map {
+        case (k, v) =>
+          (k.getUri, v)
+      },
+      buildServerOpt = buildServerOpt.map(_.toString),
+      buildClientOpt = buildClientOpt.map(_.toString),
+      workspaceBuildTargetsRespOpt = workspaceBuildTargetsRespOpt,
+      sourceBuildTargetsCache = sourceBuildTargetsCache.asScala.toMap.map {
+        case (k, v) =>
+          (k.toString, v.map(_.toSeq.sortBy(_.toString)))
+      },
+      actualSources = actualSources.toMap.map {
+        case (k, v) =>
+          (k.toString, v.toString)
+      }
+    )
 }
 
 object TargetData {
@@ -431,4 +499,32 @@ object TargetData {
       .flatMap(target => Option(target.getBaseDirectory).toSeq)
       .map(_.osPathFromUri)
   }
+
+  final case class AsJson(
+    sourceItemsToBuildTarget: Map[String, Seq[b.BuildTargetIdentifier]],
+    buildTargetInfo: Map[String, b.BuildTarget],
+    javaTargetInfo: Map[String, JavaTarget],
+    scalaTargetInfo: Map[String, ScalaTarget],
+    dependencySourcesInfo: Map[String, Seq[b.DependencySourcesItem]],
+    inverseDependencies: Map[String, Seq[b.BuildTargetIdentifier]],
+    buildTargetSources: Map[String, Seq[os.Path]],
+    buildTargetClasspath: Map[String, Seq[String]],
+    buildTargetDependencyModules: Map[String, Seq[b.MavenDependencyModule]],
+    inverseDependencySources: Map[String, Seq[b.BuildTargetIdentifier]],
+    buildTargetGeneratedDirs: Seq[os.Path],
+    buildTargetGeneratedFiles: Seq[os.Path],
+    sourceJarNameToJarFile: Map[String, os.Path],
+    isSourceRoot: Seq[os.Path],
+    originalSourceItems: Seq[os.Path],
+    sourceItemFiles: Seq[os.Path],
+    targetToWorkspace: Map[String, os.Path],
+    buildServerOpt: Option[String],
+    buildClientOpt: Option[String],
+    workspaceBuildTargetsRespOpt: Option[TargetData.WorkspaceBuildTargets],
+    sourceBuildTargetsCache: Map[String, Option[Seq[b.BuildTargetIdentifier]]],
+    actualSources: Map[String, String]
+  )
+
+  given JsonValueCodec[AsJson] =
+    JsonCodecMaker.make
 }

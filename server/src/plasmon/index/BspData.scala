@@ -19,6 +19,9 @@ import plasmon.bsp.PlasmonBuildClientImpl
 import scala.meta.internal.mtags.GlobalSymbolIndex
 import plasmon.bsp.BspServers
 import plasmon.bsp.BuildServerInfo
+import plasmon.render.JsonCodecs.given
+import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
+import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 
 /** In-memory cache for looking up build server metadata.
   */
@@ -29,7 +32,7 @@ final class BspData(
 
   def allTargetData: Seq[TargetData] =
     targetDataMap.values.toList
-  private var targetDataMap = Map.empty[BuildServerInfo, TargetData]
+  private[plasmon] var targetDataMap = Map.empty[BuildServerInfo, TargetData]
   def clearTargetData: Unit = {
     val keyValues = bspServers.list.flatMap(_._2).map(_.info -> new TargetData)
     targetDataMap = keyValues.toMap
@@ -39,12 +42,12 @@ final class BspData(
   def targetData(info: BuildServerInfo): Option[TargetData] =
     targetDataMap.get(info)
 
-  private var latestTargetIds = List.empty[b.BuildTargetIdentifier]
+  private[plasmon] var latestTargetIds = List.empty[b.BuildTargetIdentifier]
   def touchTarget(id: b.BuildTargetIdentifier): Unit =
     if (!latestTargetIds.headOption.contains(id))
       latestTargetIds = id :: latestTargetIds.filter(_ != id)
 
-  private var data: BspData.DataSeq =
+  private[plasmon] var data: BspData.DataSeq =
     BspData.DataSeq((new TargetData) :: Nil)
   def clear(targetData: Seq[TargetData]): Unit =
     data = BspData.DataSeq(targetData.toList)
@@ -471,6 +474,15 @@ final class BspData(
         None
     }
   }
+
+  def asJson: BspData.AsJson =
+    BspData.AsJson(
+      targetData = targetDataMap.toSeq.sortBy(_._1.toString).map {
+        case (info, data) =>
+          (info, data.asJson)
+      },
+      latestTargetIds = latestTargetIds
+    )
 }
 
 object BspData {
@@ -522,7 +534,7 @@ object BspData {
     leaves: collection.Set[b.BuildTargetIdentifier]
   )
 
-  private final case class DataSeq(list: List[TargetData]) {
+  private[plasmon] final case class DataSeq(list: List[TargetData]) {
     def iterator: Iterator[TargetData]             = list.iterator
     def writableDataIterator: Iterator[TargetData] = list.iterator
     def iterable: Iterable[TargetData]             = list.toSeq
@@ -532,4 +544,12 @@ object BspData {
     def fromOptions[T](f: TargetData => Option[T]): Option[T] =
       fromIterators(f(_).iterator).find(_ => true)
   }
+
+  final case class AsJson(
+    targetData: Seq[(BuildServerInfo, TargetData.AsJson)],
+    latestTargetIds: Seq[b.BuildTargetIdentifier]
+  )
+
+  given JsonValueCodec[AsJson] =
+    JsonCodecMaker.make
 }

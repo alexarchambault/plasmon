@@ -74,6 +74,11 @@ import plasmon.ide.Directories
 import scala.meta.pc.PresentationCompilerConfig
 import plasmon.languageclient.PlasmonLanguageClient
 import java.util.UUID
+import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, writeToArrayReentrant}
+import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
+import coursier.parse.RawJson
+import plasmon.render.JsonCodecs.given
+import scala.util.Failure
 
 /** Manages lifecycle for presentation compilers in all build targets.
   *
@@ -107,7 +112,7 @@ class PresentationCompilers(
   import PresentationCompilers.*
 
   val interactiveCompilersStatuses = new ConcurrentHashMap[
-    scala.meta.pc.PresentationCompiler with scala.meta.internal.pc.HasCompilerAccess,
+    scala.meta.pc.PresentationCompiler & scala.meta.internal.pc.HasCompilerAccess,
     (String, String)
   ]
 
@@ -171,8 +176,6 @@ class PresentationCompilers(
       elem  <- Option(cache.remove(key))
     } elem.shutdown()
 
-  private val worksheetsDigests = new TrieMap[os.Path, String]
-
   private val cache           = jcache.asScala
   private val completionCache = jCompletionCache.asScala
   private def buildTargetPCFromCache(
@@ -206,7 +209,6 @@ class PresentationCompilers(
       v.shutdown()
     cache.clear()
     completionCache.clear()
-    worksheetsDigests.clear()
     outlineFilesProvider.clear()
   }
 
@@ -1214,7 +1216,7 @@ class PresentationCompilers(
     val id         = s"interactive-$scalaVersion-$idSuffix"
     val label      = s"Interactive $nameSuffix"
     def logger()   = loggerManager.create(id, label).consumer
-    def setupPc(pc0: PresentationCompiler with pc.HasCompilerAccess): Unit = {
+    def setupPc(pc0: PresentationCompiler & pc.HasCompilerAccess): Unit = {
       pc0.compilerAccess.beforeAccess { (reqId, name, uri) =>
         interactiveCompilersStatuses.put(pc0, (name, uri))
         refreshStatus()
@@ -1250,8 +1252,8 @@ class PresentationCompilers(
           () => logger(),
           targetId.module
         ) match {
-          case pc1: PresentationCompiler with pc.HasCompilerAccess => pc1
-          case _                                                   => ???
+          case pc1: (PresentationCompiler & pc.HasCompilerAccess) => pc1
+          case _                                                  => ???
         }
         setupPc(pc0)
         pc0
@@ -1633,16 +1635,39 @@ class PresentationCompilers(
     )
   }
 
+  def asJson: PresentationCompilers.AsJson =
+    PresentationCompilers.AsJson(
+      interactiveCompilersStatuses = interactiveCompilersStatuses.asScala.toMap.map {
+        case (k, v) =>
+          (k.toString, v)
+      },
+      debug = debug,
+      symbolSearch = symbolSearch.asJson,
+      compilerPlugins = plugins.asJson,
+      outlineFilesProvider = outlineFilesProvider.asJson,
+      cache = jcache.asScala.toMap.map {
+        case (k, v) =>
+          (k.asString, v.asJson)
+      },
+      completionCache = jCompletionCache.asScala.toMap.map {
+        case (k, v) =>
+          (k.asString, v.asJson)
+      }
+    )
 }
 
 object PresentationCompilers {
 
-  sealed trait PresentationCompilerKey
+  sealed trait PresentationCompilerKey {
+    def asString: String
+  }
   object PresentationCompilerKey {
-    final case class ScalaBuildTarget(id: b.BuildTargetIdentifier)
-        extends PresentationCompilerKey
-    final case class JavaBuildTarget(id: b.BuildTargetIdentifier)
-        extends PresentationCompilerKey
+    final case class ScalaBuildTarget(id: b.BuildTargetIdentifier) extends PresentationCompilerKey {
+      def asString = s"Scala(${id.getUri})"
+    }
+    final case class JavaBuildTarget(id: b.BuildTargetIdentifier) extends PresentationCompilerKey {
+      def asString = s"Java(${id.getUri})"
+    }
   }
 
   def noopCompiler: PresentationCompiler =
@@ -1780,7 +1805,7 @@ object PresentationCompilers {
   private object InlayHintCompat {
     // for compatibility with old inlay hint data
     def maybeFixInlayHintData(hint: l.InlayHint, uri: String): Unit =
-      if (hint.getData.isInstanceOf[Array[_]])
+      if (hint.getData.isInstanceOf[Array[?]])
         try {
           val labelParts = hint
             .getData
@@ -1802,6 +1827,8 @@ object PresentationCompilers {
     def compilerOpt: Option[PresentationCompiler]
     def await: Option[PresentationCompiler]
     def shutdown(): Unit
+
+    def asJson: RawJson
   }
 
   trait LazyCompiler extends MtagsPresentationCompiler {
@@ -1929,6 +1956,37 @@ object PresentationCompilers {
       )
         .withBuildTargetName(scalaTarget.displayName)
     }
+
+    def asJson: RawJson = {
+      val refValue = presentationCompilerRef.get()
+      val helper = ScalaLazyCompiler.AsJson(
+        additionalClasspath = additionalClasspath,
+        ref = Option(refValue).map {
+          case pc: Scala3PresentationCompiler => ScalaLazyCompiler.pcAsJson(pc)
+          case other                          => sys.error(s"Unsupported PC type: $other")
+        },
+        future = presentationCompilerFuture.value match {
+          case None                                => "[on-going]"
+          case Some(Failure(ex))                   => s"Failed: $ex"
+          case Some(Success(pc)) if pc eq refValue => "[same as ref]"
+          case Some(Success(pc))                   => s"$pc (ref: $refValue)"
+        }
+      )
+      RawJson(writeToArrayReentrant(helper))
+    }
+  }
+
+  object ScalaLazyCompiler {
+    final case class AsJson(
+      additionalClasspath: Seq[os.Path],
+      ref: Option[PcAsJson],
+      future: String
+    )
+    final case class PcAsJson()
+    def pcAsJson(pc: Scala3PresentationCompiler): PcAsJson =
+      PcAsJson()
+    given JsonValueCodec[AsJson] =
+      JsonCodecMaker.make
   }
 
   case class JavaLazyCompiler(
@@ -1985,6 +2043,27 @@ object PresentationCompilers {
           Nil.asJava
         )
     }
+
+    def asJson: RawJson = {
+      val helper = JavaLazyCompiler.AsJson(
+        ref = Option(presentationCompilerRef.get()).map(_.toString),
+        future = presentationCompilerFuture.value match {
+          case None              => "[on-going]"
+          case Some(Failure(ex)) => s"Failed: $ex"
+          case Some(Success(pc)) => pc.toString
+        }
+      )
+      RawJson(writeToArrayReentrant(helper))
+    }
+  }
+
+  object JavaLazyCompiler {
+    final case class AsJson(
+      ref: Option[String],
+      future: String
+    )
+    given JsonValueCodec[AsJson] =
+      JsonCodecMaker.make
   }
 
   private def fromMtags(
@@ -2046,4 +2125,17 @@ object PresentationCompilers {
 
   private def enrichWithReleaseOption(scalaTarget: ScalaTarget) =
     scalaTarget.scalac.getOptions.asScala.toSeq
+
+  final case class AsJson(
+    interactiveCompilersStatuses: Map[String, (String, String)],
+    debug: Boolean,
+    symbolSearch: SymbolSearchImpl.AsJson,
+    compilerPlugins: CompilerPlugins.AsJson,
+    outlineFilesProvider: OutlineFilesProvider.AsJson,
+    cache: Map[String, RawJson],
+    completionCache: Map[String, RawJson]
+  )
+
+  given JsonValueCodec[AsJson] =
+    JsonCodecMaker.make
 }

@@ -474,7 +474,7 @@ export function activate(context: vscode.ExtensionContext) {
   function jvmServerOptions(version: string): ServerOptions {
     return {
       command: "cs",
-      args: ["launch", `io.github.alexarchambault.plasmon:server_2.13:${version}`, "--jvm", "24", "--"].concat(serverArgs),
+      args: ["launch", `io.github.alexarchambault.plasmon:server_3:${version}`, "--jvm", "24", "--"].concat(serverArgs),
       options: {}
     }
   }
@@ -539,8 +539,9 @@ export function activate(context: vscode.ExtensionContext) {
             vscode.window.showWarningMessage(`Debugging of presentation compiler was already enabled. See logs in ${resp.logPath}`)
         },
         (err) => {
-          // FIXME Report that to users
-          console.log(`Error while sending plasmon/debugPresentationCompiler command: ${err}`)
+          let msg = `Error while sending plasmon/debugPresentationCompiler command: ${err}`
+          console.log(msg)
+          vscode.window.showErrorMessage(msg)
         }
       )
     })
@@ -562,8 +563,9 @@ export function activate(context: vscode.ExtensionContext) {
             vscode.window.showWarningMessage(`Debugging of presentation compiler was already disabled`)
         },
         (err) => {
-          // FIXME Report that to users
-          console.log(`Error while sending plasmon/debugPresentationCompiler command: ${err}`)
+          let msg = `Error while sending plasmon/debugPresentationCompiler command: ${err}`
+          console.log(msg)
+          vscode.window.showErrorMessage(msg)
         }
       )
     })
@@ -663,8 +665,9 @@ export function activate(context: vscode.ExtensionContext) {
           }
         },
         (err) => {
-          // FIXME Report that to users
-          console.log(`Error while sending plasmon/debugSymbolIndex command for ${uri}: ${err}`)
+          let msg = `Error while sending plasmon/debugSymbolIndex command for ${uri}: ${err}`
+          console.log(msg)
+          vscode.window.showErrorMessage(msg)
         }
       )
     })
@@ -693,8 +696,9 @@ export function activate(context: vscode.ExtensionContext) {
           }
         },
         (err) => {
-          // FIXME Report that to users
-          console.log(`Error while sending plasmon/debugFullTree command for ${uri}: ${err}`)
+          let msg = `Error while sending plasmon/debugFullTree command for ${uri}: ${err}`
+          console.log(msg)
+          vscode.window.showErrorMessage(msg)
         }
       )
     })
@@ -722,8 +726,9 @@ export function activate(context: vscode.ExtensionContext) {
           }
         },
         (err) => {
-          // FIXME Report that to users
-          console.log(`Error while sending plasmon/debugBspData command for ${uri}: ${err}`)
+          let msg = `Error while sending plasmon/debugBspData command for ${uri}: ${err}`
+          console.log(msg)
+          vscode.window.showErrorMessage(msg)
         }
       )
     })
@@ -751,8 +756,31 @@ export function activate(context: vscode.ExtensionContext) {
         }
       },
       (err) => {
-        // FIXME Report that to users
-        console.log(`Error while sending plasmon/debugSemanticdbLookup command for ${uri}: ${err}`)
+        let msg = `Error while sending plasmon/debugSemanticdbLookup command for ${uri}: ${err}`
+        console.log(msg)
+        vscode.window.showErrorMessage(msg)
+      }
+    )
+  }
+
+  function dumpServerState() {
+    interface Resp {
+      text: string
+      id: string
+    }
+    let uri = lastFocusedDocument
+    client?.sendRequest(ExecuteCommandRequest.type, { command: "plasmon/debugServerState" }).then(
+      async (resp: Resp) => {
+        console.log(`Response of debugServerState: ${JSON.stringify(resp)}`)
+        const strUri = `${RO_SCHEME}:server-state.json?id=${resp.id}`
+        documents[strUri] = resp.text
+        const doc = await vscode.workspace.openTextDocument(vscode.Uri.parse(strUri))
+        await vscode.window.showTextDocument(doc, { preview: false })
+      },
+      (err) => {
+        let msg = `Error while sending plasmon/debugServerState command for ${uri}: ${err}`
+        console.log(msg)
+        vscode.window.showErrorMessage(msg)
       }
     )
   }
@@ -766,6 +794,12 @@ export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(
     vscode.commands.registerCommand(`plasmon.dump-semanticdb-details`, () => {
       dumpSemdbDetails(true)
+    })
+  )
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand(`plasmon.dump-server-state`, () => {
+      dumpServerState()
     })
   )
 
@@ -806,8 +840,9 @@ export function activate(context: vscode.ExtensionContext) {
                   console.log(`Ran ${entry.command} ${JSON.stringify(entry.arguments)}`)
                 },
                 (err) => {
-                  // FIXME Report that to users
-                  console.log(`Error while sending ${entry.command} ${JSON.stringify(entry.arguments)} command: ${err}`)
+                  let msg = `Error while sending ${entry.command} ${JSON.stringify(entry.arguments)} command: ${err}`
+                  console.log(msg)
+                  vscode.window.showErrorMessage(msg)
                 }
               )
             }
@@ -816,8 +851,9 @@ export function activate(context: vscode.ExtensionContext) {
           quickPick.show()
         },
         (err) => {
-          // FIXME Report that to users
-          console.log(`Error while sending plasmon/listModuleActions command for ${uri}: ${err}`)
+          let msg = `Error while sending plasmon/listModuleActions command for ${uri}: ${err}`
+          console.log(msg)
+          vscode.window.showErrorMessage(msg)
         }
       )
     })
@@ -997,8 +1033,9 @@ export function activate(context: vscode.ExtensionContext) {
           quickPick.show()
         },
         (err) => {
-          // FIXME Report that to users
-          console.log(`Error while sending plasmon/listBuildTools command for ${uri}: ${err}`)
+          let msg = `Error while sending plasmon/listBuildTools command for ${uri}: ${err}`
+          console.log(msg)
+          vscode.window.showErrorMessage(msg)
         }
       )
     })
@@ -1152,8 +1189,9 @@ export function activate(context: vscode.ExtensionContext) {
 
                       },
                       (err) => {
-                        // FIXME Report that to users
-                        console.log(`Error while sending plasmon/unloadModule command: ${err}`)
+                        let msg = `Error while sending plasmon/unloadModule command: ${err}`
+                        console.log(msg)
+                        vscode.window.showErrorMessage(msg)
                       }
                     )
                   else
@@ -1162,8 +1200,9 @@ export function activate(context: vscode.ExtensionContext) {
 
                     },
                     (err) => {
-                      // FIXME Report that to users
-                      console.log(`Error while sending plasmon/loadModule command: ${err}`)
+                      let msg = `Error while sending plasmon/loadModule command: ${err}`
+                      console.log(msg)
+                      vscode.window.showErrorMessage(msg)
                     }
                   )
                 }
@@ -1177,8 +1216,9 @@ export function activate(context: vscode.ExtensionContext) {
           quickPick.show()
         },
         (err) => {
-          // FIXME Report that to users
-          console.log(`Error while sending plasmon/listBuildToolsOrModules command for ${uri}: ${err}`)
+          let msg = `Error while sending plasmon/listBuildToolsOrModules command for ${uri}: ${err}`
+          vscode.window.showErrorMessage(msg, { modal: false })
+          console.log(msg)
         }
       )
     })
@@ -1366,8 +1406,9 @@ export function activate(context: vscode.ExtensionContext) {
                   console.log(`Ran ${action.command} ${action.commandArgs}`)
                 },
                 (err) => {
-                  // FIXME Report that to users
-                  console.log(`Error while sending ${action.command} command: ${err}`)
+                  let msg = `Error while sending ${action.command} command: ${err}`
+                  console.log(msg)
+                  vscode.window.showErrorMessage(msg)
                 }
               )
             }
@@ -1376,8 +1417,9 @@ export function activate(context: vscode.ExtensionContext) {
           quickPick.show()
         },
         (err) => {
-          // FIXME Report that to users
-          console.log(`Error while sending plasmon/interactiveCompilerActions command for ${uri}: ${err}`)
+          let msg = `Error while sending plasmon/interactiveCompilerActions command for ${uri}: ${err}`
+          console.log(msg)
+          vscode.window.showErrorMessage(msg)
         }
       )
     })
