@@ -258,6 +258,7 @@ function createClient(
               if (uri === "")
                 statusBarItem?.hide()
               else if (lastFocusedDocument) {
+                checkStatusBarAndDocument()
                 let uri0 = vscode.Uri.parse(uri).toString(true)
                 if (lastFocusedDocument === uri0)
                   statusBarItem?.show()
@@ -270,6 +271,7 @@ function createClient(
                 }
               }
               for (const params0 of params) {
+                checkStatusBarAndDocument()
                 if (params0.id == 'plasmon.summary' && statusBarItem != null) {
                   let text = params0.text
                   if (params0.busy)
@@ -396,6 +398,49 @@ function createClient(
           )
         )
 
+        interface BuildChangeDetails {
+
+        }
+
+        var always = ""
+        clientSubscription(
+          client0.onNotification(
+            "plasmon/buildChangeDetected",
+            (details: BuildChangeDetails) => {
+              if (always == "Reload")
+                reIndex()
+              else if (always != "Dismiss") {
+                vscode.window.showInformationMessage(
+                  "Build change detected",
+                  {
+                    modal: false
+                  },
+                  "Always reload",
+                  "Reload",
+                  "Dismiss",
+                  "Dismiss all"
+                ).then(
+                  (elem) => {
+                    if (elem == "Always reload") {
+                      always = "Reload"
+                    }
+                    if (elem == "Dismiss all") {
+                      always = "Dismiss"
+                    }
+
+                    if (elem == "Always reload" || elem == "Reload") {
+                      reIndex()
+                    }
+                  },
+                  (err) => {
+                    console.log(`Error asking users to reload or not: ${err}`)
+                  }
+                )
+              }
+            }
+          )
+        )
+
         let uriStr = vscode.window.activeTextEditor?.document.uri.toString(true)
         if (uriStr) {
           if (!lastFocusedDocument)
@@ -410,6 +455,16 @@ function createClient(
   else
     return false
 
+}
+
+function reIndex(): void {
+  client?.sendRequest(ExecuteCommandRequest.type, { command: "plasmon/index", arguments: [] }).then(
+    () => {},
+    (err) => {
+      console.log(`Error when running plasmon/index command: ${err}`)
+      vscode.window.showErrorMessage(`Error indexing project: ${err}`, { modal: false })
+    }
+  )
 }
 
 async function stopClient(context: vscode.ExtensionContext): Promise<void> {
@@ -435,6 +490,27 @@ async function stopClient(context: vscode.ExtensionContext): Promise<void> {
 }
 
 let documents: { [key: string]: string } = {}
+
+function checkStatusBarAndDocument() {
+  if (vscode.window.activeTextEditor) {
+    let document = vscode.window.activeTextEditor.document
+    if (document?.uri.scheme == 'file') {
+      if (isSupportedLanguage(document.languageId)) {
+        // console.log(`onDidOpenTextDocument / onDidCloseTextDocument: Showing status for ${document.uri} ${document.languageId}`)
+        statusBarItem?.show()
+      }
+      else {
+        // console.log(`onDidOpenTextDocument / onDidCloseTextDocument: Hiding status for ${document.uri} ${document.languageId}`)
+        statusBarItem?.hide()
+      }
+    }
+  }
+  else {
+    console.log(`onDidOpenTextDocument / onDidCloseTextDocument: Hiding status (no open document)`)
+    lastFocusedDocument = undefined
+    statusBarItem?.hide()
+  }
+}
 
 export function activate(context: vscode.ExtensionContext) {
 
@@ -1292,13 +1368,7 @@ export function activate(context: vscode.ExtensionContext) {
 
   context.subscriptions.push(
     vscode.commands.registerCommand(`plasmon.re-index`, () => {
-      client?.sendRequest(ExecuteCommandRequest.type, { command: "plasmon/index", arguments: [] }).then(
-        () => {},
-        (err) => {
-          console.log(`Error when running plasmon/index command: ${err}`)
-          vscode.window.showErrorMessage(`Error indexing project: ${err}`, { modal: false })
-        }
-      )
+      reIndex()
     })
   )
 
@@ -1644,27 +1714,6 @@ export function activate(context: vscode.ExtensionContext) {
       )
     })
   )
-
-  function checkStatusBarAndDocument() {
-    if (vscode.window.activeTextEditor) {
-      let document = vscode.window.activeTextEditor.document
-      if (document?.uri.scheme == 'file') {
-        if (isSupportedLanguage(document.languageId)) {
-          // console.log(`onDidOpenTextDocument / onDidCloseTextDocument: Showing status for ${document.uri} ${document.languageId}`)
-          statusBarItem?.show()
-        }
-        else {
-          // console.log(`onDidOpenTextDocument / onDidCloseTextDocument: Hiding status for ${document.uri} ${document.languageId}`)
-          statusBarItem?.hide()
-        }
-      }
-    }
-    else {
-      console.log(`onDidOpenTextDocument / onDidCloseTextDocument: Hiding status (no open document)`)
-      lastFocusedDocument = undefined
-      statusBarItem?.hide()
-    }
-  }
 
   context.subscriptions.push(
     vscode.workspace.onDidOpenTextDocument(() => checkStatusBarAndDocument())

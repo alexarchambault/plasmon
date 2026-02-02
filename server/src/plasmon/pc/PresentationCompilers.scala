@@ -113,7 +113,7 @@ class PresentationCompilers(
 
   val interactiveCompilersStatuses = new ConcurrentHashMap[
     scala.meta.pc.PresentationCompiler & scala.meta.internal.pc.HasCompilerAccess,
-    (String, String)
+    ::[(String, String)]
   ]
 
   private var debug: Boolean = Option(System.getenv("PLASMON_DEBUG")).contains("true")
@@ -1218,14 +1218,28 @@ class PresentationCompilers(
     def logger()   = loggerManager.create(id, label).consumer
     def setupPc(pc0: PresentationCompiler & pc.HasCompilerAccess): Unit = {
       pc0.compilerAccess.beforeAccess { (reqId, name, uri) =>
-        interactiveCompilersStatuses.put(pc0, (name, uri))
+        interactiveCompilersStatuses.compute(
+          pc0,
+          (_, previousValueOrNull) =>
+            ::((name, uri), Option(previousValueOrNull).getOrElse(Nil))
+        )
         refreshStatus()
         languageClient.progress(
           PlasmonLanguageClient.ProgressDetails(id, label, reqId, name, done = false)
         )
       }
       pc0.compilerAccess.afterAccess { (reqId, name, uri) =>
-        interactiveCompilersStatuses.remove(pc0, (name, uri))
+        interactiveCompilersStatuses.compute(
+          pc0,
+          (_, previousValueOrNull) =>
+            if (previousValueOrNull != null && previousValueOrNull.head == (name, uri))
+              previousValueOrNull.tail match {
+                case h :: t => ::(h, t)
+                case Nil    => null
+              }
+            else
+              previousValueOrNull
+        )
         refreshStatus()
         languageClient.progress(
           PlasmonLanguageClient.ProgressDetails(id, label, reqId, name, done = true)
@@ -2127,7 +2141,7 @@ object PresentationCompilers {
     scalaTarget.scalac.getOptions.asScala.toSeq
 
   final case class AsJson(
-    interactiveCompilersStatuses: Map[String, (String, String)],
+    interactiveCompilersStatuses: Map[String, Seq[(String, String)]],
     debug: Boolean,
     symbolSearch: SymbolSearchImpl.AsJson,
     compilerPlugins: CompilerPlugins.AsJson,

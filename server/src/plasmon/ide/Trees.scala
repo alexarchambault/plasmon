@@ -120,7 +120,7 @@ final class Trees(
     parse(
       SourcePath.Standard(path.toNIO),
       dialect
-    )( /* unused for std path */ new SourcePath.Context) match {
+    )(using /* unused for std path */ new SourcePath.Context) match {
       case Some(parsed) =>
         parsed match {
           case Parsed.Error(pos, message, _) =>
@@ -153,7 +153,7 @@ final class Trees(
     input: inputs.Input.VirtualFile
   ): Option[Tokenized] =
     bspData.getDialect(module, input.path.osPathFromUri).map { dialect =>
-      input.value.safeTokenize(dialect)
+      input.value.safeTokenize(using dialect)
     }
 
   private def parse(

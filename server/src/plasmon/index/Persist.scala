@@ -15,7 +15,7 @@ object Persist {
   ): Option[(Seq[BuildServerInfo], Seq[(BuildServerInfo, Seq[b.BuildTargetIdentifier])])] =
     if (os.isFile(readFrom)) {
       val entries =
-        try readFromArray(os.read.bytes(readFrom))(Entry.seqCodec)
+        try readFromArray(os.read.bytes(readFrom))(using Entry.seqCodec)
         catch {
           case e: JsonReaderException =>
             throw new Exception(e)
@@ -42,7 +42,7 @@ object Persist {
       case (info, ids) =>
         Entry(ConnectionInfoJson(info), ids.map(_.getUri), all = false)
     }
-    val b = writeToArray[Seq[Entry]](fromAll ++ fromTargets)(Entry.seqCodec)
+    val b = writeToArray[Seq[Entry]](fromAll ++ fromTargets)(using Entry.seqCodec)
     scribe.info(s"Writing targets to $persistTo")
     os.write.over(persistTo, b, createFolders = true)
   }

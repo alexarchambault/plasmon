@@ -55,6 +55,9 @@ class PlasmonConfiguredLanguageClient(
   override def progress(details: PlasmonLanguageClient.ProgressDetails): Unit =
     underlying.progress(details)
 
+  override def buildChangeDetected(details: PlasmonLanguageClient.BuildChangeDetails): Unit =
+    underlying.buildChangeDetected(details)
+
   override def applyEdit(params: l.ApplyWorkspaceEditParams)
     : CompletableFuture[l.ApplyWorkspaceEditResponse] =
     if (initParams.applyEditSupport)

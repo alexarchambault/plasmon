@@ -270,11 +270,9 @@ object Server extends caseapp.Command[ServerOptions] {
         }
       },
       reIndex = { () =>
-        indexer.reIndex().onComplete {
-          case Success(()) =>
-          case Failure(ex) =>
-            scribe.error(s"Error re-indexing things", ex)
-        }(using pools.dummyEc)
+        server.languageClient.buildChangeDetected(
+          PlasmonLanguageClient.BuildChangeDetails()
+        )
       },
       logJsonrpcInput = options.logJsonrpcInput.getOrElse(false),
       tools = tools,
@@ -476,7 +474,8 @@ object Server extends caseapp.Command[ServerOptions] {
               case (str: String) :: Nil => Some(str)
               case _ =>
                 scribe.warn(
-                  s"Unexpected notification params received for didFocusTextDocument: $param (${param.getClass})"
+                  s"Unexpected notification params received for didFocusTextDocument: $param" +
+                    (if (param == null) "" else s" (${param.getClass})")
                 )
                 None
             }

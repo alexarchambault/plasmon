@@ -149,7 +149,7 @@ final class Server(
   private[plasmon] def underlyingLanguageClient(): PlasmonLanguageClient =
     (clientOpt, initializeParamsOpt0) match {
       case (Some(client), Some(initializeParams)) =>
-        new PlasmonConfiguredLanguageClient(client, initializeParams)(pools.configLcEc)
+        new PlasmonConfiguredLanguageClient(client, initializeParams)(using pools.configLcEc)
       case _ =>
         PlasmonNoopLanguageClient
     }
@@ -216,7 +216,7 @@ final class Server(
       scribe.info("nothing on start compilation (not implemented)")
     },
     bestEffortEnabled = enableBestEffortMode
-  )(pools.compilationEc)
+  )(using pools.compilationEc)
 
   lazy val jdkCp = {
     val rtJar = javaHome / "jre/lib/rt.jar"
@@ -364,7 +364,7 @@ final class Server(
     editorState.trees,
     bspData,
     presentationCompilers
-  )(pools.referenceProviderEc)
+  )(using pools.referenceProviderEc)
 
   var indexerLogger = Option.empty[Logger]
 
@@ -384,7 +384,7 @@ final class Server(
   lazy val symbolIndex: OnDemandSymbolIndex =
     OnDemandSymbolIndex.empty(
       javaHome.toNIO,
-      new Mtags()(NopReportContext),
+      new Mtags()(using NopReportContext),
       onError = {
         case e @ (_: ParseException | _: TokenizeException) =>
           scribe.error("Ignoring parsing error", e)
@@ -402,7 +402,7 @@ final class Server(
       },
       sourceJars = () => new OpenClassLoader,
       toIndexSource = path => bspData.mappedTo(path.toOs).map(_.path).getOrElse(path.toOs).toAbsPath
-    )(NopReportContext)
+    )(using NopReportContext)
 
   // STATE
   lazy val symbolSearchIndex = new SymbolSearchIndex(
@@ -416,7 +416,7 @@ final class Server(
   )
 
   // STATE
-  lazy val symbolDocs = new Docstrings(symbolIndex)(NopReportContext)
+  lazy val symbolDocs = new Docstrings(symbolIndex)(using NopReportContext)
 
   val status = new Status(this, pools.bspHealthCheckScheduler)
 
@@ -425,9 +425,7 @@ final class Server(
     status,
     30.milliseconds,
     pools.statusActorScheduler
-  )(
-    pools.statusActorContext
-  )
+  )(using pools.statusActorContext)
 
   def refreshStatusDetails(): Future[Option[(os.Path, Seq[PlasmonLanguageClient.StatusUpdate])]] = {
     val p = Promise[Option[(os.Path, Seq[PlasmonLanguageClient.StatusUpdate])]]()
@@ -444,7 +442,7 @@ final class Server(
       case Success(_) =>
       case Failure(ex) =>
         scribe.error("Failed to refresh status", ex)
-    }(pools.dummyEc)
+    }(using pools.dummyEc)
 
   def close(): Unit = {
     scribe.info(s"Closing $this")
@@ -497,31 +495,31 @@ final class Server(
                 GlobalSymbolIndex.BuildTarget(targetId.getUri),
                 event.path
               )
-          }(pools.indexingEc).onComplete {
+          }(using pools.indexingEc).onComplete {
             case Success(_) =>
             case Failure(ex) =>
               scribe.error(s"Error updating semanticdb for ${event.path}", ex)
-          }(pools.indexingEc)
+          }(using pools.indexingEc)
         case event: WatchEvent.Delete if event.path.isSemanticdb =>
           Future {
             semanticDBIndexer.onDelete(event.path)
-          }(pools.indexingEc).onComplete {
+          }(using pools.indexingEc).onComplete {
             case Success(_) =>
             case Failure(ex) =>
               scribe.error(s"Error updating semanticdb for ${event.path}", ex)
-          }(pools.indexingEc)
+          }(using pools.indexingEc)
         case event: WatchEvent.Overflow if event.path.isSemanticdb =>
           Future {
             semanticDBIndexer.onOverflow(event.path)
-          }(pools.indexingEc).onComplete {
+          }(using pools.indexingEc).onComplete {
             case Success(_) =>
             case Failure(ex) =>
               scribe.error(s"Error updating semanticdb for ${event.path}", ex)
-          }(pools.indexingEc)
+          }(using pools.indexingEc)
         case WatchEvent.Reindex =>
           reIndex()
       }
-    )(pools.fileWatcherEc)
+    )(using pools.fileWatcherEc)
 
   def editorFileOpened(path: os.Path, currentContent: String, contentVersion: Int): Unit = {
     editorState.updateFocusedDocument(path, os.read(path), currentContent)
@@ -543,7 +541,7 @@ final class Server(
       val f = for {
         _ <- Future.sequence(checks ++ Seq(Future(interactive)))
         _ <- Future.sequence(
-          List[Future[_]](
+          List[Future[?]](
             // publishSynthetics0(path, server, cancelTokensEces, dummyEc)
             // testProvider.didOpen(path),
           )
@@ -602,9 +600,9 @@ final class Server(
           .onComplete {
             case Success(()) =>
             case Failure(ex) => scribe.error(s"Error parsing $path", ex)
-          }(pools.documentChangeEc)
+          }(using pools.documentChangeEc)
     }
-    //   .flatMap(_ => publishSynthetics0(path, server, cancelTokensEces, dummyEc))(
+    //   .flatMap(_ => publishSynthetics0(path, server, cancelTokensEces, dummyEc))(using
     //     pools.documentChangeEc
     //   )
     //   .ignoreValue(pools.documentChangeEc)
@@ -634,7 +632,7 @@ final class Server(
               Future(interactiveSemanticdbs.textDocument(
                 path,
                 targetId.module
-              ))(pools.documentChangeEc)
+              ))(using pools.documentChangeEc)
             }
             .getOrElse(Future.successful(()))
         )
@@ -681,17 +679,17 @@ final class Server(
           case Success(_) =>
           case Failure(ex) =>
             scribe.error(s"Error compiling $path upon change", ex)
-        }(pools.dummyEc)
+        }(using pools.dummyEc)
 
         Future(interactiveSemanticdbs.textDocument(
           path,
           targetId.module
-        ))(pools.indexingEc)
+        ))(using pools.indexingEc)
           .onComplete {
             case Success(_) =>
             case Failure(ex) =>
               scribe.error(s"Error computing semanticdb with presentation compiler for $path", ex)
-          }(pools.dummyEc)
+          }(using pools.dummyEc)
     }
   }
 
@@ -716,7 +714,7 @@ final class Server(
           case Success(_) =>
           case Failure(ex) =>
             scribe.error(s"Error compiling $path upon deletion", ex)
-        }(pools.dummyEc)
+        }(using pools.dummyEc)
     }
     // testProvider.onFileDelete(path)
   }

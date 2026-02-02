@@ -365,7 +365,7 @@ class IndexerActor(
           case Failure(ex) =>
             logger.log(s"Compiling opened file(s) failed: $ex")
             scribe.error("Compiling opened file(s) failed", ex)
-        }(server.pools.compilationEc)
+        }(using server.pools.compilationEc)
       }
 
       targetsPerBuildServer
@@ -396,7 +396,7 @@ class IndexerActor(
           // FIXME Factor that so that we compute it only once per target
           doExpireSymbolDocDefinitions(source, target, dialectOpt)
           doIndexWorkspaceSourceSymbols(source, Some(sourceItem), target, Seq(data))
-        }(server.pools.indexingEc)
+        }(using server.pools.indexingEc)
     }
 
     @nowarn
@@ -722,7 +722,7 @@ class IndexerActor(
                 info.symbol,
                 dialectOpt
               )
-        }(NopReportContext)
+        }(using NopReportContext)
         server.symbolSearchIndex.didChange(source, symbols.toSeq, methodSymbols.toSeq)
       }
     }
