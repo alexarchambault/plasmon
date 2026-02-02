@@ -83,7 +83,7 @@ private class WorkspaceSearchVisitor(
       index.findFileForToplevel(term)
     }
     else forTpe
-    defs.sortBy(_._1)(resultOrdering).headOption
+    defs.sortBy(_._1)(using resultOrdering).headOption
   }
   override def shouldVisitPackage(pkg: String): Boolean = true
   override def visitWorkspaceSymbol(
@@ -136,7 +136,7 @@ private class WorkspaceSearchVisitor(
           fromClasspath.add(semanticDefn.toLsp(uri))
           isHit = true
         }
-      }(NopReportContext)
+      }(using NopReportContext)
     }
     if (isHit) 1 else 0
   }

@@ -60,17 +60,24 @@ object CodeLens {
               new SuperMethodCodeLens(
                 server.editorState.buffers,
                 server.editorState.trees
-              )(server.pools.codeLensEc)
+              )(using server.pools.codeLensEc)
             )
 
-            findLenses(
+            val futureLenses = findLenses(
               codeLensProviders,
               server.semanticdbs,
               target.module,
               path,
               server.pools.dummyEc
             )
-              .map(_.toList.sortBy(_.getRange.getStart.getLine).asJava)(server.pools.codeLensEc)
+
+            futureLenses
+              .map { lenses =>
+                lenses
+                  .toList
+                  .sortBy(_.getRange.getStart.getLine)
+                  .asJava
+              }(using server.pools.codeLensEc)
               .asJava
           case None =>
             scribe.info(s"textDocument/codeLens: no build target found for $path")
@@ -99,7 +106,7 @@ object CodeLens {
                   ClientCommands.WindowLocation(location.getUri, location.getRange)
                 )
               )
-          }(server.pools.definitionProviderEc).asJavaObject
+          }(using server.pools.definitionProviderEc).asJavaObject
         }(using ArgParser.gson[GotoCommandParams])
       }
     )

@@ -1,8 +1,8 @@
 package plasmon.jsonrpc
 
 final case class Handlers(
-  notificationHandlers: Seq[NotificationHandler[_]],
-  requestHandlers: Seq[RequestHandler[_, _]],
+  notificationHandlers: Seq[NotificationHandler[?]],
+  requestHandlers: Seq[RequestHandler[?, ?]],
   commandHandlers: Seq[CommandHandler]
 ) {
   def isEmpty: Boolean =

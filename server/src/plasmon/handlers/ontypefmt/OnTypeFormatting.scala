@@ -30,11 +30,11 @@ object OnTypeFormatting {
           new JavaFormattingProvider(
             server.editorState.buffers,
             server.bspData
-          )(server.pools.onTypeFormattingEc)
+          )(using server.pools.onTypeFormattingEc)
             .format()
         else
           onTypeFormattingProvider.format(params).asJava
-      }(ec).asJava
+      }(using ec).asJava
     }
 
   def handlers(server: Server, ec: ExecutionContext): Handlers =

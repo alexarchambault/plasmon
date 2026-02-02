@@ -655,8 +655,8 @@ object Status {
   private final case class BuildToolStatus(
     time: Instant = Instant.now(),
     errorOpt: Option[Throwable] = None,
-    onGoingCheck: Option[CompletableFuture[_]] = None,
-    onGoingScheduleCheck: Option[ScheduledFuture[_]] = None,
+    onGoingCheck: Option[CompletableFuture[?]] = None,
+    onGoingScheduleCheck: Option[ScheduledFuture[?]] = None,
     status: AtomicReference[BuildServerState] =
       new AtomicReference[BuildServerState](BuildServerState.Unknown)
   ) {

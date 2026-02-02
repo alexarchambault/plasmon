@@ -15,7 +15,7 @@ object Plasmon extends CommandsEntryPoint {
     implicit lazy val help: Help[NoArgs]     = Help.derive
   }
 
-  private def remoteCommands: Seq[caseapp.Command[_]] =
+  private def remoteCommands: Seq[caseapp.Command[?]] =
     Server.remoteCommands.map { command =>
       val commandNames = command.names
       new caseapp.Command[NoArgs]()(Parser[NoArgs], command.help.as[NoArgs]) {
@@ -38,7 +38,7 @@ object Plasmon extends CommandsEntryPoint {
       }
     }
 
-  lazy val commands: Seq[caseapp.Command[_]] = {
+  lazy val commands: Seq[caseapp.Command[?]] = {
     val all = Seq(
       Code,
       Command,
