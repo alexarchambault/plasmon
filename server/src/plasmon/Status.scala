@@ -574,9 +574,14 @@ class Status(
                 )
             }
 
+            val interactiveUpdate1 = interactiveUpdate0(buildTargetOpt)
+
             val summaryUpdate =
               indexerSummaryUpdateOpt.getOrElse {
-                if (buildToolUpdatePrecedence)
+                if (buildToolUpdate0.isBusy) buildToolUpdate0
+                else if (compilerUpdate0.isBusy) compilerUpdate0
+                else if (interactiveUpdate1.isBusy) interactiveUpdate1
+                else if (buildToolUpdatePrecedence)
                   buildToolUpdate0
                 else
                   compilerUpdate0
@@ -585,7 +590,7 @@ class Status(
             Seq(
               buildToolUpdate0,
               compilerUpdate0,
-              interactiveUpdate0(buildTargetOpt),
+              interactiveUpdate1,
               asSummaryUpdate(summaryUpdate)
             )
 
