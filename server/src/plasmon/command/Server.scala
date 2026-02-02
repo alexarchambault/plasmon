@@ -474,7 +474,8 @@ object Server extends caseapp.Command[ServerOptions] {
               case (str: String) :: Nil => Some(str)
               case _ =>
                 scribe.warn(
-                  s"Unexpected notification params received for didFocusTextDocument: $param (${param.getClass})"
+                  s"Unexpected notification params received for didFocusTextDocument: $param" +
+                    (if (param == null) "" else s" (${param.getClass})")
                 )
                 None
             }
