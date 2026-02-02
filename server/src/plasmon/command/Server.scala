@@ -270,11 +270,9 @@ object Server extends caseapp.Command[ServerOptions] {
         }
       },
       reIndex = { () =>
-        indexer.reIndex().onComplete {
-          case Success(()) =>
-          case Failure(ex) =>
-            scribe.error(s"Error re-indexing things", ex)
-        }(using pools.dummyEc)
+        server.languageClient.buildChangeDetected(
+          PlasmonLanguageClient.BuildChangeDetails()
+        )
       },
       logJsonrpcInput = options.logJsonrpcInput.getOrElse(false),
       tools = tools,
