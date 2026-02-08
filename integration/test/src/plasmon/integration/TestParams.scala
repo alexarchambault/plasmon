@@ -14,6 +14,10 @@ object TestParams {
       .getOrElse(true)
   // Also disabled on CI for now, as that can be *very* verbose
   def printOutputOnError = !enableSilentOutput
+  val enableOutputFrame =
+    // On Windows, OutputFrame stuff crashes if we don't have an actual terminal
+    (!Properties.isWin || io.github.alexarchambault.isterminal.IsTerminal.isTerminal()) &&
+    !isCI
 
   def updateSnapshotsFast        = updateSnapshots
   def updateSnapshots            = isCI

@@ -134,10 +134,6 @@ object TestUtil {
   def serverEnv = Map(
     "PLASMON_JAVAC_EXTRA_OPTIONS" -> "-verbose"
   )
-  val enableOutputFrame =
-    // On Windows, OutputFrame stuff crashes if we don't have an actual terminal
-    (!Properties.isWin || io.github.alexarchambault.isterminal.IsTerminal.isTerminal()) &&
-    System.getenv("CI") == null
   def withWorkspaceAndServer[T](
     projectName: String = "test-project",
     client: l.services.LanguageClient = new MockLanguageClient {},
@@ -183,7 +179,7 @@ object TestUtil {
         os.makeDir.all(dir)
         dir
       },
-      enableOutputFrame = enableOutputFrame,
+      enableOutputFrame = TestParams.enableOutputFrame,
       enableSilentOutput = TestParams.enableSilentOutput,
       printOutputOnError = TestParams.printOutputOnError,
       cleanUp = TestParams.cleanUpAfterTests,
