@@ -325,29 +325,34 @@ class Status(
                   false
               }
               .map(_ => "Errored")
-            val onGoingOpt = compilerOpt
-              .flatMap(pc =>
+            val onGoingOpt = compilerOpt.flatMap(_.compilerOpt)
+              .toSeq
+              .flatMap { pc =>
                 Option(server.presentationCompilers.interactiveCompilersStatuses.get(pc))
-              )
+                  .getOrElse(Nil)
+              }
+              .collectFirst {
+                case (name, uri) if uri == pathUri =>
+                  name
+              }
+              .filter(_.nonEmpty)
+              .map(_.capitalize)
+            val onGoingCompletionOpt = compilerKeyOpt
+              .toSeq
+              .flatMap { key =>
+                Option(server.presentationCompilers.jCompletionCache.get(key))
+              }
+              .flatMap(_.compilerOpt)
+              .flatMap { pc =>
+                Option(server.presentationCompilers.interactiveCompilersStatuses.get(pc))
+                  .getOrElse(Nil)
+              }
               .collect {
                 case (name, uri) if uri == pathUri =>
                   name
               }
               .filter(_.nonEmpty)
               .map(_.capitalize)
-            val onGoingCompletionOpt =
-              compilerKeyOpt.flatMap(key =>
-                Option(server.presentationCompilers.jCompletionCache.get(key))
-              )
-                .flatMap(pc =>
-                  Option(server.presentationCompilers.interactiveCompilersStatuses.get(pc))
-                )
-                .collect {
-                  case (name, uri) if uri == pathUri =>
-                    name
-                }
-                .filter(_.nonEmpty)
-                .map(_.capitalize)
 
             val onGoing = onGoingOpt.orElse(exceptionMessageOpt).toSeq ++ onGoingCompletionOpt.toSeq
 
