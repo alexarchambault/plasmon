@@ -592,7 +592,7 @@ final class Server(
       targetId    <- bspData.inverseSources0(path).merge
       buildClient <- bspData.buildClientOf(targetId)
     } {
-      buildClient.diagDidChange(targetId.module, path)
+      buildClient.diagDidChange(path)
 
       for (dialect <- bspData.getDialect(path.ext, path.isMill, targetId))
         parserQueue
@@ -750,6 +750,9 @@ final class Server(
     symbolDocs.reset()
     bspData.clearTargetData
     presentationCompilers.reset()
+
+    for (client <- bspServers.list.flatMap(_._2).map(_.client))
+      client.clearDiagnostics()
 
     jdkContext.reset()
     javaFileManager.resetCache()

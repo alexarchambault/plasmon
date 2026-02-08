@@ -30,7 +30,7 @@ import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import plasmon.render.JsonCodecs.given
 
-/** Converts diagnostics from the build server and Scalameta parser into LSP diagnostics.
+/** (Original Metals doc) Converts diagnostics from the build server and Scalameta parser into LSP diagnostics.
   *
   * BSP diagnostics have different semantics from LSP diagnostics with regards to how they are
   * published. BSP diagnostics can be accumulated when `reset=false`, meaning the client (Metals) is
@@ -50,8 +50,8 @@ private final class Diagnostics(
 ) extends AutoCloseable {
   import Diagnostics.*
 
-  val diagnostics           = TrieMap.empty[os.Path, JQueue[l.Diagnostic]]
-  private val syntaxError   = TrieMap.empty[os.Path, Seq[l.Diagnostic]]
+  val diagnostics           = TrieMap.empty[os.Path, JQueue[(GlobalSymbolIndex.Module, l.Diagnostic)]]
+  private val syntaxError   = TrieMap.empty[os.Path, Seq[(GlobalSymbolIndex.Module, l.Diagnostic)]]
   private val snapshots     = TrieMap.empty[os.Path, Input.VirtualFile]
   private val lastPublished = new AtomicReference[os.Path]
   private val diagnosticsBuffer =
@@ -65,13 +65,13 @@ private final class Diagnostics(
     if (path.startsWith(workspace / Directories.readonly) || diags.isEmpty)
       onClose(module, path)
     else {
-      syntaxError(path) = diags
-      publishDiagnostics(module, path)
+      syntaxError(path) = diags.map((module, _))
+      publishDiagnostics(path)
     }
 
   def onClose(module: GlobalSymbolIndex.Module, path: os.Path): Unit =
-    if (syntaxError.remove(path).isDefined)
-      publishDiagnostics(module, path) // Remove old syntax error
+    if (syntaxError.remove(path).exists(_.exists(_._1 == module)))
+      publishDiagnostics(path) // Remove old syntax error
 
   def didDelete(path: os.Path): Unit = {
     diagnostics.remove(path)
@@ -84,11 +84,11 @@ private final class Diagnostics(
     )
   }
 
-  def diagDidChange(module: GlobalSymbolIndex.Module, path: os.Path): Unit =
-    publishDiagnostics(module, path)
+  def diagDidChange(path: os.Path): Unit =
+    publishDiagnostics(path)
 
   def onBuildPublishDiagnostics(params: b.PublishDiagnosticsParams): Unit = {
-    val diagnostics = params.getDiagnostics.asScala.map(_.toLsp).toSeq
+    val diagnostics0 = params.getDiagnostics.asScala.map(_.toLsp).toSeq
     val published =
       Try(params.getTextDocument.getUri.osPathFromUri).toOption.filter(os.isFile) match {
         case Some(path) =>
@@ -96,7 +96,7 @@ private final class Diagnostics(
           onPublishDiagnostics(
             module,
             path,
-            diagnostics,
+            diagnostics0,
             params.getReset
           )
           true
@@ -108,7 +108,7 @@ private final class Diagnostics(
       scribe.warn(
         s"Invalid text document uri received from build server: ${params.getTextDocument.getUri}"
       )
-      for (diag <- diagnostics)
+      for (diag <- diagnostics0)
         scribe.info(s"BSP server: ${diag.getMessage}")
     }
   }
@@ -116,19 +116,22 @@ private final class Diagnostics(
   private def onPublishDiagnostics(
     module: GlobalSymbolIndex.Module,
     path: os.Path,
-    diagnostics: Seq[l.Diagnostic],
+    diagnostics0: Seq[l.Diagnostic],
     isReset: Boolean
   ): Unit = {
     val isSamePathAsLastDiagnostic = path == lastPublished.get()
     lastPublished.set(path)
-    val queue = this.diagnostics.getOrElseUpdate(path, new ConcurrentLinkedQueue[l.Diagnostic])
+    val queue = diagnostics.getOrElseUpdate(
+      path,
+      new ConcurrentLinkedQueue[(GlobalSymbolIndex.Module, l.Diagnostic)]
+    )
     if (isReset) {
       queue.clear()
       snapshots.remove(path)
     }
-    if (queue.isEmpty && !diagnostics.isEmpty)
+    if (queue.isEmpty && !diagnostics0.isEmpty)
       snapshots(path) = path.toInput
-    diagnostics.foreach(diagnostic => queue.add(diagnostic))
+    diagnostics0.foreach(diagnostic => queue.add((module, diagnostic)))
 
     // NOTE(olafur): we buffer up several diagnostics for the same path before forwarding
     // them to the editor client. Without buffering, we risk publishing an exponential number
@@ -139,34 +142,32 @@ private final class Diagnostics(
     // Notification N: [1, ..., N]
     if (isReset || !isSamePathAsLastDiagnostic) {
       publishDiagnosticsBuffer()
-      publishDiagnostics(module, path, queue)
+      publishDiagnostics(path, queue)
     }
     else
       diagnosticsBuffer.add((module, path))
   }
 
-  private def publishDiagnostics(module: GlobalSymbolIndex.Module, path: os.Path): Unit =
+  private def publishDiagnostics(path: os.Path): Unit =
     publishDiagnostics(
-      module,
       path,
-      diagnostics.getOrElse(path, new LinkedList[l.Diagnostic])
+      diagnostics.getOrElse(path, new LinkedList[(GlobalSymbolIndex.Module, l.Diagnostic)])
     )
 
   private def publishDiagnostics(
-    module: GlobalSymbolIndex.Module,
     path: os.Path,
-    queue: JQueue[l.Diagnostic]
+    queue: JQueue[(GlobalSymbolIndex.Module, l.Diagnostic)]
   ): Unit =
     if (os.isFile(path)) {
       val uri = path.toNIO.toUri.toASCIIString
       val all = new ArrayList[l.Diagnostic](queue.size() + 1)
       for {
-        diagnostic      <- queue.asScala
-        freshDiagnostic <- toFreshDiagnostic(module, path, diagnostic)
+        (module0, diagnostic) <- queue.asScala
+        freshDiagnostic <- toFreshDiagnostic(module0, path, diagnostic)
       }
         all.add(freshDiagnostic)
       for {
-        d <- syntaxError.getOrElse(path, Nil)
+        (module0, d) <- syntaxError.getOrElse(path, Nil)
         // De-duplicate only the most common and basic syntax errors.
         isSameMessage = all.asScala.exists(diag =>
           diag.getRange == d.getRange && diag.getMessage == d.getMessage
@@ -190,8 +191,8 @@ private final class Diagnostics(
       didDelete(path)
 
   private def publishDiagnosticsBuffer(): Unit =
-    for ((mod, path) <- clearDiagnosticsBuffer())
-      publishDiagnostics(mod, path)
+    for ((_, path) <- clearDiagnosticsBuffer())
+      publishDiagnostics(path)
 
   // Adjust positions for type errors for changes in the open buffer.
   // Only needed when merging syntax errors with type errors.
@@ -283,6 +284,22 @@ private final class Diagnostics(
   private def shouldAdjustWithinToken(diagnostic: l.Diagnostic): Boolean =
     diagnostic.getSource == "scala-cli"
 
+  def clear(): Unit = {
+    val paths = diagnostics.keySet ++ syntaxError.keySet ++ snapshots.keySet ++ diagnosticsBuffer.asScala.map(_._2)
+    for (path <- paths)
+      languageClient.publishDiagnostics(
+        new l.PublishDiagnosticsParams(
+          path.toNIO.toUri.toASCIIString,
+          Collections.emptyList()
+        )
+      )
+    diagnostics.clear()
+    syntaxError.clear()
+    snapshots.clear()
+    diagnosticsBuffer.clear()
+    lastPublished.set(null)
+  }
+
   def close(): Unit = {
     val paths = diagnostics.keysIterator ++ syntaxError.keysIterator.filterNot(diagnostics.keySet)
     for (path <- paths)
@@ -293,11 +310,23 @@ private final class Diagnostics(
     Diagnostics.AsJson(
       diagnostics = diagnostics.toMap.map {
         case (p, l) =>
-          (p.toString, l.asScala.toSeq)
+          (
+            p.toString,
+            l.asScala.toSeq.map {
+              case (mod, diag) =>
+                (mod.asString, diag)
+            }
+          )
       },
       syntaxError = syntaxError.toMap.map {
         case (p, l) =>
-          (p.toString, l)
+          (
+            p.toString,
+            l.map {
+              case (mod, diag) =>
+                (mod.asString, diag)
+            }
+          )
       },
       snapshots = snapshots.toMap.map {
         case (p, f) =>
@@ -327,8 +356,8 @@ private object Diagnostics {
   }
 
   final case class AsJson(
-    diagnostics: Map[String, Seq[l.Diagnostic]],
-    syntaxError: Map[String, Seq[l.Diagnostic]],
+    diagnostics: Map[String, Seq[(String, l.Diagnostic)]],
+    syntaxError: Map[String, Seq[(String, l.Diagnostic)]],
     snapshots: Map[String, (String, String)],
     lastPublished: Option[os.Path],
     diagnosticsBuffer: Seq[(String, os.Path)]
