@@ -46,6 +46,10 @@ import scala.jdk.CollectionConverters._
 import plasmon.pc.NopReportContext
 import scala.meta.internal.mtags.GlobalSymbolIndex
 import coursier.version.Version
+import plasmon.bsp.BspConnection
+import scala.concurrent.Promise
+import sourcecode.FileName
+import sourcecode.Line
 
 class IndexerActor(
   server: IndexerServerLike,
@@ -63,8 +67,29 @@ class IndexerActor(
   protected def progressId   = "indexer"
   protected def progressName = "Indexer"
 
+  private def interruptIndexing(): Boolean =
+    awaitingMessages.exists {
+      case _: Message.Index => true
+      case _                => false
+    }
+  private var interruptIndexingPromiseOpt = Option.empty[Promise[Unit]]
+  private def resetInterruptIndexingPromise(): Unit = {
+    interruptIndexingPromiseOpt.foreach(_.trySuccess(()))
+    interruptIndexingPromiseOpt = None
+  }
+
+  override def send(t: Message)(implicit fileName: FileName, line: Line): Unit = {
+    super.send(t)
+    t match {
+      case _: Message.Index =>
+        interruptIndexingPromiseOpt.foreach(_.trySuccess(()))
+      case _ =>
+    }
+  }
+
   override def runBatch(msgs: Seq[Message]): Unit = {
     super.runBatch(msgs)
+
     val indexMessages = msgs.zipWithIndex.collect {
       case (msg: Message.Index, idx) =>
         (msg, idx)
@@ -77,25 +102,35 @@ class IndexerActor(
       case None           => msgs
       case Some((_, idx)) => msgs.drop(idx + 1)
     }
-    for ((indexMessage, _) <- indexMessageOpt) {
-      val res = Try {
-        SourcePath.withContext { implicit ctx =>
-          val res = doIndex(indexMessage)
-          latestToplevelCacheOnly =
-            indexMessage.toplevelCacheOnly.getOrElse(latestToplevelCacheOnly)
-          latestIgnoreToplevelSymbolsErrors =
-            indexMessage.ignoreToplevelSymbolsErrors.getOrElse(latestIgnoreToplevelSymbolsErrors)
-          latestIndexed = res
-          for (persistTo <- indexMessage.persistTo)
-            Persist.persistTargets(
-              indexMessage.addAllTargets,
-              indexMessage.targets,
-              persistTo
-            )
+
+    for ((indexMessage, _) <- indexMessageOpt)
+      try
+        if (!interruptIndexing()) {
+          val res = Try {
+            SourcePath.withContext { implicit ctx =>
+              val res = doIndex(indexMessage, () => interruptIndexing())
+              if (!interruptIndexing()) {
+                latestToplevelCacheOnly =
+                  indexMessage.toplevelCacheOnly.getOrElse(latestToplevelCacheOnly)
+                latestIgnoreToplevelSymbolsErrors =
+                  indexMessage.ignoreToplevelSymbolsErrors
+                    .getOrElse(latestIgnoreToplevelSymbolsErrors)
+                latestIndexed = res
+
+                for (persistTo <- indexMessage.persistTo)
+                  Persist.persistTargets(
+                    indexMessage.addAllTargets,
+                    indexMessage.targets,
+                    persistTo
+                  )
+              }
+            }
+          }
+          if (!interruptIndexing())
+            indexMessage.onDone.foreach(_(res))
         }
-      }
-      indexMessage.onDone.foreach(_(res))
-    }
+      finally resetInterruptIndexingPromise()
+
     nonIndexMessages.foreach {
       case exp: Message.ExpireSymbolDocDefinitions =>
         val dialectOpt =
@@ -116,261 +151,333 @@ class IndexerActor(
   }
 
   private def doIndex(
-    message: Message.Index
+    message: Message.Index,
+    interruptIndexing: () => Boolean
   )(implicit ctx: SourcePath.Context): Seq[(BuildServerInfo, Seq[b.BuildTargetIdentifier])] = {
-    val startTime = Instant.now()
+
+    if (interruptIndexing()) return Nil
+
     inState("Indexing", Some(logger), progress = "Indexing") {
-      logger.log(
-        s"""
-           |  Indexing starting...
-           |  ${OffsetDateTime.ofInstant(startTime, ZoneId.systemDefault()).toLocalDateTime()}
-           |""".stripMargin
-      )
+      doIndex0(message, interruptIndexing)
+    }
+  }
 
-      val toplevelSymbolsCache = new ToplevelSymbolsCache(
-        server.workingDir / ".plasmon/toplevel-cache",
-        os.Path(coursierapi.Cache.create().getLocation, os.pwd),
-        os.Path(coursierapi.ArchiveCache.create().getLocation, os.pwd),
-        readOnly = message.toplevelCacheOnly.getOrElse(latestToplevelCacheOnly)
-      )
+  private def doIndex0(
+    message: Message.Index,
+    interruptIndexing: () => Boolean
+  )(implicit ctx: SourcePath.Context): Seq[(BuildServerInfo, Seq[b.BuildTargetIdentifier])] = {
 
-      var stepCount = 0
+    if (interruptIndexing()) return Nil
 
-      stepCount += 1
-      inState(s"Indexing ($stepCount)", Some(logger), progress = "Resetting caches") {
-        logger.timed("Resetting caches") {
-          server.resetCaches()
-        }
+    val startTime = Instant.now()
+
+    logger.log(
+      s"""
+         |  Indexing starting...
+         |  ${OffsetDateTime.ofInstant(startTime, ZoneId.systemDefault()).toLocalDateTime()}
+         |""".stripMargin
+    )
+
+    if (interruptIndexing()) return Nil
+
+    val toplevelSymbolsCache = new ToplevelSymbolsCache(
+      server.workingDir / ".plasmon/toplevel-cache",
+      os.Path(coursierapi.Cache.create().getLocation, os.pwd),
+      os.Path(coursierapi.ArchiveCache.create().getLocation, os.pwd),
+      readOnly = message.toplevelCacheOnly.getOrElse(latestToplevelCacheOnly)
+    )
+
+    if (interruptIndexing()) return Nil
+
+    var stepCount = 0
+
+    stepCount += 1
+    inState(s"Indexing ($stepCount)", Some(logger), progress = "Resetting caches") {
+      logger.timed("Resetting caches") {
+        server.resetCaches()
       }
+    }
 
-      for (path <- server.jdkSources) {
-        stepCount += 1
-        inState(
-          s"Indexing ($stepCount)",
-          Some(logger),
-          progress = "Adding JDK source JARs to index"
-        ) {
-          logger.timed("Adding JDK source JARs to index") {
-            server.symbolIndex.addSourceJar(path.toAbsPath)
-          }
-        }
-      }
+    if (interruptIndexing()) return Nil
 
-      val buildServers     = server.bspServers.list
-      val buildServerCount = buildServers.length
-      val initialStepCount = stepCount
-      val targetsPerBuildServer = buildServers.flatMap(_._2).zipWithIndex.map {
-        case (conn, connIdx) =>
-          stepCount = initialStepCount
-          def stateName(): String = {
-            stepCount += 1
-            if (buildServerCount <= 1)
-              s"Indexing ($stepCount)"
-            else
-              s"Indexing ($stepCount, ${connIdx + 1} / $buildServerCount)"
-          }
-          val info        = conn.info
-          val buildServer = conn.conn
-          val targetData = server.bspData.targetData(info).getOrElse {
-            sys.error(s"No target data found for build server $info")
-          }
-          targetData.reset()
-
-          val isMill = conn.params.getDisplayName == "mill-bsp"
-
-          val (targets, depSourcesRes) =
-            inState(stateName(), Some(logger), progress = s"Fetching BSP data for ${conn.name}") {
-              logger.timed(s"Fetching BSP data for ${conn.name}") {
-                val (workspaceBuildTargetsResp, targets0, depSourcesRes0) = fetchBspData(
-                  message,
-                  buildServer,
-                  info,
-                  targetData,
-                  server.jdkCp.map(_.toNIO.toUri.toASCIIString).toList,
-                  millHack = isMill
-                )
-                targetData.resetConnections(
-                  targets0
-                    .map(_.getId)
-                    .map((_, info.workspace))
-                    .toList,
-                  buildServer,
-                  conn.client,
-                  workspaceBuildTargetsResp
-                )
-                (targets0, depSourcesRes0)
-              }
-            }
-
-          inState(stateName(), Some(logger), progress = "Patching BSP data cache") {
-            logger.timed("Patching BSP data cache") {
-              linkSourceFiles(targetData)
-
-              for {
-                path   <- server.jdkSources
-                target <- targets
-              } targetData.addDependencySource(path, target.getId)
-
-              addDependencySources(targetData, depSourcesRes)
-            }
-          }
-
-          inState(stateName(), Some(logger)) {
-            languageClient.reportProgress(progressId, progressName, "Adding module tree to index") {
-              logger.timed("Adding module tree to index") {
-                for (target <- targets) {
-                  // FIXME That's quite inefficient, we should be able to build the whole dep tree at once
-                  // rather than for each dependency here
-                  val deps =
-                    BspUtil.addTransitiveDependencies(Seq(target.getId), targets) - target.getId
-                  server.symbolIndex.addDependsOn(target.getId.module, deps.map(_.module))
-                }
-              }
-            }
-            val files =
-              languageClient.reportProgress(progressId, progressName, "Listing workspace sources") {
-                logger.timed("Listing workspace sources") {
-                  for {
-                    (sourceItem, targets) <- targetData.sourceItemsToBuildTarget.toVector
-                    target = targets.asScala.headOption.getOrElse(sys.error("cannot happen"))
-                    source <- {
-                      if (os.isDir(sourceItem))
-                        os.walk(sourceItem).toVector
-                      else if (os.isFile(sourceItem))
-                        Seq(sourceItem)
-                      else
-                        Nil
-                    }
-                    if source.isScalaOrJava
-                  } yield (sourceItem, target, source)
-                }
-              }
-            val sourcesStr = if (files.length == 1) "source" else "sources"
-            languageClient.reportProgress(
-              progressId,
-              progressName,
-              s"Indexing toplevel definitions of ${files.length} workspace $sourcesStr"
-            ) {
-              logger.timed(
-                s"Indexing toplevel definitions of ${files.length} workspace $sourcesStr"
-              ) {
-                for (target <- targets) {
-                  val dialectOpt = sourceDialect(target.getId, Seq(targetData))
-                  logger.log {
-                    val dialectStr = dialectOpt.fold("no dialect")(d => s"dialect $d")
-                    s"Adding target ${target.getId.getUri} to symbol index with $dialectStr"
-                  }
-                  server.symbolIndex.addModule(
-                    GlobalSymbolIndex.BuildTarget(target.getId.getUri),
-                    dialectOpt
-                  )
-                }
-                if (files.nonEmpty) {
-                  val f = indexWorkspaceSources(files, targetData)
-                  Await.result(f, Duration.Inf)
-                }
-              }
-            }
-          }
-
-          inState(stateName(), Some(logger)) {
-            val dependencySources: Seq[(b.BuildTargetIdentifier, String)] =
-              for {
-                item      <- depSourcesRes.getItems.asScala.toVector
-                sourceUri <- Option(item.getSources).map(_.asScala.toVector).getOrElse(Vector.empty)
-              } yield (item.getTarget, sourceUri)
-
-            if (dependencySources.nonEmpty) {
-              val msg =
-                s"Indexing toplevel definitions of ${dependencySources.length} dependency " +
-                  (if (dependencySources.length == 1) "source" else "sources")
-              languageClient.reportProgress(progressId, progressName, msg) {
-                logger.timed(msg) {
-                  val scalaTargetMap = targets
-                    .flatMap { target =>
-                      target.asScalaBuildTarget.toSeq.map((target.getId, _))
-                    }
-                    .toMap
-
-                  indexDependencySources(
-                    dependencySources,
-                    server.symbolIndex,
-                    scalaTargetMap,
-                    toplevelSymbolsCache,
-                    message.ignoreToplevelSymbolsErrors.getOrElse(latestIgnoreToplevelSymbolsErrors)
-                  )
-                }
-              }
-            }
-          }
-
-          (info, targets.map(_.getId))
-      }
-
+    for (path <- server.jdkSources) {
       stepCount += 1
       inState(
         s"Indexing ($stepCount)",
         Some(logger),
-        progress = "Indexing JARs for fuzzy class search"
+        progress = "Adding JDK source JARs to index"
       ) {
-        logger.timed("Indexing JARs for fuzzy class search") {
-          server.symbolSearchIndex.indexClasspathUnsafe(
-            Nil,
-            server.jdkCp
-          )
+        logger.timed("Adding JDK source JARs to index") {
+          server.symbolIndex.addSourceJar(path.toAbsPath)
         }
       }
-
-      stepCount += 1
-      inState(s"Indexing ($stepCount)", Some(logger), progress = "Updating semanticdb stuff") {
-        logger.timed("Updating semanticdb stuff") {
-          server.readAllSemanticdbs()
-        }
-      }
-
-      server.fileWatcher.start() // ensure the file watcher is running
-
-      // for {
-      //   doc <- focusedDocument()
-      //   id <- bspData.inverseSources(doc)
-      // }
-      //   focusedDocumentBuildTarget.set(id)
-
-      // buildTargetClasses
-      //   .rebuildIndex(targets)
-      //   .map { _ =>
-      //     languageClient.refreshModel()
-      //   }
-      //   .onComplete {
-      //     case Success(_)  =>
-      //     case Failure(ex) =>
-      //       scribe.warn("Error rebuilding classes index", ex)
-      //   }
-
-      val endTime         = Instant.now()
-      val durationSeconds = ChronoUnit.SECONDS.between(startTime, endTime)
-      logger.log {
-        val seconds = if (durationSeconds == 1) "second" else "seconds"
-        s"""
-           |  Indexing done, took $durationSeconds $seconds
-           |
-           |""".stripMargin
-      }
-
-      val openedFiles = server.editorState.buffers.open.toVector
-      if (openedFiles.nonEmpty) {
-        logger.log(s"Compiling ${openedFiles.length} file(s)")
-        server.compilations.compileFiles(openedFiles).onComplete {
-          case Success(()) =>
-            logger.log("Done compiling opened file(s)")
-          case Failure(ex) =>
-            logger.log(s"Compiling opened file(s) failed: $ex")
-            scribe.error("Compiling opened file(s) failed", ex)
-        }(using server.pools.compilationEc)
-      }
-
-      targetsPerBuildServer
     }
+
+    if (interruptIndexing()) return Nil
+
+    val buildServers     = server.bspServers.list
+    val buildServerCount = buildServers.length
+    val initialStepCount = stepCount
+    val targetsPerBuildServer = buildServers.flatMap(_._2).zipWithIndex.flatMap {
+      case (conn, connIdx) =>
+        stepCount = initialStepCount
+        def stateName(): String = {
+          stepCount += 1
+          if (buildServerCount <= 1)
+            s"Indexing ($stepCount)"
+          else
+            s"Indexing ($stepCount, ${connIdx + 1} / $buildServerCount)"
+        }
+
+        indexBspServer(
+          conn,
+          stateName,
+          message,
+          toplevelSymbolsCache,
+          interruptIndexing
+        ).toSeq
+    }
+
+    if (interruptIndexing()) return Nil
+
+    stepCount += 1
+    inState(
+      s"Indexing ($stepCount)",
+      Some(logger),
+      progress = "Indexing JARs for fuzzy class search"
+    ) {
+      logger.timed("Indexing JARs for fuzzy class search") {
+        server.symbolSearchIndex.indexClasspathUnsafe(
+          Nil,
+          server.jdkCp
+        )
+      }
+    }
+
+    if (interruptIndexing()) return Nil
+
+    stepCount += 1
+    inState(s"Indexing ($stepCount)", Some(logger), progress = "Updating semanticdb stuff") {
+      logger.timed("Updating semanticdb stuff") {
+        server.readAllSemanticdbs()
+      }
+    }
+
+    if (interruptIndexing()) return Nil
+
+    server.fileWatcher.start() // ensure the file watcher is running
+
+    if (interruptIndexing()) return Nil
+
+    // for {
+    //   doc <- focusedDocument()
+    //   id <- bspData.inverseSources(doc)
+    // }
+    //   focusedDocumentBuildTarget.set(id)
+
+    // buildTargetClasses
+    //   .rebuildIndex(targets)
+    //   .map { _ =>
+    //     languageClient.refreshModel()
+    //   }
+    //   .onComplete {
+    //     case Success(_)  =>
+    //     case Failure(ex) =>
+    //       scribe.warn("Error rebuilding classes index", ex)
+    //   }
+
+    val endTime         = Instant.now()
+    val durationSeconds = ChronoUnit.SECONDS.between(startTime, endTime)
+    logger.log {
+      val seconds = if (durationSeconds == 1) "second" else "seconds"
+      s"""
+         |  Indexing done, took $durationSeconds $seconds
+         |
+         |""".stripMargin
+    }
+
+    if (interruptIndexing()) return Nil
+
+    val openedFiles = server.editorState.buffers.open.toVector
+    if (openedFiles.nonEmpty) {
+      logger.log(s"Compiling ${openedFiles.length} file(s)")
+      server.compilations.compileFiles(openedFiles).onComplete {
+        case Success(()) =>
+          logger.log("Done compiling opened file(s)")
+        case Failure(ex) =>
+          logger.log(s"Compiling opened file(s) failed: $ex")
+          scribe.error("Compiling opened file(s) failed", ex)
+      }(using server.pools.compilationEc)
+    }
+
+    targetsPerBuildServer
+  }
+
+  private def indexBspServer(
+    conn: BspConnection,
+    stateName: () => String,
+    message: Message.Index,
+    toplevelSymbolsCache: ToplevelSymbolsCache,
+    interruptIndexing: () => Boolean
+  )(implicit ctx: SourcePath.Context): Option[(BuildServerInfo, Seq[b.BuildTargetIdentifier])] = {
+
+    if (interruptIndexing()) return None
+
+    val info        = conn.info
+    val buildServer = conn.conn
+    val targetData = server.bspData.targetData(info).getOrElse {
+      sys.error(s"No target data found for build server $info")
+    }
+    targetData.reset()
+
+    if (interruptIndexing()) return None
+
+    val isMill = conn.params.getDisplayName == "mill-bsp"
+
+    val (targets, depSourcesRes) =
+      inState(stateName(), Some(logger), progress = s"Fetching BSP data for ${conn.name}") {
+        logger.timed(s"Fetching BSP data for ${conn.name}") {
+          val (workspaceBuildTargetsResp, targets0, depSourcesRes0) = fetchBspData(
+            message,
+            buildServer,
+            info,
+            targetData,
+            server.jdkCp.map(_.toNIO.toUri.toASCIIString).toList,
+            millHack = isMill
+          )
+          targetData.resetConnections(
+            targets0
+              .map(_.getId)
+              .map((_, info.workspace))
+              .toList,
+            buildServer,
+            conn.client,
+            workspaceBuildTargetsResp
+          )
+          (targets0, depSourcesRes0)
+        }
+      }
+
+    if (interruptIndexing()) return None
+
+    inState(stateName(), Some(logger), progress = "Patching BSP data cache") {
+      logger.timed("Patching BSP data cache") {
+        linkSourceFiles(targetData)
+
+        for {
+          path <- server.jdkSources
+          if !interruptIndexing()
+          target <- targets
+          if !interruptIndexing()
+        } targetData.addDependencySource(path, target.getId)
+
+        if (!interruptIndexing())
+          addDependencySources(targetData, depSourcesRes)
+      }
+    }
+
+    if (interruptIndexing()) return None
+
+    inState(stateName(), Some(logger)) {
+      languageClient.reportProgress(progressId, progressName, "Adding module tree to index") {
+        logger.timed("Adding module tree to index") {
+          for (target <- targets)
+            if (!interruptIndexing()) {
+              // FIXME That's quite inefficient, we should be able to build the whole dep tree at once
+              // rather than for each dependency here
+              val deps =
+                BspUtil.addTransitiveDependencies(Seq(target.getId), targets) - target.getId
+              server.symbolIndex.addDependsOn(target.getId.module, deps.map(_.module))
+            }
+        }
+      }
+      val files =
+        languageClient.reportProgress(progressId, progressName, "Listing workspace sources") {
+          logger.timed("Listing workspace sources") {
+            for {
+              (sourceItem, targets) <- targetData.sourceItemsToBuildTarget.toVector
+              target = targets.asScala.headOption.getOrElse(sys.error("cannot happen"))
+              source <- {
+                if (interruptIndexing())
+                  Nil
+                else if (os.isDir(sourceItem))
+                  os.walk(sourceItem).toVector
+                else if (os.isFile(sourceItem))
+                  Seq(sourceItem)
+                else
+                  Nil
+              }
+              if source.isScalaOrJava
+            } yield (sourceItem, target, source)
+          }
+        }
+      val sourcesStr = if (files.length == 1) "source" else "sources"
+      if (!interruptIndexing())
+        languageClient.reportProgress(
+          progressId,
+          progressName,
+          s"Indexing toplevel definitions of ${files.length} workspace $sourcesStr"
+        ) {
+          logger.timed(
+            s"Indexing toplevel definitions of ${files.length} workspace $sourcesStr"
+          ) {
+            for (target <- targets)
+              if (!interruptIndexing()) {
+                val dialectOpt = sourceDialect(target.getId, Seq(targetData))
+                logger.log {
+                  val dialectStr = dialectOpt.fold("no dialect")(d => s"dialect $d")
+                  s"Adding target ${target.getId.getUri} to symbol index with $dialectStr"
+                }
+                server.symbolIndex.addModule(
+                  GlobalSymbolIndex.BuildTarget(target.getId.getUri),
+                  dialectOpt
+                )
+              }
+            if (files.nonEmpty && !interruptIndexing()) {
+              val interruptIndexingPromise = Promise[Unit]()
+              interruptIndexingPromiseOpt = Some(interruptIndexingPromise)
+              val f = indexWorkspaceSources(files, targetData, interruptIndexingPromise.future)
+              Await.result(f, Duration.Inf)
+            }
+          }
+        }
+    }
+
+    if (interruptIndexing()) return None
+
+    inState(stateName(), Some(logger)) {
+      val dependencySources: Seq[(b.BuildTargetIdentifier, String)] =
+        for {
+          item      <- depSourcesRes.getItems.asScala.toVector
+          sourceUri <- Option(item.getSources).map(_.asScala.toVector).getOrElse(Vector.empty)
+        } yield (item.getTarget, sourceUri)
+
+      if (dependencySources.nonEmpty && !interruptIndexing()) {
+        val msg =
+          s"Indexing toplevel definitions of ${dependencySources.length} dependency " +
+            (if (dependencySources.length == 1) "source" else "sources")
+        languageClient.reportProgress(progressId, progressName, msg) {
+          logger.timed(msg) {
+            val scalaTargetMap = targets
+              .flatMap { target =>
+                target.asScalaBuildTarget.toSeq.map((target.getId, _))
+              }
+              .toMap
+
+            indexDependencySources(
+              dependencySources,
+              server.symbolIndex,
+              scalaTargetMap,
+              toplevelSymbolsCache,
+              message.ignoreToplevelSymbolsErrors.getOrElse(latestIgnoreToplevelSymbolsErrors),
+              interruptIndexing
+            )
+          }
+        }
+      }
+    }
+
+    Some((info, targets.map(_.getId)))
   }
 
   private def linkSourceFiles(data: TargetData): Unit =
@@ -385,23 +492,37 @@ class IndexerActor(
 
   private def indexWorkspaceSources(
     files: Seq[(os.Path, b.BuildTargetIdentifier, os.Path)],
-    data: TargetData
+    data: TargetData,
+    shouldStop: Future[Unit]
   ): Future[Unit] = {
+
+    @volatile var shouldStop0 = false
 
     val futures = files.map {
       case (sourceItem, target, source) =>
         Future {
-          val dialectOpt =
-            if (source.last.endsWith(".sbt")) Some(scala.meta.dialects.Sbt)
-            else sourceDialect(target, Seq(data))
-          // FIXME Factor that so that we compute it only once per target
-          doExpireSymbolDocDefinitions(source, target, dialectOpt)
-          doIndexWorkspaceSourceSymbols(source, Some(sourceItem), target, Seq(data))
+          if (!shouldStop0) {
+            val dialectOpt =
+              if (source.last.endsWith(".sbt")) Some(scala.meta.dialects.Sbt)
+              else sourceDialect(target, Seq(data))
+            // FIXME Factor that so that we compute it only once per target
+            if (!shouldStop0)
+              doExpireSymbolDocDefinitions(source, target, dialectOpt)
+            if (!shouldStop0)
+              doIndexWorkspaceSourceSymbols(source, Some(sourceItem), target, Seq(data))
+          }
         }(using server.pools.indexingEc)
     }
 
     @nowarn
     implicit val ec: ExecutionContext = server.pools.indexingEc
+
+    shouldStop.onComplete {
+      case Success(_) =>
+        shouldStop0 = true
+      case _ =>
+    }
+
     Future.sequence(futures).map(_ => ())
   }
 
@@ -592,43 +713,45 @@ class IndexerActor(
     symbolIndex: OnDemandSymbolIndex,
     scalaTargetMap: Map[b.BuildTargetIdentifier, b.ScalaBuildTarget],
     toplevelSymbolsCache: ToplevelSymbolsCache,
-    ignoreToplevelSymbolsErrors: Boolean
+    ignoreToplevelSymbolsErrors: Boolean,
+    interruptIndexing: () => Boolean
   )(implicit ctx: SourcePath.Context): Unit = {
     import scala.meta.dialects.Scala213
     for ((targetId, sourceUri) <- dependencySources)
-      try {
-        val path = sourceUri.osPathFromUri
-        val svOpt = scalaTargetMap.get(targetId).map(_.getScalaVersion)
-          .orElse {
-            ScalaVersions.scalaBinaryVersionFromJarName(path.toNIO.getFileName.toString)
+      if (!interruptIndexing())
+        try {
+          val path = sourceUri.osPathFromUri
+          val svOpt = scalaTargetMap.get(targetId).map(_.getScalaVersion)
+            .orElse {
+              ScalaVersions.scalaBinaryVersionFromJarName(path.toNIO.getFileName.toString)
+            }
+          val dialectOpt = svOpt.map { sv =>
+            ScalaVersions.dialectForScalaVersion(
+              sv,
+              includeSource3 = true
+            )
           }
-        val dialectOpt = svOpt.map { sv =>
-          ScalaVersions.dialectForScalaVersion(
-            sv,
-            includeSource3 = true
-          )
+          if (path.isJar)
+            addSourceJarSymbols(
+              targetId,
+              path,
+              symbolIndex,
+              toplevelSymbolsCache,
+              dialectOpt,
+              ignoreErrors = ignoreToplevelSymbolsErrors
+            )
+          else if (os.isDir(path))
+            symbolIndex.addSourceDirectory(targetId.module, path.toAbsPath, dialectOpt)
+          else
+            logger.log(s"unexpected dependency (not a directory nor a JAR): $path")
         }
-        if (path.isJar)
-          addSourceJarSymbols(
-            targetId,
-            path,
-            symbolIndex,
-            toplevelSymbolsCache,
-            dialectOpt,
-            ignoreErrors = ignoreToplevelSymbolsErrors
-          )
-        else if (os.isDir(path))
-          symbolIndex.addSourceDirectory(targetId.module, path.toAbsPath, dialectOpt)
-        else
-          logger.log(s"unexpected dependency (not a directory nor a JAR): $path")
-      }
-      catch {
-        case e: ToplevelSymbolsCache.ToplevelSymbolsCacheException =>
-          throw new Exception(s"Error processing $sourceUri", e)
-        case NonFatal(e) if ignoreToplevelSymbolsErrors =>
-          logger.log(s"error processing $sourceUri: $e")
-          scribe.error(s"error processing $sourceUri", e)
-      }
+        catch {
+          case e: ToplevelSymbolsCache.ToplevelSymbolsCacheException =>
+            throw new Exception(s"Error processing $sourceUri", e)
+          case NonFatal(e) if ignoreToplevelSymbolsErrors =>
+            logger.log(s"error processing $sourceUri: $e")
+            scribe.error(s"error processing $sourceUri", e)
+        }
   }
 
   private def doExpireSymbolDocDefinitions(
