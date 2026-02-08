@@ -2144,7 +2144,16 @@ object PresentationCompilers {
   }
 
   private def enrichWithReleaseOption(scalaTarget: ScalaTarget) =
-    scalaTarget.scalac.getOptions.asScala.toSeq
+    scalaTarget.scalac.getOptions.asScala.toSeq.map {
+      case opt if opt.startsWith("-release:") =>
+        opt.stripPrefix("-release:").toIntOption match {
+          case Some(n) if n < 17 => "-release:17"
+          case _                 => opt
+        }
+      case "-Wunused" =>
+        "-Wunused:all"
+      case opt => opt
+    }
 
   final case class AsJson(
     interactiveCompilersStatuses: Map[String, Seq[(String, String)]],
