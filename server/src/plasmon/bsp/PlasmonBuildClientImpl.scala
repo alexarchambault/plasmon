@@ -149,7 +149,7 @@ class PlasmonBuildClientImpl(
         Option(params.getTotal).fold("")(t => s" / $t") +
         Option(params.getMessage).fold("")(msg => s" ($msg)")
       logger.log(msg)
-      for (data <- Option(params.getData))
+      for (data <- Option(params.getData) if params.getDataKind != "compile-progress")
         logger.log(s"Data${Option(params.getDataKind).fold("")(kind => s" of kind $kind")}: $data")
     }
 
