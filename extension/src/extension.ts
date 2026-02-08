@@ -1147,25 +1147,27 @@ export function activate(context: vscode.ExtensionContext) {
             type: string
             label: string
             detail: string
+            description: string
             alreadyLoaded?: boolean
             alreadyAdded?: boolean
           }
+
           let values: Entry[] = values0
           class Item implements vscode.QuickPickItem {
             entry: Entry
             label: string
             detail: string
-            iconPath: vscode.ThemeIcon
+            description: string
+            iconPath?: vscode.ThemeIcon
 
             constructor(entry: Entry) {
               this.entry = entry
               this.label = entry.label
               this.detail = entry.detail
+              this.description = entry.description
 
               if (entry.type == "BuildTool")
                 this.iconPath = vscode.ThemeIcon.Folder
-              else
-                this.iconPath = vscode.ThemeIcon.File
             }
           }
           interface Separator extends vscode.QuickPickItem {
