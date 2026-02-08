@@ -738,8 +738,7 @@ object TestUtil {
     replaceAll: Seq[(String, String)] = Nil,
     alternativePaths: Seq[os.Path] = Nil,
     roundTrip: Boolean = false
-  ): Unit = {
-
+  ): Unit =
     checkFixture[T](
       path,
       res,
@@ -759,7 +758,6 @@ object TestUtil {
       alternativePaths = alternativePaths,
       roundTrip = roundTrip
     )
-  }
 
   def checkTextFixture(
     path: os.Path,
