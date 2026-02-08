@@ -70,7 +70,7 @@ final class ProjectFileWatcher(
   }
 
   def enqueue(event: WatchEvent): Unit =
-    watchEventQueue.add(Right(event))
+    watchEventQueue.add(event)
 
   @volatile
   private var stopWatcher = Option.empty[() => Unit]
@@ -78,7 +78,7 @@ final class ProjectFileWatcher(
   override def close(): Unit =
     stopWatcher.foreach(_())
 
-  private val watchEventQueue: BlockingQueue[Either[() => Unit, WatchEvent]] =
+  private val watchEventQueue: BlockingQueue[WatchEvent] =
     new LinkedBlockingQueue
 
   def start(): Unit =
@@ -158,7 +158,7 @@ object ProjectFileWatcher {
     processWatchEvent: PartialFunction[WatchEvent, Unit],
     watchFilter: os.Path => Boolean,
     proceedFuture: () => Future[Unit],
-    watchEventQueue: BlockingQueue[Either[() => Unit, WatchEvent]]
+    watchEventQueue: BlockingQueue[WatchEvent]
   )(implicit ec: ExecutionContext): () => Unit = {
     val watcher: PathWatcher[PathWatchers.Event] =
       if (scala.util.Properties.isMac) {
@@ -214,17 +214,9 @@ object ProjectFileWatcher {
             Iterator.continually(watchEventQueue.poll())
               .takeWhile(_ != null)
               .toList
-          events.foreach {
-            case Left(_) =>
-            case Right(ev) =>
-              preprocessWatchEvent.lift(ev)
-          }
+          events.foreach(preprocessWatchEvent.lift)
           // WatchEvent.normalize(events)
-          events.foreach {
-            case Left(f) => f()
-            case Right(ev) =>
-              processWatchEvent.lift(ev)
-          }
+          events.foreach(processWatchEvent.lift)
         }
         catch { case _: InterruptedException => }
         if (!stopWatchingSignal.get) loop()
@@ -269,7 +261,7 @@ object ProjectFileWatcher {
     */
   private def initWatcher(
     watchFilter: os.Path => Boolean,
-    queue: BlockingQueue[Either[() => Unit, WatchEvent]]
+    queue: BlockingQueue[WatchEvent]
   ): PathWatcher[PathWatchers.Event] = {
     val watcher = PathWatchers.get( /*follow symlinks*/ true)
 
@@ -288,13 +280,13 @@ object ProjectFileWatcher {
             // you may wish to use FileTreeRepository, which needs much more memory because
             // it caches the whole watched file tree.
             case Kind.Create =>
-              queue.add(Right(WatchEvent.CreateOrModify(path)))
+              queue.add(WatchEvent.CreateOrModify(path))
             case Kind.Modify =>
-              queue.add(Right(WatchEvent.CreateOrModify(path)))
+              queue.add(WatchEvent.CreateOrModify(path))
             case Kind.Delete =>
-              queue.add(Right(WatchEvent.Delete(path)))
+              queue.add(WatchEvent.Delete(path))
             case Kind.Overflow =>
-              queue.add(Right(WatchEvent.Overflow(path)))
+              queue.add(WatchEvent.Overflow(path))
             case Kind.Error =>
               scribe.error("File watcher encountered an unknown error")
           }
