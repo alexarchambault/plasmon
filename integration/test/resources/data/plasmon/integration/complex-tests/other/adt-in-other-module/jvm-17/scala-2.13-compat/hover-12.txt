@@ -1,9 +1,3 @@
 ```scala
-def apply(): Second
+case class Second
 ```
-
-***
-
-Apply the body of this function to the arguments.
-
-**Returns** the result of function application.

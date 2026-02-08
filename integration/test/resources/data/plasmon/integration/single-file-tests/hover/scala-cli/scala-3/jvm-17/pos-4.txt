@@ -1,5 +1,5 @@
 ```scala
-object ListBuffer: scala.collection.mutable
+class ListBuffer
 ```
 
 ***
@@ -20,6 +20,15 @@ A `Buffer` implementation backed by a list. It provides constant time
 **See**
 - ["Scala's Collection Library overview"](https://docs.scala-lang.org/overviews/collections-2.13/concrete-mutable-collection-classes.html#list-buffers)
  section on `List Buffers` for more information.
+
+***
+
+```scala
+object ListBuffer
+```
+
+***
+
 A `Buffer` implementation backed by a list. It provides constant time
  prepend and append. Most other operations are linear.
 
