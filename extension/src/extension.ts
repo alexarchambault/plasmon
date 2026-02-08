@@ -798,7 +798,7 @@ export function activate(context: vscode.ExtensionContext) {
         async (resp: Resp) => {
           console.log(`Response of debugFullTree: ${JSON.stringify(resp)}`)
           if (resp.error) {
-            vscode.window.showErrorMessage(`Error getting full tree: ${resp.error}`, { modal: false })
+            vscode.window.showErrorMessage(`Error getting typed tree: ${resp.error}`, { modal: false })
           }
           else {
             const strUri = `${RO_SCHEME}:${uri}/full-tree.scala`

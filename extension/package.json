@@ -57,7 +57,7 @@
       },
       {
         "command": "plasmon.dump-full-tree",
-        "title": "Plasmon: Dump presentation compiler full tree for current file"
+        "title": "Plasmon: Dump presentation compiler typed tree for current file"
       },
       {
         "command": "plasmon.dump-bsp-data",
