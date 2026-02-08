@@ -830,28 +830,35 @@ object BspUtil {
       def ids = Seq(BuildTool.ScalaCli.id)
       def check(workspace: os.Path, currentFile: Option[os.Path]): Seq[DiscoveredBuildTool] = {
         val forCurrentFile = currentFile
-          .filter(path =>
-            (path.last.endsWith(".scala") || path.last.endsWith(".sc")) && os.isFile(path)
-          )
+          .filter { path =>
+            ((path.last.endsWith(".scala") || path.last.endsWith(".sc")) && os.isFile(path)) ||
+            os.isDir(path)
+          }
           .toSeq
           .flatMap { path =>
-            val dir = path / os.up
-            val forFile = DiscoveredBuildTool(
-              BuildTool.ScalaCli.id,
-              BuildTool.ScalaCli(workspace, Seq(path)),
-              None
-            )
+            val forFile =
+              if (os.isFile(path))
+                Seq(
+                  DiscoveredBuildTool(
+                    BuildTool.ScalaCli.id,
+                    BuildTool.ScalaCli(workspace, Seq(path)),
+                    None
+                  )
+                )
+              else
+                Nil
+            val dir = if (os.isFile(path)) path / os.up else path
             val forDir =
               if (dir == workspace) Nil
               else
                 Seq(DiscoveredBuildTool(BuildTool.ScalaCli.id, BuildTool.ScalaCli(dir, Nil), None))
-            Seq(forFile) ++ forDir
+            forFile ++ forDir
           }
 
         val forWorkspace =
           DiscoveredBuildTool(BuildTool.ScalaCli.id, BuildTool.ScalaCli(workspace, Nil), None)
 
-        Seq(forWorkspace) ++ forCurrentFile
+        forCurrentFile ++ Seq(forWorkspace)
       }
     }
   }

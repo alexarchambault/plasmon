@@ -511,6 +511,25 @@ function checkStatusBarAndDocument() {
   }
 }
 
+function loadBuildTool(discoverId: string, toolId: string, uri: string | undefined) {
+  client?.sendRequest(ExecuteCommandRequest.type, { command: "plasmon/loadBuildTool", arguments: [discoverId, toolId, uri] }).then(
+    (resp) => {
+      interface Resp {
+        success: boolean
+        error?: string
+      }
+      let resp0 = resp as Resp
+      if (resp0.success)
+        console.log(`Ran plasmon/loadBuildTool ${discoverId} ${toolId}`)
+      else
+        vscode.window.showErrorMessage(`Error loading build tool: ${resp0.error}`, { modal: false })
+    },
+    (err) => {
+      vscode.window.showErrorMessage(`Error loading build tool: ${err}`, { modal: false })
+    }
+  )
+}
+
 export function activate(context: vscode.ExtensionContext) {
 
   const provider = new ReadonlyContentProvider((uri) => {
@@ -685,6 +704,24 @@ export function activate(context: vscode.ExtensionContext) {
       item.tooltip = buildTooltip();
       item.command = 'mytool.open';
       item.show();
+    })
+  )
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand('plasmon.addDirAsScalaCliProject', (uri: vscode.Uri) => {
+      loadBuildTool("scala-cli", "scala-cli", uri.toString())
+    })
+  )
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand('plasmon.addFileAsScalaCliProject', (uri: vscode.Uri) => {
+      loadBuildTool("scala-cli", "scala-cli", uri.toString())
+    })
+  )
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand('plasmon.loadMillProjectFromFile', (uri: vscode.Uri) => {
+      loadBuildTool("mill", "mill", uri.toString())
     })
   )
 
@@ -1085,22 +1122,7 @@ export function activate(context: vscode.ExtensionContext) {
                     }
                   )
                 else
-                client?.sendRequest(ExecuteCommandRequest.type, { command: "plasmon/loadBuildTool", arguments: [entry.discoverId, entry.id, uri] }).then(
-                  (resp) => {
-                    interface Resp {
-                      success: boolean
-                      error?: string
-                    }
-                    let resp0 = resp as Resp
-                    if (resp0.success)
-                      console.log(`Ran plasmon/loadBuildTool ${entry.discoverId} ${entry.id}`)
-                    else
-                      vscode.window.showErrorMessage(`Error loading build tool: ${resp0.error}`, { modal: false })
-                  },
-                  (err) => {
-                    vscode.window.showErrorMessage(`Error loading build tool: ${err}`, { modal: false })
-                  }
-                )
+                  loadBuildTool(entry.discoverId, entry.id, uri?.toString())
               }
             }
             quickPick.hide()
@@ -1231,22 +1253,7 @@ export function activate(context: vscode.ExtensionContext) {
                       }
                     )
                   else
-                  client?.sendRequest(ExecuteCommandRequest.type, { command: "plasmon/loadBuildTool", arguments: [entry.discoverId, entry.id, uri] }).then(
-                    (resp) => {
-                      interface Resp {
-                        success: boolean
-                        error?: string
-                      }
-                      let resp0 = resp as Resp
-                      if (resp0.success)
-                        console.log(`Ran plasmon/loadBuildTool ${entry.discoverId} ${entry.id}`)
-                      else
-                        vscode.window.showErrorMessage(`Error loading build tool: ${resp0.error}`, { modal: false })
-                    },
-                    (err) => {
-                      vscode.window.showErrorMessage(`Error loading build tool: ${err}`, { modal: false })
-                    }
-                  )
+                    loadBuildTool(entry.discoverId, entry.id, uri?.toString())
                 }
                 else if (item.entry.type == 'Module') {
                   interface ModuleEntry extends Entry {
