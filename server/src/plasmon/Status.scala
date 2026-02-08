@@ -430,7 +430,7 @@ class Status(
               case None =>
                 val update = defaultBuildToolUpdateOpt().getOrElse {
                   val hasBuildTool = server.bspData.allTargetData.exists { data =>
-                    data.workspaceBuildTargetsRespOpt.exists { resp =>
+                    data.workspaceBuildTargetsRespOpt.forall { resp =>
                       resp.baseDirectories.exists(path.startsWith)
                     }
                   }
