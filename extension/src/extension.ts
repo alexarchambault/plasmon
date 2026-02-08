@@ -1,6 +1,5 @@
 import { env } from 'process'
 import * as vscode from 'vscode'
-import * as fs from 'fs'
 import * as os from 'os'
 
 import { CloseAction, DocumentSelector, ErrorAction, ErrorHandler, ExecuteCommandParams, ExecuteCommandRequest, ExitNotification, LanguageClient, LanguageClientOptions, Location, ServerOptions, integer } from 'vscode-languageclient/node'
