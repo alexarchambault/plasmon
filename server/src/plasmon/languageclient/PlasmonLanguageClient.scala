@@ -69,7 +69,10 @@ object PlasmonLanguageClient {
     detail: String = null,
     @Nullable
     command: Command = null
-  )
+  ) {
+    def isBusy: Boolean =
+      busy == JBoolean.TRUE
+  }
 
   final case class Command(
     title: String,
