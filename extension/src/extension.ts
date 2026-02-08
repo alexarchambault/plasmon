@@ -258,6 +258,7 @@ function createClient(
               if (uri === "")
                 statusBarItem?.hide()
               else if (lastFocusedDocument) {
+                checkStatusBarAndDocument()
                 let uri0 = vscode.Uri.parse(uri).toString(true)
                 if (lastFocusedDocument === uri0)
                   statusBarItem?.show()
@@ -270,6 +271,7 @@ function createClient(
                 }
               }
               for (const params0 of params) {
+                checkStatusBarAndDocument()
                 if (params0.id == 'plasmon.summary' && statusBarItem != null) {
                   let text = params0.text
                   if (params0.busy)
@@ -435,6 +437,27 @@ async function stopClient(context: vscode.ExtensionContext): Promise<void> {
 }
 
 let documents: { [key: string]: string } = {}
+
+function checkStatusBarAndDocument() {
+  if (vscode.window.activeTextEditor) {
+    let document = vscode.window.activeTextEditor.document
+    if (document?.uri.scheme == 'file') {
+      if (isSupportedLanguage(document.languageId)) {
+        // console.log(`onDidOpenTextDocument / onDidCloseTextDocument: Showing status for ${document.uri} ${document.languageId}`)
+        statusBarItem?.show()
+      }
+      else {
+        // console.log(`onDidOpenTextDocument / onDidCloseTextDocument: Hiding status for ${document.uri} ${document.languageId}`)
+        statusBarItem?.hide()
+      }
+    }
+  }
+  else {
+    console.log(`onDidOpenTextDocument / onDidCloseTextDocument: Hiding status (no open document)`)
+    lastFocusedDocument = undefined
+    statusBarItem?.hide()
+  }
+}
 
 export function activate(context: vscode.ExtensionContext) {
 
@@ -1644,27 +1667,6 @@ export function activate(context: vscode.ExtensionContext) {
       )
     })
   )
-
-  function checkStatusBarAndDocument() {
-    if (vscode.window.activeTextEditor) {
-      let document = vscode.window.activeTextEditor.document
-      if (document?.uri.scheme == 'file') {
-        if (isSupportedLanguage(document.languageId)) {
-          // console.log(`onDidOpenTextDocument / onDidCloseTextDocument: Showing status for ${document.uri} ${document.languageId}`)
-          statusBarItem?.show()
-        }
-        else {
-          // console.log(`onDidOpenTextDocument / onDidCloseTextDocument: Hiding status for ${document.uri} ${document.languageId}`)
-          statusBarItem?.hide()
-        }
-      }
-    }
-    else {
-      console.log(`onDidOpenTextDocument / onDidCloseTextDocument: Hiding status (no open document)`)
-      lastFocusedDocument = undefined
-      statusBarItem?.hide()
-    }
-  }
 
   context.subscriptions.push(
     vscode.workspace.onDidOpenTextDocument(() => checkStatusBarAndDocument())
