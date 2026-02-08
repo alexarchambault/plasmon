@@ -56,4 +56,6 @@ class PlasmonDelegatingLanguageClient(var underlying: PlasmonLanguageClient)
     underlying.heartBeat()
   override def progress(details: PlasmonLanguageClient.ProgressDetails): Unit =
     underlying.progress(details)
+  override def buildChangeDetected(details: PlasmonLanguageClient.BuildChangeDetails): Unit =
+    underlying.buildChangeDetected(details)
 }

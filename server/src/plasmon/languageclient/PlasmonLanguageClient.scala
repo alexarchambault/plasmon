@@ -31,6 +31,9 @@ trait PlasmonLanguageClient extends LanguageClient {
   @JsonNotification("plasmon/progress")
   def progress(details: PlasmonLanguageClient.ProgressDetails): Unit
 
+  @JsonNotification("plasmon/buildChangeDetected")
+  def buildChangeDetected(details: PlasmonLanguageClient.BuildChangeDetails): Unit
+
   final def reportProgress[T](
     buildToolId: String,
     buildToolName: String,
@@ -87,4 +90,6 @@ object PlasmonLanguageClient {
     def asDone: ProgressDetails =
       copy(done = true)
   }
+
+  final case class BuildChangeDetails()
 }

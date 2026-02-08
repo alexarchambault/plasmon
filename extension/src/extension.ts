@@ -398,6 +398,49 @@ function createClient(
           )
         )
 
+        interface BuildChangeDetails {
+
+        }
+
+        var always: "" | "Re-index" | "Dismiss" = ""
+        clientSubscription(
+          client0.onNotification(
+            "plasmon/buildChangeDetected",
+            (details: BuildChangeDetails) => {
+              if (always == "Re-index")
+                reIndex()
+              else if (always != "Dismiss") {
+                vscode.window.showInformationMessage(
+                  "Build change detected",
+                  {
+                    modal: false
+                  },
+                  "Always re-index",
+                  "Re-index",
+                  "Dismiss",
+                  "Dismiss all"
+                ).then(
+                  (elem) => {
+                    if (elem == "Always re-index") {
+                      always = "Re-index"
+                    }
+                    if (elem == "Dismiss all") {
+                      always = "Dismiss"
+                    }
+
+                    if (elem == "Always re-index" || elem == "Re-index") {
+                      reIndex()
+                    }
+                  },
+                  (err) => {
+                    console.log(`Error asking users to reload or not: ${err}`)
+                  }
+                )
+              }
+            }
+          )
+        )
+
         let uriStr = vscode.window.activeTextEditor?.document.uri.toString(true)
         if (uriStr) {
           if (!lastFocusedDocument)
@@ -412,6 +455,16 @@ function createClient(
   else
     return false
 
+}
+
+function reIndex(): void {
+  client?.sendRequest(ExecuteCommandRequest.type, { command: "plasmon/index", arguments: [] }).then(
+    () => {},
+    (err) => {
+      console.log(`Error when running plasmon/index command: ${err}`)
+      vscode.window.showErrorMessage(`Error indexing project: ${err}`, { modal: false })
+    }
+  )
 }
 
 async function stopClient(context: vscode.ExtensionContext): Promise<void> {
@@ -1315,13 +1368,7 @@ export function activate(context: vscode.ExtensionContext) {
 
   context.subscriptions.push(
     vscode.commands.registerCommand(`plasmon.re-index`, () => {
-      client?.sendRequest(ExecuteCommandRequest.type, { command: "plasmon/index", arguments: [] }).then(
-        () => {},
-        (err) => {
-          console.log(`Error when running plasmon/index command: ${err}`)
-          vscode.window.showErrorMessage(`Error indexing project: ${err}`, { modal: false })
-        }
-      )
+      reIndex()
     })
   )
 
