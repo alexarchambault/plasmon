@@ -25,6 +25,6 @@ object SignatureHelp {
       (params, logger) =>
         CancelTokens.future { token =>
           server.presentationCompilers.signatureHelp(params, token)
-        }(cancelTokensEces)
+        }(using cancelTokensEces)
     }
 }

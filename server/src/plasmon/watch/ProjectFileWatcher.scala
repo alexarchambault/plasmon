@@ -171,7 +171,7 @@ object ProjectFileWatcher {
           pathsToWatch.files ++ pathsToWatch.directories,
           workspace
         )
-        val isWatched = trie.containsPrefixOf _
+        val isWatched = trie.containsPrefixOf
 
         // Select up to `maxRoots` longest prefixes of all files in the trie for
         // watching. Watching the root of the workspace may have bad performance

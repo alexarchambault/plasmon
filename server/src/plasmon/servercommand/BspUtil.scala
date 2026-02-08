@@ -5,7 +5,7 @@ import ch.epfl.scala.{bsp4j => b}
 import com.github.plokhotnyuk.jsoniter_scala.core.*
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import com.google.gson.Gson
-import coursier.core.Version
+import coursier.version.Version
 import org.eclipse.lsp4j.jsonrpc.Launcher
 import org.eclipse.{lsp4j => l}
 import plasmon.internal.Directories
@@ -225,7 +225,7 @@ object BspUtil {
       case b: BuildServerInfo.Bsp =>
         val bspFile = b.bspFile.map(b.workspace / _).merge
         val content =
-          try readFromArray(os.read.bytes(bspFile))(BspFile.codec)
+          try readFromArray(os.read.bytes(bspFile))(using BspFile.codec)
           catch {
             case e: JsonReaderException =>
               throw new Exception(e)
@@ -328,7 +328,7 @@ object BspUtil {
       case m: BuildServerInfo.Sbt =>
         val bspFile = m.workspace / ".bsp/sbt.json"
         val content =
-          try readFromArray(os.read.bytes(bspFile))(BspFile.codec)
+          try readFromArray(os.read.bytes(bspFile))(using BspFile.codec)
           catch {
             case e: JsonReaderException =>
               throw new Exception(e)
@@ -405,7 +405,7 @@ object BspUtil {
     PlasmonBuildClient
   ) = {
     val content =
-      try readFromArray(os.read.bytes(bspFile))(BspFile.codec)
+      try readFromArray(os.read.bytes(bspFile))(using BspFile.codec)
       catch {
         case e: JsonReaderException =>
           throw new Exception(e)

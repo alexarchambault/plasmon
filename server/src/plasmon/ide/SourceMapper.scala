@@ -42,7 +42,7 @@ final case class SourceMapper(
       val viaBuildTargets: Option[(Input.VirtualFile, l.Position => l.Position, AdjustLspData)] =
         bspData.mappedTo(path).map(_.update(input.value))
       viaBuildTargets.getOrElse(
-        (input, identity[l.Position] _, AdjustedLspData.default)
+        (input, identity[l.Position], AdjustedLspData.default)
       )
     }
 

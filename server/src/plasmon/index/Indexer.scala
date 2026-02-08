@@ -12,7 +12,7 @@ class Indexer(server: Server) extends HasState.Delegate[String] {
 
   val logger = server.loggerManager.create("indexer", "Indexer")
 
-  val actor = new IndexerActor(server, logger)(server.pools.indexerActorContext)
+  val actor = new IndexerActor(server, logger)(using server.pools.indexerActorContext)
   protected def delegateStateTo: HasState[String] = actor
 
   // loading these targets, plus their transitive dependencies

@@ -29,12 +29,12 @@ object Reference {
           case Some(targetId) =>
             SourcePath.withContext { ctx => // FIXME Escapes
               server.referenceIndex
-                .references(targetId.module, params)(ctx)
+                .references(targetId.module, params)(using ctx)
                 .map { references =>
                   references
                     .flatMap(_.locations)
                     .asJava
-                }(definitionStuffEc)
+                }(using definitionStuffEc)
                 .asJava
             }
           case None =>
