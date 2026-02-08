@@ -14,7 +14,7 @@ import scala.meta.internal.mtags.{IndexingExceptions, Mtags, OnDemandSymbolIndex
 import scala.meta.parsers.ParseException
 import scala.meta.tokenizers.TokenizeException
 import scala.meta.internal.mtags.SourcePath
-import plasmon.watch.{FileWatcher, ProjectFileWatcher, WatchEvent}
+import plasmon.watch.{ProjectFileWatcher, WatchEvent}
 import scala.util.Success
 import scala.util.Failure
 import plasmon.bsp.BuildTool
