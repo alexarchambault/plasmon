@@ -196,8 +196,6 @@ object server extends ScalaModule with PlasmonPublishModule {
   )
   def scalacOptions = super.scalacOptions() ++ Seq(
     "-deprecation",
-    "-Xsource:3",
-    "-Ytasty-reader",
     "-feature"
     // "-Ydebug"
   )
@@ -714,7 +712,6 @@ object integration extends ScalaModule {
 
   def scalacOptions = super.scalacOptions() ++ Seq(
     "-deprecation",
-    "-Xsource:3",
     "-feature"
   )
 
