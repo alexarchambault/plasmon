@@ -557,6 +557,22 @@ object PlasmonCommands {
         CompletableFuture.completedFuture(resp)
       }
     },
+    CommandHandler.of("plasmon/listModulesOf") { (params, logger) =>
+      params.asOpt[String]("plasmon/listModulesOf") { fileOpt0 =>
+        val workspace = os.Path(server.workspace().toNIO)
+        val fileOpt   = fileOpt0.map(_.osPathFromUri)
+        val buildTools =
+          discoverBuildTools(
+            workspace,
+            fileOpt,
+            server.bspServers.list.map(_._1).toSet,
+            server.tools
+          )
+        val modules = fileOpt.toSeq.flatMap(listModules(workspace, _, server))
+        val resp    = writeToGson(buildTools ++ modules)(using BuildToolOrModule.seqCodec)
+        CompletableFuture.completedFuture(resp)
+      }
+    },
     CommandHandler.of("plasmon/loadBuildTool", refreshStatus = true) { (params, logger) =>
 
       def load(
