@@ -47,8 +47,8 @@ final class ProjectFileWatcher(
   workspaceDeferred: () => os.Path,
   bspData: BspData,
   watchFilter: os.Path => Boolean,
-  preprocessWatchEvent: PartialFunction[WatchEvent, Unit],
-  onFileWatchEvent: PartialFunction[WatchEvent, Unit]
+  preprocessWatchEvent: WatchEvent => Seq[WatchEvent],
+  onFileWatchEvent: Seq[WatchEvent] => Unit
 )(implicit ec: ExecutionContext)
     extends FileWatcher
     with AutoCloseable {
@@ -154,8 +154,8 @@ object ProjectFileWatcher {
   private def startWatch(
     workspace: os.Path,
     pathsToWatch: PathsToWatch,
-    preprocessWatchEvent: PartialFunction[WatchEvent, Unit],
-    processWatchEvent: PartialFunction[WatchEvent, Unit],
+    preprocessWatchEvent: WatchEvent => Seq[WatchEvent],
+    processWatchEvent: Seq[WatchEvent] => Unit,
     watchFilter: os.Path => Boolean,
     proceedFuture: () => Future[Unit],
     watchEventQueue: BlockingQueue[WatchEvent]
@@ -214,9 +214,7 @@ object ProjectFileWatcher {
             Iterator.continually(watchEventQueue.poll())
               .takeWhile(_ != null)
               .toList
-          events.foreach(preprocessWatchEvent.lift)
-          // WatchEvent.normalize(events)
-          events.foreach(processWatchEvent.lift)
+          processWatchEvent(WatchEvent.normalize(events.flatMap(preprocessWatchEvent)))
         }
         catch { case _: InterruptedException => }
         if (!stopWatchingSignal.get) loop()

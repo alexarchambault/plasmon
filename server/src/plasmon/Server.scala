@@ -460,65 +460,116 @@ final class Server(
           name.endsWith(".scala") || name.endsWith(".java") || name.endsWith(".semanticdb") ||
           path.startsWith(bspDir)
       },
-      preprocessWatchEvent = {
-        case event: WatchEvent.CreateOrModify
-            if event.path.isScalaOrJava && !os.isDir(event.path) =>
-          if (!editorState.buffers.contains(event.path))
-            fileChangedOrCreatedUpdateState(event.path, true)
-        case event: WatchEvent.Overflow if event.path.isScalaOrJava && !os.isDir(event.path) =>
-          if (!editorState.buffers.contains(event.path))
-            fileChangedOrCreatedUpdateState(event.path, false)
-      },
-      onFileWatchEvent = {
-        case event: WatchEvent.Delete if event.path.isScalaOrJava =>
-          fileDeletedInternal(event.path)
-        case event: WatchEvent.CreateOrModify
-            if event.path.isScalaOrJava && !os.isDir(event.path) =>
-          if (!editorState.buffers.contains(event.path))
-            fileChangedOrCreatedInternal(event.path, true)
-        case event: WatchEvent.Overflow if event.path.isScalaOrJava && !os.isDir(event.path) =>
-          if (!editorState.buffers.contains(event.path))
-            fileChangedOrCreatedInternal(event.path, false)
-        case event: WatchEvent.CreateOrModify if event.path.isSemanticdb =>
-          Future {
-            val it =
-              bspData
-                .allScala
-                .filter(target => event.path.startsWith(target.classDirectory))
-                .map(_.id) ++
-                bspData
-                  .allJava
-                  .filter(target => event.path.startsWith(target.classDirectory))
-                  .map(_.id)
-            for (targetId <- it)
-              semanticDBIndexer.onChange(
-                GlobalSymbolIndex.BuildTarget(targetId.getUri),
-                event.path
+      preprocessWatchEvent = event =>
+        event match {
+          case event0: WatchEvent.Delete if event0.path.isScalaOrJava =>
+            val compileEventOpt = bspData.inverseSources(event0.path).map { id =>
+              WatchEvent.Compile(GlobalSymbolIndex.BuildTarget(id.getUri))
+            }
+            Seq(event) ++ compileEventOpt.toSeq
+          case event0: WatchEvent.CreateOrModify
+              if event0.path.isScalaOrJava && !os.isDir(event0.path) =>
+            if (!editorState.buffers.contains(event0.path))
+              fileChangedOrCreatedUpdateState(event0.path, true)
+            // Future(indexer.reindexWorkspaceSources(List(path)))(???),
+            val extraEvents = bspData.inverseSources(event0.path).toSeq.flatMap { id =>
+              val target = GlobalSymbolIndex.BuildTarget(id.getUri)
+              Seq(
+                WatchEvent.Compile(target),
+                WatchEvent.ComputeInteractiveSemanticdb(target, event0.path)
               )
-          }(using pools.indexingEc).onComplete {
-            case Success(_) =>
-            case Failure(ex) =>
-              scribe.error(s"Error updating semanticdb for ${event.path}", ex)
-          }(using pools.indexingEc)
-        case event: WatchEvent.Delete if event.path.isSemanticdb =>
-          Future {
-            semanticDBIndexer.onDelete(event.path)
-          }(using pools.indexingEc).onComplete {
-            case Success(_) =>
-            case Failure(ex) =>
-              scribe.error(s"Error updating semanticdb for ${event.path}", ex)
-          }(using pools.indexingEc)
-        case event: WatchEvent.Overflow if event.path.isSemanticdb =>
-          Future {
-            semanticDBIndexer.onOverflow(event.path)
-          }(using pools.indexingEc).onComplete {
-            case Success(_) =>
-            case Failure(ex) =>
-              scribe.error(s"Error updating semanticdb for ${event.path}", ex)
-          }(using pools.indexingEc)
-        case WatchEvent.Reindex =>
-          reIndex()
-      }
+            }
+            Seq(event) ++ extraEvents
+          case event0: WatchEvent.Overflow if event0.path.isScalaOrJava && !os.isDir(event0.path) =>
+            if (!editorState.buffers.contains(event0.path))
+              fileChangedOrCreatedUpdateState(event0.path, false)
+            // Future(indexer.reindexWorkspaceSources(List(path)))(???),
+            val extraEvents = bspData.inverseSources(event0.path).toSeq.flatMap { id =>
+              val target = GlobalSymbolIndex.BuildTarget(id.getUri)
+              Seq(
+                WatchEvent.Compile(target),
+                WatchEvent.ComputeInteractiveSemanticdb(target, event0.path)
+              )
+            }
+            Seq(event) ++ extraEvents
+          case _ =>
+            Seq(event)
+        },
+      onFileWatchEvent = events =>
+        events.foreach {
+          case event: WatchEvent.Delete if event.path.isScalaOrJava =>
+            for (buildClient <- bspServers.list.flatMap(_._2).map(_.client))
+              buildClient.didDelete(event.path)
+          case event: WatchEvent.Compile =>
+            compilations.compileTarget(
+              new b.BuildTargetIdentifier(event.targetId.targetId)
+            ).onComplete {
+              case Success(_) =>
+              case Failure(ex) =>
+                scribe.error(
+                  s"Error compiling target ${event.targetId.targetId} upon file watch event",
+                  ex
+                )
+            }(using pools.dummyEc)
+          case event: WatchEvent.ComputeInteractiveSemanticdb =>
+            Future {
+              interactiveSemanticdbs.textDocument(event.path, event.targetId)
+            }(using pools.indexingEc).onComplete {
+              case Success(_) =>
+              case Failure(ex) =>
+                scribe.error(
+                  s"Error computing semanticdb with presentation compiler of ${event.targetId} for ${event.path}",
+                  ex
+                )
+            }(using pools.dummyEc)
+          case event: WatchEvent.CreateOrModify
+              if event.path.isScalaOrJava && !os.isDir(event.path) =>
+            if (!editorState.buffers.contains(event.path))
+              bspData.onCreate(event.path)
+          case event: WatchEvent.Overflow if event.path.isScalaOrJava && !os.isDir(event.path) =>
+          // nothing to do
+          case event: WatchEvent.CreateOrModify if event.path.isSemanticdb =>
+            Future {
+              val it =
+                bspData
+                  .allScala
+                  .filter(target => event.path.startsWith(target.classDirectory))
+                  .map(_.id) ++
+                  bspData
+                    .allJava
+                    .filter(target => event.path.startsWith(target.classDirectory))
+                    .map(_.id)
+              for (targetId <- it)
+                semanticDBIndexer.onChange(
+                  GlobalSymbolIndex.BuildTarget(targetId.getUri),
+                  event.path
+                )
+            }(using pools.indexingEc).onComplete {
+              case Success(_) =>
+              case Failure(ex) =>
+                scribe.error(s"Error updating semanticdb for ${event.path}", ex)
+            }(using pools.indexingEc)
+          case event: WatchEvent.Delete if event.path.isSemanticdb =>
+            Future {
+              semanticDBIndexer.onDelete(event.path)
+            }(using pools.indexingEc).onComplete {
+              case Success(_) =>
+              case Failure(ex) =>
+                scribe.error(s"Error updating semanticdb for ${event.path}", ex)
+            }(using pools.indexingEc)
+          case event: WatchEvent.Overflow if event.path.isSemanticdb =>
+            Future {
+              semanticDBIndexer.onOverflow(event.path)
+            }(using pools.indexingEc).onComplete {
+              case Success(_) =>
+              case Failure(ex) =>
+                scribe.error(s"Error updating semanticdb for ${event.path}", ex)
+            }(using pools.indexingEc)
+          case WatchEvent.Reindex =>
+            reIndex()
+          case other =>
+            scribe.warn(s"Unhandled watch event $other")
+        }
     )(using pools.fileWatcherEc)
 
   def editorFileOpened(path: os.Path, currentContent: String, contentVersion: Int): Unit = {
@@ -668,29 +719,6 @@ final class Server(
   private def fileChangedOrCreatedInternal(path: os.Path, created: Boolean): Unit = {
     if (created)
       bspData.onCreate(path)
-
-    // Future(indexer.reindexWorkspaceSources(List(path)))(???),
-    // onBuildChanged(List(path)),
-    bspData.inverseSources(path) match {
-      case None =>
-        scribe.warn(s"No build target found for changed file $path")
-      case Some(targetId) =>
-        compilations.compileTarget(targetId).onComplete {
-          case Success(_) =>
-          case Failure(ex) =>
-            scribe.error(s"Error compiling $path upon change", ex)
-        }(using pools.dummyEc)
-
-        Future(interactiveSemanticdbs.textDocument(
-          path,
-          targetId.module
-        ))(using pools.indexingEc)
-          .onComplete {
-            case Success(_) =>
-            case Failure(ex) =>
-              scribe.error(s"Error computing semanticdb with presentation compiler for $path", ex)
-          }(using pools.dummyEc)
-    }
   }
 
   def fileChangedOrCreated(path: os.Path, created: Boolean): Unit = {
@@ -699,24 +727,8 @@ final class Server(
   }
 
   private def fileDeletedInternal(path: os.Path): Unit = {
-
-    for {
-      targetId    <- bspData.inverseSources0(path).merge
-      buildClient <- bspData.buildClientOf(targetId)
-    }
+    for (buildClient <- bspServers.list.flatMap(_._2).map(_.client))
       buildClient.didDelete(path)
-
-    compilations.compileFile(path) match {
-      case None =>
-        scribe.warn(s"No build target found for deleted file $path")
-      case Some(f) =>
-        f.onComplete {
-          case Success(_) =>
-          case Failure(ex) =>
-            scribe.error(s"Error compiling $path upon deletion", ex)
-        }(using pools.dummyEc)
-    }
-    // testProvider.onFileDelete(path)
   }
 
   def fileDeleted(path: os.Path): Unit =
