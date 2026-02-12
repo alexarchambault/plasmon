@@ -79,7 +79,7 @@ private final class Diagnostics(
     path: os.Path,
     diags: List[l.Diagnostic]
   ): Unit =
-    if (path.startsWith(workspace / Directories.readonly) || diags.isEmpty) {
+    if (diags.isEmpty) {
       if (syntaxError.remove(path).exists(_.exists(_._1 == module)))
         publishDiagnostics(path, Some(Type.Syntax)) // Remove old syntax error
     }
@@ -93,7 +93,7 @@ private final class Diagnostics(
     path: os.Path,
     diags: Seq[l.Diagnostic]
   ): Unit =
-    if (path.startsWith(workspace / Directories.readonly) || diags.isEmpty) {
+    if (diags.isEmpty) {
       if (pcDiagnostics.remove(path).exists(_.exists(_._1 == module)))
         publishDiagnostics(path, Some(Type.PresentationCompiler))
     }
