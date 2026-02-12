@@ -52,6 +52,10 @@
         "title": "Plasmon: Test fancy status tooltip"
       },
       {
+        "command": "plasmon.show-process-log",
+        "title": "Plasmon: Show server process stderr"
+      },
+      {
         "command": "plasmon.dump-symbol-index",
         "title": "Plasmon: Dump symbol index for current module"
       },

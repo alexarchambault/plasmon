@@ -152,7 +152,7 @@ function plasmonStartingStatus(isRestart: boolean): void {
     statusBarItem.text = isRestart ? "Plasmon restarting $(loading~spin)" : "Plasmon starting $(loading~spin)"
     statusBarItem.backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground')
     statusBarItem.tooltip = undefined
-    statusBarItem.command = undefined
+    statusBarItem.command = "plasmon.show-process-log"
   }
 }
 
@@ -161,7 +161,7 @@ function plasmonFailedToStartStatus(): void {
     statusBarItem.text = "Plasmon failed to start"
     statusBarItem.backgroundColor = new vscode.ThemeColor('statusBarItem.errorBackground')
     statusBarItem.tooltip = undefined
-    statusBarItem.command = undefined
+    statusBarItem.command = "plasmon.show-process-log"
   }
 }
 
@@ -923,6 +923,7 @@ export function activate(context: vscode.ExtensionContext) {
   statusBarItem.text = 'Plasmon starting $(loading~spin)'
   statusBarItem.tooltip = 'The tooltip'
   statusBarItem.backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground')
+  statusBarItem.command = "plasmon.show-process-log"
   context.subscriptions.push(statusBarItem)
   statusBarItem.show()
 
@@ -1050,6 +1051,16 @@ export function activate(context: vscode.ExtensionContext) {
         channel.show(true)
       else
         console.log(`Unknown channel: ${logName0} (available channels: ${Object.keys(logOutputChannels)})`)
+    })
+  )
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand("plasmon.show-process-log", () => {
+      let channel = client?.outputChannel
+      if (channel)
+        channel.show(true)
+      else
+        console.log(`Client unavailable, cannot show its output channel`)
     })
   )
 
