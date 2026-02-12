@@ -364,7 +364,8 @@ object Server extends caseapp.Command[ServerOptions] {
         )
         def loadModules = indexer.loadFromDisk(
           toplevelCacheOnly = false,
-          ignoreToplevelSymbolsErrors = true
+          ignoreToplevelSymbolsErrors = true,
+          mayReadFromBspCache = true
         )
         val init = {
           implicit val ec: ExecutionContext = pools.dummyEc

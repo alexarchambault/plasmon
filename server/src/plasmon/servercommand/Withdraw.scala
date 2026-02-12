@@ -44,7 +44,8 @@ final case class Withdraw(
 
     indexer.index(
       toplevelCacheOnly = indexer.cachedToplevelCacheOnly(),
-      ignoreToplevelSymbolsErrors = indexer.cachedIgnoreToplevelSymbolsErrors()
+      ignoreToplevelSymbolsErrors = indexer.cachedIgnoreToplevelSymbolsErrors(),
+      mayReadFromBspCache = false
     )
   }
 }

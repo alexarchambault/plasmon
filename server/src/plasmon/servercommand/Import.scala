@@ -66,7 +66,8 @@ final case class Import(
         //       finalTargetsSets.get(info).exists(_.contains(target.getId))
         // },
         toplevelCacheOnly = options.toplevelCacheOnly,
-        ignoreToplevelSymbolsErrors = options.ignoreToplevelSymbolsErrors
+        ignoreToplevelSymbolsErrors = options.ignoreToplevelSymbolsErrors,
+        mayReadFromBspCache = false
       )
       Await.result(f, Duration.Inf)
     }

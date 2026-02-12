@@ -52,18 +52,21 @@ class Indexer(server: Server) extends HasState.Delegate[String] {
 
   def loadFromDisk(
     toplevelCacheOnly: Boolean,
-    ignoreToplevelSymbolsErrors: Boolean
+    ignoreToplevelSymbolsErrors: Boolean,
+    mayReadFromBspCache: Boolean
   ): Future[Unit] =
     loadFromDisk(
       buildTargetsFile,
       toplevelCacheOnly,
-      ignoreToplevelSymbolsErrors
+      ignoreToplevelSymbolsErrors,
+      mayReadFromBspCache
     )
 
   def loadFromDisk(
     readFrom: os.Path,
     toplevelCacheOnly: Boolean,
-    ignoreToplevelSymbolsErrors: Boolean
+    ignoreToplevelSymbolsErrors: Boolean,
+    mayReadFromBspCache: Boolean
   ): Future[Unit] =
     Persist.loadFromDisk(readFrom, server.tools) match {
       case Some(targets0) =>
@@ -83,7 +86,7 @@ class Indexer(server: Server) extends HasState.Delegate[String] {
         }
         // Also remove details about build servers not persisted on disk?
         targets ++= targets0
-        index(toplevelCacheOnly, ignoreToplevelSymbolsErrors)
+        index(toplevelCacheOnly, ignoreToplevelSymbolsErrors, mayReadFromBspCache)
       case None =>
         Future.successful(())
     }
@@ -93,7 +96,8 @@ class Indexer(server: Server) extends HasState.Delegate[String] {
 
   def index(
     toplevelCacheOnly: Boolean,
-    ignoreToplevelSymbolsErrors: Boolean
+    ignoreToplevelSymbolsErrors: Boolean,
+    mayReadFromBspCache: Boolean
   ): Future[Unit] = {
     val p = Promise[Unit]()
     actor.send(
@@ -102,7 +106,8 @@ class Indexer(server: Server) extends HasState.Delegate[String] {
         Some(toplevelCacheOnly),
         Some(ignoreToplevelSymbolsErrors),
         Some(buildTargetsFile),
-        onDone = Some(res => p.complete(res))
+        onDone = Some(res => p.complete(res)),
+        mayReadFromBspCache = mayReadFromBspCache
       )
     )
     p.future
@@ -124,7 +129,8 @@ class Indexer(server: Server) extends HasState.Delegate[String] {
         None,
         None,
         None,
-        onDone = Some(res => p.complete(res))
+        onDone = Some(res => p.complete(res)),
+        mayReadFromBspCache = false
       )
     )
     p.future
