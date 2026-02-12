@@ -59,6 +59,8 @@ import com.github.plokhotnyuk.jsoniter_scala.core.WriterConfig
 import com.google.gson.GsonBuilder
 import com.google.gson.FormattingStyle
 import plasmon.bsp.BspServersActor
+import dotty.tools.dotc.interfaces.Diagnostic
+import scala.util.Properties
 
 // Many things here inspired by https://github.com/scalameta/metals/blob/030641d97ca5b982144898a54c3b60b2c08b9614/metals/src/main/scala/scala/meta/metals/MetalsLanguageServer.scala
 // and earlier version of that file
@@ -278,7 +280,41 @@ final class Server(
     loggerManager = loggerManager,
     refreshStatus = refreshStatus,
     languageClient = languageClient,
-    scala2Compat = scala2Compat
+    scala2Compat = scala2Compat,
+    emitDiagnostics = { (pc, module, uri, diags, pcLogger) =>
+      val path = uri.toOsPath
+      bspData.inverseSources(path) match {
+        case Some(targetId) =>
+          bspData.buildClientOf(targetId) match {
+            case Some(client) =>
+              for (diag <- diags if !diag.pos.span.exists)
+                pcLogger.log(diag.toString)
+              val diags0 = diags.collect {
+                case diag if diag.pos.span.exists =>
+                  new l.Diagnostic(
+                    new l.Range(
+                      new l.Position(diag.pos.startLine, diag.pos.startColumn),
+                      new l.Position(diag.pos.endLine, diag.pos.endColumn)
+                    ),
+                    diag.message,
+                    diag.level match {
+                      case Diagnostic.WARNING => l.DiagnosticSeverity.Warning
+                      case Diagnostic.ERROR   => l.DiagnosticSeverity.Error
+                      case _                  => l.DiagnosticSeverity.Information
+                    },
+                    s"Scala ${Properties.versionNumberString} presentation compiler"
+                  )
+              }
+              client.onPcDiagnostics(module, path, diags0)
+            case None =>
+              scribe.warn(
+                s"No build client found for target ${targetId.getUri} of $path that we got ${diags.length} diagnostic(s) for"
+              )
+          }
+        case None =>
+          scribe.warn(s"No target ID found for $path that we got ${diags.length} diagnostic(s) for")
+      }
+    }
   )(using pools.compilerEces)
 
   // stateless
@@ -292,7 +328,7 @@ final class Server(
     bspData
   )
 
-  def createBuildClient(): PlasmonBuildClientImpl = {
+  def createBuildClient(buildToolName: String): PlasmonBuildClientImpl = {
     val client = new PlasmonBuildClientImpl(
       languageClient,
       editorState.buffers,
@@ -302,7 +338,8 @@ final class Server(
         if (params.getChanges.asScala.nonEmpty) {
           scribe.info(s"Some build targets changed ($params)")
           onBuildTargetDidChange(params)
-        }
+        },
+      buildToolName
     )
     client.onProgress { _ =>
       refreshStatus()

@@ -80,6 +80,9 @@ import coursier.parse.RawJson
 import plasmon.render.JsonCodecs.given
 import scala.util.Failure
 import scala.util.Properties
+import java.net.URI
+import dotty.tools.dotc.reporting.Diagnostic
+import plasmon.Logger
 
 /** Manages lifecycle for presentation compilers in all build targets.
   *
@@ -106,7 +109,14 @@ class PresentationCompilers(
   loggerManager: plasmon.Logger.Manager,
   refreshStatus: () => Unit,
   languageClient: PlasmonLanguageClient,
-  scala2Compat: Boolean
+  scala2Compat: Boolean,
+  emitDiagnostics: (
+    Scala3PresentationCompiler,
+    GlobalSymbolIndex.Module,
+    URI,
+    Seq[Diagnostic],
+    Logger
+  ) => Unit
 )(implicit ec: ExecutionContextExecutorService)
     extends AutoCloseable {
 
@@ -1221,7 +1231,7 @@ class PresentationCompilers(
     val nameSuffix = BspUtil.targetShortId(bspData, targetId)
     val id         = s"interactive-$scalaVersion-$idSuffix"
     val label      = s"Interactive $nameSuffix"
-    def logger()   = loggerManager.create(id, label).consumer
+    def logger()   = loggerManager.create(id, label)
     def setupPc(pc0: PresentationCompiler & pc.HasCompilerAccess): Unit = {
       pc0.compilerAccess.beforeAccess { (reqId, name, uri) =>
         interactiveCompilersStatuses.compute(
@@ -1255,7 +1265,12 @@ class PresentationCompilers(
     if ((scala2Compat && scalaVersion.startsWith("2.")) || scalaVersion.startsWith("3.")) {
       val makeCompiler = MakeCompiler { javaHome =>
         scribe.info("Loading Scala 3 PC")
-        val pc = new Scala3PresentationCompiler(javaHome.toNIO, () => logger(), targetId.module)
+        lazy val pc: Scala3PresentationCompiler = new Scala3PresentationCompiler(
+          javaHome.toNIO,
+          () => logger().consumer,
+          emitDiagnostics = emitDiagnostics(pc, targetId.module, _, _, logger()),
+          module = targetId.module
+        )
         setupPc(pc)
         pc
       }
@@ -1269,7 +1284,7 @@ class PresentationCompilers(
         scribe.error(s"Was asked presentation compiler for Scala $scalaVersion")
         val pc0 = new Scala2PresentationCompilerHandler().create(
           javaHome.toNIO,
-          () => logger(),
+          () => logger().consumer,
           targetId.module
         ) match {
           case pc1: (PresentationCompiler & pc.HasCompilerAccess) => pc1
@@ -2143,8 +2158,8 @@ object PresentationCompilers {
     )
   }
 
-  private def enrichWithReleaseOption(scalaTarget: ScalaTarget) =
-    scalaTarget.scalac.getOptions.asScala.toSeq.map {
+  private def enrichWithReleaseOption(scalaTarget: ScalaTarget) = {
+    val options = scalaTarget.scalac.getOptions.asScala.toSeq.map {
       case opt if opt.startsWith("-release:") =>
         opt.stripPrefix("-release:").toIntOption match {
           case Some(n) if n < 17 => "-release:17"
@@ -2154,6 +2169,18 @@ object PresentationCompilers {
         "-Wunused:all"
       case opt => opt
     }
+    val releaseIdx = options.indexOf("--release")
+    if (releaseIdx >= 0 && releaseIdx + 1 < options.length)
+      options(releaseIdx + 1).toIntOption match {
+        case Some(n) if n < 17 =>
+          options.take(releaseIdx) ++
+            Seq("--release", "17") ++
+            options.drop(releaseIdx + 2)
+        case _ => options
+      }
+    else
+      options
+  }
 
   final case class AsJson(
     interactiveCompilersStatuses: Map[String, Seq[(String, String)]],

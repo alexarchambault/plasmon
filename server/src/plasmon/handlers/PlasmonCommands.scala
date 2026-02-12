@@ -52,6 +52,7 @@ import plasmon.languageclient.PlasmonConfiguredLanguageClient
 import java.util.concurrent.atomic.AtomicInteger
 import coursier.version.Version
 import plasmon.internal.Constants
+import plasmon.bsp.Diagnostics
 
 object PlasmonCommands {
 
@@ -1355,6 +1356,36 @@ object PlasmonCommands {
               val resp = writeToGson(InteractiveCompilerInterruptResponse(interrupted))
               CompletableFuture.completedFuture(resp)
           }
+      },
+      CommandHandler.of("plasmon/enablePcDiagnostics") {
+        (params, logger) =>
+          params.as[Boolean]("plasmon/enablePcDiagnostics") { enable =>
+            val clients = server.bspServers.list.flatMap(_._2).map(_.client)
+            val types =
+              if (enable) Set(
+                Diagnostics.Type.Compilation,
+                Diagnostics.Type.Syntax,
+                Diagnostics.Type.PresentationCompiler
+              )
+              else Set(Diagnostics.Type.Compilation, Diagnostics.Type.Syntax)
+            for (client <- clients)
+              client.setDiagnosticTypes(types)
+            CompletableFuture.completedFuture(null)
+          }
+      },
+      CommandHandler.of("plasmon/togglePcDiagnostics") {
+        (params, logger) =>
+          val clients = server.bspServers.list.flatMap(_._2).map(_.client)
+          for (client <- clients) {
+            val currentTypes = client.diagnosticTypes
+            val updatedTypes =
+              if (currentTypes(Diagnostics.Type.PresentationCompiler))
+                currentTypes - Diagnostics.Type.PresentationCompiler
+              else
+                currentTypes + Diagnostics.Type.PresentationCompiler
+            client.setDiagnosticTypes(updatedTypes)
+          }
+          CompletableFuture.completedFuture(null)
       }
     )
 

@@ -580,6 +580,8 @@ object BspUtil {
 
     scribe.info(s"BSP server initialization result: $initRes")
 
+    buildClient0.setBuildToolName(BspConnection.enhancedName(initRes.getDisplayName))
+
     (buildServer, initRes, launcher.getRemoteEndpoint, buildClient0)
   }
 

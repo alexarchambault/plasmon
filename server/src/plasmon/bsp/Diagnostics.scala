@@ -46,36 +46,70 @@ private final class Diagnostics(
   buffers: Buffers,
   languageClient: LanguageClient,
   workspace: os.Path,
-  trees: Trees
+  trees: Trees,
+  private var defaultSource: String
 ) extends AutoCloseable {
   import Diagnostics.*
 
   val diagnostics           = TrieMap.empty[os.Path, JQueue[(GlobalSymbolIndex.Module, l.Diagnostic)]]
   private val syntaxError   = TrieMap.empty[os.Path, Seq[(GlobalSymbolIndex.Module, l.Diagnostic)]]
+  val pcDiagnostics = TrieMap.empty[os.Path, Seq[(GlobalSymbolIndex.Module, l.Diagnostic)]]
   private val snapshots     = TrieMap.empty[os.Path, Input.VirtualFile]
   private val lastPublished = new AtomicReference[os.Path]
   private val diagnosticsBuffer =
     new ConcurrentLinkedQueue[(GlobalSymbolIndex.Module, os.Path)]
+  private var enabledTypes: Set[Type] = Set(Type.Compilation, Type.Syntax)
+
+  def setDefaultSource(name: String): Unit = {
+    defaultSource = name
+  }
+
+  def diagnosticTypes: Set[Type] = enabledTypes
+  def setTypes(types: Set[Type]): Unit = {
+    val changed = enabledTypes != types
+    if (changed) {
+      enabledTypes = types
+      for (path <- diagnostics.keySet ++ syntaxError.keySet ++ pcDiagnostics.keySet)
+        publishDiagnostics(path, None)
+    }
+  }
 
   def onSyntaxError(
     module: GlobalSymbolIndex.Module,
     path: os.Path,
     diags: List[l.Diagnostic]
   ): Unit =
-    if (path.startsWith(workspace / Directories.readonly) || diags.isEmpty)
-      onClose(module, path)
+    if (path.startsWith(workspace / Directories.readonly) || diags.isEmpty) {
+      if (syntaxError.remove(path).exists(_.exists(_._1 == module)))
+        publishDiagnostics(path, Some(Type.Syntax)) // Remove old syntax error
+    }
     else {
       syntaxError(path) = diags.map((module, _))
-      publishDiagnostics(path)
+      publishDiagnostics(path, Some(Type.Syntax))
+    }
+
+  def onPcDiagnostics(
+    module: GlobalSymbolIndex.Module,
+    path: os.Path,
+    diags: Seq[l.Diagnostic]
+  ): Unit =
+    if (path.startsWith(workspace / Directories.readonly) || diags.isEmpty) {
+      if (pcDiagnostics.remove(path).exists(_.exists(_._1 == module)))
+        publishDiagnostics(path, Some(Type.PresentationCompiler))
+    }
+    else {
+      pcDiagnostics(path) = diags.map((module, _))
+      publishDiagnostics(path, Some(Type.PresentationCompiler))
     }
 
   def onClose(module: GlobalSymbolIndex.Module, path: os.Path): Unit =
-    if (syntaxError.remove(path).exists(_.exists(_._1 == module)))
-      publishDiagnostics(path) // Remove old syntax error
+    if (syntaxError.remove(path).exists(_.exists(_._1 == module)) || pcDiagnostics.remove(path).exists(_.exists(_._1 == module)))
+      publishDiagnostics(path, None) // Remove old syntax error
 
   def didDelete(path: os.Path): Unit = {
     diagnostics.remove(path)
     syntaxError.remove(path)
+    pcDiagnostics.remove(path)
     languageClient.publishDiagnostics(
       new l.PublishDiagnosticsParams(
         path.toNIO.toUri.toASCIIString,
@@ -85,10 +119,17 @@ private final class Diagnostics(
   }
 
   def diagDidChange(path: os.Path): Unit =
-    publishDiagnostics(path)
+    publishDiagnostics(path, None)
 
   def onBuildPublishDiagnostics(params: b.PublishDiagnosticsParams): Unit = {
-    val diagnostics0 = params.getDiagnostics.asScala.map(_.toLsp).toSeq
+    val diagnostics0 = params.getDiagnostics.asScala
+      .toSeq
+      .map { diag =>
+        val diag0 = diag.toLsp
+        if (diag0.getSource == null)
+          diag0.setSource(defaultSource)
+        diag0
+      }
     val published =
       Try(params.getTextDocument.getUri.osPathFromUri).toOption.filter(os.isFile) match {
         case Some(path) =>
@@ -148,11 +189,12 @@ private final class Diagnostics(
       diagnosticsBuffer.add((module, path))
   }
 
-  private def publishDiagnostics(path: os.Path): Unit =
-    publishDiagnostics(
-      path,
-      diagnostics.getOrElse(path, new LinkedList[(GlobalSymbolIndex.Module, l.Diagnostic)])
-    )
+  private def publishDiagnostics(path: os.Path, changedTypeOpt: Option[Type]): Unit =
+    if (changedTypeOpt.forall(enabledTypes.contains))
+      publishDiagnostics(
+        path,
+        diagnostics.getOrElse(path, new LinkedList[(GlobalSymbolIndex.Module, l.Diagnostic)])
+      )
 
   private def publishDiagnostics(
     path: os.Path,
@@ -160,29 +202,34 @@ private final class Diagnostics(
   ): Unit =
     if (os.isFile(path)) {
       val uri = path.toNIO.toUri.toASCIIString
-      val all = new ArrayList[l.Diagnostic](queue.size() + 1)
-      for {
-        (module0, diagnostic) <- queue.asScala
-        freshDiagnostic <- toFreshDiagnostic(module0, path, diagnostic)
-      }
-        all.add(freshDiagnostic)
-      for {
-        (module0, d) <- syntaxError.getOrElse(path, Nil)
-        // De-duplicate only the most common and basic syntax errors.
-        isSameMessage = all.asScala.exists(diag =>
-          diag.getRange == d.getRange && diag.getMessage == d.getMessage
-        )
-        isDuplicate =
-          d.getMessage.replace("`", "").startsWith("identifier expected but") &&
-            all.asScala.exists { other =>
-              other.getMessage
-                .replace("`", "")
-                .startsWith("identifier expected") &&
-              other.getRange.getStart == d.getRange.getStart
-            }
-        if !isDuplicate && !isSameMessage
-      }
-        all.add(d)
+      val all = new ArrayList[l.Diagnostic]((if (enabledTypes(Type.Compilation)) queue.size() else 0) + 1)
+      if (enabledTypes(Type.Compilation))
+        for {
+          (module0, diagnostic) <- queue.asScala
+          freshDiagnostic <- toFreshDiagnostic(module0, path, diagnostic)
+        }
+          all.add(freshDiagnostic)
+      if (enabledTypes(Type.Syntax))
+        for {
+          (module0, d) <- syntaxError.getOrElse(path, Nil)
+          // De-duplicate only the most common and basic syntax errors.
+          isSameMessage = all.asScala.exists(diag =>
+            diag.getRange == d.getRange && diag.getMessage == d.getMessage
+          )
+          isDuplicate =
+            d.getMessage.replace("`", "").startsWith("identifier expected but") &&
+              all.asScala.exists { other =>
+                other.getMessage
+                  .replace("`", "")
+                  .startsWith("identifier expected") &&
+                other.getRange.getStart == d.getRange.getStart
+              }
+          if !isDuplicate && !isSameMessage
+        }
+          all.add(d)
+      if (enabledTypes(Type.PresentationCompiler))
+        for ((_, d) <- pcDiagnostics.getOrElse(path, Nil))
+          all.add(d)
       scribe.info(s"uri=$uri")
       scribe.info(s"all=${all.asScala.toVector}")
       languageClient.publishDiagnostics(new l.PublishDiagnosticsParams(uri, all))
@@ -192,7 +239,7 @@ private final class Diagnostics(
 
   private def publishDiagnosticsBuffer(): Unit =
     for ((_, path) <- clearDiagnosticsBuffer())
-      publishDiagnostics(path)
+      publishDiagnostics(path, Some(Type.Compilation))
 
   // Adjust positions for type errors for changes in the open buffer.
   // Only needed when merging syntax errors with type errors.
@@ -285,7 +332,7 @@ private final class Diagnostics(
     diagnostic.getSource == "scala-cli"
 
   def clear(): Unit = {
-    val paths = diagnostics.keySet ++ syntaxError.keySet ++ snapshots.keySet ++ diagnosticsBuffer.asScala.map(_._2)
+    val paths = diagnostics.keySet ++ syntaxError.keySet ++ pcDiagnostics.keySet ++ snapshots.keySet ++ diagnosticsBuffer.asScala.map(_._2)
     for (path <- paths)
       languageClient.publishDiagnostics(
         new l.PublishDiagnosticsParams(
@@ -295,13 +342,16 @@ private final class Diagnostics(
       )
     diagnostics.clear()
     syntaxError.clear()
+    pcDiagnostics.clear()
     snapshots.clear()
     diagnosticsBuffer.clear()
     lastPublished.set(null)
   }
 
   def close(): Unit = {
-    val paths = diagnostics.keysIterator ++ syntaxError.keysIterator.filterNot(diagnostics.keySet)
+    val paths = diagnostics.keysIterator ++
+      syntaxError.keysIterator.filterNot(diagnostics.keySet) ++
+      pcDiagnostics.keysIterator.filterNot(diagnostics.keySet).filterNot(syntaxError.keySet)
     for (path <- paths)
       didDelete(path)
   }
@@ -328,6 +378,16 @@ private final class Diagnostics(
             }
           )
       },
+      pcDiagnostics = pcDiagnostics.toMap.map {
+        case (p, l) =>
+          (
+            p.toString,
+            l.map {
+              case (mod, diag) =>
+                (mod.asString, diag)
+            }
+          )
+      },
       snapshots = snapshots.toMap.map {
         case (p, f) =>
           (p.toString, (f.path, f.value))
@@ -340,7 +400,11 @@ private final class Diagnostics(
     )
 }
 
-private object Diagnostics {
+object Diagnostics {
+
+  enum Type:
+    case Syntax, Compilation, PresentationCompiler
+
   private object ScalaDiagnostic {
     def unapply(d: l.Diagnostic): Option[Either[l.TextEdit, b.ScalaDiagnostic]] =
       d.asScalaDiagnostic
@@ -348,7 +412,7 @@ private object Diagnostics {
 
   private val gson = new Gson
 
-  implicit class XtensionSerializableToJson(data: Any) {
+  private implicit class XtensionSerializableToJson(data: Any) {
     def toJson: JsonElement =
       gson.toJsonTree(data)
     def toJsonObject: JsonObject =
@@ -358,11 +422,12 @@ private object Diagnostics {
   final case class AsJson(
     diagnostics: Map[String, Seq[(String, l.Diagnostic)]],
     syntaxError: Map[String, Seq[(String, l.Diagnostic)]],
+    pcDiagnostics: Map[String, Seq[(String, l.Diagnostic)]],
     snapshots: Map[String, (String, String)],
     lastPublished: Option[os.Path],
     diagnosticsBuffer: Seq[(String, os.Path)]
   )
 
-  given JsonValueCodec[AsJson] =
+  private given JsonValueCodec[AsJson] =
     JsonCodecMaker.make
 }

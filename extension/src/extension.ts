@@ -1649,6 +1649,45 @@ export function activate(context: vscode.ExtensionContext) {
   )
 
   context.subscriptions.push(
+    vscode.commands.registerCommand(`plasmon.enable-pc-diagnostics`, () => {
+      let uri = lastFocusedDocument
+      client?.sendRequest(ExecuteCommandRequest.type, { command: "plasmon/enablePcDiagnostics", arguments: [true] }).then(
+        () => {},
+        (err) => {
+          console.log(`Error running command plasmon/enablePcDiagnostics(true): ${err}`)
+          vscode.window.showErrorMessage(`Error enabling presentation compiler diagnostics: ${err}`, { modal: false })
+        }
+      )
+    })
+  )
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand(`plasmon.disable-pc-diagnostics`, () => {
+      let uri = lastFocusedDocument
+      client?.sendRequest(ExecuteCommandRequest.type, { command: "plasmon/enablePcDiagnostics", arguments: [false] }).then(
+        () => {},
+        (err) => {
+          console.log(`Error running command plasmon/enablePcDiagnostics(false): ${err}`)
+          vscode.window.showErrorMessage(`Error disabling presentation compiler diagnostics: ${err}`, { modal: false })
+        }
+      )
+    })
+  )
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand(`plasmon.toggle-pc-diagnostics`, () => {
+      let uri = lastFocusedDocument
+      client?.sendRequest(ExecuteCommandRequest.type, { command: "plasmon/togglePcDiagnostics" }).then(
+        () => {},
+        (err) => {
+          console.log(`Error running command plasmon/togglePcDiagnostics: ${err}`)
+          vscode.window.showErrorMessage(`Error toggling presentation compiler diagnostics: ${err}`, { modal: false })
+        }
+      )
+    })
+  )
+
+  context.subscriptions.push(
     vscode.commands.registerCommand("plasmon.compile", () => {
       let uri = lastFocusedDocument
       client?.sendRequest(ExecuteCommandRequest.type, { command: "plasmon/compile", arguments: [uri] }).then(
