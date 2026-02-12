@@ -56,7 +56,7 @@
         "title": "Plasmon: Dump symbol index for current module"
       },
       {
-        "command": "plasmon.dump-full-tree",
+        "command": "plasmon.dump-typed-tree",
         "title": "Plasmon: Dump presentation compiler typed tree for current file"
       },
       {

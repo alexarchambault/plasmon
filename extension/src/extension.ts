@@ -1095,7 +1095,7 @@ export function activate(context: vscode.ExtensionContext) {
   )
 
   context.subscriptions.push(
-    vscode.commands.registerCommand(`plasmon.dump-full-tree`, () => {
+    vscode.commands.registerCommand(`plasmon.dump-typed-tree`, () => {
       interface Resp {
         targetId: string
         fullTree: string
@@ -1110,7 +1110,7 @@ export function activate(context: vscode.ExtensionContext) {
             vscode.window.showErrorMessage(`Error getting typed tree: ${resp.error}`, { modal: false })
           }
           else {
-            const strUri = `${RO_SCHEME}:${uri}/full-tree.scala`
+            const strUri = `${RO_SCHEME}:${uri}/typed-tree.scala`
             documents[strUri] = resp.fullTree + os.EOL + os.EOL + "/*" + os.EOL + os.EOL + resp.diagnostics + os.EOL + os.EOL + "*/"
             const doc = await vscode.workspace.openTextDocument(vscode.Uri.parse(strUri))
             await vscode.window.showTextDocument(doc, { preview: false })
