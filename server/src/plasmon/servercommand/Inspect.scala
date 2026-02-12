@@ -225,7 +225,7 @@ final case class Inspect(
         for (target <- targets)
           printLine(target.getUri)
       case Inspect.Queues =>
-        def maybePrintQueue(name: String, queue: Seq[_]): Unit = {
+        def maybePrintQueue(name: String, queue: Seq[?]): Unit = {
           if (queue.isEmpty)
             printLine(s"No $name messages queued")
           else {
