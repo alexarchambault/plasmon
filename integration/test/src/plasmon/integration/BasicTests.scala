@@ -167,20 +167,22 @@ class BasicTests extends PlasmonSuite {
       override def applyEdit(applyEditParams: l.ApplyWorkspaceEditParams)
         : CompletableFuture[l.ApplyWorkspaceEditResponse] = {
         osOpt.getOrElse(System.err).pprint(applyEditParams)
-        val fromChanges = applyEditParams.getEdit.getChanges.asScala
+        val fromChanges = applyEditParams.getEdit.getChanges.asScala.map {
+          case (k, v) => (k, v.asScala)
+        }
         val fromDocumentChanges = applyEditParams
           .getEdit
           .getDocumentChanges
           .asScala
           .filter(_.isLeft)
           .map(_.getLeft)
-          .map(e => (e.getTextDocument.getUri, e.getEdits))
+          .map(e => (e.getTextDocument.getUri, e.getEdits.asScala.filter(_.isLeft).map(_.getLeft)))
         for ((uri, edits) <- fromChanges ++ fromDocumentChanges) {
           val path           = os.Path(Paths.get(new URI(uri)))
           val currentContent = os.read(path)
           var updatedContent = currentContent
           for (
-            edit <- edits.asScala.toVector.sortBy(e =>
+            edit <- edits.toVector.sortBy(e =>
               (e.getRange.getStart.getLine, e.getRange.getStart.getCharacter)
             ).reverse
           ) {

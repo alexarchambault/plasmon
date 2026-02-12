@@ -217,9 +217,11 @@ private final class Diagnostics(
             diag.getRange == d.getRange && diag.getMessage == d.getMessage
           )
           isDuplicate =
-            d.getMessage.replace("`", "").startsWith("identifier expected but") &&
+            d.getMessage.asScala.fold(identity, _.getValue).replace("`", "").startsWith("identifier expected but") &&
               all.asScala.exists { other =>
                 other.getMessage
+                  .asScala
+                  .fold(identity, _.getValue)
                   .replace("`", "")
                   .startsWith("identifier expected") &&
                 other.getRange.getStart == d.getRange.getStart
@@ -260,7 +262,10 @@ private final class Diagnostics(
           .map { range =>
             val ld = new l.Diagnostic(
               range,
-              d.getMessage,
+              d.getMessage.asScala match {
+                case Left(str) => str
+                case Right(md) => md.getValue
+              },
               d.getSeverity,
               d.getSource
             )
@@ -282,7 +287,7 @@ private final class Diagnostics(
           d.getRange.toMeta(snapshot).foreach { pos =>
             val message = pos.formatMessage(
               s"stale ${d.getSource} ${d.getSeverity.toString.toLowerCase()}",
-              d.getMessage
+              d.getMessage.asScala.fold(identity, _.getValue)
             )
             scribe.info(message)
           }

@@ -59,6 +59,7 @@ class PlasmonBuildClientImpl(
         case l.MessageType.Warning => "[warn] "
         case l.MessageType.Info    => "[info] "
         case l.MessageType.Log     => ""
+        case l.MessageType.Debug   => ""
       }
       for (line <- params.getMessage.linesIterator)
         logger.log(prefix + line)
@@ -84,6 +85,8 @@ class PlasmonBuildClientImpl(
           scribe.info(params.getMessage)
         case l.MessageType.Log =>
           scribe.info(params.getMessage)
+        case l.MessageType.Debug =>
+          scribe.debug(params.getMessage)
       }
   }
 
