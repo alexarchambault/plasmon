@@ -83,6 +83,8 @@ class IndexerActor(
     t match {
       case _: Message.Index =>
         interruptIndexingPromiseOpt.foreach(_.trySuccess(()))
+      case Message.InterruptIndexing =>
+        interruptIndexingPromiseOpt.foreach(_.trySuccess(()))
       case _ =>
     }
   }
@@ -90,8 +92,9 @@ class IndexerActor(
   override def runBatch(msgs: Seq[Message]): Unit = {
     super.runBatch(msgs)
 
+    val interruptIndexingIdxOpt = Some(msgs.lastIndexOf(Message.InterruptIndexing)).filter(_ >= 0)
     val indexMessages = msgs.zipWithIndex.collect {
-      case (msg: Message.Index, idx) =>
+      case (msg: Message.Index, idx) if interruptIndexingIdxOpt.forall(idx > _) =>
         (msg, idx)
     }
     val indexMessageOpt = indexMessages.headOption.map {
@@ -145,6 +148,8 @@ class IndexerActor(
           idxSym.target,
           idxSym.data
         )
+      case Message.InterruptIndexing =>
+      // ignored
       case _: Message.Index =>
         sys.error("Cannot happen")
     }
@@ -1057,6 +1062,7 @@ class IndexerActor(
 object IndexerActor {
   sealed abstract class Message extends Product with Serializable
   object Message {
+    case object InterruptIndexing extends Message
     final case class Index(
       targets: Map[BuildServerInfo, Seq[b.BuildTargetIdentifier]],
       addAllTargets: Set[BuildServerInfo],

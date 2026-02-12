@@ -52,6 +52,7 @@ import plasmon.languageclient.PlasmonConfiguredLanguageClient
 import java.util.concurrent.atomic.AtomicInteger
 import coursier.version.Version
 import plasmon.internal.Constants
+import plasmon.index.IndexerActor.Message
 import plasmon.bsp.Diagnostics
 
 object PlasmonCommands {
@@ -728,6 +729,7 @@ object PlasmonCommands {
       CompletableFuture.completedFuture(writeToGson(UnloadAllModulesResponse(removedCount)))
     },
     CommandHandler.of("plasmon/unloadAllBuildTools", refreshStatus = true) { (_, _) =>
+      indexer.actor.send(Message.InterruptIndexing)
       val indexerInfos = indexer.targets.keySet ++ indexer.addAllTargets
       val removed =
         indexer.targets.map {
