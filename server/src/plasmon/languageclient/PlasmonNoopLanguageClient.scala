@@ -32,6 +32,8 @@ abstract class PlasmonNoopLanguageClient extends PlasmonLanguageClient {
   override def heartBeat(): Unit                                    = ()
 
   override def progress(details: PlasmonLanguageClient.ProgressDetails): Unit = ()
+
+  override def buildChangeDetected(details: PlasmonLanguageClient.BuildChangeDetails): Unit = ()
 }
 
 object PlasmonNoopLanguageClient extends PlasmonNoopLanguageClient

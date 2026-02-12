@@ -1,5 +1,5 @@
-```scala
-object Thread: java.lang
+```java
+public final class Thread
 ```
 
 ***

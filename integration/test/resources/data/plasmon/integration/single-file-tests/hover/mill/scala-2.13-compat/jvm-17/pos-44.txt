@@ -1,5 +1,5 @@
-```scala
-object System: java.lang
+```java
+public final class System
 ```
 
 ***

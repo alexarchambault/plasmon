@@ -301,13 +301,13 @@ object BuildTool {
         case Seq() =>
           val relPath = workspace.relativeTo(serverWorkspace)
           if (relPath == os.rel) "Scala CLI in this workspace"
-          else s"Scala CLI in $relPath"
+          else s"Scala CLI in $relPath${if (os.isDir(workspace)) "/" else ""}"
         case Seq(first) =>
           val relPath = first.relativeTo(serverWorkspace)
-          s"Scala CLI for $relPath"
+          s"Scala CLI for $relPath${if (os.isDir(first)) "/" else ""}"
         case Seq(first, other @ _*) =>
           val relPath = first.relativeTo(serverWorkspace)
-          s"Scala CLI for $relPath and ${other.length} other source(s)"
+          s"Scala CLI for $relPath${if (os.isDir(first)) "/" else ""} and ${other.length} other source(s)"
       }
 
     def launcher(tools: Tools) = {

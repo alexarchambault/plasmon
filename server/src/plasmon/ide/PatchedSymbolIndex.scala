@@ -55,7 +55,7 @@ final class PatchedSymbolIndex(
     // Read text file from disk instead of editor buffers because the file
     // on disk is more likely to parse.
     lazy val parsed =
-      new Mtags()(NopReportContext).index(
+      new Mtags()(using NopReportContext).index(
         symbolDefinition.path.toLanguage,
         symbolDefinition.path.toInput,
         symbolDefinition.dialectOpt

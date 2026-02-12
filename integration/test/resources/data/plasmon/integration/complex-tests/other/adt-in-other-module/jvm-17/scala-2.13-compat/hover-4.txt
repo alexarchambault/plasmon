@@ -1,7 +1,9 @@
 ```scala
-object Thirds: foo.Thing
+trait Thirds
 ```
 
 ***
 
-
+```scala
+object Thirds
+```

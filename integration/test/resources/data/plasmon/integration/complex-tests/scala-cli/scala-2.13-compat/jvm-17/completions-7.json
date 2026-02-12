@@ -339,10 +339,10 @@
         }
       },
       {
-        "label": "IndexedSeqSlidingIterator[A, CC[_$$2], C](s: IndexedSeqOps[A, CC, C], size: Int, step: Int): IndexedSeqSlidingIterator[A, CC, C]",
+        "label": "IndexedSeqSlidingIterator[A, CC[_$2], C](s: IndexedSeqOps[A, CC, C], size: Int, step: Int): IndexedSeqSlidingIterator[A, CC, C]",
         "kind": "Constructor",
         "tags": [],
-        "detail": "[A, CC[_$$2], C](s: IndexedSeqOps[A, CC, C], size: Int, step: Int): IndexedSeqSlidingIterator[A, CC, C]",
+        "detail": "[A, CC[_$2], C](s: IndexedSeqOps[A, CC, C], size: Int, step: Int): IndexedSeqSlidingIterator[A, CC, C]",
         "sortText": "00012",
         "filterText": "IndexedSeqSlidingIterator",
         "insertTextFormat": "Snippet",
@@ -619,11 +619,39 @@
         }
       },
       {
+        "label": "StringView(s: String): StringView",
+        "kind": "Method",
+        "tags": [],
+        "detail": "(s: String): StringView",
+        "sortText": "00022",
+        "filterText": "StringView",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 9,
+              "character": 19
+            },
+            "end": {
+              "line": 9,
+              "character": 20
+            }
+          },
+          "newText": "StringView($0)"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/StringView.apply().",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "kind": 3
+        }
+      },
+      {
         "label": "View[A](xs: A*): View[A]",
         "kind": "Method",
         "tags": [],
         "detail": "[A](xs: A*): View[A]",
-        "sortText": "00022",
+        "sortText": "00023",
         "filterText": "View",
         "insertTextFormat": "Snippet",
         "textEdit": {
@@ -651,7 +679,7 @@
         "kind": "Module",
         "tags": [],
         "detail": " scala.collection",
-        "sortText": "00023",
+        "sortText": "00024",
         "filterText": "BitSet",
         "insertTextFormat": "Snippet",
         "textEdit": {
@@ -679,7 +707,7 @@
         "kind": "Module",
         "tags": [],
         "detail": " scala.collection",
-        "sortText": "00024",
+        "sortText": "00025",
         "filterText": "BitSetOps",
         "insertTextFormat": "Snippet",
         "textEdit": {
@@ -707,7 +735,7 @@
         "kind": "Module",
         "tags": [],
         "detail": " scala.collection",
-        "sortText": "00025",
+        "sortText": "00026",
         "filterText": "BuildFrom",
         "insertTextFormat": "Snippet",
         "textEdit": {
@@ -735,7 +763,7 @@
         "kind": "Module",
         "tags": [],
         "detail": " scala.collection",
-        "sortText": "00026",
+        "sortText": "00027",
         "filterText": "ClassTagIterableFactory",
         "insertTextFormat": "Snippet",
         "textEdit": {
@@ -763,7 +791,7 @@
         "kind": "Module",
         "tags": [],
         "detail": " scala.collection",
-        "sortText": "00027",
+        "sortText": "00028",
         "filterText": "EvidenceIterableFactory",
         "insertTextFormat": "Snippet",
         "textEdit": {
@@ -791,7 +819,7 @@
         "kind": "Module",
         "tags": [],
         "detail": " scala.collection",
-        "sortText": "00028",
+        "sortText": "00029",
         "filterText": "LazyZip2",
         "insertTextFormat": "Snippet",
         "textEdit": {
@@ -819,7 +847,7 @@
         "kind": "Module",
         "tags": [],
         "detail": " scala.collection",
-        "sortText": "00029",
+        "sortText": "00030",
         "filterText": "LazyZip3",
         "insertTextFormat": "Snippet",
         "textEdit": {
@@ -847,7 +875,7 @@
         "kind": "Module",
         "tags": [],
         "detail": " scala.collection",
-        "sortText": "00030",
+        "sortText": "00031",
         "filterText": "LazyZip4",
         "insertTextFormat": "Snippet",
         "textEdit": {
@@ -875,7 +903,7 @@
         "kind": "Module",
         "tags": [],
         "detail": " scala.collection",
-        "sortText": "00031",
+        "sortText": "00032",
         "filterText": "LinearSeq",
         "insertTextFormat": "Snippet",
         "textEdit": {
@@ -903,7 +931,7 @@
         "kind": "Module",
         "tags": [],
         "detail": " scala.collection",
-        "sortText": "00032",
+        "sortText": "00033",
         "filterText": "MapView",
         "insertTextFormat": "Snippet",
         "textEdit": {
@@ -931,7 +959,7 @@
         "kind": "Module",
         "tags": [],
         "detail": " scala.collection",
-        "sortText": "00033",
+        "sortText": "00034",
         "filterText": "Searching",
         "insertTextFormat": "Snippet",
         "textEdit": {
@@ -959,7 +987,7 @@
         "kind": "Module",
         "tags": [],
         "detail": " scala.collection",
-        "sortText": "00034",
+        "sortText": "00035",
         "filterText": "SeqView",
         "insertTextFormat": "Snippet",
         "textEdit": {
@@ -987,7 +1015,7 @@
         "kind": "Module",
         "tags": [],
         "detail": " scala.collection",
-        "sortText": "00035",
+        "sortText": "00036",
         "filterText": "SortedIterableFactory",
         "insertTextFormat": "Snippet",
         "textEdit": {
@@ -1015,7 +1043,7 @@
         "kind": "Module",
         "tags": [],
         "detail": " scala.collection",
-        "sortText": "00036",
+        "sortText": "00037",
         "filterText": "StringOps",
         "insertTextFormat": "Snippet",
         "textEdit": {
@@ -1039,11 +1067,39 @@
         }
       },
       {
+        "label": "StringView scala.collection",
+        "kind": "Module",
+        "tags": [],
+        "detail": " scala.collection",
+        "sortText": "00038",
+        "filterText": "StringView",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 9,
+              "character": 19
+            },
+            "end": {
+              "line": 9,
+              "character": 20
+            }
+          },
+          "newText": "StringView"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/StringView.",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "kind": 3
+        }
+      },
+      {
         "label": "View scala.collection",
         "kind": "Module",
         "tags": [],
         "detail": " scala.collection",
-        "sortText": "00037",
+        "sortText": "00039",
         "filterText": "View",
         "insertTextFormat": "Snippet",
         "textEdit": {
@@ -1067,39 +1123,11 @@
         }
       },
       {
-        "label": "StringView(s: String): StringView",
-        "kind": "Method",
-        "tags": [],
-        "detail": "(s: String): StringView",
-        "sortText": "00038",
-        "filterText": "StringView",
-        "insertTextFormat": "Snippet",
-        "textEdit": {
-          "range": {
-            "start": {
-              "line": 9,
-              "character": 19
-            },
-            "end": {
-              "line": 9,
-              "character": 20
-            }
-          },
-          "newText": "StringView($0)"
-        },
-        "additionalTextEdits": [],
-        "data": {
-          "symbol": "scala/collection/StringView.apply().",
-          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
-          "kind": 3
-        }
-      },
-      {
         "label": "LinearSeqIterator[A](coll: LinearSeqOps[A, LinearSeq, LinearSeq[A]]): LinearSeqIterator[A]",
         "kind": "Constructor",
         "tags": [],
         "detail": "[A](coll: LinearSeqOps[A, LinearSeq, LinearSeq[A]]): LinearSeqIterator[A]",
-        "sortText": "00039",
+        "sortText": "00040",
         "filterText": "LinearSeqIterator",
         "insertTextFormat": "Snippet",
         "textEdit": {
@@ -1118,34 +1146,6 @@
         "additionalTextEdits": [],
         "data": {
           "symbol": "scala/collection/LinearSeqIterator#`\u003cinit\u003e`().",
-          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
-          "kind": 3
-        }
-      },
-      {
-        "label": "StringView scala.collection",
-        "kind": "Module",
-        "tags": [],
-        "detail": " scala.collection",
-        "sortText": "00040",
-        "filterText": "StringView",
-        "insertTextFormat": "Snippet",
-        "textEdit": {
-          "range": {
-            "start": {
-              "line": 9,
-              "character": 19
-            },
-            "end": {
-              "line": 9,
-              "character": 20
-            }
-          },
-          "newText": "StringView"
-        },
-        "additionalTextEdits": [],
-        "data": {
-          "symbol": "scala/collection/StringView.",
           "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
           "kind": 3
         }

@@ -149,7 +149,7 @@ class PlasmonBuildClientImpl(
         Option(params.getTotal).fold("")(t => s" / $t") +
         Option(params.getMessage).fold("")(msg => s" ($msg)")
       logger.log(msg)
-      for (data <- Option(params.getData))
+      for (data <- Option(params.getData) if params.getDataKind != "compile-progress")
         logger.log(s"Data${Option(params.getDataKind).fold("")(kind => s" of kind $kind")}: $data")
     }
 
@@ -207,14 +207,14 @@ class PlasmonBuildClientImpl(
     loggerOpt = Some(logger)
   }
 
-  def diagDidChange(module: GlobalSymbolIndex.Module, path: os.Path): Unit =
-    diagnostics.diagDidChange(module, path)
+  def diagDidChange(path: os.Path): Unit =
+    diagnostics.diagDidChange(path)
   def onClose(module: GlobalSymbolIndex.Module, path: os.Path): Unit =
     diagnostics.onClose(module, path)
   def didDelete(path: os.Path): Unit =
     diagnostics.didDelete(path)
   def diagnosticsFor(path: os.Path): Seq[l.Diagnostic] =
-    diagnostics.diagnostics.get(path).map(_.asScala.toSeq).getOrElse(Nil)
+    diagnostics.diagnostics.get(path).map(_.asScala.toSeq).getOrElse(Nil).map(_._2)
   def toFreshDiagnostic(
     module: GlobalSymbolIndex.Module,
     path: os.Path,
@@ -230,6 +230,10 @@ class PlasmonBuildClientImpl(
 
   def close(): Unit = {
     diagnostics.close()
+  }
+
+  def clearDiagnostics(): Unit = {
+    diagnostics.clear()
   }
 
   def asJson: PlasmonBuildClientImpl.AsJson =

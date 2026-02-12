@@ -217,7 +217,7 @@ private object MultilineString extends OnTypeFormatter with RangeFormatter {
       new l.Range(previousLinePosition, previousLinePosition),
       "\"" + " " + "+"
     )
-    val defaultIndent = previousLine.prefixLength(_ == ' ')
+    val defaultIndent = previousLine.segmentLength(_ == ' ')
     val indent =
       if (
         previousLineNumber > 1 && !splitLines(

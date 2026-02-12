@@ -1,5 +1,5 @@
 ```scala
-object CliImports: mill.runner
+object CliImports
 ```
 
 ***

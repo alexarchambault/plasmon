@@ -325,29 +325,34 @@ class Status(
                   false
               }
               .map(_ => "Errored")
-            val onGoingOpt = compilerOpt
-              .flatMap(pc =>
+            val onGoingOpt = compilerOpt.flatMap(_.compilerOpt)
+              .toSeq
+              .flatMap { pc =>
                 Option(server.presentationCompilers.interactiveCompilersStatuses.get(pc))
-              )
+                  .getOrElse(Nil)
+              }
+              .collectFirst {
+                case (name, uri) if uri == pathUri =>
+                  name
+              }
+              .filter(_.nonEmpty)
+              .map(_.capitalize)
+            val onGoingCompletionOpt = compilerKeyOpt
+              .toSeq
+              .flatMap { key =>
+                Option(server.presentationCompilers.jCompletionCache.get(key))
+              }
+              .flatMap(_.compilerOpt)
+              .flatMap { pc =>
+                Option(server.presentationCompilers.interactiveCompilersStatuses.get(pc))
+                  .getOrElse(Nil)
+              }
               .collect {
                 case (name, uri) if uri == pathUri =>
                   name
               }
               .filter(_.nonEmpty)
               .map(_.capitalize)
-            val onGoingCompletionOpt =
-              compilerKeyOpt.flatMap(key =>
-                Option(server.presentationCompilers.jCompletionCache.get(key))
-              )
-                .flatMap(pc =>
-                  Option(server.presentationCompilers.interactiveCompilersStatuses.get(pc))
-                )
-                .collect {
-                  case (name, uri) if uri == pathUri =>
-                    name
-                }
-                .filter(_.nonEmpty)
-                .map(_.capitalize)
 
             val onGoing = onGoingOpt.orElse(exceptionMessageOpt).toSeq ++ onGoingCompletionOpt.toSeq
 
@@ -425,7 +430,7 @@ class Status(
               case None =>
                 val update = defaultBuildToolUpdateOpt().getOrElse {
                   val hasBuildTool = server.bspData.allTargetData.exists { data =>
-                    data.workspaceBuildTargetsRespOpt.exists { resp =>
+                    data.workspaceBuildTargetsRespOpt.forall { resp =>
                       resp.baseDirectories.exists(path.startsWith)
                     }
                   }
@@ -569,9 +574,14 @@ class Status(
                 )
             }
 
+            val interactiveUpdate1 = interactiveUpdate0(buildTargetOpt)
+
             val summaryUpdate =
               indexerSummaryUpdateOpt.getOrElse {
-                if (buildToolUpdatePrecedence)
+                if (buildToolUpdate0.isBusy) buildToolUpdate0
+                else if (compilerUpdate0.isBusy) compilerUpdate0
+                else if (interactiveUpdate1.isBusy) interactiveUpdate1
+                else if (buildToolUpdatePrecedence)
                   buildToolUpdate0
                 else
                   compilerUpdate0
@@ -580,7 +590,7 @@ class Status(
             Seq(
               buildToolUpdate0,
               compilerUpdate0,
-              interactiveUpdate0(buildTargetOpt),
+              interactiveUpdate1,
               asSummaryUpdate(summaryUpdate)
             )
 
@@ -655,8 +665,8 @@ object Status {
   private final case class BuildToolStatus(
     time: Instant = Instant.now(),
     errorOpt: Option[Throwable] = None,
-    onGoingCheck: Option[CompletableFuture[_]] = None,
-    onGoingScheduleCheck: Option[ScheduledFuture[_]] = None,
+    onGoingCheck: Option[CompletableFuture[?]] = None,
+    onGoingScheduleCheck: Option[ScheduledFuture[?]] = None,
     status: AtomicReference[BuildServerState] =
       new AtomicReference[BuildServerState](BuildServerState.Unknown)
   ) {

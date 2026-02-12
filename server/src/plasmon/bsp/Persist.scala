@@ -7,7 +7,7 @@ object Persist {
   def load(path: os.Path, tools: BuildTool.Tools): Seq[BuildTool] = {
     val bytes = os.read.bytes(path)
     val res =
-      try readFromArray(bytes)(BuildTool.BuildToolJson.seqCodec)
+      try readFromArray(bytes)(using BuildTool.BuildToolJson.seqCodec)
       catch {
         case e: JsonReaderException =>
           throw new Exception(e)

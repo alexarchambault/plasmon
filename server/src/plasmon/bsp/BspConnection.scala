@@ -18,6 +18,10 @@ final case class BspConnection(
 ) {
   def name: String =
     params.getDisplayName
+  def enhancedName: String =
+    if (name == "mill-bsp") "Mill"
+    else if (name == "scala-cli") "Scala CLI"
+    else name
   def info: BuildServerInfo =
     launcher.info
 

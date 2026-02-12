@@ -15,7 +15,7 @@ class BspServers(
   actorCtx: castor.Context
 ) extends HasState.Delegate[String] with AutoCloseable {
 
-  val actor                                       = new BspServersActor(server)(actorCtx)
+  val actor                                       = new BspServersActor(server)(using actorCtx)
   protected def delegateStateTo: HasState[String] = actor
 
   override def close(): Unit = {
@@ -100,7 +100,7 @@ class BspServers(
 
   def json: Array[Byte] = {
     val seq = actor.connections.map(c => BuildTool.BuildToolJson(c._1))
-    writeToArray(seq)(BuildTool.BuildToolJson.seqCodec)
+    writeToArray(seq)(using BuildTool.BuildToolJson.seqCodec)
   }
 
   private val persistLock = new Object

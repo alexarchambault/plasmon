@@ -29,12 +29,12 @@ object Versions {
 
   def coursier          = "2.1.25-M19"
   def coursierInterface = "1.0.29-M3"
-  def mtags             = "1.6.5-1"
+  def mtags             = "1.6.5-2"
   def scalaCli          = "1.11.0"
 
   def scala213 = scala2
   def scala    = "3.8.1"
-  def scala3Pc = "3.8.1"
+  def scala3Pc = "3.8.1-3"
 
   def sbtBloop = "2.0.13"
   def sbt      = "1.9.9"
@@ -196,8 +196,6 @@ object server extends ScalaModule with PlasmonPublishModule {
   )
   def scalacOptions = super.scalacOptions() ++ Seq(
     "-deprecation",
-    "-Xsource:3",
-    "-Ytasty-reader",
     "-feature"
     // "-Ydebug"
   )
@@ -714,7 +712,6 @@ object integration extends ScalaModule {
 
   def scalacOptions = super.scalacOptions() ++ Seq(
     "-deprecation",
-    "-Xsource:3",
     "-feature"
   )
 

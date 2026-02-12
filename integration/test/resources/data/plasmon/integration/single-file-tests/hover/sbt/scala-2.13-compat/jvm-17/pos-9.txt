@@ -1,5 +1,5 @@
 ```scala
-object ListBuffer: scala.collection.mutable
+object ListBuffer
 ```
 
 ***

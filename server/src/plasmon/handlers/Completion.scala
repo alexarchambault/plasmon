@@ -23,7 +23,7 @@ object Completion {
       (params, logger) =>
         CancelTokens.future { token =>
           server.presentationCompilers.completions(params, token)
-        }(cancelTokensEces)
+        }(using cancelTokensEces)
     }
 
   private def resolveItemHandler(
@@ -34,7 +34,7 @@ object Completion {
       (item, logger) =>
         CancelTokens.future { _ =>
           server.presentationCompilers.completionItemResolve(item)
-        }(cancelTokensEces)
+        }(using cancelTokensEces)
     }
 
   def handlers(

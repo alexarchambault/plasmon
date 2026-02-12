@@ -79,6 +79,7 @@ import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import coursier.parse.RawJson
 import plasmon.render.JsonCodecs.given
 import scala.util.Failure
+import scala.util.Properties
 
 /** Manages lifecycle for presentation compilers in all build targets.
   *
@@ -113,7 +114,7 @@ class PresentationCompilers(
 
   val interactiveCompilersStatuses = new ConcurrentHashMap[
     scala.meta.pc.PresentationCompiler & scala.meta.internal.pc.HasCompilerAccess,
-    (String, String)
+    ::[(String, String)]
   ]
 
   private var debug: Boolean = Option(System.getenv("PLASMON_DEBUG")).contains("true")
@@ -1198,7 +1199,12 @@ class PresentationCompilers(
   private lazy val scala3Library = {
     val files = coursierapi.Fetch.create()
       .addDependencies(
-        coursierapi.Dependency.of("org.scala-lang", "scala3-library_3", "3.7.3")
+        coursierapi.Dependency
+          .of(
+            "org.scala-lang",
+            "scala3-library_3",
+            Properties.versionNumberString
+          )
           .withTransitive(false)
       )
       .fetch()
@@ -1218,14 +1224,28 @@ class PresentationCompilers(
     def logger()   = loggerManager.create(id, label).consumer
     def setupPc(pc0: PresentationCompiler & pc.HasCompilerAccess): Unit = {
       pc0.compilerAccess.beforeAccess { (reqId, name, uri) =>
-        interactiveCompilersStatuses.put(pc0, (name, uri))
+        interactiveCompilersStatuses.compute(
+          pc0,
+          (_, previousValueOrNull) =>
+            ::((name, uri), Option(previousValueOrNull).getOrElse(Nil))
+        )
         refreshStatus()
         languageClient.progress(
           PlasmonLanguageClient.ProgressDetails(id, label, reqId, name, done = false)
         )
       }
       pc0.compilerAccess.afterAccess { (reqId, name, uri) =>
-        interactiveCompilersStatuses.remove(pc0, (name, uri))
+        interactiveCompilersStatuses.compute(
+          pc0,
+          (_, previousValueOrNull) =>
+            if (previousValueOrNull != null && previousValueOrNull.head == (name, uri))
+              previousValueOrNull.tail match {
+                case h :: t => ::(h, t)
+                case Nil    => null
+              }
+            else
+              previousValueOrNull
+        )
         refreshStatus()
         languageClient.progress(
           PlasmonLanguageClient.ProgressDetails(id, label, reqId, name, done = true)
@@ -2124,10 +2144,19 @@ object PresentationCompilers {
   }
 
   private def enrichWithReleaseOption(scalaTarget: ScalaTarget) =
-    scalaTarget.scalac.getOptions.asScala.toSeq
+    scalaTarget.scalac.getOptions.asScala.toSeq.map {
+      case opt if opt.startsWith("-release:") =>
+        opt.stripPrefix("-release:").toIntOption match {
+          case Some(n) if n < 17 => "-release:17"
+          case _                 => opt
+        }
+      case "-Wunused" =>
+        "-Wunused:all"
+      case opt => opt
+    }
 
   final case class AsJson(
-    interactiveCompilersStatuses: Map[String, (String, String)],
+    interactiveCompilersStatuses: Map[String, Seq[(String, String)]],
     debug: Boolean,
     symbolSearch: SymbolSearchImpl.AsJson,
     compilerPlugins: CompilerPlugins.AsJson,

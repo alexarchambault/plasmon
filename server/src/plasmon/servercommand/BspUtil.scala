@@ -5,7 +5,7 @@ import ch.epfl.scala.{bsp4j => b}
 import com.github.plokhotnyuk.jsoniter_scala.core.*
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import com.google.gson.Gson
-import coursier.core.Version
+import coursier.version.Version
 import org.eclipse.lsp4j.jsonrpc.Launcher
 import org.eclipse.{lsp4j => l}
 import plasmon.internal.Directories
@@ -225,7 +225,7 @@ object BspUtil {
       case b: BuildServerInfo.Bsp =>
         val bspFile = b.bspFile.map(b.workspace / _).merge
         val content =
-          try readFromArray(os.read.bytes(bspFile))(BspFile.codec)
+          try readFromArray(os.read.bytes(bspFile))(using BspFile.codec)
           catch {
             case e: JsonReaderException =>
               throw new Exception(e)
@@ -328,7 +328,7 @@ object BspUtil {
       case m: BuildServerInfo.Sbt =>
         val bspFile = m.workspace / ".bsp/sbt.json"
         val content =
-          try readFromArray(os.read.bytes(bspFile))(BspFile.codec)
+          try readFromArray(os.read.bytes(bspFile))(using BspFile.codec)
           catch {
             case e: JsonReaderException =>
               throw new Exception(e)
@@ -405,7 +405,7 @@ object BspUtil {
     PlasmonBuildClient
   ) = {
     val content =
-      try readFromArray(os.read.bytes(bspFile))(BspFile.codec)
+      try readFromArray(os.read.bytes(bspFile))(using BspFile.codec)
       catch {
         case e: JsonReaderException =>
           throw new Exception(e)
@@ -725,7 +725,11 @@ object BspUtil {
 
   trait BuildToolDiscover {
     def ids: Seq[String]
-    def check(workspace: os.Path, currentFile: Option[os.Path]): Seq[DiscoveredBuildTool]
+    def check(
+      workspace: os.Path,
+      currentFile: Option[os.Path],
+      alreadyAdded: Set[plasmon.bsp.BuildTool]
+    ): Seq[DiscoveredBuildTool]
   }
 
   object BuildToolDiscover {
@@ -741,7 +745,11 @@ object BspUtil {
 
     case object Mill extends BuildToolDiscover {
       def ids = Seq(BuildTool.Mill.id, BuildTool.MillViaBloop.id)
-      def check(workspace: os.Path, currentFile: Option[os.Path]) = {
+      def check(
+        workspace: os.Path,
+        currentFile: Option[os.Path],
+        alreadyAdded: Set[plasmon.bsp.BuildTool]
+      ) = {
 
         val buildSc            = workspace / "build.sc"
         val buildMill          = workspace / "build.mill"
@@ -798,7 +806,11 @@ object BspUtil {
 
     case object Sbt extends BuildToolDiscover {
       def ids = Seq(BuildTool.Sbt.id, BuildTool.SbtViaBloop.id)
-      def check(workspace: os.Path, currentFile: Option[os.Path]) = {
+      def check(
+        workspace: os.Path,
+        currentFile: Option[os.Path],
+        alreadyAdded: Set[plasmon.bsp.BuildTool]
+      ) = {
 
         val buildSbt        = workspace / "build.sbt"
         val buildProperties = workspace / "project/build.properties"
@@ -815,7 +827,11 @@ object BspUtil {
 
     case object Bloop extends BuildToolDiscover {
       def ids = Seq(BuildTool.Bloop.id)
-      def check(workspace: os.Path, currentFile: Option[os.Path]): Seq[DiscoveredBuildTool] = {
+      def check(
+        workspace: os.Path,
+        currentFile: Option[os.Path],
+        alreadyAdded: Set[plasmon.bsp.BuildTool]
+      ): Seq[DiscoveredBuildTool] = {
         val dotBloop = workspace / ".bloop"
         if (os.isDir(dotBloop))
           Seq(
@@ -828,39 +844,68 @@ object BspUtil {
 
     case object ScalaCli extends BuildToolDiscover {
       def ids = Seq(BuildTool.ScalaCli.id)
-      def check(workspace: os.Path, currentFile: Option[os.Path]): Seq[DiscoveredBuildTool] = {
-        val forCurrentFile = currentFile
-          .filter(path =>
-            (path.last.endsWith(".scala") || path.last.endsWith(".sc")) && os.isFile(path)
-          )
-          .toSeq
-          .flatMap { path =>
-            val dir = path / os.up
-            val forFile = DiscoveredBuildTool(
-              BuildTool.ScalaCli.id,
-              BuildTool.ScalaCli(workspace, Seq(path)),
-              None
-            )
-            val forDir =
-              if (dir == workspace) Nil
-              else
-                Seq(DiscoveredBuildTool(BuildTool.ScalaCli.id, BuildTool.ScalaCli(dir, Nil), None))
-            Seq(forFile) ++ forDir
+      def check(
+        workspace: os.Path,
+        currentFile: Option[os.Path],
+        alreadyAdded: Set[plasmon.bsp.BuildTool]
+      ): Seq[DiscoveredBuildTool] = {
+
+        val alreadyAdded0 = alreadyAdded
+          .collect {
+            case sc: BuildTool.ScalaCli =>
+              if (sc.sources.isEmpty) Seq(sc.workspace)
+              else sc.sources
           }
+          .flatten
+          .toVector
+          .sortBy(_.segmentCount)
 
-        val forWorkspace =
-          DiscoveredBuildTool(BuildTool.ScalaCli.id, BuildTool.ScalaCli(workspace, Nil), None)
+        val forCurrentFile0 = currentFile.toSeq.flatMap { f =>
+          val forDir  = if (isScalaCliDir(f)) Seq(f) else Nil
+          val forFile = if (isScalaCliFile(f)) Seq(f, f / os.up) else Nil
+          forDir ++ forFile
+        }
 
-        Seq(forWorkspace) ++ forCurrentFile
+        val forWorkspace0 = if (isScalaCliDir(workspace)) Seq(workspace) else Nil
+
+        val elems = (forCurrentFile0 ++ forWorkspace0).distinct.filter { elem =>
+          !alreadyAdded0.exists(elem.startsWith)
+        }
+
+        elems.map { elem =>
+          DiscoveredBuildTool(
+            BuildTool.ScalaCli.id,
+            if (os.isFile(elem)) BuildTool.ScalaCli(workspace, Seq(elem))
+            else BuildTool.ScalaCli(elem, Nil),
+            None
+          )
+        }
       }
+
+      private def isScalaCliDirOrFile(path: os.Path): Boolean =
+        isScalaCliDir(path) || isScalaCliFile(path)
+
+      private def isScalaCliDir(path: os.Path): Boolean =
+        os.isDir(path) && os.list(path).exists(isScalaCliFile)
+
+      private def isScalaCliFile(path: os.Path): Boolean =
+        os.isFile(path) &&
+        path.last.endsWith(".sc") || (path.last.endsWith(".scala") &&
+        os.read.lines(path)
+          .iterator
+          .dropWhile(_.startsWith("#!")) // FIXME Multi-line preambles??
+          .filter(!_.trim.isEmpty)
+          .takeWhile(_.startsWith("//> "))
+          .hasNext)
     }
   }
 
   def discoverBuildTools(
     workspace: os.Path,
-    currentFile: Option[os.Path]
+    currentFile: Option[os.Path],
+    alreadyAdded: Set[plasmon.bsp.BuildTool]
   ): Seq[DiscoveredBuildTool] =
-    BuildToolDiscover.all.flatMap(_.check(workspace, currentFile))
+    BuildToolDiscover.all.flatMap(_.check(workspace, currentFile, alreadyAdded))
 
   final case class BspExtraBuildParams(
     javaSemanticdbVersion: String,

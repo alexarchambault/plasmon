@@ -25,7 +25,7 @@ class StatusActor(
   private var unprocessed = Seq.empty[Message.RefreshStatus]
 
   private var closed             = false
-  private var scheduledFutureOpt = Option.empty[ScheduledFuture[_]]
+  private var scheduledFutureOpt = Option.empty[ScheduledFuture[?]]
 
   override def runBatch(msgs: Seq[Message]): Unit = {
     super.runBatch(msgs)

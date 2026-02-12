@@ -84,7 +84,7 @@ private final class ToplevelSymbolsCache(
         // }
         val bytes = baos.toByteArray
         val format =
-          try readFromArray(bytes)(ToplevelSymbolsCache.formatCodec)
+          try readFromArray(bytes)(using ToplevelSymbolsCache.formatCodec)
           catch {
             case e: JsonReaderException =>
               throw new ToplevelSymbolsCache.JsonException(cacheFile, e)
@@ -113,7 +113,7 @@ private final class ToplevelSymbolsCache(
         Map(),
         symbols.map { case (key, pathValues) => key -> pathValues.map(_.toString) }
       )
-      val content = writeToArray(format)(ToplevelSymbolsCache.formatCodec)
+      val content = writeToArray(format)(using ToplevelSymbolsCache.formatCodec)
       // val (compressedContent, compressedContentLength) = {
       //   val compressor = ToplevelSymbolsCache.lz4Factory.fastCompressor()
       //   val maxCompressedLength = compressor.maxCompressedLength(content.length)

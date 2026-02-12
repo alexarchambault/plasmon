@@ -134,10 +134,6 @@ object TestUtil {
   def serverEnv = Map(
     "PLASMON_JAVAC_EXTRA_OPTIONS" -> "-verbose"
   )
-  val enableOutputFrame =
-    // On Windows, OutputFrame stuff crashes if we don't have an actual terminal
-    (!Properties.isWin || io.github.alexarchambault.isterminal.IsTerminal.isTerminal()) &&
-    System.getenv("CI") == null
   def withWorkspaceAndServer[T](
     projectName: String = "test-project",
     client: l.services.LanguageClient = new MockLanguageClient {},
@@ -183,7 +179,7 @@ object TestUtil {
         os.makeDir.all(dir)
         dir
       },
-      enableOutputFrame = enableOutputFrame,
+      enableOutputFrame = TestParams.enableOutputFrame,
       enableSilentOutput = TestParams.enableSilentOutput,
       printOutputOnError = TestParams.printOutputOnError,
       cleanUp = TestParams.cleanUpAfterTests,
@@ -597,6 +593,31 @@ object TestUtil {
         s" ${buildTool.displayName} Scala ${scalaVersion.label} Java ${jvm.label}"
     } yield (Some(scalaVersion), serverOpt, buildTool, jvm, testNameSuffix)
 
+  lazy val olderScalaVersionBuildToolJvmValues
+    : Seq[(
+      Option[Labelled[String]],
+      Seq[String],
+      SingleModuleBuildTool,
+      Labelled[String],
+      String
+    )] =
+    for {
+      buildTool <- buildTools
+      (scalaVersion, serverOpt) <- {
+        val maybeScala213 =
+          if (disableScala2Pc) Nil
+          else Seq((Labelled("2.13.16", "2.13.16"), Nil))
+        maybeScala213 ++ Seq(
+          (Labelled("2.13.16-compat", "2.13.16"), compatServerOpt),
+          (Labelled("3.7.4", "3.7.4"), Nil)
+        )
+      }
+      jvm <- jvmValues
+      if jvm.label != "8" || buildTool != SingleModuleBuildTool.Mill // issue with Mill 0.11.7 and BSP, that requires Java >= 11
+      testNameSuffix =
+        s" ${buildTool.displayName} Scala ${scalaVersion.label} Java ${jvm.label}"
+    } yield (Some(scalaVersion), serverOpt, buildTool, jvm, testNameSuffix)
+
   lazy val projectsDir = {
     val path = sys.props.getOrElse(
       "plasmon.integration.projects",
@@ -738,8 +759,7 @@ object TestUtil {
     replaceAll: Seq[(String, String)] = Nil,
     alternativePaths: Seq[os.Path] = Nil,
     roundTrip: Boolean = false
-  ): Unit = {
-
+  ): Unit =
     checkFixture[T](
       path,
       res,
@@ -759,7 +779,6 @@ object TestUtil {
       alternativePaths = alternativePaths,
       roundTrip = roundTrip
     )
-  }
 
   def checkTextFixture(
     path: os.Path,

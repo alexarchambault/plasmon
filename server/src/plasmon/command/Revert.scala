@@ -56,7 +56,7 @@ object Revert extends caseapp.Command[RevertOptions] {
         }
         else {
           val keyValues = updates.sorted.toList.map { case (k, v) => k -> ujson.Str(v) }
-          val content = ujson.Obj(keyValues.head, keyValues.tail: _*)
+          val content = ujson.Obj(keyValues.head, keyValues.tail*)
             .render(indent = 2)
           System.err.println(s"Writing $settingsFile")
           os.write(settingsFile, content, createFolders = true)

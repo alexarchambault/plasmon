@@ -1,5 +1,5 @@
 ```scala
-case object Aborted: mill.api.Result
+case object Aborted
 ```
 
 ***

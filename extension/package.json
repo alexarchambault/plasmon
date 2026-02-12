@@ -57,7 +57,7 @@
       },
       {
         "command": "plasmon.dump-full-tree",
-        "title": "Plasmon: Dump presentation compiler full tree for current file"
+        "title": "Plasmon: Dump presentation compiler typed tree for current file"
       },
       {
         "command": "plasmon.dump-bsp-data",
@@ -162,6 +162,18 @@
       {
         "command": "plasmon.organize-imports-in-module",
         "title": "Plasmon: Organize imports in whole module"
+      },
+      {
+        "command": "plasmon.addDirAsScalaCliProject",
+        "title": "Load directory as Scala CLI project"
+      },
+      {
+        "command": "plasmon.addFileAsScalaCliProject",
+        "title": "Load file as Scala CLI project"
+      },
+      {
+        "command": "plasmon.loadMillProjectFromFile",
+        "title": "Load Mill project"
       }
     ],
     "configurationDefaults": {
@@ -176,6 +188,25 @@
       "search.exclude": {
         "**/.plasmon/": true
       }
+    },
+    "menus": {
+      "explorer/context": [
+        {
+          "command": "plasmon.addDirAsScalaCliProject",
+          "group": "z_scala_plasmon",
+          "when": "explorerResourceIsFolder"
+        },
+        {
+          "command": "plasmon.addFileAsScalaCliProject",
+          "group": "z_scala_plasmon",
+          "when": "resourceExtname == .scala || resourceExtname == .sc || resourceExtname == .java"
+        },
+        {
+          "command": "plasmon.loadMillProjectFromFile",
+          "group": "z_scala_plasmon",
+          "when": "resourceExtname == .mill || resourceExtname == .mill.scala || resourceFilename == mill || resourceFilename == mill.bat"
+        }
+      ]
     }
   },
   "scripts": {

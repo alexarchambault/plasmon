@@ -1,6 +1,5 @@
 import { env } from 'process'
 import * as vscode from 'vscode'
-import * as fs from 'fs'
 import * as os from 'os'
 
 import { CloseAction, DocumentSelector, ErrorAction, ErrorHandler, ExecuteCommandParams, ExecuteCommandRequest, ExitNotification, LanguageClient, LanguageClientOptions, Location, ServerOptions, integer } from 'vscode-languageclient/node'
@@ -258,6 +257,7 @@ function createClient(
               if (uri === "")
                 statusBarItem?.hide()
               else if (lastFocusedDocument) {
+                checkStatusBarAndDocument()
                 let uri0 = vscode.Uri.parse(uri).toString(true)
                 if (lastFocusedDocument === uri0)
                   statusBarItem?.show()
@@ -270,6 +270,7 @@ function createClient(
                 }
               }
               for (const params0 of params) {
+                checkStatusBarAndDocument()
                 if (params0.id == 'plasmon.summary' && statusBarItem != null) {
                   let text = params0.text
                   if (params0.busy)
@@ -396,6 +397,49 @@ function createClient(
           )
         )
 
+        interface BuildChangeDetails {
+
+        }
+
+        var always: "" | "Re-index" | "Dismiss" = ""
+        clientSubscription(
+          client0.onNotification(
+            "plasmon/buildChangeDetected",
+            (details: BuildChangeDetails) => {
+              if (always == "Re-index")
+                reIndex()
+              else if (always != "Dismiss") {
+                vscode.window.showInformationMessage(
+                  "Build change detected",
+                  {
+                    modal: false
+                  },
+                  "Always re-index",
+                  "Re-index",
+                  "Dismiss",
+                  "Dismiss all"
+                ).then(
+                  (elem) => {
+                    if (elem == "Always re-index") {
+                      always = "Re-index"
+                    }
+                    if (elem == "Dismiss all") {
+                      always = "Dismiss"
+                    }
+
+                    if (elem == "Always re-index" || elem == "Re-index") {
+                      reIndex()
+                    }
+                  },
+                  (err) => {
+                    console.log(`Error asking users to reload or not: ${err}`)
+                  }
+                )
+              }
+            }
+          )
+        )
+
         let uriStr = vscode.window.activeTextEditor?.document.uri.toString(true)
         if (uriStr) {
           if (!lastFocusedDocument)
@@ -410,6 +454,16 @@ function createClient(
   else
     return false
 
+}
+
+function reIndex(): void {
+  client?.sendRequest(ExecuteCommandRequest.type, { command: "plasmon/index", arguments: [] }).then(
+    () => {},
+    (err) => {
+      console.log(`Error when running plasmon/index command: ${err}`)
+      vscode.window.showErrorMessage(`Error indexing project: ${err}`, { modal: false })
+    }
+  )
 }
 
 async function stopClient(context: vscode.ExtensionContext): Promise<void> {
@@ -435,6 +489,355 @@ async function stopClient(context: vscode.ExtensionContext): Promise<void> {
 }
 
 let documents: { [key: string]: string } = {}
+
+function checkStatusBarAndDocument() {
+  if (vscode.window.activeTextEditor) {
+    let document = vscode.window.activeTextEditor.document
+    if (document?.uri.scheme == 'file') {
+      if (isSupportedLanguage(document.languageId)) {
+        // console.log(`onDidOpenTextDocument / onDidCloseTextDocument: Showing status for ${document.uri} ${document.languageId}`)
+        statusBarItem?.show()
+      }
+      else {
+        // console.log(`onDidOpenTextDocument / onDidCloseTextDocument: Hiding status for ${document.uri} ${document.languageId}`)
+        statusBarItem?.hide()
+      }
+    }
+  }
+  else {
+    console.log(`onDidOpenTextDocument / onDidCloseTextDocument: Hiding status (no open document)`)
+    lastFocusedDocument = undefined
+    statusBarItem?.hide()
+  }
+}
+
+function loadBuildTool(discoverId: string, toolId: string, uri: string | undefined) {
+  client?.sendRequest(ExecuteCommandRequest.type, { command: "plasmon/loadBuildTool", arguments: [discoverId, toolId, uri] }).then(
+    (resp) => {
+      interface Resp {
+        success: boolean
+        error?: string
+      }
+      let resp0 = resp as Resp
+      if (resp0.success) {
+        console.log(`Ran plasmon/loadBuildTool ${discoverId} ${toolId}`)
+        if (uri)
+          loadBuildToolOrModule(uri, true)
+      }
+      else
+        vscode.window.showErrorMessage(`Error loading build tool: ${resp0.error}`, { modal: false })
+    },
+    (err) => {
+      vscode.window.showErrorMessage(`Error loading build tool: ${err}`, { modal: false })
+    }
+  )
+}
+
+// FIXME Quite some duplication with loadBuildToolOrModule below
+function loadModuleOf(uri: string | undefined): void {
+  console.log(`Sending listModulesOf ${uri}`)
+  client?.sendRequest(ExecuteCommandRequest.type, { command: "plasmon/listModulesOf", arguments: [uri] }).then(
+    (values0) => {
+      interface Entry {
+        type: string
+        label: string
+        detail: string
+        description: string
+        alreadyLoaded?: boolean
+        alreadyAdded?: boolean
+      }
+
+      let values: Entry[] = values0
+      class Item implements vscode.QuickPickItem {
+        entry: Entry
+        label: string
+        detail: string
+        description: string
+        iconPath?: vscode.ThemeIcon
+
+        constructor(entry: Entry) {
+          this.entry = entry
+          this.label = entry.label
+          this.detail = entry.detail
+          this.description = entry.description
+
+          if (entry.type == "BuildTool")
+            this.iconPath = vscode.ThemeIcon.Folder
+        }
+      }
+      interface Separator extends vscode.QuickPickItem {
+
+      }
+      let items: (Item | Separator)[] = []
+      let lastItemType: string | undefined = undefined
+      let lastAlreadyAdded: boolean | undefined = undefined
+      let lastAlreadyLoaded: boolean | undefined = undefined
+      for (let entry of values) {
+        if (entry.type == 'Module') {
+          let pushedSeparator = false
+
+          if (lastItemType === undefined)
+            lastItemType = entry.type
+          else if (entry.type != lastItemType) {
+            lastItemType = entry.type
+            let sep: Separator = {
+              label: "",
+              kind: vscode.QuickPickItemKind.Separator
+            }
+            items.push(sep)
+            pushedSeparator = true
+          }
+
+          if (lastAlreadyLoaded === undefined)
+            lastAlreadyLoaded = entry.alreadyLoaded
+          else if (entry.alreadyLoaded != lastAlreadyLoaded) {
+            lastAlreadyLoaded = entry.alreadyLoaded
+            if (!pushedSeparator) {
+              let sep: Separator = {
+                label: "",
+                kind: vscode.QuickPickItemKind.Separator
+              }
+              items.push(sep)
+              pushedSeparator = true
+            }
+          }
+
+          if (lastAlreadyAdded === undefined)
+            lastAlreadyAdded = entry.alreadyAdded
+          else if (entry.alreadyAdded != lastAlreadyAdded) {
+            lastAlreadyAdded = entry.alreadyAdded
+            if (!pushedSeparator) {
+              let sep: Separator = {
+                label: "",
+                kind: vscode.QuickPickItemKind.Separator
+              }
+              items.push(sep)
+              pushedSeparator = true
+            }
+          }
+
+          items.push(new Item(entry))
+        }
+      }
+      let quickPick = vscode.window.createQuickPick<Item | Separator>()
+      quickPick.items = items
+      quickPick.onDidAccept(() => {
+        for (const item of quickPick.activeItems) {
+          if (item instanceof Item) {
+            if (item.entry.type == 'Module') {
+              interface ModuleEntry extends Entry {
+                workspace: string
+                server: string
+                uri: string
+                label: string
+                alreadyLoaded: boolean
+              }
+              let entry = item.entry as ModuleEntry
+              console.log(`User picked module ${entry.uri}`)
+              if (entry.alreadyLoaded)
+                client?.sendRequest(ExecuteCommandRequest.type, { command: "plasmon/unloadModule", arguments: [entry.workspace, entry.server, entry.uri] }).then(
+                  (res) => {
+
+                  },
+                  (err) => {
+                    let msg = `Error while sending plasmon/unloadModule command: ${err}`
+                    console.log(msg)
+                    vscode.window.showErrorMessage(msg)
+                  }
+                )
+              else
+              client?.sendRequest(ExecuteCommandRequest.type, { command: "plasmon/loadModule", arguments: [entry.workspace, entry.server, entry.uri] }).then(
+                (res) => {
+
+                },
+                (err) => {
+                  let msg = `Error while sending plasmon/loadModule command: ${err}`
+                  console.log(msg)
+                  vscode.window.showErrorMessage(msg)
+                }
+              )
+            }
+          }
+        }
+        quickPick.hide()
+      })
+      quickPick.show()
+    },
+    (err) => {
+      let msg = `Error while sending plasmon/listModulesOf command for ${uri}: ${err}`
+      vscode.window.showErrorMessage(msg, { modal: false })
+      console.log(msg)
+    }
+  )
+}
+
+function loadBuildToolOrModule(uri: string | undefined, onlyModules: boolean): void {
+  console.log(`Sending listBuildToolsOrModules ${uri}`)
+  client?.sendRequest(ExecuteCommandRequest.type, { command: "plasmon/listBuildToolsOrModules", arguments: [uri] }).then(
+    (values0) => {
+      interface Entry {
+        type: string
+        label: string
+        detail: string
+        description: string
+        alreadyLoaded?: boolean
+        alreadyAdded?: boolean
+      }
+
+      let values: Entry[] = values0
+      class Item implements vscode.QuickPickItem {
+        entry: Entry
+        label: string
+        detail: string
+        description: string
+        iconPath?: vscode.ThemeIcon
+
+        constructor(entry: Entry) {
+          this.entry = entry
+          this.label = entry.label
+          this.detail = entry.detail
+          this.description = entry.description
+
+          if (entry.type == "BuildTool")
+            this.iconPath = vscode.ThemeIcon.Folder
+        }
+      }
+      interface Separator extends vscode.QuickPickItem {
+
+      }
+      let items: (Item | Separator)[] = []
+      let lastItemType: string | undefined = undefined
+      let lastAlreadyAdded: boolean | undefined = undefined
+      let lastAlreadyLoaded: boolean | undefined = undefined
+      for (let entry of values) {
+        if (entry.type != 'BuildTool' || !onlyModules) {
+          let pushedSeparator = false
+
+          if (lastItemType === undefined)
+            lastItemType = entry.type
+          else if (entry.type != lastItemType) {
+            lastItemType = entry.type
+            let sep: Separator = {
+              label: "",
+              kind: vscode.QuickPickItemKind.Separator
+            }
+            items.push(sep)
+            pushedSeparator = true
+          }
+
+          if (lastAlreadyLoaded === undefined)
+            lastAlreadyLoaded = entry.alreadyLoaded
+          else if (entry.alreadyLoaded != lastAlreadyLoaded) {
+            lastAlreadyLoaded = entry.alreadyLoaded
+            if (!pushedSeparator) {
+              let sep: Separator = {
+                label: "",
+                kind: vscode.QuickPickItemKind.Separator
+              }
+              items.push(sep)
+              pushedSeparator = true
+            }
+          }
+
+          if (lastAlreadyAdded === undefined)
+            lastAlreadyAdded = entry.alreadyAdded
+          else if (entry.alreadyAdded != lastAlreadyAdded) {
+            lastAlreadyAdded = entry.alreadyAdded
+            if (!pushedSeparator) {
+              let sep: Separator = {
+                label: "",
+                kind: vscode.QuickPickItemKind.Separator
+              }
+              items.push(sep)
+              pushedSeparator = true
+            }
+          }
+
+          items.push(new Item(entry))
+        }
+      }
+      let quickPick = vscode.window.createQuickPick<Item | Separator>()
+      quickPick.items = items
+      quickPick.onDidAccept(() => {
+        for (const item of quickPick.activeItems) {
+          if (item instanceof Item) {
+            if (item.entry.type == 'BuildTool') {
+              interface BuildToolEntry extends Entry {
+                id: string
+                discoverId: string
+                alreadyAdded: boolean
+              }
+              let entry = item.entry as BuildToolEntry
+              console.log(entry.id)
+              if (entry.alreadyAdded)
+                client?.sendRequest(ExecuteCommandRequest.type, { command: "plasmon/unloadBuildTool", arguments: [entry.discoverId, entry.id, uri] }).then(
+                  (resp) => {
+                    interface Resp {
+                      success: boolean
+                      error?: string
+                    }
+                    let resp0 = resp as Resp
+                    if (resp0.success)
+                      console.log(`Ran plasmon/unloadBuildTool ${entry.discoverId} ${entry.id}`)
+                    else
+                      vscode.window.showErrorMessage(`Error unloading build tool: ${resp0.error}`, { modal: false })
+                  },
+                  (err) => {
+                    vscode.window.showErrorMessage(`Error unloading build tool: ${err}`, { modal: false })
+                  }
+                )
+              else
+                loadBuildTool(entry.discoverId, entry.id, uri?.toString())
+            }
+            else if (item.entry.type == 'Module') {
+              interface ModuleEntry extends Entry {
+                workspace: string
+                server: string
+                uri: string
+                label: string
+                alreadyLoaded: boolean
+              }
+              let entry = item.entry as ModuleEntry
+              console.log(`User picked module ${entry.uri}`)
+              if (entry.alreadyLoaded)
+                client?.sendRequest(ExecuteCommandRequest.type, { command: "plasmon/unloadModule", arguments: [entry.workspace, entry.server, entry.uri] }).then(
+                  (res) => {
+
+                  },
+                  (err) => {
+                    let msg = `Error while sending plasmon/unloadModule command: ${err}`
+                    console.log(msg)
+                    vscode.window.showErrorMessage(msg)
+                  }
+                )
+              else
+              client?.sendRequest(ExecuteCommandRequest.type, { command: "plasmon/loadModule", arguments: [entry.workspace, entry.server, entry.uri] }).then(
+                (res) => {
+
+                },
+                (err) => {
+                  let msg = `Error while sending plasmon/loadModule command: ${err}`
+                  console.log(msg)
+                  vscode.window.showErrorMessage(msg)
+                }
+              )
+            }
+            else {
+              // ???
+            }
+          }
+        }
+        quickPick.hide()
+      })
+      quickPick.show()
+    },
+    (err) => {
+      let msg = `Error while sending plasmon/listBuildToolsOrModules command for ${uri}: ${err}`
+      vscode.window.showErrorMessage(msg, { modal: false })
+      console.log(msg)
+    }
+  )
+}
 
 export function activate(context: vscode.ExtensionContext) {
 
@@ -614,6 +1017,24 @@ export function activate(context: vscode.ExtensionContext) {
   )
 
   context.subscriptions.push(
+    vscode.commands.registerCommand('plasmon.addDirAsScalaCliProject', (uri: vscode.Uri) => {
+      loadBuildTool("scala-cli", "scala-cli", uri.toString())
+    })
+  )
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand('plasmon.addFileAsScalaCliProject', (uri: vscode.Uri) => {
+      loadBuildTool("scala-cli", "scala-cli", uri.toString())
+    })
+  )
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand('plasmon.loadMillProjectFromFile', (uri: vscode.Uri) => {
+      loadBuildTool("mill", "mill", uri.toString())
+    })
+  )
+
+  context.subscriptions.push(
     vscode.commands.registerCommand('plasmon.testOpenReadonly', async () => {
       const uri = vscode.Uri.parse(`${RO_SCHEME}:/welcome.md`)
       const doc = await vscode.workspace.openTextDocument(uri)
@@ -686,7 +1107,7 @@ export function activate(context: vscode.ExtensionContext) {
         async (resp: Resp) => {
           console.log(`Response of debugFullTree: ${JSON.stringify(resp)}`)
           if (resp.error) {
-            vscode.window.showErrorMessage(`Error getting full tree: ${resp.error}`, { modal: false })
+            vscode.window.showErrorMessage(`Error getting typed tree: ${resp.error}`, { modal: false })
           }
           else {
             const strUri = `${RO_SCHEME}:${uri}/full-tree.scala`
@@ -1010,22 +1431,7 @@ export function activate(context: vscode.ExtensionContext) {
                     }
                   )
                 else
-                client?.sendRequest(ExecuteCommandRequest.type, { command: "plasmon/loadBuildTool", arguments: [entry.discoverId, entry.id, uri] }).then(
-                  (resp) => {
-                    interface Resp {
-                      success: boolean
-                      error?: string
-                    }
-                    let resp0 = resp as Resp
-                    if (resp0.success)
-                      console.log(`Ran plasmon/loadBuildTool ${entry.discoverId} ${entry.id}`)
-                    else
-                      vscode.window.showErrorMessage(`Error loading build tool: ${resp0.error}`, { modal: false })
-                  },
-                  (err) => {
-                    vscode.window.showErrorMessage(`Error loading build tool: ${err}`, { modal: false })
-                  }
-                )
+                  loadBuildTool(entry.discoverId, entry.id, uri?.toString())
               }
             }
             quickPick.hide()
@@ -1043,184 +1449,7 @@ export function activate(context: vscode.ExtensionContext) {
 
   context.subscriptions.push(
     vscode.commands.registerCommand(`plasmon.load-build-tool-or-module`, () => {
-      let uri = lastFocusedDocument
-      client?.sendRequest(ExecuteCommandRequest.type, { command: "plasmon/listBuildToolsOrModules", arguments: [uri] }).then(
-        (values0) => {
-          interface Entry {
-            type: string
-            label: string
-            detail: string
-            alreadyLoaded?: boolean
-            alreadyAdded?: boolean
-          }
-          let values: Entry[] = values0
-          class Item implements vscode.QuickPickItem {
-            entry: Entry
-            label: string
-            detail: string
-            iconPath: vscode.ThemeIcon
-
-            constructor(entry: Entry) {
-              this.entry = entry
-              this.label = entry.label
-              this.detail = entry.detail
-
-              if (entry.type == "BuildTool")
-                this.iconPath = vscode.ThemeIcon.Folder
-              else
-                this.iconPath = vscode.ThemeIcon.File
-            }
-          }
-          interface Separator extends vscode.QuickPickItem {
-
-          }
-          let items: (Item | Separator)[] = []
-          let lastItemType: string | undefined = undefined
-          let lastAlreadyAdded: boolean | undefined = undefined
-          let lastAlreadyLoaded: boolean | undefined = undefined
-          for (let entry of values) {
-            let pushedSeparator = false
-
-            if (lastItemType === undefined)
-              lastItemType = entry.type
-            else if (entry.type != lastItemType) {
-              lastItemType = entry.type
-              let sep: Separator = {
-                label: "",
-                kind: vscode.QuickPickItemKind.Separator
-              }
-              items.push(sep)
-              pushedSeparator = true
-            }
-
-            console.log(`lastAlreadyLoaded = ${lastAlreadyLoaded}`)
-            console.log(`entry.alreadyLoaded = ${entry.alreadyLoaded}`)
-            if (lastAlreadyLoaded === undefined)
-              lastAlreadyLoaded = entry.alreadyLoaded
-            else if (entry.alreadyLoaded != lastAlreadyLoaded) {
-              lastAlreadyLoaded = entry.alreadyLoaded
-              if (!pushedSeparator) {
-                let sep: Separator = {
-                  label: "",
-                  kind: vscode.QuickPickItemKind.Separator
-                }
-                items.push(sep)
-                pushedSeparator = true
-              }
-            }
-
-            if (lastAlreadyAdded === undefined)
-              lastAlreadyAdded = entry.alreadyAdded
-            else if (entry.alreadyAdded != lastAlreadyAdded) {
-              lastAlreadyAdded = entry.alreadyAdded
-              if (!pushedSeparator) {
-                let sep: Separator = {
-                  label: "",
-                  kind: vscode.QuickPickItemKind.Separator
-                }
-                items.push(sep)
-                pushedSeparator = true
-              }
-            }
-
-            items.push(new Item(entry))
-          }
-          let quickPick = vscode.window.createQuickPick<Item | Separator>()
-          quickPick.items = items
-          quickPick.onDidAccept(() => {
-            for (const item of quickPick.activeItems) {
-              if (item instanceof Item) {
-                if (item.entry.type == 'BuildTool') {
-                  interface BuildToolEntry extends Entry {
-                    id: string
-                    discoverId: string
-                    alreadyAdded: boolean
-                  }
-                  let entry = item.entry as BuildToolEntry
-                  console.log(entry.id)
-                  if (entry.alreadyAdded)
-                    client?.sendRequest(ExecuteCommandRequest.type, { command: "plasmon/unloadBuildTool", arguments: [entry.discoverId, entry.id, uri] }).then(
-                      (resp) => {
-                        interface Resp {
-                          success: boolean
-                          error?: string
-                        }
-                        let resp0 = resp as Resp
-                        if (resp0.success)
-                          console.log(`Ran plasmon/unloadBuildTool ${entry.discoverId} ${entry.id}`)
-                        else
-                          vscode.window.showErrorMessage(`Error unloading build tool: ${resp0.error}`, { modal: false })
-                      },
-                      (err) => {
-                        vscode.window.showErrorMessage(`Error unloading build tool: ${err}`, { modal: false })
-                      }
-                    )
-                  else
-                  client?.sendRequest(ExecuteCommandRequest.type, { command: "plasmon/loadBuildTool", arguments: [entry.discoverId, entry.id, uri] }).then(
-                    (resp) => {
-                      interface Resp {
-                        success: boolean
-                        error?: string
-                      }
-                      let resp0 = resp as Resp
-                      if (resp0.success)
-                        console.log(`Ran plasmon/loadBuildTool ${entry.discoverId} ${entry.id}`)
-                      else
-                        vscode.window.showErrorMessage(`Error loading build tool: ${resp0.error}`, { modal: false })
-                    },
-                    (err) => {
-                      vscode.window.showErrorMessage(`Error loading build tool: ${err}`, { modal: false })
-                    }
-                  )
-                }
-                else if (item.entry.type == 'Module') {
-                  interface ModuleEntry extends Entry {
-                    workspace: string
-                    server: string
-                    uri: string
-                    label: string
-                    alreadyLoaded: boolean
-                  }
-                  let entry = item.entry as ModuleEntry
-                  console.log(`User picked module ${entry.uri}`)
-                  if (entry.alreadyLoaded)
-                    client?.sendRequest(ExecuteCommandRequest.type, { command: "plasmon/unloadModule", arguments: [entry.workspace, entry.server, entry.uri] }).then(
-                      (res) => {
-
-                      },
-                      (err) => {
-                        let msg = `Error while sending plasmon/unloadModule command: ${err}`
-                        console.log(msg)
-                        vscode.window.showErrorMessage(msg)
-                      }
-                    )
-                  else
-                  client?.sendRequest(ExecuteCommandRequest.type, { command: "plasmon/loadModule", arguments: [entry.workspace, entry.server, entry.uri] }).then(
-                    (res) => {
-
-                    },
-                    (err) => {
-                      let msg = `Error while sending plasmon/loadModule command: ${err}`
-                      console.log(msg)
-                      vscode.window.showErrorMessage(msg)
-                    }
-                  )
-                }
-                else {
-                  // ???
-                }
-              }
-            }
-            quickPick.hide()
-          })
-          quickPick.show()
-        },
-        (err) => {
-          let msg = `Error while sending plasmon/listBuildToolsOrModules command for ${uri}: ${err}`
-          vscode.window.showErrorMessage(msg, { modal: false })
-          console.log(msg)
-        }
-      )
+      loadBuildToolOrModule(lastFocusedDocument, false)
     })
   )
 
@@ -1292,13 +1521,7 @@ export function activate(context: vscode.ExtensionContext) {
 
   context.subscriptions.push(
     vscode.commands.registerCommand(`plasmon.re-index`, () => {
-      client?.sendRequest(ExecuteCommandRequest.type, { command: "plasmon/index", arguments: [] }).then(
-        () => {},
-        (err) => {
-          console.log(`Error when running plasmon/index command: ${err}`)
-          vscode.window.showErrorMessage(`Error indexing project: ${err}`, { modal: false })
-        }
-      )
+      reIndex()
     })
   )
 
@@ -1644,27 +1867,6 @@ export function activate(context: vscode.ExtensionContext) {
       )
     })
   )
-
-  function checkStatusBarAndDocument() {
-    if (vscode.window.activeTextEditor) {
-      let document = vscode.window.activeTextEditor.document
-      if (document?.uri.scheme == 'file') {
-        if (isSupportedLanguage(document.languageId)) {
-          // console.log(`onDidOpenTextDocument / onDidCloseTextDocument: Showing status for ${document.uri} ${document.languageId}`)
-          statusBarItem?.show()
-        }
-        else {
-          // console.log(`onDidOpenTextDocument / onDidCloseTextDocument: Hiding status for ${document.uri} ${document.languageId}`)
-          statusBarItem?.hide()
-        }
-      }
-    }
-    else {
-      console.log(`onDidOpenTextDocument / onDidCloseTextDocument: Hiding status (no open document)`)
-      lastFocusedDocument = undefined
-      statusBarItem?.hide()
-    }
-  }
 
   context.subscriptions.push(
     vscode.workspace.onDidOpenTextDocument(() => checkStatusBarAndDocument())

@@ -1,5 +1,5 @@
 ```scala
-type String: String
+type String
 ```
 
 ***
