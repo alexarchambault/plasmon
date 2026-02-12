@@ -76,7 +76,7 @@ final case class BspRequest(
     def targetIds =
       requestArgs.map(targetIdFromArg).toList.asJava
 
-    val res: CompletableFuture[_] = requestName match {
+    val res: CompletableFuture[?] = requestName match {
       case "workspace/buildTargets" | "buildTargets" =>
         buildServer.remoteEndpoint.request("workspace/buildTargets", null)
       case "workspace/reload" | "reload" =>

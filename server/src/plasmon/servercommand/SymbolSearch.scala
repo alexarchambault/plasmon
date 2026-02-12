@@ -59,6 +59,6 @@ object SymbolSearch extends ServerCommand[SymbolSearchOptions] {
           }
       }
 
-    fansi.Str(loop(input.toCharArray.toList, keyword.toCharArray.toList): _*).render
+    fansi.Str(loop(input.toCharArray.toList, keyword.toCharArray.toList)*).render
   }
 }
