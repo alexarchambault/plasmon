@@ -45,6 +45,7 @@ import plasmon.PlasmonEnrichments._
 import scala.jdk.CollectionConverters._
 import plasmon.pc.NopReportContext
 import scala.meta.internal.mtags.GlobalSymbolIndex
+import coursier.version.Version
 
 class IndexerActor(
   server: IndexerServerLike,
@@ -814,6 +815,20 @@ class IndexerActor(
     }
   }
 
+  private def jarOf(org: String, name: String, ver: String) = {
+    val files = coursierapi.Fetch.create()
+      .addDependencies(coursierapi.Dependency.of(org, name, ver).withTransitive(false))
+      .fetch()
+      .asScala
+      .toList
+    assert(files.length == 1)
+    files.head.toPath.toUri.toASCIIString
+  }
+  private lazy val scalaLibraryJar =
+    jarOf("org.scala-lang", "scala-library", Properties.versionNumberString)
+  private lazy val scala3Library3Jar =
+    jarOf("org.scala-lang", "scala3-library_3", Properties.versionNumberString)
+
   private def classPathMillHack(
     classDir: String,
     classPath: List[String],
@@ -847,6 +862,14 @@ class IndexerActor(
       None
   }
 
+  private lazy val substitutableVersionCutoff = Version("3.8.0-RC1")
+  private def isSubstitutableScalaLibrary(fileName: String): Boolean =
+    fileName.startsWith("scala-library-") &&
+    fileName.endsWith(".jar")
+  private def isSubstitutableScala3Library3(fileName: String): Boolean =
+    fileName.startsWith("scala3-library_3-") &&
+    fileName.endsWith(".jar")
+
   private def postProcessScalacOptionResult(
     res: b.ScalacOptionsResult,
     extraCp: List[String],
@@ -855,7 +878,19 @@ class IndexerActor(
   ): b.ScalacOptionsResult = {
     for (item <- res.getItems.asScala.toList) {
       var didUpdateClasspath = false
-      var updatedClasspath   = item.getClasspath.asScala.toList
+      var updatedClasspath = item.getClasspath.asScala.toList.map { elem =>
+        val path = elem.osPathFromUri
+        if (isSubstitutableScalaLibrary(path.last)) {
+          didUpdateClasspath = true
+          scalaLibraryJar
+        }
+        else if (isSubstitutableScala3Library3(path.last)) {
+          didUpdateClasspath = true
+          scala3Library3Jar
+        }
+        else
+          elem
+      }
       if (millHack)
         for (cp <- classPathMillHack(item.getClassDirectory, updatedClasspath, workspace)) {
           didUpdateClasspath = true

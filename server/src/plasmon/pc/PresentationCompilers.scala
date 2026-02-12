@@ -79,6 +79,7 @@ import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import coursier.parse.RawJson
 import plasmon.render.JsonCodecs.given
 import scala.util.Failure
+import scala.util.Properties
 
 /** Manages lifecycle for presentation compilers in all build targets.
   *
@@ -1198,7 +1199,12 @@ class PresentationCompilers(
   private lazy val scala3Library = {
     val files = coursierapi.Fetch.create()
       .addDependencies(
-        coursierapi.Dependency.of("org.scala-lang", "scala3-library_3", "3.7.3")
+        coursierapi.Dependency
+          .of(
+            "org.scala-lang",
+            "scala3-library_3",
+            Properties.versionNumberString
+          )
           .withTransitive(false)
       )
       .fetch()
