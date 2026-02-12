@@ -145,10 +145,6 @@ class Deferred<T> {
 }
 let inProgressTasks: { [ids: string]: Deferred<void> } = {}
 
-async function downloadViaCoursierCache(): Promise<string> {
-  return ''
-}
-
 function plasmonStartingStatus(isRestart: boolean): void {
   if (statusBarItem) {
     statusBarItem.text = isRestart ? "Plasmon restarting $(loading~spin)" : "Plasmon starting $(loading~spin)"
