@@ -593,6 +593,31 @@ object TestUtil {
         s" ${buildTool.displayName} Scala ${scalaVersion.label} Java ${jvm.label}"
     } yield (Some(scalaVersion), serverOpt, buildTool, jvm, testNameSuffix)
 
+  lazy val olderScalaVersionBuildToolJvmValues
+    : Seq[(
+      Option[Labelled[String]],
+      Seq[String],
+      SingleModuleBuildTool,
+      Labelled[String],
+      String
+    )] =
+    for {
+      buildTool <- buildTools
+      (scalaVersion, serverOpt) <- {
+        val maybeScala213 =
+          if (disableScala2Pc) Nil
+          else Seq((Labelled("2.13.16", "2.13.16"), Nil))
+        maybeScala213 ++ Seq(
+          (Labelled("2.13.16-compat", "2.13.16"), compatServerOpt),
+          (Labelled("3.7.4", "3.7.4"), Nil)
+        )
+      }
+      jvm <- jvmValues
+      if jvm.label != "8" || buildTool != SingleModuleBuildTool.Mill // issue with Mill 0.11.7 and BSP, that requires Java >= 11
+      testNameSuffix =
+        s" ${buildTool.displayName} Scala ${scalaVersion.label} Java ${jvm.label}"
+    } yield (Some(scalaVersion), serverOpt, buildTool, jvm, testNameSuffix)
+
   lazy val projectsDir = {
     val path = sys.props.getOrElse(
       "plasmon.integration.projects",

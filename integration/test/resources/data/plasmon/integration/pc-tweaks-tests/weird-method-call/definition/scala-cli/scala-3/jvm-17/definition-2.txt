@@ -1,0 +1,9 @@
+{
+  "path": "Foo.scala",
+  "line": 7,
+  "colRange": [
+    4,
+    10
+  ],
+  "content": "counts"
+}
