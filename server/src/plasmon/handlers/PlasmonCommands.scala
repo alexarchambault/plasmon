@@ -321,18 +321,14 @@ object PlasmonCommands {
             val targetId = new b.BuildTargetIdentifier(
               server0.info.workspace.toNIO.toUri.toASCIIString + "mill-build"
             )
-            if (server0.info.onlyTargets.forall(_.contains(targetId.getUri))) {
-              val sourcesResp =
-                server0.conn.buildTargetSources(new b.SourcesParams(List(targetId).asJava)).get()
-              val isMillBuildSource = sourcesResp.getItems.asScala.iterator
-                .filter(_.getTarget == targetId)
-                .flatMap(_.getSources.asScala.iterator)
-                .map(_.getUri.osPathFromUri)
-                .exists(_ == file)
-              if (isMillBuildSource) Seq(targetId) else Nil
-            }
-            else
-              Nil
+            val sourcesResp =
+              server0.conn.buildTargetSources(new b.SourcesParams(List(targetId).asJava)).get()
+            val isMillBuildSource = sourcesResp.getItems.asScala.iterator
+              .filter(_.getTarget == targetId)
+              .flatMap(_.getSources.asScala.iterator)
+              .map(_.getUri.osPathFromUri)
+              .exists(_ == file)
+            if (isMillBuildSource) Seq(targetId) else Nil
           }
           else
             res.getTargets.asScala.toVector
@@ -376,9 +372,7 @@ object PlasmonCommands {
       val retainedTargets = {
         val l = targets0
           .collect {
-            case id
-                if server0.info.onlyTargets.forall(_.contains(id.getUri)) &&
-                !loadedTargetIds.contains(id) =>
+            case id if !loadedTargetIds.contains(id) =>
               id
           }
           .toVector

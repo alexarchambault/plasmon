@@ -9,7 +9,6 @@ import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 sealed abstract class BuildServerInfo extends Product with Serializable {
   def `type`: String
   def workspace: os.Path
-  def onlyTargets: Option[Set[String]]
 
   // for logging purposes
   def id: String
@@ -25,20 +24,18 @@ object BuildServerInfo {
 
   final case class Bsp(
     workspace: os.Path,
-    bspFile: Either[os.Path, os.SubPath],
-    onlyTargets: Option[Set[String]]
+    bspFile: Either[os.Path, os.SubPath]
   ) extends BuildServerInfo {
     def `type` = "BSP"
     def id     = "server"
     def label  = "BSP Server"
   }
   object Bsp {
-    def apply(workspace: os.Path, bspFile: os.Path, onlyTargets: Option[Set[String]]): Bsp =
+    def apply(workspace: os.Path, bspFile: os.Path): Bsp =
       Bsp(
         workspace,
         if (bspFile.startsWith(workspace)) Right(bspFile.relativeTo(workspace).asSubPath)
-        else Left(bspFile),
-        onlyTargets
+        else Left(bspFile)
       )
   }
 
@@ -46,13 +43,12 @@ object BuildServerInfo {
     workspace: os.Path
   ) extends BuildServerInfo {
     def `type`                           = "Bloop"
-    def onlyTargets: Option[Set[String]] = None
 
     def id    = "bloop"
     def label = "Bloop"
   }
 
-  final case class Mill(workspace: os.Path, onlyTargets: Option[Set[String]])
+  final case class Mill(workspace: os.Path)
       extends BuildServerInfo {
     def `type` = "Mill"
     def id     = "mill"
@@ -93,7 +89,7 @@ object BuildServerInfo {
       }
   }
 
-  final case class Sbt(workspace: os.Path, onlyTargets: Option[Set[String]])
+  final case class Sbt(workspace: os.Path)
       extends BuildServerInfo {
     def `type` = "Sbt"
     def id     = "sbt"
@@ -108,6 +104,5 @@ object BuildServerInfo {
     def `type`                           = "Scala CLI"
     def id                               = "scala-cli"
     def label                            = "Scala CLI"
-    def onlyTargets: Option[Set[String]] = None
   }
 }

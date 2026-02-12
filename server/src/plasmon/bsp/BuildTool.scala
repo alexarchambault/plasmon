@@ -45,7 +45,7 @@ object BuildTool {
 
     def launcher(tools: Tools) =
       BuildServerLauncher(
-        BuildServerInfo.Mill(workspace, None),
+        BuildServerInfo.Mill(workspace),
         "Mill",
         None
       )
@@ -64,16 +64,6 @@ object BuildTool {
     }
 
     def launcher(tools: Tools) =
-      BuildServerLauncher(
-        BuildServerInfo.Mill(
-          workspace,
-          Some(Set((workspace / "mill-build").toNIO.toUri.toASCIIString))
-        ),
-        "Mill via Bloop",
-        None
-      )
-
-    override def extraLaunchers = Seq(
       BuildServerLauncher(
         BuildServerInfo.Bloop(
           workspace
@@ -94,7 +84,6 @@ object BuildTool {
           )
         }
       )
-    )
   }
 
   object MillViaBloop {
@@ -185,7 +174,7 @@ object BuildTool {
     def commandName: os.Shellable = SbtDist.sbtLauncher
     def launcher(tools: Tools) =
       BuildServerLauncher(
-        BuildServerInfo.Sbt(workspace, None),
+        BuildServerInfo.Sbt(workspace),
         "Sbt",
         Some { (logger, force) =>
           // Ideally, I'd like to skip that step, and run the BSP server straightaway.

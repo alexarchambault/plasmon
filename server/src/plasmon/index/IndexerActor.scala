@@ -342,6 +342,7 @@ class IndexerActor(
     val (targets, depSourcesRes) =
       inState(stateName(), Some(logger), progress = s"Fetching BSP data for ${conn.name}") {
         logger.timed(s"Fetching BSP data for ${conn.name}") {
+          conn.info.workspace
           val (workspaceBuildTargetsResp, targets0, depSourcesRes0) = fetchBspData(
             message,
             buildServer,
@@ -537,20 +538,12 @@ class IndexerActor(
     info: BuildServerInfo,
     targetData: TargetData,
     jdkCp: List[String],
-    millHack: Boolean
+    millHack: Boolean,
+    cacheDir: os.Path
   ): (b.WorkspaceBuildTargetsResult, Seq[b.BuildTarget], b.DependencySourcesResult) = {
 
     val workspaceBuildTargetsResp    = buildServer.workspaceBuildTargets.get()
     var targets0: Seq[b.BuildTarget] = workspaceBuildTargetsResp.getTargets.asScala.toSeq
-
-    for (onlyTargets <- info.onlyTargets) {
-      val (retained, dropped) = targets0.partition { target =>
-        onlyTargets.contains(target.getId.getUri)
-      }
-      scribe.info(s"Dropped targets from $info: ${dropped.map(_.getId.getUri).sorted}")
-      scribe.info(s"Retained targets from $info: ${retained.map(_.getId.getUri).sorted}")
-      targets0 = retained
-    }
 
     if (message.addAllTargets.contains(info))
       scribe.info(s"Keeping all targets for $info")
