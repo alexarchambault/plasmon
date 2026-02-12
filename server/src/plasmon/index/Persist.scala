@@ -12,7 +12,7 @@ object Persist {
   def loadFromDisk(
     readFrom: os.Path,
     tools: BuildTool.Tools
-  ): Option[(Seq[BuildServerInfo], Seq[(BuildServerInfo, Seq[b.BuildTargetIdentifier])])] =
+  ): Option[Seq[(BuildServerInfo, Seq[b.BuildTargetIdentifier])]] =
     if (os.isFile(readFrom)) {
       val entries =
         try readFromArray(os.read.bytes(readFrom))(using Entry.seqCodec)
@@ -20,29 +20,23 @@ object Persist {
           case e: JsonReaderException =>
             throw new Exception(e)
         }
-      val addAllTargets =
-        entries.iterator.filter(_.all).map(_.server.toConnectionInfo(tools)).toVector
       val targets = entries.iterator.filter(!_.all).toVector.map(e =>
         e.server.toConnectionInfo(tools) -> e.targets.map(new b.BuildTargetIdentifier(_))
       )
-      Some((addAllTargets, targets))
+      Some(targets)
     }
     else
       None
 
   def persistTargets(
-    addAllTargets: Set[BuildServerInfo],
     targets: Map[BuildServerInfo, Seq[b.BuildTargetIdentifier]],
     persistTo: os.Path
   ): Unit = {
-    val fromAll = addAllTargets.toVector.map { info =>
-      Entry(ConnectionInfoJson(info), Nil, all = true)
-    }
-    val fromTargets = targets.map {
+    val fromTargets = targets.toVector.sortBy(t => (t._1.id, t._1.workspace)).map {
       case (info, ids) =>
         Entry(ConnectionInfoJson(info), ids.map(_.getUri), all = false)
     }
-    val b = writeToArray[Seq[Entry]](fromAll ++ fromTargets)(using Entry.seqCodec)
+    val b = writeToArray[Seq[Entry]](fromTargets)(using Entry.seqCodec)
     scribe.info(s"Writing targets to $persistTo")
     os.write.over(persistTo, b, createFolders = true)
   }

@@ -122,7 +122,6 @@ class IndexerActor(
 
                 for (persistTo <- indexMessage.persistTo)
                   Persist.persistTargets(
-                    indexMessage.addAllTargets,
                     indexMessage.targets,
                     persistTo
                   )
@@ -545,9 +544,7 @@ class IndexerActor(
     val workspaceBuildTargetsResp    = buildServer.workspaceBuildTargets.get()
     var targets0: Seq[b.BuildTarget] = workspaceBuildTargetsResp.getTargets.asScala.toSeq
 
-    if (message.addAllTargets.contains(info))
-      scribe.info(s"Keeping all targets for $info")
-    else {
+    targets0 = {
 
       val roots = message.targets.getOrElse(info, Nil)
 
@@ -572,7 +569,7 @@ class IndexerActor(
         )
       }
 
-      targets0 = retained
+      retained
     }
 
     val targetList = targets0.map(_.getId).asJava
@@ -1058,7 +1055,6 @@ object IndexerActor {
     case object InterruptIndexing extends Message
     final case class Index(
       targets: Map[BuildServerInfo, Seq[b.BuildTargetIdentifier]],
-      addAllTargets: Set[BuildServerInfo],
       toplevelCacheOnly: Option[Boolean],
       ignoreToplevelSymbolsErrors: Option[Boolean],
       persistTo: Option[os.Path],

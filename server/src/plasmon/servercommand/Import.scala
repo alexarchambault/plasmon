@@ -45,10 +45,8 @@ final case class Import(
       else "Indexing build targets",
       toStderr = true
     )
-    if (!options.keep) {
+    if (!options.keep)
       indexer.targets = Map.empty
-      indexer.addAllTargets = Set.empty
-    }
     for ((server, targets) <- allTargetsByBuildServer)
       indexer.addTargets(server.info, targets.map(_.getId))
     try {

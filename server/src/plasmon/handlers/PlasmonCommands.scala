@@ -696,22 +696,14 @@ object PlasmonCommands {
       hard = false
     ),
     CommandHandler.of("plasmon/unloadAllModules", refreshStatus = true) { (_, _) =>
-      val removedCount =
-        indexer.targets
-          .map {
-            case (info, targetIds) =>
-              for (id <- targetIds)
-                indexer.removeTarget(info, id)
-              targetIds.length
-          }
-          .sum +
-          indexer.addAllTargets
-            .map { info =>
-              val count = server.bspData.targetData(info).map(_.targetToWorkspace.size).getOrElse(0)
-              indexer.removeAllTargets(info)
-              count
-            }
-            .sum
+      val removedCount = indexer.targets
+        .map {
+          case (info, targetIds) =>
+            for (id <- targetIds)
+              indexer.removeTarget(info, id)
+            targetIds.length
+        }
+        .sum
       if (removedCount > 0) {
         indexer.persist()
         indexer.reIndex().onComplete {
@@ -724,19 +716,12 @@ object PlasmonCommands {
     },
     CommandHandler.of("plasmon/unloadAllBuildTools", refreshStatus = true) { (_, _) =>
       indexer.actor.send(Message.InterruptIndexing)
-      val indexerInfos = indexer.targets.keySet ++ indexer.addAllTargets
-      val removed =
-        indexer.targets.map {
-          case (info, targetIds) =>
-            indexer.dontReloadBuildTool(info)
-            targetIds.length
-        } ++
-          indexer.addAllTargets.map { info =>
-            val count = server.bspData.targetData(info).map(_.targetToWorkspace.size).getOrElse(0)
-            indexer.removeAllTargets(info)
-            indexer.dontReloadBuildTool(info)
-            count
-          }
+      val indexerInfos = indexer.targets.keySet
+      val removed = indexer.targets.map {
+        case (info, targetIds) =>
+          indexer.dontReloadBuildTool(info)
+          targetIds.length
+      }
       val extraInfos = server.bspServers.list.flatMap(_._2.map(_.info)).filterNot(indexerInfos)
       for (info <- extraInfos)
         indexer.dontReloadBuildTool(info)
