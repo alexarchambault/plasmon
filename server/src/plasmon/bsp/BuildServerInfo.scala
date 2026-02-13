@@ -91,7 +91,7 @@ object BuildServerInfo {
 
   final case class Sbt(workspace: os.Path)
       extends BuildServerInfo {
-    def `type` = "Sbt"
+    def `type` = "sbt"
     def id     = "sbt"
     def label  = "sbt"
   }

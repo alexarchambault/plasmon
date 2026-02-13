@@ -94,15 +94,15 @@ object BuildTool {
     def id = SbtViaBloop.id
     def description(serverWorkspace: os.Path) = {
       val relPath = workspace.relativeTo(serverWorkspace)
-      if (relPath == os.rel) "Sbt via Bloop in this workspace"
-      else s"Sbt via Bloop in $relPath"
+      if (relPath == os.rel) "sbt via Bloop in this workspace"
+      else s"sbt via Bloop in $relPath"
     }
 
     def commandName: os.Shellable = SbtDist.sbtLauncher
     def launcher(tools: Tools) =
       BuildServerLauncher(
         BuildServerInfo.Bloop(workspace),
-        "Sbt via Bloop",
+        "sbt via Bloop",
         Some { (logger, force) =>
           val version = {
             val propFileSubPath = os.sub / "project/build.properties"
@@ -167,15 +167,15 @@ object BuildTool {
     def id = Sbt.id
     def description(serverWorkspace: os.Path) = {
       val relPath = workspace.relativeTo(serverWorkspace)
-      if (relPath == os.rel) "Sbt in this workspace"
-      else s"Sbt in $relPath"
+      if (relPath == os.rel) "sbt in this workspace"
+      else s"sbt in $relPath"
     }
 
     def commandName: os.Shellable = SbtDist.sbtLauncher
     def launcher(tools: Tools) =
       BuildServerLauncher(
         BuildServerInfo.Sbt(workspace),
-        "Sbt",
+        "sbt",
         Some { (logger, force) =>
           // Ideally, I'd like to skip that step, and run the BSP server straightaway.
           // The BSP install -> read .bsp/*.json file -> … feels clunky. If we know the
