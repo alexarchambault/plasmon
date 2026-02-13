@@ -50,6 +50,8 @@ import plasmon.bsp.BspConnection
 import scala.concurrent.Promise
 import sourcecode.FileName
 import sourcecode.Line
+import com.google.gson.GsonBuilder
+import scala.reflect.ClassTag
 
 class IndexerActor(
   server: IndexerServerLike,
@@ -83,6 +85,8 @@ class IndexerActor(
     t match {
       case _: Message.Index =>
         interruptIndexingPromiseOpt.foreach(_.trySuccess(()))
+      case Message.InterruptIndexing =>
+        interruptIndexingPromiseOpt.foreach(_.trySuccess(()))
       case _ =>
     }
   }
@@ -90,8 +94,9 @@ class IndexerActor(
   override def runBatch(msgs: Seq[Message]): Unit = {
     super.runBatch(msgs)
 
+    val interruptIndexingIdxOpt = Some(msgs.lastIndexOf(Message.InterruptIndexing)).filter(_ >= 0)
     val indexMessages = msgs.zipWithIndex.collect {
-      case (msg: Message.Index, idx) =>
+      case (msg: Message.Index, idx) if interruptIndexingIdxOpt.forall(idx > _) =>
         (msg, idx)
     }
     val indexMessageOpt = indexMessages.headOption.map {
@@ -119,7 +124,6 @@ class IndexerActor(
 
                 for (persistTo <- indexMessage.persistTo)
                   Persist.persistTargets(
-                    indexMessage.addAllTargets,
                     indexMessage.targets,
                     persistTo
                   )
@@ -145,6 +149,8 @@ class IndexerActor(
           idxSym.target,
           idxSym.data
         )
+      case Message.InterruptIndexing =>
+      // ignored
       case _: Message.Index =>
         sys.error("Cannot happen")
     }
@@ -181,7 +187,7 @@ class IndexerActor(
     if (interruptIndexing()) return Nil
 
     val toplevelSymbolsCache = new ToplevelSymbolsCache(
-      server.workingDir / ".plasmon/toplevel-cache",
+      server.workingDir / ".plasmon/cache/toplevel",
       os.Path(coursierapi.Cache.create().getLocation, os.pwd),
       os.Path(coursierapi.ArchiveCache.create().getLocation, os.pwd),
       readOnly = message.toplevelCacheOnly.getOrElse(latestToplevelCacheOnly)
@@ -234,6 +240,8 @@ class IndexerActor(
           stateName,
           message,
           toplevelSymbolsCache,
+          server.workingDir / ".plasmon/cache/bsp",
+          mayReadFromCache = message.mayReadFromBspCache,
           interruptIndexing
         ).toSeq
     }
@@ -318,6 +326,8 @@ class IndexerActor(
     stateName: () => String,
     message: Message.Index,
     toplevelSymbolsCache: ToplevelSymbolsCache,
+    bspDataCache: os.Path,
+    mayReadFromCache: Boolean,
     interruptIndexing: () => Boolean
   )(implicit ctx: SourcePath.Context): Option[(BuildServerInfo, Seq[b.BuildTargetIdentifier])] = {
 
@@ -334,16 +344,30 @@ class IndexerActor(
 
     val isMill = conn.params.getDisplayName == "mill-bsp"
 
+    val cacheDirOpt = conn.launcher.info match {
+      case m: BuildServerInfo.Mill =>
+        if (m.workspace.startsWith(server.workingDir))
+          Some((
+            bspDataCache / "mill" / m.workspace.subRelativeTo(server.workingDir),
+            mayReadFromCache
+          ))
+        else
+          None
+      case _ => None
+    }
+
     val (targets, depSourcesRes) =
       inState(stateName(), Some(logger), progress = s"Fetching BSP data for ${conn.name}") {
         logger.timed(s"Fetching BSP data for ${conn.name}") {
+          conn.info.workspace
           val (workspaceBuildTargetsResp, targets0, depSourcesRes0) = fetchBspData(
             message,
             buildServer,
             info,
             targetData,
             server.jdkCp.map(_.toNIO.toUri.toASCIIString).toList,
-            millHack = isMill
+            millHack = isMill,
+            cacheDirOpt = cacheDirOpt
           )
           targetData.resetConnections(
             targets0
@@ -532,30 +556,54 @@ class IndexerActor(
     info: BuildServerInfo,
     targetData: TargetData,
     jdkCp: List[String],
-    millHack: Boolean
+    millHack: Boolean,
+    cacheDirOpt: Option[(os.Path, Boolean)]
   ): (b.WorkspaceBuildTargetsResult, Seq[b.BuildTarget], b.DependencySourcesResult) = {
 
-    val workspaceBuildTargetsResp    = buildServer.workspaceBuildTargets.get()
-    var targets0: Seq[b.BuildTarget] = workspaceBuildTargetsResp.getTargets.asScala.toSeq
-
-    for (onlyTargets <- info.onlyTargets) {
-      val (retained, dropped) = targets0.partition { target =>
-        onlyTargets.contains(target.getId.getUri)
+    lazy val gson = new GsonBuilder().create()
+    def maybeCached[T: ClassTag](name: String)(get: => T): T =
+      cacheDirOpt match {
+        case None => get
+        case Some((cacheDir, mayRead)) =>
+          val f = cacheDir / s"$name.json"
+          if (mayRead && os.exists(f)) {
+            logger.log(s"BSP cache: reading $f")
+            val content = os.read(f)
+            gson.fromJson(content, implicitly[ClassTag[T]].runtimeClass.asInstanceOf[Class[T]])
+          }
+          else {
+            val res     = get
+            val jsonStr = gson.toJson(res)
+            logger.log(s"BSP cache: writing $f")
+            os.write.over(f, jsonStr, createFolders = true)
+            res
+          }
       }
-      scribe.info(s"Dropped targets from $info: ${dropped.map(_.getId.getUri).sorted}")
-      scribe.info(s"Retained targets from $info: ${retained.map(_.getId.getUri).sorted}")
-      targets0 = retained
+
+    val workspaceBuildTargetsResp = maybeCached("workspaceBuildTargets") {
+      buildServer.workspaceBuildTargets.get()
+    }
+    val roots = message.targets.getOrElse(info, Nil)
+
+    for ((cacheDir, _) <- cacheDirOpt) {
+      val content = gson.toJson(roots.asJava)
+      val f       = cacheDir / "roots.json"
+      val currentContentOpt =
+        if (os.exists(f)) Some(os.read(f))
+        else None
+      if (!currentContentOpt.contains(content)) {
+        logger.log(s"BSP cache: writing $f")
+        os.write.over(f, content)
+      }
     }
 
-    if (message.addAllTargets.contains(info))
-      scribe.info(s"Keeping all targets for $info")
-    else {
+    val targets0 = {
+      val allTargets = workspaceBuildTargetsResp.getTargets.asScala.toSeq
 
       val roots = message.targets.getOrElse(info, Nil)
+      val keep  = BspUtil.addTransitiveDependencies(roots, allTargets)
 
-      val keep = BspUtil.addTransitiveDependencies(roots, targets0)
-
-      val retained = targets0
+      val retained = allTargets
         .iterator
         .filter(target => keep.contains(target.getId))
         .toList
@@ -570,11 +618,11 @@ class IndexerActor(
           s"Missing targets in $info: ${missing.toVector.map(_.getUri).sorted.mkString(", ")}"
         )
         scribe.warn(
-          s"Fount targets in $info: ${targets0.toVector.map(_.getId.getUri).sorted.mkString(", ")}"
+          s"Fount targets in $info: ${allTargets.toVector.map(_.getId.getUri).sorted.mkString(", ")}"
         )
       }
 
-      targets0 = retained
+      retained
     }
 
     val targetList = targets0.map(_.getId).asJava
@@ -585,7 +633,9 @@ class IndexerActor(
     targetData.addWorkspaceBuildTargets(targets0)
     targetData.addScalacOptions(
       postProcessScalacOptionResult(
-        buildServer.buildTargetScalacOptions(new b.ScalacOptionsParams(targetList)).get(),
+        maybeCached("buildTargetScalacOptions") {
+          buildServer.buildTargetScalacOptions(new b.ScalacOptionsParams(targetList)).get()
+        },
         jdkCp,
         millHack,
         info.workspace
@@ -596,7 +646,9 @@ class IndexerActor(
     if (info.id != "sbt")
       targetData.addJavacOptions(
         postProcessJavacOptionResult(
-          buildServer.buildTargetJavacOptions(new b.JavacOptionsParams(targetList)).get(),
+          maybeCached("buildTargetJavacOptions") {
+            buildServer.buildTargetJavacOptions(new b.JavacOptionsParams(targetList)).get()
+          },
           jdkCp,
           millHack,
           info.workspace
@@ -606,26 +658,28 @@ class IndexerActor(
     val wrappedSourcesRes =
       if (info.id == "sbt") new WrappedSourcesResult(Nil.asJava)
       else
-        try
-          buildServer
-            .buildTargetWrappedSources(new WrappedSourcesParams(targetList))
-            .get()
-        catch {
-          case e: ExecutionException =>
-            e.getCause match {
-              case ex: ResponseErrorException
-                  if ex.getResponseError.getCode == ResponseErrorCode.MethodNotFound.getValue =>
-                scribe.warn(s"wrappedSources method not supported by $info, ignoring it")
-                new WrappedSourcesResult(Nil.asJava)
-              case ex: org.eclipse.lsp4j.jsonrpc.MessageIssueException =>
-                scribe.warn(s"Error parsing message '${ex.getRpcMessage}', ignoring it")
-                for (i <- ex.getIssues.asScala)
-                  scribe.warn(s"${i.getText} (${i.getIssueCode})", i.getCause)
-                // throw e
-                new WrappedSourcesResult(Nil.asJava)
-              case _ =>
-                throw e
-            }
+        maybeCached("buildTargetWrappedSources") {
+          try
+            buildServer
+              .buildTargetWrappedSources(new WrappedSourcesParams(targetList))
+              .get()
+          catch {
+            case e: ExecutionException =>
+              e.getCause match {
+                case ex: ResponseErrorException
+                    if ex.getResponseError.getCode == ResponseErrorCode.MethodNotFound.getValue =>
+                  scribe.warn(s"wrappedSources method not supported by $info, ignoring it")
+                  new WrappedSourcesResult(Nil.asJava)
+                case ex: org.eclipse.lsp4j.jsonrpc.MessageIssueException =>
+                  scribe.warn(s"Error parsing message '${ex.getRpcMessage}', ignoring it")
+                  for (i <- ex.getIssues.asScala)
+                    scribe.warn(s"${i.getText} (${i.getIssueCode})", i.getCause)
+                  // throw e
+                  new WrappedSourcesResult(Nil.asJava)
+                case _ =>
+                  throw e
+              }
+          }
         }
 
     val mappedSources =
@@ -679,7 +733,9 @@ class IndexerActor(
     for ((path, mappedSource) <- mappedSources)
       targetData.addMappedSource(path, mappedSource)
 
-    val sourcesRes = buildServer.buildTargetSources(new b.SourcesParams(targetList)).get()
+    val sourcesRes = maybeCached("buildTargetSources") {
+      buildServer.buildTargetSources(new b.SourcesParams(targetList)).get()
+    }
 
     for {
       item       <- sourcesRes.getItems.asScala
@@ -687,9 +743,11 @@ class IndexerActor(
     }
       targetData.addSourceItem(sourceItem, item.getTarget)
 
-    val depSourcesRes = buildServer
-      .buildTargetDependencySources(new b.DependencySourcesParams(targetList))
-      .get()
+    val depSourcesRes = maybeCached("buildTargetDependencySources") {
+      buildServer
+        .buildTargetDependencySources(new b.DependencySourcesParams(targetList))
+        .get()
+    }
 
     (workspaceBuildTargetsResp, targets0, depSourcesRes)
   }
@@ -1057,13 +1115,14 @@ class IndexerActor(
 object IndexerActor {
   sealed abstract class Message extends Product with Serializable
   object Message {
+    case object InterruptIndexing extends Message
     final case class Index(
       targets: Map[BuildServerInfo, Seq[b.BuildTargetIdentifier]],
-      addAllTargets: Set[BuildServerInfo],
       toplevelCacheOnly: Option[Boolean],
       ignoreToplevelSymbolsErrors: Option[Boolean],
       persistTo: Option[os.Path],
-      onDone: Option[Try[Unit] => Unit]
+      onDone: Option[Try[Unit] => Unit],
+      mayReadFromBspCache: Boolean
     ) extends Message
     object Index {
       def sum(first: Index, others: Seq[Index]): Index = {

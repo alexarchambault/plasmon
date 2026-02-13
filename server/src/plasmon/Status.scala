@@ -16,6 +16,7 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.CompletionException
+import org.eclipse.{lsp4j => l}
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseErrorCode
 import plasmon.bsp.BspConnection
@@ -26,6 +27,7 @@ import plasmon.PlasmonEnrichments._
 import scala.jdk.CollectionConverters._
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
+import plasmon.languageclient.PlasmonLanguageClient.StatusUpdate
 
 class Status(
   server: Server,
@@ -152,7 +154,8 @@ class Status(
     text: String,
     busy: Boolean,
     severity: Int = 0,
-    compilerKeyOpt: Option[PresentationCompilers.PresentationCompilerKey] = None
+    compilerKeyOpt: Option[PresentationCompilers.PresentationCompilerKey] = None,
+    commandOpt: Option[PlasmonLanguageClient.Command] = None
   ) =
     PlasmonLanguageClient.StatusUpdate(
       id = "plasmon.interactive",
@@ -164,42 +167,44 @@ class Status(
         case Some(Left(javaVer)) => s"Javac $javaVer"
         case Some(Right(sv))     => s"Scala $sv Interactive"
       },
-      command = compilerKeyOpt
-        .flatMap { compilerKey =>
-          (compilerKey, scalaOrJavaVersionOpt) match {
-            case (
-                  PresentationCompilers.PresentationCompilerKey.ScalaBuildTarget(id),
-                  Some(Right(sv))
-                ) =>
-              Some(s"plasmon-interactive-$sv-${BspUtil.targetShortId(server.bspData, id)}")
-            case (
-                  PresentationCompilers.PresentationCompilerKey.ScalaBuildTarget(id),
-                  Some(Left(_))
-                ) =>
-              Some(s"plasmon-java-presentation-compiler-$id")
-            case (
-                  PresentationCompilers.PresentationCompilerKey.JavaBuildTarget(_),
-                  Some(Right(_))
-                ) =>
-              ???
-            case (
-                  PresentationCompilers.PresentationCompilerKey.JavaBuildTarget(_),
-                  Some(Left(_))
-                ) =>
-              ???
-            case (_, None) =>
-              None
+      command = commandOpt.getOrElse {
+        compilerKeyOpt
+          .flatMap { compilerKey =>
+            (compilerKey, scalaOrJavaVersionOpt) match {
+              case (
+                    PresentationCompilers.PresentationCompilerKey.ScalaBuildTarget(id),
+                    Some(Right(sv))
+                  ) =>
+                Some(s"plasmon-interactive-$sv-${BspUtil.targetShortId(server.bspData, id)}")
+              case (
+                    PresentationCompilers.PresentationCompilerKey.ScalaBuildTarget(id),
+                    Some(Left(_))
+                  ) =>
+                Some(s"plasmon-java-presentation-compiler-$id")
+              case (
+                    PresentationCompilers.PresentationCompilerKey.JavaBuildTarget(_),
+                    Some(Right(_))
+                  ) =>
+                ???
+              case (
+                    PresentationCompilers.PresentationCompilerKey.JavaBuildTarget(_),
+                    Some(Left(_))
+                  ) =>
+                ???
+              case (_, None) =>
+                None
+            }
           }
-        }
-        .map { loggerId =>
-          PlasmonLanguageClient.Command(
-            title = "Interactive",
-            command = "plasmon.show-log",
-            tooltip = "Show interactive compiler log",
-            arguments = List(loggerId).asJava
-          )
-        }
-        .orNull
+          .map { loggerId =>
+            PlasmonLanguageClient.Command(
+              title = "Interactive",
+              command = "plasmon.show-log",
+              tooltip = "Show interactive compiler log",
+              arguments = List(loggerId).asJava
+            )
+          }
+          .orNull
+      }
     )
 
   private def asSummaryUpdate(update: PlasmonLanguageClient.StatusUpdate)
@@ -283,16 +288,19 @@ class Status(
       if (os.isFile(path) && path.isScalaOrJava) {
         val buildTargetRes = server.bspData.inverseSources0(path)
 
-        def interactiveUpdate0(buildTargetOpt: Option[b.BuildTargetIdentifier]) = {
+        def interactiveUpdate0(buildTargetOpt: Option[b.BuildTargetIdentifier])
+          : (StatusUpdate, Boolean) = {
 
           val isJava = path.isJava
 
-          if (isJava)
-            interactiveUpdate(
+          if (isJava) {
+            val update = interactiveUpdate(
               None,
               "",
               busy = false
             )
+            (update, false)
+          }
           else {
 
             val compilerKeyOpt =
@@ -356,9 +364,18 @@ class Status(
 
             val onGoing = onGoingOpt.orElse(exceptionMessageOpt).toSeq ++ onGoingCompletionOpt.toSeq
 
-            interactiveUpdate(
+            val pcErrors = buildTargetOpt
+              .flatMap(server.bspData.buildClientOf)
+              .map(_.pcDiagnosticsFor(path))
+              .getOrElse(Nil)
+              .count(_.getSeverity == l.DiagnosticSeverity.Error)
+
+            val hasPcErrors = onGoing.isEmpty && scalaVersionOpt.nonEmpty && pcErrors > 0
+            val update = interactiveUpdate(
               scalaVersionOpt.map(Right(_)),
-              if (onGoing.isEmpty)
+              if (hasPcErrors)
+                "Presentation compiler errors"
+              else if (onGoing.isEmpty)
                 if (scalaVersionOpt.isEmpty)
                   "Not instantiated"
                 else
@@ -367,8 +384,24 @@ class Status(
                 onGoing.mkString(" | "),
               busy = onGoingOpt.nonEmpty || onGoingCompletionOpt.nonEmpty,
               compilerKeyOpt = compilerKeyOpt,
-              severity = if (exceptionMessageOpt.isEmpty) 0 else 2
+              severity =
+                if (hasPcErrors) 1
+                else if (exceptionMessageOpt.isEmpty) 0
+                else 2,
+              commandOpt =
+                if (hasPcErrors)
+                  Some {
+                    PlasmonLanguageClient.Command(
+                      title = "Enable / disable presentation compiler diagnostics",
+                      command = "plasmon.toggle-pc-diagnostics",
+                      arguments = List("true").asJava
+                    )
+                  }
+                else
+                  None
             )
+
+            (update, hasPcErrors)
           }
         }
 
@@ -574,17 +607,17 @@ class Status(
                 )
             }
 
-            val interactiveUpdate1 = interactiveUpdate0(buildTargetOpt)
+            val (interactiveUpdate1, interactiveUpdatePrecedence) =
+              interactiveUpdate0(buildTargetOpt)
 
             val summaryUpdate =
               indexerSummaryUpdateOpt.getOrElse {
                 if (buildToolUpdate0.isBusy) buildToolUpdate0
                 else if (compilerUpdate0.isBusy) compilerUpdate0
                 else if (interactiveUpdate1.isBusy) interactiveUpdate1
-                else if (buildToolUpdatePrecedence)
-                  buildToolUpdate0
-                else
-                  compilerUpdate0
+                else if (buildToolUpdatePrecedence) buildToolUpdate0
+                else if (interactiveUpdatePrecedence) interactiveUpdate1
+                else compilerUpdate0
               }
 
             Seq(
@@ -597,7 +630,7 @@ class Status(
           case Left(inferredTargets) =>
             val buildTargetOpt = inferredTargets.headOption // FIXME order
 
-            val interactiveUpdate = interactiveUpdate0(buildTargetOpt)
+            val (interactiveUpdate, _) = interactiveUpdate0(buildTargetOpt)
 
             val summaryUpdate = indexerSummaryUpdateOpt.getOrElse(interactiveUpdate)
 

@@ -16,19 +16,7 @@ class Indexer(server: Server) extends HasState.Delegate[String] {
   protected def delegateStateTo: HasState[String] = actor
 
   // loading these targets, plus their transitive dependencies
-  var targets       = Map.empty[BuildServerInfo, Seq[b.BuildTargetIdentifier]]
-  var addAllTargets = Set.empty[BuildServerInfo]
-
-  def addAllTargets(info: BuildServerInfo): Boolean =
-    !addAllTargets.contains(info) && {
-      addAllTargets += info
-      true
-    }
-  def removeAllTargets(info: BuildServerInfo): Boolean =
-    addAllTargets.contains(info) && {
-      addAllTargets -= info
-      true
-    }
+  var targets = Map.empty[BuildServerInfo, Seq[b.BuildTargetIdentifier]]
 
   def addTarget(info: BuildServerInfo, target: b.BuildTargetIdentifier): Boolean = {
     val current = targets.getOrElse(info, Nil)
@@ -57,38 +45,36 @@ class Indexer(server: Server) extends HasState.Delegate[String] {
   private def buildTargetsFile = server.workingDir / ".plasmon/build-targets.json"
 
   def dontReloadBuildTool(info: BuildServerInfo): Boolean = {
-    val removedFromAllTargets = removeAllTargets(info)
-    val formerTargets         = targets
+    val formerTargets = targets
     targets -= info
-    val removedFromTargets = formerTargets.size != targets.size
-    removedFromAllTargets || removedFromTargets
+    formerTargets.size != targets.size
   }
 
   def loadFromDisk(
     toplevelCacheOnly: Boolean,
-    ignoreToplevelSymbolsErrors: Boolean
+    ignoreToplevelSymbolsErrors: Boolean,
+    mayReadFromBspCache: Boolean
   ): Future[Unit] =
     loadFromDisk(
       buildTargetsFile,
       toplevelCacheOnly,
-      ignoreToplevelSymbolsErrors
+      ignoreToplevelSymbolsErrors,
+      mayReadFromBspCache
     )
 
   def loadFromDisk(
     readFrom: os.Path,
     toplevelCacheOnly: Boolean,
-    ignoreToplevelSymbolsErrors: Boolean
+    ignoreToplevelSymbolsErrors: Boolean,
+    mayReadFromBspCache: Boolean
   ): Future[Unit] =
     Persist.loadFromDisk(readFrom, server.tools) match {
-      case Some((addAllTargets0, targets0)) =>
-        val infoIt =
-          addAllTargets0.iterator.map(info => (info, None)) ++
-            targets0.iterator.map { case (info, l) => (info, Some(l)) }
-        val filteredInfoIt = infoIt.filter {
+      case Some(targets0) =>
+        val filteredInfoIt = targets0.iterator.filter {
           case (info, _) =>
             server.bspServers.get(info).isEmpty
         }
-        for ((info, targetsOpt) <- filteredInfoIt) {
+        for ((info, targets) <- filteredInfoIt) {
           scribe.info(
             s"BSP server not found: $info" +
               server.bspServers.list
@@ -96,37 +82,32 @@ class Indexer(server: Server) extends HasState.Delegate[String] {
                 .map(_.info)
                 .mkString(" (available build servers: ", ", ", ")")
           )
-          scribe.info(
-            targetsOpt match {
-              case Some(targets) => s"Not loading targets: ${targets.mkString(", ")}"
-              case None          => "Not loading all targets from it"
-            }
-          )
+          scribe.info(s"Not loading targets: ${targets.mkString(", ")}")
         }
         // Also remove details about build servers not persisted on disk?
-        addAllTargets ++= addAllTargets0
         targets ++= targets0
-        index(toplevelCacheOnly, ignoreToplevelSymbolsErrors)
+        index(toplevelCacheOnly, ignoreToplevelSymbolsErrors, mayReadFromBspCache)
       case None =>
         Future.successful(())
     }
 
   def persist(): Unit =
-    Persist.persistTargets(addAllTargets, targets, buildTargetsFile)
+    Persist.persistTargets(targets, buildTargetsFile)
 
   def index(
     toplevelCacheOnly: Boolean,
-    ignoreToplevelSymbolsErrors: Boolean
+    ignoreToplevelSymbolsErrors: Boolean,
+    mayReadFromBspCache: Boolean
   ): Future[Unit] = {
     val p = Promise[Unit]()
     actor.send(
       IndexerActor.Message.Index(
         targets,
-        addAllTargets,
         Some(toplevelCacheOnly),
         Some(ignoreToplevelSymbolsErrors),
         Some(buildTargetsFile),
-        onDone = Some(res => p.complete(res))
+        onDone = Some(res => p.complete(res)),
+        mayReadFromBspCache = mayReadFromBspCache
       )
     )
     p.future
@@ -145,11 +126,11 @@ class Indexer(server: Server) extends HasState.Delegate[String] {
     actor.send(
       IndexerActor.Message.Index(
         targets,
-        addAllTargets,
         None,
         None,
         None,
-        onDone = Some(res => p.complete(res))
+        onDone = Some(res => p.complete(res)),
+        mayReadFromBspCache = false
       )
     )
     p.future

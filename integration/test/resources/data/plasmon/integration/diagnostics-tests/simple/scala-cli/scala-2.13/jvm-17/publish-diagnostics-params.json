@@ -14,7 +14,9 @@
       },
       "severity": "Error",
       "source": "bloop",
-      "message": "not found: value zz",
+      "message": {
+        "left": "not found: value zz"
+      },
       "data": {
         "actions": []
       }

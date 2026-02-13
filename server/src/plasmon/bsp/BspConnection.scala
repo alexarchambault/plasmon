@@ -19,9 +19,7 @@ final case class BspConnection(
   def name: String =
     params.getDisplayName
   def enhancedName: String =
-    if (name == "mill-bsp") "Mill"
-    else if (name == "scala-cli") "Scala CLI"
-    else name
+    BspConnection.enhancedName(name)
   def info: BuildServerInfo =
     launcher.info
 
@@ -50,4 +48,9 @@ object BspConnection {
 
   given JsonValueCodec[AsJson] =
     JsonCodecMaker.make
+
+  def enhancedName(name: String): String =
+    if (name == "mill-bsp" || name == "mill") "Mill"
+    else if (name == "scala-cli") "Scala CLI"
+    else name
 }

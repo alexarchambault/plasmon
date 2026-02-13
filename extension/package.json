@@ -52,11 +52,19 @@
         "title": "Plasmon: Test fancy status tooltip"
       },
       {
+        "command": "plasmon.show-process-log",
+        "title": "Plasmon: Show server process stderr"
+      },
+      {
+        "command": "plasmon.check-concurrent-server",
+        "title": "Plasmon: Check for concurrent server"
+      },
+      {
         "command": "plasmon.dump-symbol-index",
         "title": "Plasmon: Dump symbol index for current module"
       },
       {
-        "command": "plasmon.dump-full-tree",
+        "command": "plasmon.dump-typed-tree",
         "title": "Plasmon: Dump presentation compiler typed tree for current file"
       },
       {
@@ -126,6 +134,18 @@
       {
         "command": "plasmon.interactive-compiler",
         "title": "Plasmon: Interactive compiler"
+      },
+      {
+        "command": "plasmon.enable-pc-diagnostics",
+        "title": "Plasmon: Enable presentation compiler diagnostics"
+      },
+      {
+        "command": "plasmon.disable-pc-diagnostics",
+        "title": "Plasmon: Disable presentation compiler diagnostics"
+      },
+      {
+        "command": "plasmon.toggle-pc-diagnostics",
+        "title": "Plasmon: Toggle presentation compiler diagnostics"
       },
       {
         "command": "plasmon.compile",

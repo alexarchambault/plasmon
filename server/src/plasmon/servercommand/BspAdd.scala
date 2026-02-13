@@ -87,22 +87,11 @@ object BspAdd extends ServerCommand[BspAddOptions] {
           .filter(_.trim.nonEmpty)
           .map(os.Path(_, workingDir))
           .getOrElse(BspUtil.bspFile(path))
-        BuildServerInfo.Bsp(
-          path,
-          bspFile,
-          Some(options.onlyTarget)
-            .filter(_.nonEmpty)
-            .map(_.map(BspUtil.targetFullId(path, _).getUri).toSet)
-        )
+        BuildServerInfo.Bsp(path, bspFile)
       case Bloop =>
         BuildServerInfo.Bloop(path)
       case Mill =>
-        BuildServerInfo.Mill(
-          path,
-          Some(options.onlyTarget)
-            .filter(_.nonEmpty)
-            .map(_.map(BspUtil.targetFullId(path, _).getUri).toSet)
-        )
+        BuildServerInfo.Mill(path)
       case ScalaCli =>
         val workspace = if (os.isFile(paths.head)) paths.head / os.up else paths.head
         BuildServerInfo.ScalaCli(

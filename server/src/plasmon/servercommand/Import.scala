@@ -20,8 +20,6 @@ final case class Import(
 ) extends ServerCommandInstance[ImportOptions](client) {
   def run(options: ImportOptions, args: RemainingArgs): Unit = {
 
-    val onlyTargets = options.target.map(_.trim).toSet
-
     val allTargetsByBuildServer = server.bspServers.list.flatMap(_._2).map { buildServer =>
       buildServer -> buildServer
         .conn
@@ -37,45 +35,8 @@ final case class Import(
       printLine(target.getId.getUri, toStderr = true)
     printLine("", toStderr = true)
 
-    val targetsByBuildServer = allTargetsByBuildServer.map {
-      case (buildServer, allTargets) =>
-        val targets =
-          if (onlyTargets.isEmpty)
-            allTargets
-          else
-            allTargets
-              .filter { target =>
-                onlyTargets.contains(target.getId.getUri) ||
-                onlyTargets.contains(BspUtil.targetShortId(
-                  server.bspData,
-                  target.getId
-                ))
-              }
-        (buildServer, targets)
-    }
-
-    if (onlyTargets.nonEmpty && targetsByBuildServer.map(_._2.length).sum != onlyTargets.size) {
-      val loadedTargets = targetsByBuildServer
-        .flatMap {
-          case (buildServer, targets) =>
-            targets.map(target =>
-              BspUtil.targetShortId(server.bspData, target.getId)
-            ) ++
-              targets.map(_.getId.getUri)
-        }
-      val missing = onlyTargets -- loadedTargets
-      assert(missing.nonEmpty)
-      val missing0 = missing.toVector.sorted
-      printLine(s"Target(s) not found: ${missing0.mkString(", ")}", toStderr = true)
-      printLine(s" Loaded target(s):", toStderr = true)
-      for (target <- loadedTargets)
-        printLine(target, toStderr = true)
-      printLine("", toStderr = true)
-      exit(1)
-    }
-
     printLine(
-      s"Retained ${targetsByBuildServer.map(_._2.length).sum} build targets",
+      s"Retained ${allTargetsByBuildServer.map(_._2.length).sum} build targets",
       toStderr = true
     )
 
@@ -84,11 +45,9 @@ final case class Import(
       else "Indexing build targets",
       toStderr = true
     )
-    if (!options.keep) {
+    if (!options.keep)
       indexer.targets = Map.empty
-      indexer.addAllTargets = Set.empty
-    }
-    for ((server, targets) <- targetsByBuildServer)
+    for ((server, targets) <- allTargetsByBuildServer)
       indexer.addTargets(server.info, targets.map(_.getId))
     try {
       val f = indexer.index(
@@ -107,7 +66,8 @@ final case class Import(
         //       finalTargetsSets.get(info).exists(_.contains(target.getId))
         // },
         toplevelCacheOnly = options.toplevelCacheOnly,
-        ignoreToplevelSymbolsErrors = options.ignoreToplevelSymbolsErrors
+        ignoreToplevelSymbolsErrors = options.ignoreToplevelSymbolsErrors,
+        mayReadFromBspCache = false
       )
       Await.result(f, Duration.Inf)
     }

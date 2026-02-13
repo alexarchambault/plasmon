@@ -4,7 +4,6 @@ import caseapp.core.help.Help
 import caseapp.core.parser.Parser
 
 final case class ImportOptions(
-  target: List[String] = Nil,
   connection: Option[String] = None,
   toplevelCacheOnly: Boolean = false,
   ignoreToplevelSymbolsErrors: Boolean = true,

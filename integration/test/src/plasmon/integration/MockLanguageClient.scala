@@ -110,5 +110,10 @@ object MockLanguageClient {
     override def applyEdit(applyEditParams: l.ApplyWorkspaceEditParams)
       : CompletableFuture[l.ApplyWorkspaceEditResponse] =
       super.applyEdit(applyEditParams)
+    override def refreshFoldingRanges(): CompletableFuture[Void] =
+      super.refreshFoldingRanges()
+    override def refreshTextDocumentContent(params: l.TextDocumentContentRefreshParams)
+      : CompletableFuture[Void] =
+      super.refreshTextDocumentContent(params)
   }
 }

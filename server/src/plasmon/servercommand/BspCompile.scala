@@ -78,7 +78,7 @@ final case class BspCompile(
                       .getMessage
                       .contains("Compilation failed") =>
                   new b.CompileResult(b.StatusCode.ERROR)
-              }(dummyEc)
+              }(using dummyEc)
             else
               f
         }

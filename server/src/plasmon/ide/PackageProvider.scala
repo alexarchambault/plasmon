@@ -116,7 +116,8 @@ class PackageProvider(
         new l.WorkspaceEdit(changes)
       case Some(version) =>
         val id = new l.VersionedTextDocumentIdentifier(path.toNIO.toUri.toASCIIString, version)
-        val textDocEdit = new l.TextDocumentEdit(id, List(textEdit).asJava)
+        val textDocEdit =
+          new l.TextDocumentEdit(id, List(l.jsonrpc.messages.Either.forLeft(textEdit)).asJava)
         val changes = List(
           JEither.forLeft[l.TextDocumentEdit, l.ResourceOperation](textDocEdit)
         ).asJava

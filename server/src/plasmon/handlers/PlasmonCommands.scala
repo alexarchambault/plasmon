@@ -52,6 +52,8 @@ import plasmon.languageclient.PlasmonConfiguredLanguageClient
 import java.util.concurrent.atomic.AtomicInteger
 import coursier.version.Version
 import plasmon.internal.Constants
+import plasmon.index.IndexerActor.Message
+import plasmon.bsp.Diagnostics
 
 object PlasmonCommands {
 
@@ -319,18 +321,14 @@ object PlasmonCommands {
             val targetId = new b.BuildTargetIdentifier(
               server0.info.workspace.toNIO.toUri.toASCIIString + "mill-build"
             )
-            if (server0.info.onlyTargets.forall(_.contains(targetId.getUri))) {
-              val sourcesResp =
-                server0.conn.buildTargetSources(new b.SourcesParams(List(targetId).asJava)).get()
-              val isMillBuildSource = sourcesResp.getItems.asScala.iterator
-                .filter(_.getTarget == targetId)
-                .flatMap(_.getSources.asScala.iterator)
-                .map(_.getUri.osPathFromUri)
-                .exists(_ == file)
-              if (isMillBuildSource) Seq(targetId) else Nil
-            }
-            else
-              Nil
+            val sourcesResp =
+              server0.conn.buildTargetSources(new b.SourcesParams(List(targetId).asJava)).get()
+            val isMillBuildSource = sourcesResp.getItems.asScala.iterator
+              .filter(_.getTarget == targetId)
+              .flatMap(_.getSources.asScala.iterator)
+              .map(_.getUri.osPathFromUri)
+              .exists(_ == file)
+            if (isMillBuildSource) Seq(targetId) else Nil
           }
           else
             res.getTargets.asScala.toVector
@@ -374,9 +372,7 @@ object PlasmonCommands {
       val retainedTargets = {
         val l = targets0
           .collect {
-            case id
-                if server0.info.onlyTargets.forall(_.contains(id.getUri)) &&
-                !loadedTargetIds.contains(id) =>
+            case id if !loadedTargetIds.contains(id) =>
               id
           }
           .toVector
@@ -700,22 +696,14 @@ object PlasmonCommands {
       hard = false
     ),
     CommandHandler.of("plasmon/unloadAllModules", refreshStatus = true) { (_, _) =>
-      val removedCount =
-        indexer.targets
-          .map {
-            case (info, targetIds) =>
-              for (id <- targetIds)
-                indexer.removeTarget(info, id)
-              targetIds.length
-          }
-          .sum +
-          indexer.addAllTargets
-            .map { info =>
-              val count = server.bspData.targetData(info).map(_.targetToWorkspace.size).getOrElse(0)
-              indexer.removeAllTargets(info)
-              count
-            }
-            .sum
+      val removedCount = indexer.targets
+        .map {
+          case (info, targetIds) =>
+            for (id <- targetIds)
+              indexer.removeTarget(info, id)
+            targetIds.length
+        }
+        .sum
       if (removedCount > 0) {
         indexer.persist()
         indexer.reIndex().onComplete {
@@ -727,19 +715,13 @@ object PlasmonCommands {
       CompletableFuture.completedFuture(writeToGson(UnloadAllModulesResponse(removedCount)))
     },
     CommandHandler.of("plasmon/unloadAllBuildTools", refreshStatus = true) { (_, _) =>
-      val indexerInfos = indexer.targets.keySet ++ indexer.addAllTargets
-      val removed =
-        indexer.targets.map {
-          case (info, targetIds) =>
-            indexer.dontReloadBuildTool(info)
-            targetIds.length
-        } ++
-          indexer.addAllTargets.map { info =>
-            val count = server.bspData.targetData(info).map(_.targetToWorkspace.size).getOrElse(0)
-            indexer.removeAllTargets(info)
-            indexer.dontReloadBuildTool(info)
-            count
-          }
+      indexer.actor.send(Message.InterruptIndexing)
+      val indexerInfos = indexer.targets.keySet
+      val removed = indexer.targets.map {
+        case (info, targetIds) =>
+          indexer.dontReloadBuildTool(info)
+          targetIds.length
+      }
       val extraInfos = server.bspServers.list.flatMap(_._2.map(_.info)).filterNot(indexerInfos)
       for (info <- extraInfos)
         indexer.dontReloadBuildTool(info)
@@ -1355,6 +1337,36 @@ object PlasmonCommands {
               val resp = writeToGson(InteractiveCompilerInterruptResponse(interrupted))
               CompletableFuture.completedFuture(resp)
           }
+      },
+      CommandHandler.of("plasmon/enablePcDiagnostics") {
+        (params, logger) =>
+          params.as[Boolean]("plasmon/enablePcDiagnostics") { enable =>
+            val clients = server.bspServers.list.flatMap(_._2).map(_.client)
+            val types =
+              if (enable) Set(
+                Diagnostics.Type.Compilation,
+                Diagnostics.Type.Syntax,
+                Diagnostics.Type.PresentationCompiler
+              )
+              else Set(Diagnostics.Type.Compilation, Diagnostics.Type.Syntax)
+            for (client <- clients)
+              client.setDiagnosticTypes(types)
+            CompletableFuture.completedFuture(null)
+          }
+      },
+      CommandHandler.of("plasmon/togglePcDiagnostics") {
+        (params, logger) =>
+          val clients = server.bspServers.list.flatMap(_._2).map(_.client)
+          for (client <- clients) {
+            val currentTypes = client.diagnosticTypes
+            val updatedTypes =
+              if (currentTypes(Diagnostics.Type.PresentationCompiler))
+                currentTypes - Diagnostics.Type.PresentationCompiler
+              else
+                currentTypes + Diagnostics.Type.PresentationCompiler
+            client.setDiagnosticTypes(updatedTypes)
+          }
+          CompletableFuture.completedFuture(null)
       }
     )
 

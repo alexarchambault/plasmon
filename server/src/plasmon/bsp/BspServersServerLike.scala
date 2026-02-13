@@ -14,6 +14,6 @@ trait BspServersServerLike {
 
   def tools: BuildTool.Tools
 
-  def createBuildClient(): PlasmonBuildClientImpl
+  def createBuildClient(buildToolName: String): PlasmonBuildClientImpl
   def languageClient: PlasmonLanguageClient
 }

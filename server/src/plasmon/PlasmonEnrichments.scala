@@ -281,6 +281,13 @@ object PlasmonEnrichments {
       else path
   }
 
+  implicit class URIThingExtensions(uri: URI) {
+    // toRealPath converts lower case driver letters (that VSCode often handles us)
+    // to upper case. The latter matches the JVM convention.
+    def toOsPath: os.Path =
+      os.Path(Paths.get(uri).maybeToRealPath)
+  }
+
   implicit class StringThingExtensions(value: String) {
     // toRealPath converts lower case driver letters (that VSCode often handles us)
     // to upper case. The latter matches the JVM convention.
@@ -647,7 +654,7 @@ object PlasmonEnrichments {
         fansi.Str(diag.getMessage, fansi.ErrorMode.Strip).plainText,
         if (diag.getSeverity == null) l.DiagnosticSeverity.Warning
         else diag.getSeverity.toLsp,
-        if (diag.getSource == null) "scalac" else diag.getSource
+        diag.getSource
       )
 
       for (code <- Option(diag.getCode))

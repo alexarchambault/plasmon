@@ -25,12 +25,21 @@ class PlasmonBuildClientImpl(
   buffers: Buffers,
   trees: Trees,
   workspace: os.Path,
-  onBuildTargetDidChangeFunc: b.DidChangeBuildTarget => Unit
+  onBuildTargetDidChangeFunc: b.DidChangeBuildTarget => Unit,
+  initialBuildToolName: String
 ) extends PlasmonBuildClient with AutoCloseable {
 
   import PlasmonBuildClientImpl.*
 
-  private val diagnostics = new Diagnostics(buffers, languageClient, workspace, trees)
+  def setBuildToolName(name: String): Unit =
+    diagnostics.setDefaultSource(name)
+
+  def diagnosticTypes: Set[Diagnostics.Type] =
+    diagnostics.diagnosticTypes
+  def setDiagnosticTypes(types: Set[Diagnostics.Type]): Unit =
+    diagnostics.setTypes(types)
+
+  private val diagnostics = new Diagnostics(buffers, languageClient, workspace, trees, initialBuildToolName)
 
   private val requestCount = new AtomicInteger
   private var loggerOpt    = Option.empty[Logger]
@@ -50,6 +59,7 @@ class PlasmonBuildClientImpl(
         case l.MessageType.Warning => "[warn] "
         case l.MessageType.Info    => "[info] "
         case l.MessageType.Log     => ""
+        case l.MessageType.Debug   => ""
       }
       for (line <- params.getMessage.linesIterator)
         logger.log(prefix + line)
@@ -75,6 +85,8 @@ class PlasmonBuildClientImpl(
           scribe.info(params.getMessage)
         case l.MessageType.Log =>
           scribe.info(params.getMessage)
+        case l.MessageType.Debug =>
+          scribe.debug(params.getMessage)
       }
   }
 
@@ -215,6 +227,8 @@ class PlasmonBuildClientImpl(
     diagnostics.didDelete(path)
   def diagnosticsFor(path: os.Path): Seq[l.Diagnostic] =
     diagnostics.diagnostics.get(path).map(_.asScala.toSeq).getOrElse(Nil).map(_._2)
+  def pcDiagnosticsFor(path: os.Path): Seq[l.Diagnostic] =
+    diagnostics.pcDiagnostics.get(path).getOrElse(Nil).map(_._2)
   def toFreshDiagnostic(
     module: GlobalSymbolIndex.Module,
     path: os.Path,
@@ -227,6 +241,12 @@ class PlasmonBuildClientImpl(
     diags: List[l.Diagnostic]
   ): Unit =
     diagnostics.onSyntaxError(module, path, diags)
+  def onPcDiagnostics(
+    module: GlobalSymbolIndex.Module,
+    path: os.Path,
+    diags: Seq[l.Diagnostic]
+  ): Unit =
+    diagnostics.onPcDiagnostics(module, path, diags)
 
   def close(): Unit = {
     diagnostics.close()

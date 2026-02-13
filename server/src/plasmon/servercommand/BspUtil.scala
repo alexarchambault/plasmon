@@ -580,6 +580,8 @@ object BspUtil {
 
     scribe.info(s"BSP server initialization result: $initRes")
 
+    buildClient0.setBuildToolName(BspConnection.enhancedName(initRes.getDisplayName))
+
     (buildServer, initRes, launcher.getRemoteEndpoint, buildClient0)
   }
 
@@ -627,10 +629,6 @@ object BspUtil {
       .map(_.trim)
       .filter(_.nonEmpty)
       .flatMap(TagConstraint.parse)
-    val onlyTargets = options.target.map(_.trim).toSet
-
-    if (onlyTargets.nonEmpty && constraints.nonEmpty)
-      sys.error("Cannot use both --require and --target")
 
     def allTargetConnections0 = allTargetData.toVector.flatMap { data =>
       for {
@@ -647,14 +645,7 @@ object BspUtil {
 
     val targetConnections =
       if (constraints.isEmpty)
-        if (onlyTargets.isEmpty)
-          allTargetConnections
-        else
-          allTargetConnections
-            .filter {
-              case (id, shortId, server) =>
-                onlyTargets.contains(shortId)
-            }
+        allTargetConnections
       else
         allTargetConnections0
           .flatMap {
@@ -668,14 +659,6 @@ object BspUtil {
               else
                 Nil
           }
-
-    if (onlyTargets.nonEmpty && targetConnections.length != onlyTargets.size) {
-      val missing = onlyTargets -- targetConnections.map(_._2)
-      assert(missing.nonEmpty)
-      val missing0 = missing.toVector.sorted
-      log(s"Target(s) not found: ${missing0.mkString(", ")}")
-      ServerCommandInstance.exit(1)
-    }
 
     targetConnections
       .groupBy(_._3)

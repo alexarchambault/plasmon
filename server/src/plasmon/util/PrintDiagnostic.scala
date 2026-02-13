@@ -2,6 +2,7 @@ package plasmon.util
 
 import ch.epfl.scala.{bsp4j => b}
 import org.eclipse.{lsp4j => l}
+import plasmon.PlasmonEnrichments.*
 
 import java.io.File
 
@@ -39,7 +40,7 @@ object PrintDiagnostic {
   ): Unit = {
     val diag0 = new b.Diagnostic(
       lspToBspRange(diag.getRange),
-      diag.getMessage
+      diag.getMessage.asScala.fold(identity, _.getValue)
     )
     for (code <- Option(diag.getCode))
       if (code.isLeft)

@@ -93,15 +93,7 @@ object BuildToolAdd extends ServerCommand[BuildToolAddOptions] {
           .filter(_.trim.nonEmpty)
           .map(os.Path(_, workingDir))
           .getOrElse(BspUtil.bspFile(path))
-        BuildTool.Bsp(
-          BuildServerInfo.Bsp(
-            path,
-            bspFile,
-            Some(options.shared.onlyTarget)
-              .filter(_.nonEmpty)
-              .map(_.map(BspUtil.targetFullId(path, _).getUri).toSet)
-          )
-        )
+        BuildTool.Bsp(BuildServerInfo.Bsp(path, bspFile))
       case Bloop =>
         BuildTool.Bloop(path)
       case MillViaBloop =>

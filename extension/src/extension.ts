@@ -1,6 +1,8 @@
 import { env } from 'process'
 import * as vscode from 'vscode'
 import * as os from 'os'
+import * as fs from 'fs'
+import * as path from 'path'
 
 import { CloseAction, DocumentSelector, ErrorAction, ErrorHandler, ExecuteCommandParams, ExecuteCommandRequest, ExitNotification, LanguageClient, LanguageClientOptions, Location, ServerOptions, integer } from 'vscode-languageclient/node'
 
@@ -143,16 +145,12 @@ class Deferred<T> {
 }
 let inProgressTasks: { [ids: string]: Deferred<void> } = {}
 
-async function downloadViaCoursierCache(): Promise<string> {
-  return ''
-}
-
 function plasmonStartingStatus(isRestart: boolean): void {
   if (statusBarItem) {
     statusBarItem.text = isRestart ? "Plasmon restarting $(loading~spin)" : "Plasmon starting $(loading~spin)"
     statusBarItem.backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground')
     statusBarItem.tooltip = undefined
-    statusBarItem.command = undefined
+    statusBarItem.command = "plasmon.show-process-log"
   }
 }
 
@@ -161,8 +159,60 @@ function plasmonFailedToStartStatus(): void {
     statusBarItem.text = "Plasmon failed to start"
     statusBarItem.backgroundColor = new vscode.ThemeColor('statusBarItem.errorBackground')
     statusBarItem.tooltip = undefined
-    statusBarItem.command = undefined
+    statusBarItem.command = "plasmon.show-process-log"
   }
+}
+
+function checkConcurrentServer(): boolean {
+  let workspacePath = vscode.workspace.workspaceFolders?.[0].uri.fsPath
+  if (workspacePath) {
+    let lockFilePath = path.join(workspacePath, ".plasmon/lock")
+    if (fs.existsSync(lockFilePath)) {
+      let content = fs.readFileSync(lockFilePath, "utf-8")
+      var pid = -1
+      for (const line of content.split("\n"))
+        if (line.startsWith("pid="))
+          pid = parseInt(line.split("=")[1].trim())
+      if (pid > 0) {
+        console.log(`Found PID ${pid} in lock file ${lockFilePath}, checking if it's alive`)
+        function isRunning(): boolean {
+          try {
+            process.kill(pid, 0)
+            return true
+          } catch {
+            // ignored
+          }
+          return false
+        }
+        if (isRunning()) {
+          vscode.window.showInformationMessage(
+            `Another Plasmon process is running with PID ${pid}`,
+            "Kill it",
+            "Dismiss"
+          ).then((elem) => {
+            if (elem == "Kill it") {
+              if (isRunning()) {
+                console.log(`Interrupting process ${pid}`)
+                process.kill(pid, "SIGINT")
+                setTimeout(
+                  () => {
+                    if (isRunning()) {
+                      console.log(`Process ${pid} still running, killing it for good`)
+                      process.kill(pid, "SIGKILL")
+                    }
+                  },
+                  2000
+                )
+              }
+            }
+          })
+          return true
+        }
+      }
+    }
+  }
+
+  return false
 }
 
 function createClient(
@@ -205,6 +255,9 @@ function createClient(
         return action
       }
     }
+
+    checkConcurrentServer()
+
     let client0 = new LanguageClient(
       "Plasmon process",
       serverOptions,
@@ -923,6 +976,7 @@ export function activate(context: vscode.ExtensionContext) {
   statusBarItem.text = 'Plasmon starting $(loading~spin)'
   statusBarItem.tooltip = 'The tooltip'
   statusBarItem.backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground')
+  statusBarItem.command = "plasmon.show-process-log"
   context.subscriptions.push(statusBarItem)
   statusBarItem.show()
 
@@ -1054,6 +1108,23 @@ export function activate(context: vscode.ExtensionContext) {
   )
 
   context.subscriptions.push(
+    vscode.commands.registerCommand("plasmon.show-process-log", () => {
+      let channel = client?.outputChannel
+      if (channel)
+        channel.show(true)
+      else
+        console.log(`Client unavailable, cannot show its output channel`)
+    })
+  )
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand("plasmon.check-concurrent-server", () => {
+      if (!checkConcurrentServer())
+        vscode.window.showInformationMessage("No concurrent Plasmon process found")
+    })
+  )
+
+  context.subscriptions.push(
     vscode.commands.registerCommand("plasmon.show-doc", async (docName, docContent, docLanguage) => {
       const strUri = `${RO_SCHEME}:/${docName}`
       documents[strUri] = docContent
@@ -1095,7 +1166,7 @@ export function activate(context: vscode.ExtensionContext) {
   )
 
   context.subscriptions.push(
-    vscode.commands.registerCommand(`plasmon.dump-full-tree`, () => {
+    vscode.commands.registerCommand(`plasmon.dump-typed-tree`, () => {
       interface Resp {
         targetId: string
         fullTree: string
@@ -1110,7 +1181,7 @@ export function activate(context: vscode.ExtensionContext) {
             vscode.window.showErrorMessage(`Error getting typed tree: ${resp.error}`, { modal: false })
           }
           else {
-            const strUri = `${RO_SCHEME}:${uri}/full-tree.scala`
+            const strUri = `${RO_SCHEME}:${uri}/typed-tree.scala`
             documents[strUri] = resp.fullTree + os.EOL + os.EOL + "/*" + os.EOL + os.EOL + resp.diagnostics + os.EOL + os.EOL + "*/"
             const doc = await vscode.workspace.openTextDocument(vscode.Uri.parse(strUri))
             await vscode.window.showTextDocument(doc, { preview: false })
@@ -1643,6 +1714,45 @@ export function activate(context: vscode.ExtensionContext) {
           let msg = `Error while sending plasmon/interactiveCompilerActions command for ${uri}: ${err}`
           console.log(msg)
           vscode.window.showErrorMessage(msg)
+        }
+      )
+    })
+  )
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand(`plasmon.enable-pc-diagnostics`, () => {
+      let uri = lastFocusedDocument
+      client?.sendRequest(ExecuteCommandRequest.type, { command: "plasmon/enablePcDiagnostics", arguments: [true] }).then(
+        () => {},
+        (err) => {
+          console.log(`Error running command plasmon/enablePcDiagnostics(true): ${err}`)
+          vscode.window.showErrorMessage(`Error enabling presentation compiler diagnostics: ${err}`, { modal: false })
+        }
+      )
+    })
+  )
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand(`plasmon.disable-pc-diagnostics`, () => {
+      let uri = lastFocusedDocument
+      client?.sendRequest(ExecuteCommandRequest.type, { command: "plasmon/enablePcDiagnostics", arguments: [false] }).then(
+        () => {},
+        (err) => {
+          console.log(`Error running command plasmon/enablePcDiagnostics(false): ${err}`)
+          vscode.window.showErrorMessage(`Error disabling presentation compiler diagnostics: ${err}`, { modal: false })
+        }
+      )
+    })
+  )
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand(`plasmon.toggle-pc-diagnostics`, () => {
+      let uri = lastFocusedDocument
+      client?.sendRequest(ExecuteCommandRequest.type, { command: "plasmon/togglePcDiagnostics" }).then(
+        () => {},
+        (err) => {
+          console.log(`Error running command plasmon/togglePcDiagnostics: ${err}`)
+          vscode.window.showErrorMessage(`Error toggling presentation compiler diagnostics: ${err}`, { modal: false })
         }
       )
     })

@@ -9,9 +9,7 @@ final case class SharedBspAddRemoveOptions(
   millViaBloop: Option[Boolean] = None,
   bloop: Option[Boolean] = None,
   scalaCli: Option[Boolean] = None,
-  bspFile: Option[String] = None,
-  @Name("onlyTargets")
-  onlyTarget: List[String] = Nil
+  bspFile: Option[String] = None
 )
 
 object SharedBspAddRemoveOptions {

@@ -146,7 +146,7 @@ class BspServersActor(
           BspUtil.bspServerFromInfo(
             launcher,
             log,
-            server.createBuildClient,
+            () => server.createBuildClient(BspConnection.enhancedName(launcher.preliminaryDisplayName)),
             server.languageClient,
             launcher.info.id,
             launcher.preliminaryDisplayName,

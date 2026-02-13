@@ -26,6 +26,7 @@ import scala.util.Properties
 import java.util.Arrays
 import scala.annotation.nowarn
 import scala.concurrent.duration.Duration
+import com.google.gson.JsonSyntaxException
 
 object TestUtil {
 
@@ -649,12 +650,22 @@ object TestUtil {
       else res
     val os0 = osOpt.getOrElse(System.err)
     if (TestParams.updateSnapshotsFast) {
-      val expectedResOpt = if (os.exists(path)) Some(read(os.read.bytes(path))) else None
+      val expectedResOpt =
+        if (os.exists(path))
+          try Some(read(os.read.bytes(path)))
+          catch {
+            case e: JsonSyntaxException =>
+              System.err.println(s"Warning: caught $e while reading $path")
+              None
+          }
+        else
+          None
       expectedResOpt match {
         case None =>
           os0.write((s"Writing $path" + System.lineSeparator()).getBytes("UTF-8"))
           os0.flush()
-          os.write(path, write(res), createFolders = true)
+          // over is for when parsing the file failed, see JsonSyntaxException above
+          os.write.over(path, write(res), createFolders = true)
           for (alt <- alternativePaths)
             os.remove(alt)
         case Some(expectedRes) =>
