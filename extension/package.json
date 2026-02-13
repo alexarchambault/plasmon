@@ -56,6 +56,10 @@
         "title": "Plasmon: Show server process stderr"
       },
       {
+        "command": "plasmon.check-concurrent-server",
+        "title": "Plasmon: Check for concurrent server"
+      },
+      {
         "command": "plasmon.dump-symbol-index",
         "title": "Plasmon: Dump symbol index for current module"
       },

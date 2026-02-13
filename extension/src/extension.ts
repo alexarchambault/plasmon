@@ -1,6 +1,8 @@
 import { env } from 'process'
 import * as vscode from 'vscode'
 import * as os from 'os'
+import * as fs from 'fs'
+import * as path from 'path'
 
 import { CloseAction, DocumentSelector, ErrorAction, ErrorHandler, ExecuteCommandParams, ExecuteCommandRequest, ExitNotification, LanguageClient, LanguageClientOptions, Location, ServerOptions, integer } from 'vscode-languageclient/node'
 
@@ -165,6 +167,58 @@ function plasmonFailedToStartStatus(): void {
   }
 }
 
+function checkConcurrentServer(): boolean {
+  let workspacePath = vscode.workspace.workspaceFolders?.[0].uri.fsPath
+  if (workspacePath) {
+    let lockFilePath = path.join(workspacePath, ".plasmon/lock")
+    if (fs.existsSync(lockFilePath)) {
+      let content = fs.readFileSync(lockFilePath, "utf-8")
+      var pid = -1
+      for (const line of content.split("\n"))
+        if (line.startsWith("pid="))
+          pid = parseInt(line.split("=")[1].trim())
+      if (pid > 0) {
+        console.log(`Found PID ${pid} in lock file ${lockFilePath}, checking if it's alive`)
+        function isRunning(): boolean {
+          try {
+            process.kill(pid, 0)
+            return true
+          } catch {
+            // ignored
+          }
+          return false
+        }
+        if (isRunning()) {
+          vscode.window.showInformationMessage(
+            `Another Plasmon process is running with PID ${pid}`,
+            "Kill it",
+            "Dismiss"
+          ).then((elem) => {
+            if (elem == "Kill it") {
+              if (isRunning()) {
+                console.log(`Interrupting process ${pid}`)
+                process.kill(pid, "SIGINT")
+                setTimeout(
+                  () => {
+                    if (isRunning()) {
+                      console.log(`Process ${pid} still running, killing it for good`)
+                      process.kill(pid, "SIGKILL")
+                    }
+                  },
+                  2000
+                )
+              }
+            }
+          })
+          return true
+        }
+      }
+    }
+  }
+
+  return false
+}
+
 function createClient(
   context: vscode.ExtensionContext,
   serverOptions: ServerOptions,
@@ -205,6 +259,9 @@ function createClient(
         return action
       }
     }
+
+    checkConcurrentServer()
+
     let client0 = new LanguageClient(
       "Plasmon process",
       serverOptions,
@@ -1061,6 +1118,13 @@ export function activate(context: vscode.ExtensionContext) {
         channel.show(true)
       else
         console.log(`Client unavailable, cannot show its output channel`)
+    })
+  )
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand("plasmon.check-concurrent-server", () => {
+      if (!checkConcurrentServer())
+        vscode.window.showInformationMessage("No concurrent Plasmon process found")
     })
   )
 
