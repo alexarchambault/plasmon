@@ -187,7 +187,7 @@ class IndexerActor(
     if (interruptIndexing()) return Nil
 
     val toplevelSymbolsCache = new ToplevelSymbolsCache(
-      server.workingDir / ".plasmon/toplevel-cache",
+      server.workingDir / ".plasmon/cache/toplevel",
       os.Path(coursierapi.Cache.create().getLocation, os.pwd),
       os.Path(coursierapi.ArchiveCache.create().getLocation, os.pwd),
       readOnly = message.toplevelCacheOnly.getOrElse(latestToplevelCacheOnly)
