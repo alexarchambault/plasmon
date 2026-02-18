@@ -551,13 +551,13 @@ object TestUtil {
       Labelled("17", "temurin:17.0.7")
     )
 
-  private lazy val buildTools = Seq(
-    SingleModuleBuildTool.ScalaCli,
+  private def buildTools = Seq(
+    SingleModuleBuildTool.ScalaCli(),
     SingleModuleBuildTool.Mill,
     SingleModuleBuildTool.Sbt
   )
 
-  lazy val buildToolJvmValues: Seq[(SingleModuleBuildTool, Labelled[String], String)] =
+  def buildToolJvmValues: Seq[(SingleModuleBuildTool, Labelled[String], String)] =
     for {
       buildTool <- buildTools
       jvm       <- jvmValues
@@ -576,9 +576,21 @@ object TestUtil {
       SingleModuleBuildTool,
       Labelled[String],
       String
+    )] = scalaVersionBuildToolJvmValues0(scripting = false)
+
+  def scalaVersionBuildToolJvmValues0(scripting: Boolean)
+    : Seq[(
+      Option[Labelled[String]],
+      Seq[String],
+      SingleModuleBuildTool,
+      Labelled[String],
+      String
     )] =
     for {
-      buildTool <- buildTools
+      buildTool <- buildTools ++ {
+        if (scripting) Seq(SingleModuleBuildTool.ScalaCli(scriptMode = true))
+        else Nil
+      }
       (scalaVersion, serverOpt) <- {
         val maybeScala213 =
           if (disableScala2Pc) Nil

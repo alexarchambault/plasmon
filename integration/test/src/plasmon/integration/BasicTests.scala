@@ -92,7 +92,13 @@ class BasicTests extends PlasmonSuite {
   }
 
   for (
-    (scalaVersionOpt, serverOpt, buildTool, jvm, testNameSuffix) <- scalaVersionBuildToolJvmValues
+    (
+      scalaVersionOpt,
+      serverOpt,
+      buildTool,
+      jvm,
+      testNameSuffix
+    ) <- scalaVersionBuildToolJvmValues0(scripting = true)
   )
     test("test" + testNameSuffix) {
       mainTest(scalaVersionOpt, buildTool, jvm, serverOpt)
@@ -102,7 +108,7 @@ class BasicTests extends PlasmonSuite {
     test(s"test Scala CLI Scala ${scalaVersion.label} Java ${jvmValues.head.label} twice") {
       mainTest(
         Some(scalaVersion),
-        SingleModuleBuildTool.ScalaCli,
+        SingleModuleBuildTool.ScalaCli(),
         jvmValues.head,
         serverOpt,
         count = 2
@@ -120,39 +126,41 @@ class BasicTests extends PlasmonSuite {
       scalaVersionOpt.map(_.value).map(sv => s"""//> using scala "$sv"""") ++
         Seq(s"""//> using jvm "${jvm.value}"""")
     ).mkString(System.lineSeparator())
+    def objectStart(name: String) = if (buildTool.scriptBased) "" else s"object $name {"
+    val objectEnd                 = if (buildTool.scriptBased) "" else "}"
     val (actualPath, files) = buildTool.singleModule(
       "test-mod",
       Map(
         os.sub / "Foo.scala" -> fileContentFor(jvm.value, scalaVersionOpt.map(_.value)),
         os.sub / "SigHelp.scala" ->
           s"""$header
-             |object SigHelp {
+             |${objectStart("SigHelp")}
              |  List(<1>)
-             |}
+             |$objectEnd
              |""".stripMargin,
         os.sub / "CodeLensStuff.scala" ->
           s"""
-             |object CodeLensStuff {
+             |${objectStart("CodeLensStuff")}
              |  val a: Iterator[String] =
              |    new Iterator[String] {
              |      def <1>hasNext<2> = true
              |      def <3>next<4>(): String = "a"
              |    }
-             |}
+             |$objectEnd
              |""".stripMargin,
         os.sub / "foo/Definitions.scala" ->
-          """package foo
-            |
-            |object Definitions {
-            |  def count = 2
-            |}
-            |""".stripMargin,
+          s"""package foo
+             |
+             |${objectStart("Definitions")}
+             |  def count = 2
+             |$objectEnd
+             |""".stripMargin,
         os.sub / "foo/Foo.scala" ->
           s"""package foo
              |
-             |object Foo {
+             |${objectStart("Foo")}
              |  def apply(): Int = Defin<1>itions.cou<2>nt + 1
-             |}
+             |$objectEnd
              |""".stripMargin
       )
     )
@@ -364,16 +372,18 @@ class BasicTests extends PlasmonSuite {
 
         val sameModuleGoToDefDir = fixtureDir / "plasmon/integration/single-module/go-to-definition" /
           buildTool.id / s"scala-${scalaVersionOpt.map(_.label).getOrElse("default")}" / s"jvm-${jvm.label}"
-        checkJsoniterFixture(
-          sameModuleGoToDefDir / "obj-definition.json",
-          goToDef(
-            server,
-            workspace,
-            workspace / sameModuleGoToDefPath,
-            positions.lspPos(sameModuleGoToDefPath, 1)
-          ),
-          osOpt
-        )
+        if (!buildTool.scriptBased)
+          // doesn't work for now (needs fixing in Scala CLI, so that the sc files semanticdb retain a symbol for the wrapping object)
+          checkJsoniterFixture(
+            sameModuleGoToDefDir / "obj-definition.json",
+            goToDef(
+              server,
+              workspace,
+              workspace / sameModuleGoToDefPath,
+              positions.lspPos(sameModuleGoToDefPath, 1)
+            ),
+            osOpt
+          )
         checkJsoniterFixture(
           sameModuleGoToDefDir / "method-definition.json",
           goToDef(

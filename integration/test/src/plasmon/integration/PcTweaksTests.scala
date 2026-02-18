@@ -8,7 +8,7 @@ class PcTweaksTests extends PlasmonSuite {
   for {
     (scalaVersionOpt, serverOpt, buildTool, jvm, testNameSuffix) <-
       scalaVersionBuildToolJvmValues ++ olderScalaVersionBuildToolJvmValues
-    if buildTool == SingleModuleBuildTool.ScalaCli
+    if buildTool == SingleModuleBuildTool.ScalaCli()
     scalaVersion <- scalaVersionOpt
   }
     test("Untupling" + testNameSuffix) {
@@ -18,7 +18,7 @@ class PcTweaksTests extends PlasmonSuite {
   for {
     (scalaVersionOpt, serverOpt, buildTool, jvm, testNameSuffix) <-
       scalaVersionBuildToolJvmValues ++ olderScalaVersionBuildToolJvmValues
-    if buildTool == SingleModuleBuildTool.ScalaCli
+    if buildTool == SingleModuleBuildTool.ScalaCli()
     scalaVersion <- scalaVersionOpt
   }
     test("Weird method call" + testNameSuffix) {
@@ -30,7 +30,7 @@ class PcTweaksTests extends PlasmonSuite {
     jvm: Labelled[String],
     serverOpt: Seq[String]
   ): Unit = {
-    val buildTool = SingleModuleBuildTool.ScalaCli
+    val buildTool = SingleModuleBuildTool.ScalaCli()
     val source =
       s"""//> using scala ${scalaVersion.value}
          |//> using jvm ${jvm.value}
@@ -95,7 +95,7 @@ class PcTweaksTests extends PlasmonSuite {
     jvm: Labelled[String],
     serverOpt: Seq[String]
   ): Unit = {
-    val buildTool = SingleModuleBuildTool.ScalaCli
+    val buildTool = SingleModuleBuildTool.ScalaCli()
     val source =
       s"""//> using scala ${scalaVersion.value}
          |//> using jvm ${jvm.value}

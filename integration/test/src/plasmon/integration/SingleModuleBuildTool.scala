@@ -13,6 +13,7 @@ import scala.concurrent.duration.{DurationInt, FiniteDuration, IntMult}
 abstract class SingleModuleBuildTool extends Product with Serializable {
   def id: String
   def displayName: String
+  def scriptBased: Boolean = false
   def singleFile(path: os.SubPath, source: String): (os.SubPath, Seq[(os.SubPath, String)])
   def singleModule(
     moduleName: String,
@@ -67,24 +68,60 @@ object SingleModuleBuildTool {
       .toVector
   }
 
-  case object ScalaCli extends SingleModuleBuildTool {
-    def id          = "scala-cli"
-    def displayName = "Scala CLI"
-    def singleFile(path: os.SubPath, source: String): (os.SubPath, Seq[(os.SubPath, String)]) =
-      (path, Seq(path -> source))
+  case class ScalaCli(scriptMode: Boolean = false) extends SingleModuleBuildTool {
+    override def scriptBased = scriptMode
+    def id                   = if (scriptMode) "scala-cli-scripts" else "scala-cli"
+    def displayName          = if (scriptMode) "Scala CLI scripts" else "Scala CLI"
+    def singleFile(path: os.SubPath, source: String): (os.SubPath, Seq[(os.SubPath, String)]) = {
+      val updatedPath =
+        if (scriptMode && path.last.endsWith(".scala")) {
+          val hasPackageDirective = source.linesIterator.exists(_.startsWith("package"))
+          if (hasPackageDirective)
+            sys.error("Script source cannot contain package directive")
+          else
+            path / os.up / s"${path.last.stripSuffix(".scala")}.sc"
+        }
+        else
+          path
+      (updatedPath, Seq(updatedPath -> source))
+    }
     def singleModule(
       moduleName: String,
       files: Map[os.SubPath, String]
     ): (Map[os.SubPath, os.SubPath], Seq[(os.SubPath, String)]) = {
       // Ignoring moduleName (Scala CLI is basically single module anyway)
-      def pathFor(basePath: os.SubPath) = os.sub / basePath
+      def pathFor(basePath: os.SubPath) =
+        if (scriptMode && basePath.last.endsWith(".scala"))
+          basePath / os.up / s"${basePath.last.stripSuffix(".scala")}.sc"
+        else
+          basePath
+      def updatedContent(basePath: os.SubPath, content: String): String =
+        if (scriptMode && basePath.last.endsWith(".scala")) {
+          val lines = content.linesIterator.zip(content.linesWithSeparators)
+            .map {
+              case (line, lineWithSep) =>
+                if (line.startsWith("package "))
+                  lineWithSep.drop(line.length)
+                else
+                  lineWithSep
+            }
+            .toVector
+          val lines0 =
+            if (lines.forall(line => line.trim.isEmpty() || line.startsWith("  ")))
+              lines.map(_.stripPrefix("  "))
+            else
+              lines
+          lines0.mkString
+        }
+        else
+          content
       val map = files.map {
         case (path, _) =>
           (path, pathFor(path))
       }
       val files0 = files.toVector.sortBy(_._1).map {
         case (path, content) =>
-          (pathFor(path), content)
+          (pathFor(path), updatedContent(path, content))
       }
       (map, files0)
     }

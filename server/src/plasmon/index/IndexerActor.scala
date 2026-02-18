@@ -727,11 +727,11 @@ class IndexerActor(
             override def lineForClient(line: Int): Option[Int] =
               Some(line - topWrapperLineCount)
           }
-        (path, mappedSource)
+        (item.getTarget, path, mappedSource)
       }
 
-    for ((path, mappedSource) <- mappedSources)
-      targetData.addMappedSource(path, mappedSource)
+    for ((targetId, path, mappedSource) <- mappedSources)
+      targetData.addMappedSource(targetId, path, mappedSource)
 
     val sourcesRes = maybeCached("buildTargetSources") {
       buildServer.buildTargetSources(new b.SourcesParams(targetList)).get()
@@ -818,7 +818,7 @@ class IndexerActor(
     dialectOpt: Option[Dialect]
   ): Unit =
     try {
-      val sourceToIndex0 = server.bspData.mappedTo(source).map(_.path).getOrElse(source)
+      val sourceToIndex0 = server.bspData.mappedTo(target, source).map(_.path).getOrElse(source)
       if (os.exists(sourceToIndex0))
         // Since the `symbols` here are toplevel symbols,
         // we cannot use `symbols` for expiring the cache for all symbols in the source.
@@ -862,7 +862,7 @@ class IndexerActor(
   ): Unit =
     try {
       import scala.meta.internal.semanticdb.Scala.*
-      val sourceToIndex0 = server.bspData.mappedTo(source).map(_.path).getOrElse(source)
+      val sourceToIndex0 = server.bspData.mappedTo(target, source).map(_.path).getOrElse(source)
       if (os.exists(sourceToIndex0)) {
         val dialectOpt    = sourceDialect(target, data)
         val reluri        = source.toIdeallyRelativeURI(sourceItem)

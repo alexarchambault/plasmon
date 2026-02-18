@@ -12,6 +12,7 @@ import scala.meta.internal.mtags.Symbol
 import scala.meta.internal.mtags.SymbolDefinition
 import scala.meta.internal.semanticdb.TextDocument
 
+import ch.epfl.scala.{bsp4j => b}
 import org.eclipse.{lsp4j => l}
 import plasmon.PlasmonEnrichments._
 import plasmon.ide.*
@@ -70,7 +71,10 @@ final class PatchedSymbolIndex(
 
       fromSemanticdbs(path)
         .orElse(
-          sourceMapper.mappedTo(path).flatMap(fromSemanticdbs)
+          sourceMapper.mappedTo(
+            new b.BuildTargetIdentifier(module.targetId),
+            path
+          ).flatMap(fromSemanticdbs)
         )
         .getOrElse(parsed)
 

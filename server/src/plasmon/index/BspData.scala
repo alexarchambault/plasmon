@@ -62,23 +62,8 @@ final class BspData(
 
   def sourceItems: Iterable[os.Path] =
     data.iterable.flatMap(_.sourceItemsToBuildTarget.keys)
-  def mappedTo(path: os.Path): Option[TargetData.MappedSource] =
-    data.fromOptions(_.actualSources.get(path))
-  def mappedFrom(path: os.Path): Option[os.Path] =
-    data.fromOptions(_.actualSources.collectFirst {
-      case (source, mapped) if mapped.path == path => source
-    })
-  private def findMappedSource(
-    mappedPath: os.Path
-  ): Option[TargetData.MappedSource] =
-    data
-      .fromOptions(_.actualSources.collectFirst {
-        case (_, mapped) if mapped.path == mappedPath => mapped
-      })
-  def mappedLineForServer(mappedPath: os.Path, line: Int): Option[Int] =
-    findMappedSource(mappedPath).flatMap(_.lineForServer(line))
-  def mappedLineForClient(mappedPath: os.Path, line: Int): Option[Int] =
-    findMappedSource(mappedPath).flatMap(_.lineForClient(line))
+  def mappedTo(target: b.BuildTargetIdentifier, path: os.Path): Option[TargetData.MappedSource] =
+    data.fromOptions(_.actualSources.get(target).flatMap(_.get(path)))
 
   def allTargetRoots: Iterator[os.Path] =
     data.fromIterators(_.allTargetRoots)
