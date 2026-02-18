@@ -745,6 +745,8 @@ object PlasmonCommands {
                           case Failure(ex) =>
                             scribe.error("Error re-indexing", ex)
                         }(using pools.dummyEc)
+                    case Failure(_) =>
+                    // Ignored, reported via the returned future
                   }
 
                   f.map { _ =>
