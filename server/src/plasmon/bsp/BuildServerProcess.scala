@@ -47,7 +47,7 @@ object BuildServerProcess {
     def close(): Unit = {
       scribe.info(s"Closing $this (PID: ${proc.wrapped.pid()})")
       proc.close()
-      if (proc.isAlive() && !proc.waitFor(200L)) {
+      if (proc.isAlive() && !proc.waitFor(5000L)) {
         scribe.info(s"Forcibly destroying PID ${proc.wrapped.pid()}")
         proc.destroyForcibly()
       }

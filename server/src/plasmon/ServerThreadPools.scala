@@ -21,6 +21,8 @@ trait ServerThreadPools {
   def fileWatcherEc: ExecutionContext
   def workDoneProgressEc: ExecutionContext
 
+  def requestsEces: ExecutionContextExecutorService
+
   def compilerEces: ExecutionContextExecutorService
   def cancellationEces: ExecutionContextExecutorService
 
@@ -59,6 +61,7 @@ object ServerThreadPools {
       def dummyEc: ExecutionContext                         = eces
       def fileWatcherEc: ExecutionContext                   = eces
       def workDoneProgressEc: ExecutionContext              = eces
+      def requestsEces: ExecutionContextExecutorService     = eces
       def compilerEces: ExecutionContextExecutorService     = eces
       def cancellationEces: ExecutionContextExecutorService = eces
       def pcThreadStopScheduler: ScheduledExecutorService   = ses

@@ -97,6 +97,7 @@ final class Server(
   var onExit     = Seq.empty[() => Unit]
 
   def shutdown(): CompletableFuture[Unit] = {
+    bspServers.close()
     onShutdown.foreach(_())
     var exited = false
     onExit = onExit :+ { () =>

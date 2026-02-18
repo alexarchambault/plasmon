@@ -273,22 +273,26 @@ object Definition {
   ) =
     RequestHandler.of[l.DefinitionParams, JList[l.Location]]("textDocument/definition") {
       (params, logger) =>
-        val path = params.getTextDocument.getUri.osPathFromUri
-        server.bspData.inverseSources(path) match {
-          case Some(targetId) =>
-            logger.log(s"Build target: ${targetId.getUri}")
-            val source = params.getTextDocument.getUri.osPathFromUri
-            if (source.isScalaFilename || source.isJavaFilename)
-              CancelTokens.future { token =>
-                definitionResult(targetId.module, server, params, logger, token)
-                  .map(_.asJava)(using definitionStuffEc)
-              }(using cancelTokensEces)
-            else
+        val f = Future {
+          val path = params.getTextDocument.getUri.osPathFromUri
+          server.bspData.inverseSources(path) match {
+            case Some(targetId) =>
+              logger.log(s"Build target: ${targetId.getUri}")
+              val source = params.getTextDocument.getUri.osPathFromUri
+              if (source.isScalaFilename || source.isJavaFilename)
+                CancelTokens.future { token =>
+                  definitionResult(targetId.module, server, params, logger, token)
+                    .map(_.asJava)(using definitionStuffEc)
+                }(using cancelTokensEces)
+              else
+                CompletableFuture.completedFuture(Nil.asJava)
+            case None =>
+              logger.log(s"No build target found for $path")
               CompletableFuture.completedFuture(Nil.asJava)
-          case None =>
-            logger.log(s"No build target found for $path")
-            CompletableFuture.completedFuture(Nil.asJava)
-        }
+          }
+        }(using server.pools.requestsEces)
+
+        f.asJava.thenCompose(x => x)
     }
 
   def handlers(

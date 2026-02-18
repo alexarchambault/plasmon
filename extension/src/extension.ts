@@ -4,7 +4,7 @@ import * as os from 'os'
 import * as fs from 'fs'
 import * as path from 'path'
 
-import { CloseAction, DocumentSelector, ErrorAction, ErrorHandler, ExecuteCommandParams, ExecuteCommandRequest, ExitNotification, LanguageClient, LanguageClientOptions, Location, ServerOptions, integer } from 'vscode-languageclient/node'
+import { CloseAction, DocumentSelector, ErrorAction, ErrorHandler, ExecuteCommandParams, ExecuteCommandRequest, ExitNotification, LanguageClient, LanguageClientOptions, Location, ServerOptions, Trace, integer } from 'vscode-languageclient/node'
 
 // Many things here inspired by https://github.com/scalameta/metals-vscode/tree/423de8a8355a37d983b143508b66fa2ee5a10db0
 // and earlier versions of it
@@ -131,6 +131,9 @@ let logOutputChannels: { [key: string]: vscode.OutputChannel } = {}
 let statusItems: { [key: string]: vscode.LanguageStatusItem } = {}
 let statusBarItem: vscode.StatusBarItem | null = null
 
+let plasmonServerChannel: vscode.OutputChannel | undefined = undefined
+let traceChannel: vscode.OutputChannel | undefined = undefined
+
 class Deferred<T> {
   promise: Promise<T>
   resolve!: (value: T | PromiseLike<T>) => void
@@ -151,6 +154,14 @@ function plasmonStartingStatus(isRestart: boolean): void {
     statusBarItem.backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground')
     statusBarItem.tooltip = undefined
     statusBarItem.command = "plasmon.show-process-log"
+  }
+}
+
+function plasmonNoServerStatus(): void {
+  if (statusBarItem) {
+    statusBarItem.text = "Plasmon stopped"
+    statusBarItem.backgroundColor = new vscode.ThemeColor('statusBarItem.errorBackground')
+    statusBarItem.tooltip = undefined
   }
 }
 
@@ -218,7 +229,8 @@ function checkConcurrentServer(): boolean {
 function createClient(
   context: vscode.ExtensionContext,
   serverOptions: ServerOptions,
-  clientOptions: LanguageClientOptions
+  clientOptions: LanguageClientOptions,
+  trace: boolean
 ): boolean {
 
   function clientSubscription<T extends { dispose(): any }>(disposable: T): T {
@@ -258,10 +270,18 @@ function createClient(
 
     checkConcurrentServer()
 
+    if (!plasmonServerChannel) {
+      plasmonServerChannel = vscode.window.createOutputChannel("Plasmon process")
+      context.subscriptions.push(plasmonServerChannel)
+    }
+
     let client0 = new LanguageClient(
       "Plasmon process",
       serverOptions,
-      clientOptions
+      {
+        ...clientOptions,
+        outputChannel: plasmonServerChannel
+      }
     )
     defaultErrorHandler = client0.createDefaultErrorHandler(5 /* ??? */)
     client = client0
@@ -274,6 +294,9 @@ function createClient(
     client.onReady().then(() => {
 
       if (client === client0) {
+
+        if (trace)
+          client0.trace = Trace.Verbose
 
         interface LogMessage {
           channelId: string
@@ -532,9 +555,19 @@ async function stopClient(context: vscode.ExtensionContext): Promise<void> {
           context.subscriptions.splice(index, 1)
       })
       clientSubscriptions.splice(0, clientSubscriptions.length)
-      console.log(`Notifying ${ExitNotification.type} to ${client0}`)
+      console.log(`Notifying ${ExitNotification.type.method} to ${client0}`)
       // not sure why this doesn't get sent by stop…
-      client0.sendNotification(ExitNotification.type)
+      try {
+        client0.sendNotification(ExitNotification.type)
+      }
+      catch (err) {
+        if (!(err instanceof Error) || !err.message.includes("Language client is not ready yet"))
+          throw err
+      }
+      for (const elem in inProgressTasks) {
+        inProgressTasks[elem].resolve()
+      }
+      inProgressTasks = {}
       if (client === client0)
         client = null
     }
@@ -970,7 +1003,7 @@ export function activate(context: vscode.ExtensionContext) {
     initializationOptions
   }
 
-  createClient(context, serverOptions, clientOptions)
+  createClient(context, serverOptions, clientOptions, false)
 
   statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 50)
   statusBarItem.text = 'Plasmon starting $(loading~spin)'
@@ -1528,11 +1561,79 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand(`plasmon.build-tool-restart`, () => {
       let uri = lastFocusedDocument
       interface Resp {
+        noModule: boolean
         error?: string
       }
+      interface BuildTool {
+        type: string
+        id: string
+        discoverId: string // ???
+        label: string
+        detail: string
+      }
+      console.log(`Restarting build tool of ${uri}`)
       client?.sendRequest(ExecuteCommandRequest.type, { command: "plasmon/buildToolRestart", arguments: [uri] }).then(
         (resp: Resp) => {
-          if (resp.error)
+          console.log(`Response for restarting build tool of ${uri}: ${JSON.stringify(resp)}`)
+          if (resp.noModule) {
+            client?.sendRequest(ExecuteCommandRequest.type, { command: 'plasmon/listRunningBuildTools', arguments: [] }).then(
+              (resp0: BuildTool[]) => {
+                if (resp0.length == 0)
+                  vscode.window.showInformationMessage(`No build tools are running`, { modal: false })
+                else {
+                  class Item implements vscode.QuickPickItem {
+                    entry: BuildTool
+                    label: string
+                    detail: string
+                    iconPath: vscode.ThemeIcon
+
+                    constructor(entry: BuildTool) {
+                      this.entry = entry
+                      this.label = entry.label
+                      this.detail = entry.detail
+                      this.iconPath = vscode.ThemeIcon.Folder
+                    }
+                  }
+                  interface Separator extends vscode.QuickPickItem {
+
+                  }
+                  let items: (Item | Separator)[] = []
+                  for (let entry of resp0) {
+                    items.push(new Item(entry))
+                  }
+                  let quickPick = vscode.window.createQuickPick<Item | Separator>()
+                  quickPick.items = items
+                  quickPick.onDidAccept(() => {
+                    for (const item of quickPick.activeItems) {
+                      if (item instanceof Item) {
+                        let entry = item.entry
+                        console.log(entry.id)
+                        client?.sendRequest(ExecuteCommandRequest.type, { command: "plasmon/unloadBuildTool", arguments: [entry.discoverId, entry.id, uri] }).then(
+                          (resp) => {
+                            interface Resp {
+                              success: boolean
+                              error?: string
+                            }
+                            let resp0 = resp as Resp
+                            if (resp0.success)
+                              console.log(`Ran plasmon/unloadBuildTool ${entry.discoverId} ${entry.id}`)
+                            else
+                              vscode.window.showErrorMessage(`Error unloading build tool: ${resp0.error}`, { modal: false })
+                          },
+                          (err) => {
+                            vscode.window.showErrorMessage(`Error unloading build tool: ${err}`, { modal: false })
+                          }
+                        )
+                      }
+                    }
+                    quickPick.hide()
+                  })
+                  quickPick.show()
+                }
+              }
+            )
+          }
+          else if (resp.error)
             vscode.window.showErrorMessage(`Error restarting / reconnecting to build server: ${resp.error}`, { modal: false })
           else
             vscode.window.showInformationMessage(`Restarted / reconnected to build server`, { modal: false })
@@ -1864,6 +1965,7 @@ export function activate(context: vscode.ExtensionContext) {
         maybePromise.then(
           () => {
             vscode.window.showInformationMessage(`Plasmon LSP server was stopped`)
+            plasmonNoServerStatus()
           },
           (err) => {
             console.log(`Failed to stop Plasmon LSP server: ${err}`)
@@ -1878,9 +1980,34 @@ export function activate(context: vscode.ExtensionContext) {
 
   context.subscriptions.push(
     vscode.commands.registerCommand("plasmon.start-server", () => {
-      let created = createClient(context, serverOptions, clientOptions)
+      let created = createClient(context, serverOptions, clientOptions, false)
       if (created)
         vscode.window.showInformationMessage(`Plasmon LSP server started`)
+      else
+        vscode.window.showInformationMessage(`Plasmon LSP server is already running`)
+    })
+  )
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand("plasmon.start-server-with-traces", () => {
+      if (!traceChannel) {
+        traceChannel = vscode.window.createOutputChannel("Plasmon JSON-RPC trace")
+        context.subscriptions.push(traceChannel)
+      }
+      let created = createClient(
+        context,
+        serverOptions,
+        {
+          ...clientOptions,
+          traceOutputChannel: traceChannel
+        },
+        true
+      )
+      if (created) {
+        vscode.window.showInformationMessage(`Plasmon LSP server started with JSON-RPC traces`)
+        client?.traceOutputChannel.show(true)
+        // traceChannel.show(true)
+      }
       else
         vscode.window.showInformationMessage(`Plasmon LSP server is already running`)
     })

@@ -132,11 +132,11 @@ object Command extends caseapp.Command[CommandOptions] {
         // client.setServer(remoteServer)
 
         if (options.verbosity >= 2)
-          System.err.println("Starting JSONRPC exchange")
+          System.err.println("Starting JSON-RPC exchange")
         launcher.startListening()
 
         if (options.verbosity >= 1)
-          System.err.println(s"Running command ${remainingArgs.all.mkString(" ")} via JSONRPC")
+          System.err.println(s"Running command ${remainingArgs.all.mkString(" ")} via JSON-RPC")
         val res = remoteServer.runCommand {
           val command = new ProtocolCommand
           command.setArgs(remainingArgs.all.toArray)
@@ -152,7 +152,7 @@ object Command extends caseapp.Command[CommandOptions] {
     finally {
       queue.add(poisonPill)
       outputThread.join()
-      // This prints garbage in the console. It's unclear to me how we can stop the JSONRPC stuff.
+      // This prints garbage in the console. It's unclear to me how we can stop the JSON-RPC stuff.
       // socket.close()
     }
   }
