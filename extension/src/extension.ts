@@ -1561,11 +1561,79 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand(`plasmon.build-tool-restart`, () => {
       let uri = lastFocusedDocument
       interface Resp {
+        noModule: boolean
         error?: string
       }
+      interface BuildTool {
+        type: string
+        id: string
+        discoverId: string // ???
+        label: string
+        detail: string
+      }
+      console.log(`Restarting build tool of ${uri}`)
       client?.sendRequest(ExecuteCommandRequest.type, { command: "plasmon/buildToolRestart", arguments: [uri] }).then(
         (resp: Resp) => {
-          if (resp.error)
+          console.log(`Response for restarting build tool of ${uri}: ${JSON.stringify(resp)}`)
+          if (resp.noModule) {
+            client?.sendRequest(ExecuteCommandRequest.type, { command: 'plasmon/listRunningBuildTools', arguments: [] }).then(
+              (resp0: BuildTool[]) => {
+                if (resp0.length == 0)
+                  vscode.window.showInformationMessage(`No build tools are running`, { modal: false })
+                else {
+                  class Item implements vscode.QuickPickItem {
+                    entry: BuildTool
+                    label: string
+                    detail: string
+                    iconPath: vscode.ThemeIcon
+
+                    constructor(entry: BuildTool) {
+                      this.entry = entry
+                      this.label = entry.label
+                      this.detail = entry.detail
+                      this.iconPath = vscode.ThemeIcon.Folder
+                    }
+                  }
+                  interface Separator extends vscode.QuickPickItem {
+
+                  }
+                  let items: (Item | Separator)[] = []
+                  for (let entry of resp0) {
+                    items.push(new Item(entry))
+                  }
+                  let quickPick = vscode.window.createQuickPick<Item | Separator>()
+                  quickPick.items = items
+                  quickPick.onDidAccept(() => {
+                    for (const item of quickPick.activeItems) {
+                      if (item instanceof Item) {
+                        let entry = item.entry
+                        console.log(entry.id)
+                        client?.sendRequest(ExecuteCommandRequest.type, { command: "plasmon/unloadBuildTool", arguments: [entry.discoverId, entry.id, uri] }).then(
+                          (resp) => {
+                            interface Resp {
+                              success: boolean
+                              error?: string
+                            }
+                            let resp0 = resp as Resp
+                            if (resp0.success)
+                              console.log(`Ran plasmon/unloadBuildTool ${entry.discoverId} ${entry.id}`)
+                            else
+                              vscode.window.showErrorMessage(`Error unloading build tool: ${resp0.error}`, { modal: false })
+                          },
+                          (err) => {
+                            vscode.window.showErrorMessage(`Error unloading build tool: ${err}`, { modal: false })
+                          }
+                        )
+                      }
+                    }
+                    quickPick.hide()
+                  })
+                  quickPick.show()
+                }
+              }
+            )
+          }
+          else if (resp.error)
             vscode.window.showErrorMessage(`Error restarting / reconnecting to build server: ${resp.error}`, { modal: false })
           else
             vscode.window.showInformationMessage(`Restarted / reconnected to build server`, { modal: false })

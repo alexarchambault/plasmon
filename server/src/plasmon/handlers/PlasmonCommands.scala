@@ -100,7 +100,8 @@ object PlasmonCommands {
   private final case class BuildToolRestartResponse(
     workspace: String,
     name: String,
-    error: Option[String]
+    error: Option[String],
+    noModule: Boolean
   )
 
   private object BuildToolRestartResponse {
@@ -515,7 +516,8 @@ object PlasmonCommands {
         val resp = BuildToolRestartResponse(
           bspServerOpt.toOption.fold("")(_._2.info.workspace.toString),
           bspServerOpt.toOption.fold("")(_._2.name),
-          restarted.left.toOption
+          restarted.left.toOption,
+          noModule = false
         )
         CompletableFuture.completedFuture(writeToGson(resp))
       }
