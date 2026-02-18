@@ -176,6 +176,10 @@
         "title": "Plasmon: Start LSP server"
       },
       {
+        "command": "plasmon.start-server-with-traces",
+        "title": "Plasmon: Start LSP server with JSON-RPC traces"
+      },
+      {
         "command": "plasmon.organize-imports",
         "title": "Plasmon: Organize imports in this file"
       },

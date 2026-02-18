@@ -4,7 +4,7 @@ import * as os from 'os'
 import * as fs from 'fs'
 import * as path from 'path'
 
-import { CloseAction, DocumentSelector, ErrorAction, ErrorHandler, ExecuteCommandParams, ExecuteCommandRequest, ExitNotification, LanguageClient, LanguageClientOptions, Location, ServerOptions, integer } from 'vscode-languageclient/node'
+import { CloseAction, DocumentSelector, ErrorAction, ErrorHandler, ExecuteCommandParams, ExecuteCommandRequest, ExitNotification, LanguageClient, LanguageClientOptions, Location, ServerOptions, Trace, integer } from 'vscode-languageclient/node'
 
 // Many things here inspired by https://github.com/scalameta/metals-vscode/tree/423de8a8355a37d983b143508b66fa2ee5a10db0
 // and earlier versions of it
@@ -132,6 +132,7 @@ let statusItems: { [key: string]: vscode.LanguageStatusItem } = {}
 let statusBarItem: vscode.StatusBarItem | null = null
 
 let plasmonServerChannel: vscode.OutputChannel | undefined = undefined
+let traceChannel: vscode.OutputChannel | undefined = undefined
 
 class Deferred<T> {
   promise: Promise<T>
@@ -228,7 +229,8 @@ function checkConcurrentServer(): boolean {
 function createClient(
   context: vscode.ExtensionContext,
   serverOptions: ServerOptions,
-  clientOptions: LanguageClientOptions
+  clientOptions: LanguageClientOptions,
+  trace: boolean
 ): boolean {
 
   function clientSubscription<T extends { dispose(): any }>(disposable: T): T {
@@ -292,6 +294,9 @@ function createClient(
     client.onReady().then(() => {
 
       if (client === client0) {
+
+        if (trace)
+          client0.trace = Trace.Verbose
 
         interface LogMessage {
           channelId: string
@@ -998,7 +1003,7 @@ export function activate(context: vscode.ExtensionContext) {
     initializationOptions
   }
 
-  createClient(context, serverOptions, clientOptions)
+  createClient(context, serverOptions, clientOptions, false)
 
   statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 50)
   statusBarItem.text = 'Plasmon starting $(loading~spin)'
@@ -1907,9 +1912,34 @@ export function activate(context: vscode.ExtensionContext) {
 
   context.subscriptions.push(
     vscode.commands.registerCommand("plasmon.start-server", () => {
-      let created = createClient(context, serverOptions, clientOptions)
+      let created = createClient(context, serverOptions, clientOptions, false)
       if (created)
         vscode.window.showInformationMessage(`Plasmon LSP server started`)
+      else
+        vscode.window.showInformationMessage(`Plasmon LSP server is already running`)
+    })
+  )
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand("plasmon.start-server-with-traces", () => {
+      if (!traceChannel) {
+        traceChannel = vscode.window.createOutputChannel("Plasmon JSON-RPC trace")
+        context.subscriptions.push(traceChannel)
+      }
+      let created = createClient(
+        context,
+        serverOptions,
+        {
+          ...clientOptions,
+          traceOutputChannel: traceChannel
+        },
+        true
+      )
+      if (created) {
+        vscode.window.showInformationMessage(`Plasmon LSP server started with JSON-RPC traces`)
+        client?.traceOutputChannel.show(true)
+        // traceChannel.show(true)
+      }
       else
         vscode.window.showInformationMessage(`Plasmon LSP server is already running`)
     })
