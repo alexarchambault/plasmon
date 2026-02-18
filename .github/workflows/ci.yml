@@ -88,7 +88,7 @@ jobs:
       if: startsWith(github.ref, 'refs/tags/v')
       with:
         subject-path: 'artifacts/*'
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v6
       with:
         name: launchers-${{ matrix.OS_SHORT }}
         path: artifacts/
@@ -144,7 +144,7 @@ jobs:
       if: startsWith(github.ref, 'refs/tags/v')
       with:
         subject-path: 'artifacts/*'
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v6
       with:
         name: launchers-jar
         path: artifacts/
