@@ -131,6 +131,8 @@ let logOutputChannels: { [key: string]: vscode.OutputChannel } = {}
 let statusItems: { [key: string]: vscode.LanguageStatusItem } = {}
 let statusBarItem: vscode.StatusBarItem | null = null
 
+let plasmonServerChannel: vscode.OutputChannel | undefined = undefined
+
 class Deferred<T> {
   promise: Promise<T>
   resolve!: (value: T | PromiseLike<T>) => void
@@ -151,6 +153,14 @@ function plasmonStartingStatus(isRestart: boolean): void {
     statusBarItem.backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground')
     statusBarItem.tooltip = undefined
     statusBarItem.command = "plasmon.show-process-log"
+  }
+}
+
+function plasmonNoServerStatus(): void {
+  if (statusBarItem) {
+    statusBarItem.text = "Plasmon stopped"
+    statusBarItem.backgroundColor = new vscode.ThemeColor('statusBarItem.errorBackground')
+    statusBarItem.tooltip = undefined
   }
 }
 
@@ -258,10 +268,18 @@ function createClient(
 
     checkConcurrentServer()
 
+    if (!plasmonServerChannel) {
+      plasmonServerChannel = vscode.window.createOutputChannel("Plasmon process")
+      context.subscriptions.push(plasmonServerChannel)
+    }
+
     let client0 = new LanguageClient(
       "Plasmon process",
       serverOptions,
-      clientOptions
+      {
+        ...clientOptions,
+        outputChannel: plasmonServerChannel
+      }
     )
     defaultErrorHandler = client0.createDefaultErrorHandler(5 /* ??? */)
     client = client0
@@ -532,9 +550,19 @@ async function stopClient(context: vscode.ExtensionContext): Promise<void> {
           context.subscriptions.splice(index, 1)
       })
       clientSubscriptions.splice(0, clientSubscriptions.length)
-      console.log(`Notifying ${ExitNotification.type} to ${client0}`)
+      console.log(`Notifying ${ExitNotification.type.method} to ${client0}`)
       // not sure why this doesn't get sent by stop…
-      client0.sendNotification(ExitNotification.type)
+      try {
+        client0.sendNotification(ExitNotification.type)
+      }
+      catch (err) {
+        if (!(err instanceof Error) || !err.message.includes("Language client is not ready yet"))
+          throw err
+      }
+      for (const elem in inProgressTasks) {
+        inProgressTasks[elem].resolve()
+      }
+      inProgressTasks = {}
       if (client === client0)
         client = null
     }
@@ -1864,6 +1892,7 @@ export function activate(context: vscode.ExtensionContext) {
         maybePromise.then(
           () => {
             vscode.window.showInformationMessage(`Plasmon LSP server was stopped`)
+            plasmonNoServerStatus()
           },
           (err) => {
             console.log(`Failed to stop Plasmon LSP server: ${err}`)
