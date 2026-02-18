@@ -420,8 +420,9 @@ object Server extends caseapp.Command[ServerOptions] {
         requestHandlers = Seq(
           RequestHandler.of[l.InitializeParams, l.InitializeResult]("initialize") {
             (params, logger) =>
-              val res = init(params, commands)
-              CompletableFuture.completedFuture(res)
+              Future {
+                init(params, commands)
+              }(using server.pools.requestsEces).asJava
           }
         ),
         commandHandlers = Nil

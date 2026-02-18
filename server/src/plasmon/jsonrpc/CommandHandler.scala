@@ -92,44 +92,60 @@ object CommandHandler {
       def arguments: Seq[Object] =
         Option(params.getArguments).map(_.asScala.toVector).getOrElse(Nil)
 
-      private def error(commandName: String, errors: Seq[String]): CompletableFuture[Object] = {
-        // FIXME Trapped error… (for users)
-        scribe.warn(s"Error parsing $commandName arguments: ${errors.mkString(", ")}")
-        CompletableFuture.completedFuture(null)
+      private def error(
+        commandName: String,
+        errors: Seq[String],
+        onError: String => CompletableFuture[Object]
+      ): CompletableFuture[Object] = {
+        val msg = s"Error parsing $commandName arguments: ${errors.mkString(", ")}"
+        scribe.warn(msg)
+        onError(s"Internal error: $msg")
       }
 
-      def as[T: ArgParser](commandName: String)(f: T => CompletableFuture[Object])
+      def as[T: ArgParser](
+        commandName: String,
+        onError: String => CompletableFuture[Object] = _ => CompletableFuture.completedFuture(null)
+      )(f: T => CompletableFuture[Object])
         : CompletableFuture[Object] =
         arguments match {
-          case Seq() => error(commandName, Seq("No argument passed"))
+          case Seq() => error(commandName, Seq("No argument passed"), onError)
           case Seq(arg) =>
             ArgParser[T]().parse(arg) match {
-              case Left(msg) => error(commandName, Seq(msg))
+              case Left(msg) => error(commandName, Seq(msg), onError)
               case Right(t)  => f(t)
             }
-          case _ => error(commandName, Seq("Too many arguments passed, expected one"))
+          case _ => error(commandName, Seq("Too many arguments passed, expected one"), onError)
         }
 
-      def asFileUri(commandName: String)(f: os.Path => CompletableFuture[Object])
+      def asFileUri(
+        commandName: String,
+        onError: String => CompletableFuture[Object] = _ => CompletableFuture.completedFuture(null)
+      )(f: os.Path => CompletableFuture[Object])
         : CompletableFuture[Object] =
-        as[String](commandName) { uri =>
+        as[String](commandName, onError) { uri =>
           // TODO Catch more errors
           f(uri.osPathFromUri)
         }
 
-      def asOpt[T: ArgParser](commandName: String)(f: Option[T] => CompletableFuture[Object])
+      def asOpt[T: ArgParser](
+        commandName: String,
+        onError: String => CompletableFuture[Object] = _ => CompletableFuture.completedFuture(null)
+      )(f: Option[T] => CompletableFuture[Object])
         : CompletableFuture[Object] =
         arguments match {
           case Seq() => f(None)
           case Seq(arg) =>
             ArgParser[T]().parse(arg) match {
-              case Left(msg) => error(commandName, Seq(msg))
+              case Left(msg) => error(commandName, Seq(msg), onError)
               case Right(t)  => f(Some(t))
             }
-          case _ => error(commandName, Seq("Too many arguments passed, expected one"))
+          case _ => error(commandName, Seq("Too many arguments passed, expected one"), onError)
         }
 
-      def asSeq[T: ArgParser](commandName: String)(f: Seq[T] => CompletableFuture[Object])
+      def asSeq[T: ArgParser](
+        commandName: String,
+        onError: String => CompletableFuture[Object] = _ => CompletableFuture.completedFuture(null)
+      )(f: Seq[T] => CompletableFuture[Object])
         : CompletableFuture[Object] = {
         val parsed = arguments.map(ArgParser[T]().parse(_))
         if (parsed.forall(_.isRight)) {
@@ -138,55 +154,67 @@ object CommandHandler {
         }
         else {
           val errors = parsed.collect { case Left(err) => err }
-          error(commandName, errors)
+          error(commandName, errors, onError)
         }
       }
 
-      def asValues[A: ArgParser, B: ArgParser](commandName: String)(f: (
-        A,
-        B
-      ) => CompletableFuture[Object]): CompletableFuture[Object] =
+      def asValues[A: ArgParser, B: ArgParser](
+        commandName: String,
+        onError: String => CompletableFuture[Object]
+      )(f: (A, B) => CompletableFuture[Object]): CompletableFuture[Object] =
         arguments match {
-          case Seq()  => error(commandName, Seq("No argument passed"))
-          case Seq(_) => error(commandName, Seq("Not enough argument passed (expected 2)"))
+          case Seq()  => error(commandName, Seq("No argument passed"), onError)
+          case Seq(_) => error(commandName, Seq("Not enough argument passed (expected 2)"), onError)
           case Seq(arg0, arg1) =>
             ArgParser[A]().parse(arg0) match {
-              case Left(msg) => error(commandName, Seq(msg))
+              case Left(msg) => error(commandName, Seq(msg), onError)
               case Right(a) =>
                 ArgParser[B]().parse(arg1) match {
-                  case Left(msg) => error(commandName, Seq(msg))
+                  case Left(msg) => error(commandName, Seq(msg), onError)
                   case Right(b) =>
                     f(a, b)
                 }
             }
-          case _ => error(commandName, Seq("Too many arguments passed (expected 2)"))
+          case _ => error(commandName, Seq("Too many arguments passed (expected 2)"), onError)
         }
 
-      def asValues[A: ArgParser, B: ArgParser, C: ArgParser](commandName: String)(f: (
-        A,
-        B,
-        C
-      ) => CompletableFuture[Object]): CompletableFuture[Object] =
+      def asValues[A: ArgParser, B: ArgParser](
+        commandName: String
+      )(f: (A, B) => CompletableFuture[Object]): CompletableFuture[Object] =
+        asValues[A, B](commandName, _ => CompletableFuture.completedFuture(null))(f)
+
+      def asValues[A: ArgParser, B: ArgParser, C: ArgParser](
+        commandName: String,
+        onError: String => CompletableFuture[
+          Object
+        ] // = _ => CompletableFuture.completedFuture(null)
+      )(f: (A, B, C) => CompletableFuture[Object]): CompletableFuture[Object] =
         arguments match {
-          case Seq()     => error(commandName, Seq("No argument passed"))
-          case Seq(_)    => error(commandName, Seq("Not enough argument passed (expected 3)"))
-          case Seq(_, _) => error(commandName, Seq("Not enough argument passed (expected 3)"))
+          case Seq()  => error(commandName, Seq("No argument passed"), onError)
+          case Seq(_) => error(commandName, Seq("Not enough argument passed (expected 3)"), onError)
+          case Seq(_, _) =>
+            error(commandName, Seq("Not enough argument passed (expected 3)"), onError)
           case Seq(arg0, arg1, arg2) =>
             ArgParser[A]().parse(arg0) match {
-              case Left(msg) => error(commandName, Seq(msg))
+              case Left(msg) => error(commandName, Seq(msg), onError)
               case Right(a) =>
                 ArgParser[B]().parse(arg1) match {
-                  case Left(msg) => error(commandName, Seq(msg))
+                  case Left(msg) => error(commandName, Seq(msg), onError)
                   case Right(b) =>
                     ArgParser[C]().parse(arg2) match {
-                      case Left(msg) => error(commandName, Seq(msg))
+                      case Left(msg) => error(commandName, Seq(msg), onError)
                       case Right(c) =>
                         f(a, b, c)
                     }
                 }
             }
-          case _ => error(commandName, Seq("Too many arguments passed (expected 3)"))
+          case _ => error(commandName, Seq("Too many arguments passed (expected 3)"), onError)
         }
+
+      def asValues[A: ArgParser, B: ArgParser, C: ArgParser](
+        commandName: String
+      )(f: (A, B, C) => CompletableFuture[Object]): CompletableFuture[Object] =
+        asValues[A, B, C](commandName, _ => CompletableFuture.completedFuture(null))(f)
     }
   }
 }

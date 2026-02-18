@@ -15,6 +15,7 @@ import java.util.concurrent.CompletableFuture
 
 import plasmon.PlasmonEnrichments._
 import scala.jdk.CollectionConverters._
+import scala.concurrent.Future
 
 object Reference {
 
@@ -24,23 +25,31 @@ object Reference {
   ) =
     RequestHandler.of[l.ReferenceParams, JList[l.Location]]("textDocument/references") {
       (params, logger) =>
-        val path = params.getTextDocument.getUri.osPathFromUri
-        server.bspData.inverseSources(path) match {
-          case Some(targetId) =>
-            SourcePath.withContext { ctx => // FIXME Escapes
-              server.referenceIndex
-                .references(targetId.module, params)(using ctx)
-                .map { references =>
-                  references
-                    .flatMap(_.locations)
-                    .asJava
-                }(using definitionStuffEc)
-                .asJava
-            }
-          case None =>
-            scribe.warn(s"No build target found for $path in references handler")
-            CompletableFuture.completedFuture(Nil.asJava)
+        val f = Future {
+          val path = params.getTextDocument.getUri.osPathFromUri
+          server.bspData.inverseSources(path) match {
+            case Some(targetId) =>
+              SourcePath.withContext { ctx => // FIXME Escapes
+                server.referenceIndex
+                  .references(targetId.module, params)(using ctx)
+                  .map { references =>
+                    references
+                      .flatMap(_.locations)
+                      .asJava
+                  }(using definitionStuffEc)
+              }
+            case None =>
+              scribe.warn(s"No build target found for $path in references handler")
+              Future.successful(Nil.asJava)
+          }
+        }(using server.pools.requestsEces)
+
+        val f0 = {
+          implicit val ec = server.pools.requestsEces
+          f.flatten
         }
+
+        f0.asJava
     }
 
   def handlers(

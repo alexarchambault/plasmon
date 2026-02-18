@@ -52,37 +52,45 @@ object CodeLens {
   def handler(server: Server) =
     RequestHandler.of[l.CodeLensParams, JList[l.CodeLens]]("textDocument/codeLens") {
       (params, logger) =>
-        val path = params.getTextDocument.getUri.osPathFromUri
-        server.bspData.inverseSources(path) match {
-          case Some(target) =>
+        val f = Future {
+          val path = params.getTextDocument.getUri.osPathFromUri
+          server.bspData.inverseSources(path) match {
+            case Some(target) =>
 
-            val codeLensProviders = Seq[CodeLensProvider](
-              new SuperMethodCodeLens(
-                server.editorState.buffers,
-                server.editorState.trees
-              )(using server.pools.codeLensEc)
-            )
+              val codeLensProviders = Seq[CodeLensProvider](
+                new SuperMethodCodeLens(
+                  server.editorState.buffers,
+                  server.editorState.trees
+                )(using server.pools.codeLensEc)
+              )
 
-            val futureLenses = findLenses(
-              codeLensProviders,
-              server.semanticdbs,
-              target.module,
-              path,
-              server.pools.dummyEc
-            )
+              val futureLenses = findLenses(
+                codeLensProviders,
+                server.semanticdbs,
+                target.module,
+                path,
+                server.pools.dummyEc
+              )
 
-            futureLenses
-              .map { lenses =>
-                lenses
-                  .toList
-                  .sortBy(_.getRange.getStart.getLine)
-                  .asJava
-              }(using server.pools.codeLensEc)
-              .asJava
-          case None =>
-            scribe.info(s"textDocument/codeLens: no build target found for $path")
-            CompletableFuture.completedFuture(Nil.asJava)
+              futureLenses
+                .map { lenses =>
+                  lenses
+                    .toList
+                    .sortBy(_.getRange.getStart.getLine)
+                    .asJava
+                }(using server.pools.codeLensEc)
+            case None =>
+              scribe.info(s"textDocument/codeLens: no build target found for $path")
+              Future.successful(Nil.asJava)
+          }
+        }(using server.pools.requestsEces)
+
+        val f0 = {
+          implicit val ec = server.pools.requestsEces
+          f.flatten
         }
+
+        f0.asJava
     }
 
   final case class GotoCommandParams(symbol: String, module: String)
