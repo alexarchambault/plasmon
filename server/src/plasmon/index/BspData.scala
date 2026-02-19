@@ -22,6 +22,7 @@ import plasmon.bsp.BuildServerInfo
 import plasmon.render.JsonCodecs.given
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
+import java.util.concurrent.ConcurrentHashMap
 
 /** In-memory cache for looking up build server metadata.
   */
@@ -380,21 +381,15 @@ final class BspData(
     targetId: b.BuildTargetIdentifier
   ): Option[Dialect] =
     if (isMill)
-      dialectFromBuildTarget(targetId).map { dialect =>
-        dialect
-          .withAllowToplevelTerms(true)
-          .withAllowToplevelStatements(true)
-      }
+      dialectFromBuildTarget(targetId)
+        .map(BspData.dialectWithTopLevelTermsAndStatements)
     else
       extension match {
         case "scala" =>
           dialectFromBuildTarget(targetId)
         case "sc" =>
-          dialectFromBuildTarget(targetId).map { dialect =>
-            dialect
-              .withAllowToplevelTerms(true)
-              .withToplevelSeparator("")
-          }
+          dialectFromBuildTarget(targetId)
+            .map(BspData.dialectWithTopLevelTerms)
         case _ =>
           None
       }
@@ -438,11 +433,7 @@ final class BspData(
       case _ if isMill =>
         pathOpt
           .flatMap(dialectFromBuildTarget(targetId, _))
-          .map { dialect =>
-            dialect
-              .withAllowToplevelTerms(true)
-              .withAllowToplevelStatements(true)
-          }
+          .map(BspData.dialectWithTopLevelTermsAndStatements)
       case Some("scala") =>
         pathOpt
           .flatMap(dialectFromBuildTarget(targetId, _))
@@ -450,11 +441,7 @@ final class BspData(
       case Some("sc") =>
         pathOpt
           .flatMap(dialectFromBuildTarget(targetId, _))
-          .map { dialect =>
-            dialect
-              .withAllowToplevelTerms(true)
-              .withToplevelSeparator("")
-          }
+          .map(BspData.dialectWithTopLevelTerms)
       case _ =>
         None
     }
@@ -537,4 +524,30 @@ object BspData {
 
   given JsonValueCodec[AsJson] =
     JsonCodecMaker.make
+
+  private val dialectWithTopLevelTermsAndStatementsCache = new ConcurrentHashMap[Dialect, Dialect]
+  def dialectWithTopLevelTermsAndStatements(dialect: Dialect): Dialect =
+    if (dialect.allowToplevelTerms && dialect.allowToplevelStatements)
+      dialect
+    else {
+      if (!dialectWithTopLevelTermsAndStatementsCache.contains(dialect))
+        dialectWithTopLevelTermsAndStatementsCache.putIfAbsent(
+          dialect,
+          dialect.withAllowToplevelTerms(true).withAllowToplevelStatements(true)
+        )
+      dialectWithTopLevelTermsAndStatementsCache.get(dialect)
+    }
+
+  private val dialectWithTopLevelTermsCache = new ConcurrentHashMap[Dialect, Dialect]
+  def dialectWithTopLevelTerms(dialect: Dialect): Dialect =
+    if (dialect.allowToplevelTerms)
+      dialect
+    else {
+      if (!dialectWithTopLevelTermsCache.contains(dialect))
+        dialectWithTopLevelTermsCache.putIfAbsent(
+          dialect,
+          dialect.withAllowToplevelTerms(true)
+        )
+      dialectWithTopLevelTermsCache.get(dialect)
+    }
 }
