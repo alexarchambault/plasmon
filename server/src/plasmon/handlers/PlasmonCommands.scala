@@ -54,6 +54,7 @@ import coursier.version.Version
 import plasmon.internal.Constants
 import plasmon.index.IndexerActor.Message
 import plasmon.bsp.Diagnostics
+import dotty.tools.pc.ScalaPresentationCompiler as Scala3PresentationCompiler
 
 object PlasmonCommands {
 
@@ -1605,8 +1606,45 @@ object PlasmonCommands {
       JsonCodecMaker.make
   }
 
+  private final case class PcDebugResp(
+    logName: String,
+    formerValue: Boolean,
+    error: String
+  )
+  private object PcDebugResp {
+    implicit lazy val codec: JsonValueCodec[PcDebugResp] =
+      JsonCodecMaker.make
+  }
+
   def debugCommands(server: Server) =
     Seq(
+      CommandHandler.of("plasmon/pcDebug") { (params, logger) =>
+        params.asValues[String, Boolean]("plasmon/pcDebug") { (uri, enable) =>
+          Future {
+            val path           = uri.osPathFromUri
+            val buildTargetOpt = server.bspData.inverseSources(path)
+            val errOrResp =
+              buildTargetOpt.toRight(s"No build target found for $path").flatMap { targetId =>
+                server.presentationCompilers.loadCompiler(targetId)
+                  .toRight(s"No presentation compiler found for target ${targetId.getUri} (???)")
+                  .flatMap {
+                    case pc: Scala3PresentationCompiler =>
+                      val formerValue = pc.debug
+                      pc.debug = true
+                      val (logName, _) =
+                        server.presentationCompilers.loggerIdName(targetId, pc.scalaVersion)
+                      Right(PcDebugResp(logName, formerValue, ""))
+                    case other =>
+                      Left("")
+                  }
+              }
+            val resp = errOrResp
+              .left.map(err => PcDebugResp("", false, err))
+              .merge
+            writeToGson(resp)
+          }(using server.pools.requestsEces).asJava
+        }
+      },
       // TODO Merge debugSymbolIndex and debugFullTree?
       CommandHandler.of("plasmon/debugSymbolIndex") { (params, logger) =>
         params.asFileUri("plasmon/debugSymbolIndex") { file =>

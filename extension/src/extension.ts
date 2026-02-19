@@ -925,6 +925,15 @@ function loadBuildToolOrModule(uri: string | undefined, onlyModules: boolean): v
   )
 }
 
+function showLog(logName: string): void {
+  let logName0 = `plasmon-${logName}`
+  let channel = logOutputChannels[logName0]
+  if (channel)
+    channel.show(true)
+  else
+    console.log(`Unknown channel: ${logName0} (available channels: ${Object.keys(logOutputChannels)})`)
+}
+
 export function activate(context: vscode.ExtensionContext) {
 
   const provider = new ReadonlyContentProvider((uri) => {
@@ -1130,14 +1139,7 @@ export function activate(context: vscode.ExtensionContext) {
   )
 
   context.subscriptions.push(
-    vscode.commands.registerCommand("plasmon.show-log", (logName) => {
-      let logName0 = `plasmon-${logName}`
-      let channel = logOutputChannels[logName0]
-      if (channel)
-        channel.show(true)
-      else
-        console.log(`Unknown channel: ${logName0} (available channels: ${Object.keys(logOutputChannels)})`)
-    })
+    vscode.commands.registerCommand("plasmon.show-log", (logName) => showLog(logName))
   )
 
   context.subscriptions.push(
@@ -1325,6 +1327,45 @@ export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(
     vscode.commands.registerCommand(`plasmon.dump-server-state`, () => {
       dumpServerState()
+    })
+  )
+
+  function setPcDebug(enable: boolean) {
+    interface Response {
+      logName: string
+      error: string
+    }
+    let uri = lastFocusedDocument
+    if (uri)
+      client?.sendRequest(ExecuteCommandRequest.type, { command: "plasmon/pcDebug", arguments: [uri, enable] }).then(
+        (resp: Response) => {
+          if (resp.error) {
+            let msg = `Error enabling / disabling presentation compiler debug logs: ${resp.error}`
+            console.log(msg)
+            vscode.window.showErrorMessage(msg)
+          }
+          else
+            showLog(resp.logName)
+        },
+        (err) => {
+          let msg = `Error while sending plasmon/pcDebug ${uri} ${enable} command: ${err}`
+          console.log(msg)
+          vscode.window.showErrorMessage(msg)
+        }
+      )
+    else
+      vscode.window.showWarningMessage(`No Scala document focused, cannot enable presentation compiler logs`)
+  }
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand(`plasmon.enable-pc-debug`, () => {
+      setPcDebug(true)
+    })
+  )
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand(`plasmon.disable-pc-debug`, () => {
+      setPcDebug(false)
     })
   )
 

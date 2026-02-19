@@ -1226,15 +1226,22 @@ class PresentationCompilers(
     os.Path(files.head, os.pwd)
   }
 
+  def loggerIdName(
+    targetId: b.BuildTargetIdentifier,
+    scalaVersion: String
+  ): (String, String) = {
+    val targetShortId = BspUtil.targetShortId(bspData, targetId)
+    val id            = s"interactive-$scalaVersion-$targetShortId"
+    val label         = s"Interactive $targetShortId"
+    (id, label)
+  }
+
   private def resolve(
     targetId: b.BuildTargetIdentifier,
     scalaVersion: String
   ): (MakeCompiler, Seq[os.Path]) = {
-    val idSuffix   = BspUtil.targetShortId(bspData, targetId)
-    val nameSuffix = BspUtil.targetShortId(bspData, targetId)
-    val id         = s"interactive-$scalaVersion-$idSuffix"
-    val label      = s"Interactive $nameSuffix"
-    def logger()   = loggerManager.create(id, label)
+    val (id, label) = loggerIdName(targetId, scalaVersion)
+    def logger()    = loggerManager.create(id, label)
     def setupPc(pc0: PresentationCompiler & pc.HasCompilerAccess): Unit = {
       pc0.compilerAccess.beforeAccess { (reqId, name, uri) =>
         interactiveCompilersStatuses.compute(
