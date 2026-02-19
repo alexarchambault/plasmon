@@ -714,8 +714,23 @@ class IndexerActor(
                 userPath,
                 fromScala
               )
+              val actualContent =
+                // FIXME Dirty hack, mark that in the BSP wrapped sources messages?
+                if (generatedPath.last.endsWith(".mill"))
+                  content.linesIterator.zip(content.linesWithSeparators)
+                    .map {
+                      case (line, lineWithSep) =>
+                        if (line.startsWith("package "))
+                          lineWithSep.drop(line.length)
+                        else
+                          lineWithSep
+                    }
+                    .mkString
+                else
+                  content
               val updatedContent =
-                sourceItem.getTopWrapper + content + sourceItem.getBottomWrapper
+                sourceItem.getTopWrapper + actualContent + sourceItem.getBottomWrapper
+
               (
                 Input.VirtualFile(
                   if (
