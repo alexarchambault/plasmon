@@ -84,6 +84,14 @@
         "title": "Plasmon: Dump server state"
       },
       {
+        "command": "plasmon.enable-pc-debug",
+        "title": "Plasmon: Enable debug logs for presentation compiler"
+      },
+      {
+        "command": "plasmon.disable-pc-debug",
+        "title": "Plasmon: Disable debug logs for presentation compiler"
+      },
+      {
         "command": "plasmon.test-progress",
         "title": "Plasmon: Test progress"
       },

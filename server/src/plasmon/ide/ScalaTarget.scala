@@ -34,7 +34,7 @@ case class ScalaTarget(
       case other =>
         val dialect =
           ScalaVersions.dialectForScalaVersion(other, includeSource3 = false)
-        dialect.withAllowCaptureChecking(false) match {
+        dialect match {
           case Scala213 if containsSource3 =>
             Scala213Source3
           case Scala212 if containsSource3 =>
@@ -44,12 +44,10 @@ case class ScalaTarget(
                 .getOptions
                 .asScala
                 .exists(_.startsWith("-Ykind-projector")) =>
-            dialect.withAllowStarAsTypePlaceholder(true)
+            ScalaTarget.Scala3WithStarAsTypePlaceholder
           case Scala3 =>
-            Scala3
-              // set to false since this needs an additional compiler option
-              .withAllowStarAsTypePlaceholder(false)
-              .withAllowCaptureChecking(true)
+            // without StarAsTypePlaceholder since this needs an additional compiler option
+            ScalaTarget.Scala3WithCaptureCheckingWithoutStarAsTypePlaceholder
           case other => other
         }
     }
@@ -127,4 +125,11 @@ case class ScalaTarget(
 
   def jvmHome: Option[String] =
     jvmBuildTarget.flatMap(f => Option(f.getJavaHome))
+}
+
+object ScalaTarget {
+  lazy val Scala3WithStarAsTypePlaceholder = Scala3.withAllowStarAsTypePlaceholder(true)
+  lazy val Scala3WithCaptureCheckingWithoutStarAsTypePlaceholder = Scala3
+    .withAllowStarAsTypePlaceholder(false)
+    .withAllowCaptureChecking(true)
 }

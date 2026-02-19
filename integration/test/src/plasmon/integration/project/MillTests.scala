@@ -1,6 +1,7 @@
-package plasmon.integration
+package plasmon.integration.project
 
 import org.eclipse.{lsp4j => l}
+import plasmon.integration.PlasmonSuite
 import plasmon.integration.TestUtil.*
 
 import java.io.OutputStream

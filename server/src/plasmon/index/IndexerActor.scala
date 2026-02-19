@@ -687,7 +687,7 @@ class IndexerActor(
         item       <- wrappedSourcesRes.getItems.asScala.toVector
         sourceItem <- item.getSources.asScala.toVector
       } yield {
-        val path = sourceItem.getUri.osPathFromUri
+        val userPath = sourceItem.getUri.osPathFromUri
         val mappedSource: TargetData.MappedSource =
           new TargetData.MappedSource {
             val generatedPath       = sourceItem.getGeneratedUri.osPathFromUri
@@ -709,13 +709,37 @@ class IndexerActor(
             def update(
               content: String
             ): (Input.VirtualFile, l.Position => l.Position, AdjustLspData) = {
-              val adjustLspData = AdjustedLspData.create(fromScala)
+              val adjustLspData = AdjustedLspData.create(
+                generatedPath,
+                userPath,
+                fromScala
+              )
+              val actualContent =
+                // FIXME Dirty hack, mark that in the BSP wrapped sources messages?
+                if (generatedPath.last.endsWith(".mill"))
+                  content.linesIterator.zip(content.linesWithSeparators)
+                    .map {
+                      case (line, lineWithSep) =>
+                        if (line.startsWith("package "))
+                          lineWithSep.drop(line.length)
+                        else
+                          lineWithSep
+                    }
+                    .mkString
+                else
+                  content
               val updatedContent =
-                sourceItem.getTopWrapper + content + sourceItem.getBottomWrapper
+                sourceItem.getTopWrapper + actualContent + sourceItem.getBottomWrapper
+
               (
                 Input.VirtualFile(
-                  generatedPath.toNIO.toString
-                    .stripSuffix(".scala") + ".sc.scala",
+                  if (
+                    generatedPath.last.endsWith(".scala") &&
+                    !generatedPath.last.endsWith(".sc.scala")
+                  )
+                    generatedPath.toString.stripSuffix(".scala") + ".sc.scala"
+                  else
+                    generatedPath.toString,
                   updatedContent
                 ),
                 toScala,
@@ -725,9 +749,9 @@ class IndexerActor(
             override def lineForServer(line: Int): Option[Int] =
               Some(line + topWrapperLineCount)
             override def lineForClient(line: Int): Option[Int] =
-              Some(line - topWrapperLineCount)
+              Some(line - topWrapperLineCount).filter(_ >= 0)
           }
-        (item.getTarget, path, mappedSource)
+        (item.getTarget, userPath, mappedSource)
       }
 
     for ((targetId, path, mappedSource) <- mappedSources)

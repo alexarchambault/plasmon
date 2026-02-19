@@ -1,8 +1,9 @@
-package plasmon.integration
+package plasmon.integration.project
 
 import com.google.gson.Gson
 import io.github.alexarchambault.testutil.TestOutput.FixedReadBytes
 import org.eclipse.{lsp4j => l}
+import plasmon.integration.PlasmonSuite
 import plasmon.integration.TestUtil.*
 
 import java.io.OutputStream

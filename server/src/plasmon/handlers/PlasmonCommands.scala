@@ -1,7 +1,7 @@
 package plasmon.handlers
 
 import ch.epfl.scala.{bsp4j => b}
-import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, writeToString}
+import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, writeToStream, writeToString}
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import com.google.gson.{Gson, JsonElement}
 import plasmon.command.ServerCommandThreadPools
@@ -54,6 +54,8 @@ import coursier.version.Version
 import plasmon.internal.Constants
 import plasmon.index.IndexerActor.Message
 import plasmon.bsp.Diagnostics
+import dotty.tools.pc.ScalaPresentationCompiler as Scala3PresentationCompiler
+import scala.util.Using
 
 object PlasmonCommands {
 
@@ -1575,7 +1577,7 @@ object PlasmonCommands {
 
   private final case class DebugSymbolIndexResp(
     targetId: String,
-    content: String,
+    contentUri: String,
     error: String
   )
   private object DebugSymbolIndexResp {
@@ -1594,8 +1596,7 @@ object PlasmonCommands {
   }
 
   private final case class DebugServerStateResp(
-    text: String,
-    id: String
+    contentUri: String
   )
   private object DebugServerStateResp {
     private val counter = new AtomicInteger
@@ -1605,8 +1606,45 @@ object PlasmonCommands {
       JsonCodecMaker.make
   }
 
+  private final case class PcDebugResp(
+    logName: String,
+    formerValue: Boolean,
+    error: String
+  )
+  private object PcDebugResp {
+    implicit lazy val codec: JsonValueCodec[PcDebugResp] =
+      JsonCodecMaker.make
+  }
+
   def debugCommands(server: Server) =
     Seq(
+      CommandHandler.of("plasmon/pcDebug") { (params, logger) =>
+        params.asValues[String, Boolean]("plasmon/pcDebug") { (uri, enable) =>
+          Future {
+            val path           = uri.osPathFromUri
+            val buildTargetOpt = server.bspData.inverseSources(path)
+            val errOrResp =
+              buildTargetOpt.toRight(s"No build target found for $path").flatMap { targetId =>
+                server.presentationCompilers.loadCompiler(targetId)
+                  .toRight(s"No presentation compiler found for target ${targetId.getUri} (???)")
+                  .flatMap {
+                    case pc: Scala3PresentationCompiler =>
+                      val formerValue = pc.debug
+                      pc.debug = true
+                      val (logName, _) =
+                        server.presentationCompilers.loggerIdName(targetId, pc.scalaVersion)
+                      Right(PcDebugResp(logName, formerValue, ""))
+                    case other =>
+                      Left("")
+                  }
+              }
+            val resp = errOrResp
+              .left.map(err => PcDebugResp("", false, err))
+              .merge
+            writeToGson(resp)
+          }(using server.pools.requestsEces).asJava
+        }
+      },
       // TODO Merge debugSymbolIndex and debugFullTree?
       CommandHandler.of("plasmon/debugSymbolIndex") { (params, logger) =>
         params.asFileUri("plasmon/debugSymbolIndex") { file =>
@@ -1614,7 +1652,9 @@ object PlasmonCommands {
             val buildTargetOpt = server.bspData.inverseSources(file)
             val contentOrError =
               buildTargetOpt.toRight(s"No build target found for $file").map { targetId =>
-                val content = server.symbolIndex.dialectBuckets
+                val dest = server.workspace() / ".plasmon/symbol-index.txt"
+                val nl   = System.lineSeparator()
+                val contentIt = server.symbolIndex.dialectBuckets
                   .iterator
                   .collect {
                     case ((dialectOpt, mod), bucket) if mod.targetId == targetId.getUri =>
@@ -1622,44 +1662,50 @@ object PlasmonCommands {
                   }
                   .toVector
                   .sortBy(_._1.map(_.toString).getOrElse(""))
-                  .map {
+                  .iterator
+                  .flatMap {
                     case (dialectOpt, bucket) =>
                       val dialectSuffix = dialectOpt.map(d => s" ($d)").getOrElse("")
-                      val toplevels = // pprint.PPrinter.BlackWhite.apply(
-                        bucket.toplevels.trieMap.iterator.toVector.sortBy(_._1).map {
+                      val toplevelsIt =
+                        bucket.toplevels.trieMap.iterator.toVector.sortBy(_._1).iterator.flatMap {
                           case (k, v) =>
-                            val v0 = v.toVector
-                              .map {
-                                case (p, opt) =>
-                                  p.uri + opt.map {
-                                    case Left(p)    => p.toString
-                                    case Right(mod) => mod.targetId
-                                  }.fold("")(v => s" ($v)")
-                              }
-                            k + System.lineSeparator() +
-                              v0.map("  " + _ + System.lineSeparator()).mkString
-                        }.mkString
-                      val definitions = bucket.definitions.trieMap
-                        .map {
-                          case (sym, a) =>
-                            s"$sym: $a" + System.lineSeparator()
+                            Iterator(k, nl) ++ v.iterator.flatMap {
+                              case (p, opt) =>
+                                Iterator("  ", p.uri) ++
+                                  opt
+                                    .iterator
+                                    .map {
+                                      case Left(p)    => p.toString
+                                      case Right(mod) => mod.targetId
+                                    }
+                                    .flatMap(v => Iterator(" (", v, ")")) ++
+                                  Iterator(nl)
+                            }
                         }
-                        .mkString
-                      s"  Toplevels$dialectSuffix" + System.lineSeparator() + System.lineSeparator() +
-                        toplevels + System.lineSeparator() + System.lineSeparator() +
-                        s"  Definitions$dialectSuffix" + System.lineSeparator() + System.lineSeparator() +
-                        definitions + System.lineSeparator() + System.lineSeparator()
+                      val definitionsIt = bucket.definitions.trieMap
+                        .iterator
+                        .flatMap {
+                          case (sym, a) =>
+                            Iterator(sym, ": ", a.toString, nl)
+                        }
+
+                      Iterator(s"  Toplevels$dialectSuffix", nl, nl) ++
+                        toplevelsIt ++
+                        Iterator(nl, nl, s"  Definitions$dialectSuffix", nl, nl) ++
+                        definitionsIt ++
+                        Iterator(nl, nl)
                   }
-                  .mkString
+                os.write.over(dest, contentIt, createFolders = true)
+
                 val shortTargetId = BspUtil.targetShortId(server.bspData, targetId)
                   .takeWhile(_ != '?') // meh
-                (shortTargetId, content)
+                (shortTargetId, dest)
               }
             val resp = contentOrError match {
               case Left(err) =>
                 DebugSymbolIndexResp("", "", err)
-              case Right((shortTargetId, content)) =>
-                DebugSymbolIndexResp(shortTargetId, content, "")
+              case Right((shortTargetId, dest)) =>
+                DebugSymbolIndexResp(shortTargetId, dest.toNIO.toUri.toASCIIString, "")
             }
             writeToGson(resp)
           }(using server.pools.requestsEces).asJava
@@ -1835,9 +1881,26 @@ object PlasmonCommands {
       },
       CommandHandler.of("plasmon/debugServerState") { (params, logger) =>
         Future {
+          val dest    = server.workspace() / ".plasmon/server-state.json"
+          val tmpDest = os.temp(prefix = "plasmon-server-state", suffix = ".json")
+          scribe.info("Getting server state")
+          val serverJson = server.serverJson(
+            exclude = _.startsWith(server.javaHome)
+          )
+          Using.resource(os.write.over.outputStream(tmpDest)) { out =>
+            scribe.info(s"Dumping raw server state to $tmpDest")
+            writeToStream(serverJson, out)
+          }
+          // FIXME Maybe we could do that in memory with pipe streams
+          Using.resource(os.read.inputStream(tmpDest)) { is =>
+            Using.resource(os.write.over.outputStream(dest, createFolders = true)) { out =>
+              scribe.info(s"Formatting server state from $tmpDest to $dest")
+              ujson.reformatToOutputStream(is, out, indent = 2)
+            }
+          }
+          os.remove(tmpDest)
           val resp = DebugServerStateResp(
-            text = ServerState.state(server),
-            id = DebugServerStateResp.nextId()
+            contentUri = dest.toNIO.toUri.toASCIIString
           )
           writeToGson(resp)
         }(using server.pools.requestsEces).asJava
