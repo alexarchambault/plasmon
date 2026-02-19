@@ -14,6 +14,8 @@ import org.eclipse.{lsp4j => l}
 
 trait AdjustLspData {
 
+  def paths: Option[(appliesTo: os.Path, userPath: os.Path)]
+
   def adjustPos(pos: l.Position, adjustToZero: Boolean = true): l.Position
 
   def adjustRange(range: l.Range): l.Range =

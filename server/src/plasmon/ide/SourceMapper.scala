@@ -11,19 +11,27 @@ import plasmon.ide.SbtBuildTool
 import plasmon.index.BspData
 
 import plasmon.PlasmonEnrichments._
+import plasmon.index.TargetData.MappedSource
 
 final case class SourceMapper(
   bspData: BspData,
   buffers: Buffers
 ) {
-  def mappedTo(targetId: b.BuildTargetIdentifier, path: os.Path): Option[os.Path] =
-    bspData.mappedTo(targetId, path).map(_.path)
+  def mappedTo(targetId: b.BuildTargetIdentifier, path: os.Path): Option[MappedSource] =
+    bspData.mappedTo(targetId, path)
   def mappedTo(targetId: b.BuildTargetIdentifier, path: SourcePath): Option[SourcePath] =
     path match {
       case s: SourcePath.Standard =>
         mappedTo(targetId, os.Path(s.path))
-          .map(_.toNIO)
+          .map(_.path.toNIO)
           .map(SourcePath.Standard(_))
+      case _ => None
+    }
+
+  def mappedTo0(targetId: b.BuildTargetIdentifier, path: SourcePath): Option[MappedSource] =
+    path match {
+      case s: SourcePath.Standard =>
+        mappedTo(targetId, os.Path(s.path))
       case _ => None
     }
 

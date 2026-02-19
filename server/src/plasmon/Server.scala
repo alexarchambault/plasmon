@@ -45,7 +45,7 @@ import plasmon.semdb.{
 import plasmon.pc.NopReportContext
 import scala.meta.internal.pc.PresentationCompilerConfigImpl
 import scala.meta.internal.metals.JdkSources
-import scala.meta.internal.semanticdb.TextDocument
+import scala.meta.internal.{semanticdb => s}
 import scala.meta.internal.mtags.GlobalSymbolIndex
 import com.github.plokhotnyuk.jsoniter_scala.core.writeToString
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
@@ -347,7 +347,7 @@ final class Server(
     path: os.Path,
     source: String,
     targetId: b.BuildTargetIdentifier
-  ): TextDocument =
+  ): s.TextDocument =
     if (path.isJavaFilename)
       javaInteractiveSemanticdb.textDocument(path, source, Some(targetId))
     else
@@ -762,7 +762,7 @@ final class Server(
   private def onNewSemanticdb(
     module: GlobalSymbolIndex.Module,
     path: os.Path,
-    semdb: TextDocument
+    semdb: s.TextDocument
   ) =
     semanticDBIndexer.onChange(module, path, semdb)
 

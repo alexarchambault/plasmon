@@ -1064,7 +1064,11 @@ class PresentationCompilers(
         else
           pc.definition(CompilerOffsetParamsUtils.fromPos(pos, token))
       defResult.asScala.map { c =>
-        for (loc <- c.locations.asScala if loc.getUri == params.getTextDocument.getUri)
+        for {
+          (appliesTo, userPath) <- adjust.paths
+          loc                   <- c.locations.asScala
+          if loc.getUri.osPathFromUri == appliesTo
+        }
           adjust.adjustLocations(c.locations())
         c.locations().asScala.toSeq
       }
