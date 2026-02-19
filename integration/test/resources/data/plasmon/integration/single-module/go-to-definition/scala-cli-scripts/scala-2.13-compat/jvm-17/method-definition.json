@@ -1,0 +1,9 @@
+{
+  "path": "foo/Definitions.sc",
+  "line": 3,
+  "colRange": [
+    4,
+    9
+  ],
+  "content": "count"
+}

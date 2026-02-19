@@ -1,0 +1,19 @@
+```scala
+def getResources(name: String): java.util.Enumeration[URL]
+```
+
+***
+
+Finds all the resources with the given name. A resource is some data
+(images, audio, text, etc) that can be accessed by class code in a way
+that is independent of the location of the code.
+
+ The name of a resource is a `/`-separated path name that
+identifies the resource.
+
+ Resources in named modules are subject to the encapsulation rules
+specified by [Module.getResourceAsStream](Module#getResourceAsStream).
+Additionally, and except for the special case where the resource has a
+name ending with "`.class`", this method will only find resources in
+packages of named modules when the package is [opened](Module#isOpen(String)) unconditionally (even if the caller of this method is in the
+same module as the resource).

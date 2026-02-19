@@ -4,6 +4,7 @@ package plasmon.ide
 
 import scala.meta.inputs.Input
 
+import ch.epfl.scala.{bsp4j => b}
 import org.eclipse.{lsp4j => l}
 import scala.meta.internal.mtags.SourcePath
 import plasmon.ide.SbtBuildTool
@@ -15,32 +16,26 @@ final case class SourceMapper(
   bspData: BspData,
   buffers: Buffers
 ) {
-  def mappedFrom(path: os.Path): Option[os.Path] =
-    bspData.mappedFrom(path)
-
-  def mappedTo(path: os.Path): Option[os.Path] =
-    bspData.mappedTo(path).map(_.path)
-  def mappedTo(path: SourcePath): Option[SourcePath] =
+  def mappedTo(targetId: b.BuildTargetIdentifier, path: os.Path): Option[os.Path] =
+    bspData.mappedTo(targetId, path).map(_.path)
+  def mappedTo(targetId: b.BuildTargetIdentifier, path: SourcePath): Option[SourcePath] =
     path match {
       case s: SourcePath.Standard =>
-        mappedTo(os.Path(s.path))
+        mappedTo(targetId, os.Path(s.path))
           .map(_.toNIO)
           .map(SourcePath.Standard(_))
       case _ => None
     }
-  def mappedLineForServer(path: os.Path, line: Int): Int =
-    bspData.mappedLineForServer(path, line).getOrElse(line)
-  def mappedLineForClient(path: os.Path, line: Int): Int =
-    bspData.mappedLineForClient(path, line).getOrElse(line)
 
   def pcMapping(
+    targetId: b.BuildTargetIdentifier,
     path: os.Path
   ): (Input.VirtualFile, l.Position => l.Position, AdjustLspData) = {
 
     def input = path.toInputFromBuffers(buffers)
     def default: (Input.VirtualFile, l.Position => l.Position, AdjustLspData) = {
       val viaBuildTargets: Option[(Input.VirtualFile, l.Position => l.Position, AdjustLspData)] =
-        bspData.mappedTo(path).map(_.update(input.value))
+        bspData.mappedTo(targetId, path).map(_.update(input.value))
       viaBuildTargets.getOrElse(
         (input, identity[l.Position], AdjustedLspData.default)
       )

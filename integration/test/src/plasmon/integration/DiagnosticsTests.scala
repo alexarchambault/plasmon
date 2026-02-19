@@ -15,7 +15,7 @@ class DiagnosticsTests extends PlasmonSuite {
 
   for (jvm <- jvmValues)
     test(s"simple Java ${jvm.label}") {
-      simpleTest(SingleModuleBuildTool.ScalaCli, (IntegrationConstants.scala213, "2.13"), jvm)
+      simpleTest(SingleModuleBuildTool.ScalaCli(), (IntegrationConstants.scala213, "2.13"), jvm)
     }
 
   private def simpleTest(

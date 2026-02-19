@@ -745,6 +745,8 @@ object PlasmonCommands {
                           case Failure(ex) =>
                             scribe.error("Error re-indexing", ex)
                         }(using pools.dummyEc)
+                    case Failure(_) =>
+                    // Ignored, reported via the returned future
                   }
 
                   f.map { _ =>
@@ -1738,6 +1740,22 @@ object PlasmonCommands {
                       out ++= "Dependency modules: " + depMods.toString + nl + nl
                     for (workspace <- data.targetToWorkspace.get(targetId))
                       out ++= "Workspace: " + workspace.toString + nl + nl
+                    scribe.info(
+                      s"data.actualSources keys: ${data.actualSources.keys.toVector.map(_.getUri).sorted}"
+                    )
+                    for (map <- data.actualSources.get(targetId)) {
+                      scribe.info(
+                        s"data.actualSources($targetId) keys: ${map.keys.toVector.map(_.toString).sorted}"
+                      )
+                      val lines = map.toVector
+                        .sortBy(_._1)
+                        .map {
+                          case (path, mapped) =>
+                            s"  $path --> ${mapped.path}" + nl
+                        }
+                        .mkString
+                      out ++= "Mapped sources: " + nl + lines + nl
+                    }
                     out.result()
                   }
                   .mkString

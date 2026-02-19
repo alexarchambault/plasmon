@@ -1,0 +1,9 @@
+{
+  "path": ".plasmon/readonly/dependencies/scala-library-3.8.1-sources.jar/scala/collection/convert/AsScalaExtensions.scala",
+  "line": 37,
+  "colRange": [
+    8,
+    15
+  ],
+  "content": "asScala"
+}

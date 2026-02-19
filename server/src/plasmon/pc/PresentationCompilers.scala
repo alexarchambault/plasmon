@@ -114,7 +114,7 @@ class PresentationCompilers(
     Scala3PresentationCompiler,
     GlobalSymbolIndex.Module,
     URI,
-    Seq[Diagnostic],
+    Seq[l.Diagnostic],
     Logger
   ) => Unit
 )(implicit ec: ExecutionContextExecutorService)
@@ -396,7 +396,7 @@ class PresentationCompilers(
                 modified,
                 rangeEnd,
                 token,
-                outlineFilesProvider.getOutlineFiles(compiler.buildTargetId())
+                outlineFilesProvider.getOutlineFiles(compilerTargetId(compiler))
               )
 
             val previousLines = expression
@@ -450,7 +450,10 @@ class PresentationCompilers(
     val path = params.getTextDocument.getUri.osPathFromUri
     loadCompiler(path)
       .map { compiler =>
-        val (input, _, adjust) = sourceAdjustments(params.getTextDocument.getUri)
+        val (input, _, adjust) = sourceAdjustments(
+          new b.BuildTargetIdentifier(compilerTargetId(compiler)),
+          params.getTextDocument.getUri
+        )
 
         /** Find the start that is actually contained in the file and not in the added parts such as
           * imports in sbt.
@@ -500,7 +503,7 @@ class PresentationCompilers(
             path.toNIO.toUri(),
             input.text,
             token,
-            outlineFilesProvider.getOutlineFiles(compiler.buildTargetId())
+            outlineFilesProvider.getOutlineFiles(compilerTargetId(compiler))
           )
         val isScala3 = ScalaVersions.isScala3Version(compiler.scalaVersion())
 
@@ -788,7 +791,7 @@ class PresentationCompilers(
             if !isCancelled()
           } yield {
             val uri                = searchFile.toNIO.toUri
-            val (input, _, adjust) = sourceAdjustments(uri.toASCIIString)
+            val (input, _, adjust) = sourceAdjustments(id, uri.toASCIIString)
             val requestParams = new pc.PcReferencesRequest(
               CompilerVirtualFileParams(uri, input.text),
               includeDefinition,
@@ -947,13 +950,12 @@ class PresentationCompilers(
     token: CancelToken
   ): Future[Option[HoverSignature]] =
     withPCAndAdjustLsp(params) { (pc, pos, adjust) =>
-      pc.hover(
-        CompilerRangeParamsUtils.offsetOrRange(
-          pos,
-          token,
-          outlineFilesProvider.getOutlineFiles(pc.buildTargetId())
-        )
-      ).asScala
+      val params = CompilerRangeParamsUtils.offsetOrRange(
+        pos,
+        token,
+        outlineFilesProvider.getOutlineFiles(pc.buildTargetId())
+      )
+      pc.hover(params).asScala
         .map(_.asScala.map(hover => adjust.adjustHoverResp(hover)))
     }
       .getOrElse(Future.successful(None))
@@ -963,11 +965,11 @@ class PresentationCompilers(
     targetId: b.BuildTargetIdentifier,
     token: CancelToken
   ): Option[Future[CompileResult]] =
-    withPCAndAdjustLsp(params, targetId) { (pc, _) =>
+    withPCAndAdjustLsp(params, targetId) { (input, pc, adjust) =>
       val path = params.getUri.osPathFromUri
       val params0 = CompilerVirtualFileParams(
-        path.toNIO.toUri,
-        path.toInputFromBuffers(buffers).value,
+        new URI(input.path),
+        input.value,
         token
       )
       /* FIXME Adjust positions in diagnostics with 'adjust' */
@@ -1051,18 +1053,19 @@ class PresentationCompilers(
     findTypeDef: Boolean
   ): Future[Seq[l.Location]] =
     withPCAndAdjustLsp(params) { (pc, pos, adjust) =>
-      val params = CompilerOffsetParamsUtils.fromPos(
+      val params0 = CompilerOffsetParamsUtils.fromPos(
         pos,
         token,
         outlineFilesProvider.getOutlineFiles(pc.buildTargetId())
       )
       val defResult =
         if (findTypeDef)
-          pc.typeDefinition(params)
+          pc.typeDefinition(params0)
         else
           pc.definition(CompilerOffsetParamsUtils.fromPos(pos, token))
       defResult.asScala.map { c =>
-        adjust.adjustLocations(c.locations())
+        for (loc <- c.locations.asScala if loc.getUri == params.getTextDocument.getUri)
+          adjust.adjustLocations(c.locations())
         c.locations().asScala.toSeq
       }
     }.getOrElse(Future.successful(Nil))
@@ -1268,7 +1271,34 @@ class PresentationCompilers(
         lazy val pc: Scala3PresentationCompiler = new Scala3PresentationCompiler(
           javaHome.toNIO,
           () => logger().consumer,
-          emitDiagnostics = emitDiagnostics(pc, targetId.module, _, _, logger()),
+          emitDiagnostics = (uri, diags) => {
+            val mappedToOpt = bspData.mappedTo(targetId, uri.toOsPath)
+            val updateLine: Int => Int = mappedToOpt match {
+              case Some(mappedTo) => l => mappedTo.lineForClient(l).getOrElse(l)
+              case None           => identity
+            }
+            val logger0 = logger()
+            for (diag <- diags if !diag.pos.span.exists)
+              logger0.log(s"No span diagnostic: $diag")
+            val diags0 = diags.collect {
+              case diag if diag.pos.span.exists =>
+                new l.Diagnostic(
+                  new l.Range(
+                    new l.Position(updateLine(diag.pos.startLine), diag.pos.startColumn),
+                    new l.Position(updateLine(diag.pos.endLine), diag.pos.endColumn)
+                  ),
+                  diag.message,
+                  diag.level match {
+                    case dotty.tools.dotc.interfaces.Diagnostic.WARNING =>
+                      l.DiagnosticSeverity.Warning
+                    case dotty.tools.dotc.interfaces.Diagnostic.ERROR => l.DiagnosticSeverity.Error
+                    case _ => l.DiagnosticSeverity.Information
+                  },
+                  s"Scala ${Properties.versionNumberString} presentation compiler"
+                )
+            }
+            emitDiagnostics(pc, targetId.module, uri, diags0, logger0)
+          },
           module = targetId.module
         )
         setupPc(pc)
@@ -1378,7 +1408,10 @@ class PresentationCompilers(
   ): Option[T] = {
     val path = params.getTextDocument.getUri.osPathFromUri
     loadCompiler(path, isCompletion = isCompletion).flatMap { compiler =>
-      val (input, pos, adjust) = sourceAdjustments(params)
+      val (input, pos, adjust) = sourceAdjustments(
+        new b.BuildTargetIdentifier(compilerTargetId(compiler)),
+        params
+      )
       pos
         .toMeta(input)
         .map(metaPos => fn(compiler, metaPos, adjust))
@@ -1392,7 +1425,8 @@ class PresentationCompilers(
   ): Option[T] = {
     val path = params.getTextDocument.getUri.osPathFromUri
     loadCompiler(path).flatMap { compiler =>
-      val (input, pos, adjust) = sourceAdjustments(params)
+      val (input, pos, adjust) =
+        sourceAdjustments(new b.BuildTargetIdentifier(compilerTargetId(compiler)), params)
       pos
         .toMeta(input)
         .map(metaPos => fn(compiler, metaPos, adjust))
@@ -1413,7 +1447,8 @@ class PresentationCompilers(
   ): Option[T] = {
     val path = uri.osPathFromUri
     loadCompiler(path).flatMap { compiler =>
-      val (input, adjustRequest, adjustResponse) = sourceAdjustments(uri)
+      val (input, adjustRequest, adjustResponse) =
+        sourceAdjustments(new b.BuildTargetIdentifier(compilerTargetId(compiler)), uri)
       for {
         metaRange <- new l.Range(
           adjustRequest(range.getStart),
@@ -1429,6 +1464,15 @@ class PresentationCompilers(
     }
   }
 
+  private def compilerTargetId(pc: PresentationCompiler): String =
+    pc match {
+      case s: Scala3PresentationCompiler => s.module.targetId
+      case s: Scala2PresentationCompiler => s.module.targetId
+      case j: JavaPresentationCompiler =>
+        GlobalSymbolIndex.Module.fromString(j.moduleString).targetId
+      case _ => "" // ???
+    }
+
   private def withPCAndAdjustLsp[T](
     params: HoverExtParams
   )(
@@ -1441,8 +1485,9 @@ class PresentationCompilers(
 
     val path = params.textDocument.getUri.osPathFromUri
     loadCompiler(path).flatMap { compiler =>
+      val targetId = new b.BuildTargetIdentifier(compilerTargetId(compiler))
       if (params.range != null) {
-        val (input, range, adjust) = sourceAdjustments(params)
+        val (input, range, adjust) = sourceAdjustments(targetId, params)
         range.toMeta(input).map(fn(compiler, _, adjust))
 
       }
@@ -1452,7 +1497,7 @@ class PresentationCompilers(
             params.textDocument,
             params.getPosition
           )
-        val (input, pos, adjust) = sourceAdjustments(positionParams)
+        val (input, pos, adjust) = sourceAdjustments(targetId, positionParams)
         pos.toMeta(input).map(fn(compiler, _, adjust))
       }
     }
@@ -1461,25 +1506,27 @@ class PresentationCompilers(
   private def withPCAndAdjustLsp[T](
     params: l.TextDocumentIdentifier,
     targetId: b.BuildTargetIdentifier
-  )(fn: (PresentationCompiler, AdjustLspData) => T): Option[T] =
+  )(fn: (Input.VirtualFile, PresentationCompiler, AdjustLspData) => T): Option[T] =
     loadCompiler(targetId).map { compiler =>
-      val (_, _, adjust) = sourceAdjustments(params.getUri)
-      fn(compiler, adjust)
+      val (input, _, adjust) = sourceAdjustments(targetId, params.getUri)
+      fn(input, compiler, adjust)
     }
 
   private def sourceAdjustments(
+    targetId: b.BuildTargetIdentifier,
     params: l.TextDocumentPositionParams
   ): (Input.VirtualFile, l.Position, AdjustLspData) = {
     val (input, adjustRequest, adjustResponse) =
-      sourceAdjustments(params.getTextDocument.getUri)
+      sourceAdjustments(targetId, params.getTextDocument.getUri)
     (input, adjustRequest(params.getPosition), adjustResponse)
   }
 
   private def sourceAdjustments(
+    targetId: b.BuildTargetIdentifier,
     params: l.InlayHintParams
   ): (Input.VirtualFile, l.Range, AdjustLspData) = {
     val (input, adjustRequest, adjustResponse) =
-      sourceAdjustments(params.getTextDocument.getUri)
+      sourceAdjustments(targetId, params.getTextDocument.getUri)
     val start    = params.getRange.getStart
     val end      = params.getRange.getEnd
     val newRange = new l.Range(adjustRequest(start), adjustRequest(end))
@@ -1487,10 +1534,11 @@ class PresentationCompilers(
   }
 
   private def sourceAdjustments(
+    targetId: b.BuildTargetIdentifier,
     params: HoverExtParams
   ): (Input.VirtualFile, l.Range, AdjustLspData) = {
     val (input, adjustRequest, adjustResponse) =
-      sourceAdjustments(params.textDocument.getUri)
+      sourceAdjustments(targetId, params.textDocument.getUri)
     val start    = params.range.getStart
     val end      = params.range.getEnd
     val newRange = new l.Range(adjustRequest(start), adjustRequest(end))
@@ -1498,9 +1546,10 @@ class PresentationCompilers(
   }
 
   private def sourceAdjustments(
+    target: b.BuildTargetIdentifier,
     uri: String
   ): (Input.VirtualFile, l.Position => l.Position, AdjustLspData) =
-    sourceMapper.pcMapping(uri.osPathFromUri)
+    sourceMapper.pcMapping(target, uri.osPathFromUri)
 
   private def toDebugCompletionType(
     kind: l.CompletionItemKind

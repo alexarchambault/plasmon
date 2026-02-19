@@ -86,7 +86,7 @@ final class TargetData {
       Iterable[b.BuildTargetIdentifier]
     ]]
 
-  val actualSources: MMap[os.Path, MappedSource] =
+  val actualSources: MMap[b.BuildTargetIdentifier, MMap[os.Path, MappedSource]] =
     TrieMap.empty
 
   def sourceBuildTargets(
@@ -383,10 +383,12 @@ final class TargetData {
   }
 
   def addMappedSource(
+    target: b.BuildTargetIdentifier,
     path: os.Path,
     mapped: MappedSource
   ): Unit =
-    actualSources(path) = mapped
+    actualSources.getOrElseUpdate(target, TrieMap.empty)
+      .update(path, mapped)
 
   def resetConnections(
     idToConn: List[(b.BuildTargetIdentifier, os.Path)],
@@ -470,7 +472,7 @@ final class TargetData {
       },
       actualSources = actualSources.toMap.map {
         case (k, v) =>
-          (k.toString, v.toString)
+          (k.toString, v.toMap.map { case (k0, v0) => (k0.toString, v0.toString) })
       }
     )
 }
@@ -522,7 +524,7 @@ object TargetData {
     buildClientOpt: Option[String],
     workspaceBuildTargetsRespOpt: Option[TargetData.WorkspaceBuildTargets],
     sourceBuildTargetsCache: Map[String, Option[Seq[b.BuildTargetIdentifier]]],
-    actualSources: Map[String, String]
+    actualSources: Map[String, Map[String, String]]
   )
 
   given JsonValueCodec[AsJson] =

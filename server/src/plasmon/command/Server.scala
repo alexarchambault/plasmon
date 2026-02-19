@@ -78,7 +78,6 @@ object Server extends caseapp.Command[ServerOptions] {
     RefreshStatus,
     Reload,
     ShowIndex,
-    SymbolSearch,
     Withdraw
   )
 

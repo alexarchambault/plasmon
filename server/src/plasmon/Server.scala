@@ -288,25 +288,7 @@ final class Server(
         case Some(targetId) =>
           bspData.buildClientOf(targetId) match {
             case Some(client) =>
-              for (diag <- diags if !diag.pos.span.exists)
-                pcLogger.log(diag.toString)
-              val diags0 = diags.collect {
-                case diag if diag.pos.span.exists =>
-                  new l.Diagnostic(
-                    new l.Range(
-                      new l.Position(diag.pos.startLine, diag.pos.startColumn),
-                      new l.Position(diag.pos.endLine, diag.pos.endColumn)
-                    ),
-                    diag.message,
-                    diag.level match {
-                      case Diagnostic.WARNING => l.DiagnosticSeverity.Warning
-                      case Diagnostic.ERROR   => l.DiagnosticSeverity.Error
-                      case _                  => l.DiagnosticSeverity.Information
-                    },
-                    s"Scala ${Properties.versionNumberString} presentation compiler"
-                  )
-              }
-              client.onPcDiagnostics(module, path, diags0)
+              client.onPcDiagnostics(module, path, diags)
             case None =>
               scribe.warn(
                 s"No build client found for target ${targetId.getUri} of $path that we got ${diags.length} diagnostic(s) for"
@@ -439,7 +421,12 @@ final class Server(
           scribe.error("Ignoring unexpected error during source scanning", e)
       },
       sourceJars = () => new OpenClassLoader,
-      toIndexSource = path => bspData.mappedTo(path.toOs).map(_.path).getOrElse(path.toOs).toAbsPath
+      toIndexSource = (target, path) =>
+        bspData
+          .mappedTo(new b.BuildTargetIdentifier(target.targetId), path.toOs)
+          .map(_.path)
+          .getOrElse(path.toOs)
+          .toAbsPath
     )(using NopReportContext)
 
   // STATE
