@@ -47,7 +47,6 @@ import scala.meta.internal.pc.PresentationCompilerConfigImpl
 import scala.meta.internal.metals.JdkSources
 import scala.meta.internal.{semanticdb => s}
 import scala.meta.internal.mtags.GlobalSymbolIndex
-import com.github.plokhotnyuk.jsoniter_scala.core.writeToString
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonWriter
@@ -61,6 +60,11 @@ import com.google.gson.FormattingStyle
 import plasmon.bsp.BspServersActor
 import dotty.tools.dotc.interfaces.Diagnostic
 import scala.util.Properties
+import scala.meta.internal.mtags.SymbolIndexBucket
+import scala.meta.internal.mtags.SymbolLocation
+import java.io.OutputStream
+import scala.collection.immutable.ListMap
+import scala.meta.Dialect
 
 // Many things here inspired by https://github.com/scalameta/metals/blob/030641d97ca5b982144898a54c3b60b2c08b9614/metals/src/main/scala/scala/meta/metals/MetalsLanguageServer.scala
 // and earlier version of that file
@@ -421,12 +425,26 @@ final class Server(
           scribe.error("Ignoring unexpected error during source scanning", e)
       },
       sourceJars = () => new OpenClassLoader,
-      toIndexSource = (target, path) =>
-        bspData
+      toIndexSource = (target, path) => {
+        val mappedToOpt = bspData
           .mappedTo(new b.BuildTargetIdentifier(target.targetId), path.toOs)
-          .map(_.path)
-          .getOrElse(path.toOs)
-          .toAbsPath
+        mappedToOpt match {
+          case Some(mappedTo) =>
+            val adjustBack = (range: s.Range) => {
+              val newStartLineOpt = mappedTo.lineForClient(range.startLine).filter(_ >= 0)
+              val newEndLineOpt   = mappedTo.lineForClient(range.endLine).filter(_ >= 0)
+              (newStartLineOpt, newEndLineOpt) match {
+                case (Some(newStartLine), Some(newEndLine)) =>
+                  Some(s.Range(newStartLine, range.startCharacter, newEndLine, range.endCharacter))
+                case _ =>
+                  None
+              }
+            }
+            (mappedTo.path.toAbsPath, adjustBack)
+          case None =>
+            (path.toOs.toAbsPath, Some(_))
+        }
+      }
     )(using NopReportContext)
 
   // STATE
@@ -795,37 +813,34 @@ final class Server(
     javaFileManager.resetCache()
   }
 
-  def debugJson: String = {
-    val str = writeToString(
-      Server.ServerJson(
-        javaHome = javaHome.toString,
-        bloopJavaHome = bloopJavaHome().toString,
-        workspaceOpt = workspaceOpt().map(_.toString),
-        workingDir = workingDir.toString,
-        logJsonrpcInput = logJsonrpcInput,
-        tools = tools.tools,
-        enableBestEffortMode = enableBestEffortMode,
-        scala2Compat = scala2Compat,
-        initParams = initializeParamsOpt0,
-        bspServers = bspServers.actor.asJson,
-        bspData = bspData.asJson,
-        isLanguageClientInstantiated = isLanguageClientInstantiated,
-        client = clientOpt.map(_.toString),
-        editorState = editorState.asJson,
-        compilations = compilations.asJson,
-        jdkCp = jdkCp,
-        jdkSources = jdkSources,
-        presentationCompilers = presentationCompilers.asJson,
-        parserQueue = parserQueue.asJson,
-        interactiveSemanticdbs = interactiveSemanticdbs.asJson,
-        referenceIndex = referenceIndex.asJson,
-        symbolSearchIndex = symbolSearchIndex.asJson,
-        status = status.asJson,
-        fileWatcher = fileWatcher.asJson
-      )
+  def serverJson(exclude: os.Path => Boolean): Server.ServerJson =
+    Server.ServerJson(
+      javaHome = javaHome.toString,
+      bloopJavaHome = bloopJavaHome().toString,
+      workspaceOpt = workspaceOpt().map(_.toString),
+      workingDir = workingDir.toString,
+      logJsonrpcInput = logJsonrpcInput,
+      tools = tools.tools,
+      enableBestEffortMode = enableBestEffortMode,
+      scala2Compat = scala2Compat,
+      initParams = initializeParamsOpt0,
+      bspServers = bspServers.actor.asJson,
+      bspData = bspData.asJson,
+      isLanguageClientInstantiated = isLanguageClientInstantiated,
+      client = clientOpt.map(_.toString),
+      editorState = editorState.asJson,
+      compilations = compilations.asJson,
+      jdkCp = jdkCp,
+      jdkSources = jdkSources,
+      presentationCompilers = presentationCompilers.asJson,
+      parserQueue = parserQueue.asJson,
+      interactiveSemanticdbs = interactiveSemanticdbs.asJson,
+      referenceIndex = referenceIndex.asJson,
+      symbolSearchIndex = symbolSearchIndex.asJson,
+      status = status.asJson,
+      fileWatcher = fileWatcher.asJson,
+      symbolIndex = Server.SymbolIndexJson(symbolIndex, exclude)
     )
-    ujson.reformat(str, indent = 2)
-  }
 }
 
 object Server {
@@ -909,6 +924,11 @@ object Server {
     }
   }
 
+  // missing
+  // - underlyingLanguageClient
+  // - jdkContext
+  // - javaFileManager
+  // - symbolDocs
   final case class ServerJson(
     javaHome: String,
     bloopJavaHome: String,
@@ -933,8 +953,137 @@ object Server {
     referenceIndex: ReferenceIndex.AsJson,
     symbolSearchIndex: SymbolSearchIndex.AsJson,
     status: Status.AsJson,
-    fileWatcher: ProjectFileWatcher.AsJson
+    fileWatcher: ProjectFileWatcher.AsJson,
+    symbolIndex: SymbolIndexJson
   )
+
+  final case class SymbolIndexJson(
+    dialectBuckets: Map[String, SymbolIndexBucketJson],
+    javaHome: String,
+    indexedSources: Long,
+    rootBucket: SymbolIndexBucketJson,
+    dependees: Map[String, Seq[String]]
+  )
+
+  object SymbolIndexJson {
+    def dialectToString(d: Dialect): String =
+      if (d.toString == "Dialect()")
+        "Dialect@" + Integer.toHexString(System.identityHashCode(d))
+      else
+        d.toString
+    def apply(symbolIndex: OnDemandSymbolIndex, exclude: os.Path => Boolean): SymbolIndexJson =
+      SymbolIndexJson(
+        dialectBuckets = symbolIndex.dialectBuckets.toMap.map {
+          case ((dialectOpt, mod), v) =>
+            val key = mod.asString + dialectOpt.map(" - " + dialectToString(_)).getOrElse("")
+            (key, SymbolIndexBucketJson(v, exclude))
+        },
+        javaHome = symbolIndex.javaHome.toString,
+        indexedSources = symbolIndex.indexedSources,
+        rootBucket = SymbolIndexBucketJson(symbolIndex.rootBucket, exclude),
+        dependees = symbolIndex.dependees.toMap.map {
+          case (k, v) =>
+            (k.asString, v.toSeq.map(_.asString).sorted)
+        }
+      )
+  }
+
+  final case class SymbolIndexBucketJson(
+    toplevels: Map[String, Seq[(String, String)]],
+    definitions: Map[String, Seq[SymbolLocationJson]],
+    sourceJars: Seq[String],
+    dialect: Option[String],
+    javaHome: String,
+    javaOnly: Boolean
+  )
+
+  object SymbolIndexBucketJson {
+    def apply(bucket: SymbolIndexBucket, exclude: os.Path => Boolean): SymbolIndexBucketJson =
+      SymbolIndexBucketJson(
+        toplevels = bucket.toplevels.trieMap.toMap
+          .iterator
+          .flatMap {
+            case (k, v) =>
+              val v0 = v
+                .iterator
+                .filter {
+                  case (std: SourcePath.Standard, _) =>
+                    !exclude(os.Path(std.path))
+                  case (zip: SourcePath.ZipEntry, _) =>
+                    !exclude(os.Path(zip.zipPath))
+                }
+                .map {
+                  case (sourcePath, opt) =>
+                    val optRepr = opt match {
+                      case None             => "none"
+                      case Some(Left(path)) => s"path:$path"
+                      case Some(Right(mod)) => s"mod:${mod.asString}"
+                    }
+                    (sourcePath.uri, optRepr)
+                }
+                .toVector
+                .sorted
+              if (v.size == v0.length || v0.nonEmpty)
+                Seq((k, v0))
+              else
+                Nil
+          }
+          .toVector
+          .sortBy(_._1)
+          .to(ListMap),
+        definitions = bucket.definitions.trieMap.toMap
+          .iterator
+          .flatMap {
+            case (k, v) =>
+              val v0 = v
+                .toVector
+                .filter { loc =>
+                  loc.path match {
+                    case std: SourcePath.Standard =>
+                      !exclude(os.Path(std.path))
+                    case zip: SourcePath.ZipEntry =>
+                      !exclude(os.Path(zip.zipPath))
+                  }
+                }
+                .sortBy(l =>
+                  (
+                    l.path.uri,
+                    l.range.fold(0)(_.startLine),
+                    l.range.fold(0)(_.startCharacter),
+                    l.range.fold(0)(_.endLine),
+                    l.range.fold(0)(_.endCharacter)
+                  )
+                )
+                .map(SymbolLocationJson(_))
+              if (v.size == v0.length || v0.nonEmpty)
+                Seq((k, v0))
+              else
+                Nil
+          }
+          .toVector
+          .sortBy(_._1)
+          .to(ListMap),
+        sourceJars = bucket.sourceJars.list().map(_.toString),
+        dialect = bucket.dialectOpt.map(SymbolIndexJson.dialectToString),
+        javaHome = bucket.javaHome.toString,
+        javaOnly = bucket.javaOnly
+      )
+  }
+
+  final case class SymbolLocationJson(
+    path: String,
+    range: Option[String]
+  )
+
+  object SymbolLocationJson {
+    def apply(loc: SymbolLocation): SymbolLocationJson =
+      SymbolLocationJson(
+        path = loc.path.uri,
+        range = loc.range.map { r =>
+          s"${r.startLine}:${r.startCharacter} - ${r.endLine}:${r.endCharacter}"
+        }
+      )
+  }
 
   object ServerJson {
     given JsonValueCodec[ServerJson] =
