@@ -66,7 +66,7 @@ class MillTests extends PlasmonSuite {
           new l.Position(7, 49)
         )
         checkTextFixture(
-          fixtureDir / "plasmon/integration/mill-tests/hover-0.txt",
+          fixtureDir / "plasmon/integration/project/mill-tests/hover-0.txt",
           hover0,
           osOpt
         )
@@ -80,7 +80,7 @@ class MillTests extends PlasmonSuite {
         //   new l.Position(2, 25)
         // )
         // checkTextFixture(
-        //   fixtureDir / "plasmon/integration/mill-tests/hover-1.txt",
+        //   fixtureDir / "plasmon/integration/project/mill-tests/hover-1.txt",
         //   hover1,
         //   osOpt
         // )
@@ -91,7 +91,7 @@ class MillTests extends PlasmonSuite {
           new l.Position(7, 78)
         )
         checkTextFixture(
-          fixtureDir / "plasmon/integration/mill-tests/hover-2.txt",
+          fixtureDir / "plasmon/integration/project/mill-tests/hover-2.txt",
           hover2,
           osOpt
         )
@@ -102,7 +102,7 @@ class MillTests extends PlasmonSuite {
           new l.Position(7, 26)
         )
         checkTextFixture(
-          fixtureDir / "plasmon/integration/mill-tests/hover-3.txt",
+          fixtureDir / "plasmon/integration/project/mill-tests/hover-3.txt",
           hover3,
           osOpt
         )
@@ -113,7 +113,7 @@ class MillTests extends PlasmonSuite {
           new l.Position(12, 41)
         )
         checkTextFixture(
-          fixtureDir / "plasmon/integration/mill-tests/hover-4.txt",
+          fixtureDir / "plasmon/integration/project/mill-tests/hover-4.txt",
           hover4,
           osOpt
         )
@@ -124,7 +124,7 @@ class MillTests extends PlasmonSuite {
           new l.Position(51, 19)
         )
         checkTextFixture(
-          fixtureDir / "plasmon/integration/mill-tests/hover-5.txt",
+          fixtureDir / "plasmon/integration/project/mill-tests/hover-5.txt",
           hover5,
           osOpt
         )
@@ -135,7 +135,7 @@ class MillTests extends PlasmonSuite {
           pos6
         )
         checkTextFixture(
-          fixtureDir / "plasmon/integration/mill-tests/hover-6.txt",
+          fixtureDir / "plasmon/integration/project/mill-tests/hover-6.txt",
           hover6,
           osOpt
         )
@@ -146,7 +146,7 @@ class MillTests extends PlasmonSuite {
           pos6_1
         )
         checkTextFixture(
-          fixtureDir / "plasmon/integration/mill-tests/hover-6-1.txt",
+          fixtureDir / "plasmon/integration/project/mill-tests/hover-6-1.txt",
           hover6_1,
           osOpt
         )
@@ -158,7 +158,7 @@ class MillTests extends PlasmonSuite {
         //   pos7
         // )
         // checkTextFixture(
-        //   fixtureDir / "plasmon/integration/mill-tests/hover-7.txt",
+        //   fixtureDir / "plasmon/integration/project/mill-tests/hover-7.txt",
         //   hover7,
         //   osOpt
         // )
@@ -169,7 +169,7 @@ class MillTests extends PlasmonSuite {
           pos7_1
         )
         checkTextFixture(
-          fixtureDir / "plasmon/integration/mill-tests/hover-7-1.txt",
+          fixtureDir / "plasmon/integration/project/mill-tests/hover-7-1.txt",
           hover7_1,
           osOpt
         )
@@ -180,7 +180,7 @@ class MillTests extends PlasmonSuite {
           pos7_2
         )
         checkTextFixture(
-          fixtureDir / "plasmon/integration/mill-tests/hover-7-2.txt",
+          fixtureDir / "plasmon/integration/project/mill-tests/hover-7-2.txt",
           hover7_2,
           osOpt
         )
@@ -191,7 +191,7 @@ class MillTests extends PlasmonSuite {
           pos7_3
         )
         checkTextFixture(
-          fixtureDir / "plasmon/integration/mill-tests/hover-7-3.txt",
+          fixtureDir / "plasmon/integration/project/mill-tests/hover-7-3.txt",
           hover7_3,
           osOpt
         )
@@ -203,19 +203,19 @@ class MillTests extends PlasmonSuite {
   //       init(workingDir, osOpt)
   //
   //       checkJsoniterFixture(
-  //         fixtureDir / "plasmon" / "integration" / "mill-tests" / "definition" / "definition-6.txt",
+  //         fixtureDir / "plasmon/integration/project/mill-tests/definition/definition-6.txt",
   //         goToDef(server, millSources, source6, pos6),
   //         osOpt
   //       )
   //
   //       checkJsoniterFixture(
-  //         fixtureDir / "plasmon" / "integration" / "mill-tests" / "definition" / "definition-6-1.txt",
+  //         fixtureDir / "plasmon/integration/project/mill-tests/definition/definition-6-1.txt",
   //         goToDef(server, millSources, source6, pos6_1),
   //         osOpt
   //       )
   //
   //       checkJsoniterFixture(
-  //         fixtureDir / "plasmon" / "integration" / "mill-tests" / "definition" / "definition-7.txt",
+  //         fixtureDir / "plasmon/integration/project/mill-tests/definition/definition-7.txt",
   //         goToDef(server, millSources, source7, pos7),
   //         osOpt
   //       )
