@@ -1031,8 +1031,6 @@ class IndexerActor(
   }
   private lazy val scalaLibraryJar =
     jarOf("org.scala-lang", "scala-library", Properties.versionNumberString)
-  private lazy val scala3Library3Jar =
-    jarOf("org.scala-lang", "scala3-library_3", Properties.versionNumberString)
 
   private def classPathMillHack(
     classDir: String,
@@ -1071,9 +1069,11 @@ class IndexerActor(
   private def isSubstitutableScalaLibrary(fileName: String): Boolean =
     fileName.startsWith("scala-library-") &&
     fileName.endsWith(".jar")
-  private def isSubstitutableScala3Library3(fileName: String): Boolean =
-    fileName.startsWith("scala3-library_3-") &&
-    fileName.endsWith(".jar")
+  private def isScala3Library3(fileName: String): Boolean =
+    fileName.endsWith(".jar") && {
+      fileName.startsWith("scala3-library_3-") ||
+      fileName.startsWith("scala3-library_sjs1_3-")
+    }
 
   private def postProcessScalacOptionResult(
     res: b.ScalacOptionsResult,
@@ -1083,18 +1083,19 @@ class IndexerActor(
   ): b.ScalacOptionsResult = {
     for (item <- res.getItems.asScala.toList) {
       var didUpdateClasspath = false
-      var updatedClasspath = item.getClasspath.asScala.toList.map { elem =>
+      var updatedClasspath = item.getClasspath.asScala.toList.flatMap { elem =>
         val path = elem.osPathFromUri
         if (isSubstitutableScalaLibrary(path.last)) {
           didUpdateClasspath = true
-          scalaLibraryJar
+          Seq(scalaLibraryJar)
         }
-        else if (isSubstitutableScala3Library3(path.last)) {
+        else if (isScala3Library3(path.last)) {
           didUpdateClasspath = true
-          scala3Library3Jar
+          // Removing scala3-library_3
+          Nil
         }
         else
-          elem
+          Seq(elem)
       }
       if (millHack)
         for (cp <- classPathMillHack(item.getClassDirectory, updatedClasspath, workspace)) {

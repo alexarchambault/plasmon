@@ -1219,7 +1219,7 @@ class PresentationCompilers(
         coursierapi.Dependency
           .of(
             "org.scala-lang",
-            "scala3-library_3",
+            "scala-library",
             Properties.versionNumberString
           )
           .withTransitive(false)
