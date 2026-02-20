@@ -182,35 +182,8 @@ final case class Check(
         printLine("Compilation done")
 
       printLine(s"Checking for $strPath semantic DB")
-      val semdbRes =
-        server.fileSystemSemanticdbs.textDocument0(path, targetId)
-      semdbRes.flatMap(_.documentIncludingStaleE) match {
-        case Left(err) =>
-          printLine(s"No semantic DB found for $strPath: $err")
-          exit(1)
-        case Right(semdb) =>
-          def path = semdbRes match {
-            case Right(s: TextDocumentLookup.Success) => s.path
-            case _                                    => None
-          }
-          printLine {
-            if (options.verbose)
-              s"Found semantic DB for $strPath at $path"
-            else
-              s"Found semantic DB for $strPath"
-          }
-
-          if (options.metap)
-            printLine(Check.metap(semdb))
-
-          semdb.language match {
-            case Language.UNKNOWN_LANGUAGE =>
-              printLine("Warning: semantic DB has unknown language")
-              exit(1)
-            case other =>
-              printLine(s"Semantic DB has language $other")
-          }
-      }
+      printLine("Semanticdbs are disabled")
+      exit(1)
 
       printLine(s"Compiling $strPath with interactive compiler")
       val dummyToken = {

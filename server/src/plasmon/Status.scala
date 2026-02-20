@@ -231,24 +231,7 @@ class Status(
     Option(semdbStatusCache.get((targetId, source)))
       .filter(!_.shouldUpdate(source))
       .map(_.status(source))
-      .getOrElse {
-        val mtime = Instant.ofEpochMilli(os.mtime(source))
-        val lookup = server.fileSystemSemanticdbs
-          .textDocument0(source, targetId)
-        lookup match {
-          case Right(s: TextDocumentLookup.Success) =>
-            val details = SemdbStatusDetails(
-              mtime,
-              s.path,
-              Instant.ofEpochMilli(os.mtime(s.path)),
-              s.document.text
-            )
-            semdbStatusCache.put((targetId, source), details)
-            details.status(source)
-          case _ =>
-            SemdbStatus.NotFound
-        }
-      }
+      .getOrElse(SemdbStatus.NotFound)
 
   def plasmonFileStatus(): Option[(os.Path, Seq[PlasmonLanguageClient.StatusUpdate])] =
     server.editorState.focusedDocument
