@@ -1219,7 +1219,7 @@ class PresentationCompilers(
         coursierapi.Dependency
           .of(
             "org.scala-lang",
-            "scala3-library_3",
+            "scala-library",
             Properties.versionNumberString
           )
           .withTransitive(false)
@@ -2220,57 +2220,55 @@ object PresentationCompilers {
 
   private def enrichWithReleaseOption(scalaTarget: ScalaTarget) = {
     val isScala2 = scalaTarget.scalaInfo.getScalaVersion.startsWith("2.")
-    if (isScala2) {
-      // Try to adapt Scala 2 options to Scala 3, so that the compiler
-      // doesn't error out
 
-      var options = scalaTarget.scalac.getOptions.asScala.toSeq.flatMap {
-        case opt if opt.startsWith("-release:") =>
-          val opt0 = opt.stripPrefix("-release:").toIntOption match {
-            case Some(n) if n < 17 => "-release:17"
-            case _                 => opt
-          }
-          Seq(opt0)
-        case "-language:_" =>
-          // -language:_ not supported any more with Scala 3
-          // implicitConversions should be the only non-enabled by default in Scala 3
-          // that Scala 2 users should want
-          Seq("-language:implicitConversions")
-        case opt if opt.startsWith("-language:") =>
-          val features = opt.stripPrefix("-language:").split(',')
-          if (features.contains("implicitConversions")) Seq("-language:implicitConversions")
-          else Nil
-        case "-Wunused" =>
-          Seq("-Wunused:all")
-        case opt if opt.startsWith("-Xplugin:") =>
-          // FIXME Log that we drop those options
-          // No need to pass Scala 2 plugins to Scala 3 compiler
-          Nil
-        case opt if opt.startsWith("-Xlint:") =>
-          // FIXME Log that we drop those options
-          Nil
-        case "-Wdead-code" | "-Wextra-implicit" | "-Wnumeric-widen" | "-Xsource:3" | "-Yrangepos" =>
-          // FIXME Log that we drop those options
-          Nil
-        case opt => Seq(opt)
-      }
+    // Try to adapt Scala 2 options to Scala 3, so that the compiler
+    // doesn't error out
 
-      val releaseIndices = options.zipWithIndex.collect {
-        case ("--release" | "-release", idx) => idx
-      }
-      for (releaseIdx <- releaseIndices if releaseIdx >= 0 && releaseIdx + 1 < options.length)
-        options(releaseIdx + 1).toIntOption match {
-          case Some(n) if n < 17 =>
-            options = options.take(releaseIdx + 1) ++
-              Seq("17") ++
-              options.drop(releaseIdx + 2)
-          case _ =>
+    var options = scalaTarget.scalac.getOptions.asScala.toSeq.flatMap {
+      case opt if opt.startsWith("-release:") =>
+        val opt0 = opt.stripPrefix("-release:").toIntOption match {
+          case Some(n) if n < 17 => "-release:17"
+          case _                 => opt
         }
-
-      options
+        Seq(opt0)
+      case "-language:_" if isScala2 =>
+        // -language:_ not supported any more with Scala 3
+        // implicitConversions should be the only non-enabled by default in Scala 3
+        // that Scala 2 users should want
+        Seq("-language:implicitConversions")
+      case opt if opt.startsWith("-language:") && isScala2 =>
+        val features = opt.stripPrefix("-language:").split(',')
+        if (features.contains("implicitConversions")) Seq("-language:implicitConversions")
+        else Nil
+      case "-Wunused" if isScala2 =>
+        Seq("-Wunused:all")
+      case opt if opt.startsWith("-Xplugin:") && isScala2 =>
+        // FIXME Log that we drop those options
+        // No need to pass Scala 2 plugins to Scala 3 compiler
+        Nil
+      case opt if opt.startsWith("-Xlint:") && isScala2 =>
+        // FIXME Log that we drop those options
+        Nil
+      case "-Wdead-code" | "-Wextra-implicit" | "-Wnumeric-widen" | "-Xsource:3" | "-Yrangepos"
+          if isScala2 =>
+        // FIXME Log that we drop those options
+        Nil
+      case opt => Seq(opt)
     }
-    else
-      scalaTarget.scalac.getOptions.asScala.toSeq
+
+    val releaseIndices = options.zipWithIndex.collect {
+      case ("--release" | "-release", idx) => idx
+    }
+    for (releaseIdx <- releaseIndices if releaseIdx >= 0 && releaseIdx + 1 < options.length)
+      options(releaseIdx + 1).toIntOption match {
+        case Some(n) if n < 17 =>
+          options = options.take(releaseIdx + 1) ++
+            Seq("17") ++
+            options.drop(releaseIdx + 2)
+        case _ =>
+      }
+
+    options
   }
 
   final case class AsJson(
