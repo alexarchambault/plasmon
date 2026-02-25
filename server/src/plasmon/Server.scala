@@ -37,7 +37,6 @@ import plasmon.pc.PresentationCompilers
 import plasmon.render.JsonCodecs.given
 import plasmon.semdb.{
   AggregateSemanticdbs,
-  FileSystemSemanticdbs,
   InteractiveSemanticdbs,
   JavaInteractiveSemanticdb,
   SemanticdbIndexer
@@ -368,12 +367,8 @@ final class Server(
     )
 
   // stateless
-  def fileSystemSemanticdbs = new FileSystemSemanticdbs(bspData, editorState.fingerprints)
-
-  // stateless
   def semanticdbs: AggregateSemanticdbs = AggregateSemanticdbs(
     List(
-      fileSystemSemanticdbs,
       interactiveSemanticdbs
     )
   )
