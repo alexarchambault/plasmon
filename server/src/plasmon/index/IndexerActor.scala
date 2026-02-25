@@ -357,8 +357,8 @@ class IndexerActor(
     }
 
     val (targets, depSourcesRes) =
-      inState(stateName(), Some(logger), progress = s"Fetching BSP data for ${conn.name}") {
-        logger.timed(s"Fetching BSP data for ${conn.name}") {
+      inState(stateName(), Some(logger), progress = s"Fetching BSP data for ${conn.enhancedName}") {
+        logger.timed(s"Fetching BSP data for ${conn.enhancedName}") {
           conn.info.workspace
           val (workspaceBuildTargetsResp, targets0, depSourcesRes0) = fetchBspData(
             message,

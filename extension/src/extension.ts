@@ -611,9 +611,13 @@ function loadBuildTool(discoverId: string, toolId: string, uri: string | undefin
           loadBuildToolOrModule(uri, true)
       }
       else
+        // TODO Add button to go to this tool's log
+        // To reproduce: try to import a Mill project with a faulty Mill launcher
         vscode.window.showErrorMessage(`Error loading build tool: ${resp0.error}`, { modal: false })
     },
     (err) => {
+      // TODO Add button to go to this tool's log
+      // To reproduce: try to import a Mill project with a faulty Mill launcher
       vscode.window.showErrorMessage(`Error loading build tool: ${err}`, { modal: false })
     }
   )
