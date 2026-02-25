@@ -31,39 +31,11 @@
         }
       },
       {
-        "label": "ListSet[A](elems: A*): ListSet[A]",
-        "kind": "Method",
-        "tags": [],
-        "detail": "[A](elems: A*): ListSet[A]",
-        "sortText": "00001",
-        "filterText": "ListSet",
-        "insertTextFormat": "Snippet",
-        "textEdit": {
-          "range": {
-            "start": {
-              "line": 10,
-              "character": 29
-            },
-            "end": {
-              "line": 10,
-              "character": 30
-            }
-          },
-          "newText": "ListSet($0)"
-        },
-        "additionalTextEdits": [],
-        "data": {
-          "symbol": "scala/collection/IterableFactory#apply().",
-          "target": "file:/workspace/#foo/Compile",
-          "kind": 3
-        }
-      },
-      {
         "label": "LazyListIterable[A](elems: A*): LazyListIterable[A]",
         "kind": "Method",
         "tags": [],
         "detail": "[A](elems: A*): LazyListIterable[A]",
-        "sortText": "00002",
+        "sortText": "00001",
         "filterText": "LazyListIterable",
         "insertTextFormat": "Snippet",
         "textEdit": {
@@ -91,7 +63,7 @@
         "kind": "Method",
         "tags": [],
         "detail": "[A](elems: A*): List[A]",
-        "sortText": "00003",
+        "sortText": "00002",
         "filterText": "List",
         "insertTextFormat": "Snippet",
         "textEdit": {
@@ -106,6 +78,34 @@
             }
           },
           "newText": "List($0)"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/collection/IterableFactory#apply().",
+          "target": "file:/workspace/#foo/Compile",
+          "kind": 3
+        }
+      },
+      {
+        "label": "ListSet[A](elems: A*): ListSet[A]",
+        "kind": "Method",
+        "tags": [],
+        "detail": "[A](elems: A*): ListSet[A]",
+        "sortText": "00003",
+        "filterText": "ListSet",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 10,
+              "character": 29
+            },
+            "end": {
+              "line": 10,
+              "character": 30
+            }
+          },
+          "newText": "ListSet($0)"
         },
         "additionalTextEdits": [],
         "data": {

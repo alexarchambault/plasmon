@@ -3,12 +3,12 @@
     "isIncomplete": false,
     "items": [
       {
-        "label": "List[A](elems: A*): List[A]",
+        "label": "LazyList[A](elems: A*): LazyList[A]",
         "kind": "Method",
         "tags": [],
-        "detail": "[A](elems: A*): List[A]",
+        "detail": "[A](elems: A*): LazyList[A]",
         "sortText": "00000",
-        "filterText": "List",
+        "filterText": "LazyList",
         "insertTextFormat": "Snippet",
         "textEdit": {
           "range": {
@@ -21,7 +21,7 @@
               "character": 30
             }
           },
-          "newText": "List($0)"
+          "newText": "LazyList($0)"
         },
         "additionalTextEdits": [],
         "data": {
@@ -59,12 +59,12 @@
         }
       },
       {
-        "label": "LazyList[A](elems: A*): LazyList[A]",
+        "label": "List[A](elems: A*): List[A]",
         "kind": "Method",
         "tags": [],
-        "detail": "[A](elems: A*): LazyList[A]",
+        "detail": "[A](elems: A*): List[A]",
         "sortText": "00002",
-        "filterText": "LazyList",
+        "filterText": "List",
         "insertTextFormat": "Snippet",
         "textEdit": {
           "range": {
@@ -77,7 +77,7 @@
               "character": 30
             }
           },
-          "newText": "LazyList($0)"
+          "newText": "List($0)"
         },
         "additionalTextEdits": [],
         "data": {
