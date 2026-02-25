@@ -474,7 +474,7 @@ object Server extends caseapp.Command[ServerOptions] {
                     if arr.size() == 1 && arr.get(0).isJsonPrimitive && arr.get(
                       0
                     ).getAsJsonPrimitive.isString => Some(arr.get(0).getAsJsonPrimitive.getAsString)
-                case l: java.util.List[_] if l.size() == 1 && l.get(0).isInstanceOf[String] =>
+                case l: java.util.List[?] if l.size() == 1 && l.get(0).isInstanceOf[String] =>
                   Some(l.get(0).asInstanceOf[String])
                 case (str: String) :: Nil => Some(str)
                 case _ =>
