@@ -37,7 +37,7 @@ trait PlasmonSuite extends munit.FunSuite {
         val res = {
           def attempt(): Try[Any] =
             Try(body).flatMap {
-              case f: Future[_] =>
+              case f: Future[?] =>
                 // shouldn't be a problem to await that, given that munit doesn't run tests concurrently
                 Try(Await.result(f, munitTimeout))
               case other =>

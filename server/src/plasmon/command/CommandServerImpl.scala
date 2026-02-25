@@ -8,13 +8,13 @@ import plasmon.servercommand.ServerCommandInstance
 import java.util.concurrent.{CompletableFuture, ExecutorService}
 
 class CommandServerImpl(
-  remoteCommands: CommandClient => Seq[ServerCommandInstance[_]],
+  remoteCommands: CommandClient => Seq[ServerCommandInstance[?]],
   pool: ExecutorService
 ) extends CommandServer {
 
   val entryPoint: CommandsEntryPoint = new CommandsEntryPoint {
     def progName = "plasmon"
-    def commands: Seq[caseapp.Command[_]] =
+    def commands: Seq[caseapp.Command[?]] =
       remoteCommands(client)
     override def exit(code: Int): Nothing =
       ServerCommandInstance.exit(code)

@@ -499,8 +499,8 @@ object TokenEditDistance {
               revised
             )
           )
-        case (err: Failure[_], _) => Left(err.exception.getMessage)
-        case (_, err: Failure[_]) => Left(err.exception.getMessage)
+        case (err: Failure[?], _) => Left(err.exception.getMessage)
+        case (_, err: Failure[?]) => Left(err.exception.getMessage)
       }
     }
     else {
