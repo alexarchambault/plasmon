@@ -386,9 +386,11 @@ final class TargetData {
     target: b.BuildTargetIdentifier,
     path: os.Path,
     mapped: MappedSource
-  ): Unit =
+  ): Unit = {
     actualSources.getOrElseUpdate(target, TrieMap.empty)
       .update(path, mapped)
+    addSourceItem(path, target)
+  }
 
   def resetConnections(
     idToConn: List[(b.BuildTargetIdentifier, os.Path)],
