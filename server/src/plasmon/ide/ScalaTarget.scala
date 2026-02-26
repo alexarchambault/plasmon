@@ -2,18 +2,16 @@
 
 package plasmon.ide
 
-import scala.util.Success
-import scala.util.Try
-
-import scala.meta.Dialect
-import scala.meta.dialects._
+import ch.epfl.scala.bsp4j as b
 import plasmon.PlasmonEnrichments.*
-import scala.jdk.CollectionConverters.*
-import scala.meta.internal.semver.SemVer
 
-import ch.epfl.scala.{bsp4j => b}
-import scala.meta.internal.metals.ScalaVersions
+import scala.jdk.CollectionConverters.*
+import scala.meta.Dialect
+import scala.meta.dialects.*
 import scala.meta.internal.metals
+import scala.meta.internal.metals.ScalaVersions
+import scala.meta.internal.semver.SemVer
+import scala.util.{Success, Try}
 
 case class ScalaTarget(
   info: b.BuildTarget,

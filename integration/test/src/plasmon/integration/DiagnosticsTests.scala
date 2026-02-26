@@ -1,14 +1,14 @@
 package plasmon.integration
 
 import io.github.alexarchambault.testutil.TestUtil.*
-import org.eclipse.{lsp4j => l}
+import org.eclipse.lsp4j as l
 import plasmon.integration.TestUtil.*
 
 import java.net.URI
 import java.nio.file.Paths
 
-import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, Promise}
+import scala.concurrent.duration.DurationInt
 import scala.reflect.Selectable.reflectiveSelectable
 
 class DiagnosticsTests extends PlasmonSuite {

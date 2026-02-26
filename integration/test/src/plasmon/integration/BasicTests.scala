@@ -2,7 +2,7 @@ package plasmon.integration
 
 import com.eed3si9n.expecty.Expecty.expect
 import io.github.alexarchambault.testutil.TestUtil.*
-import org.eclipse.{lsp4j => l}
+import org.eclipse.lsp4j as l
 import plasmon.integration.TestUtil.*
 
 import java.io.OutputStream

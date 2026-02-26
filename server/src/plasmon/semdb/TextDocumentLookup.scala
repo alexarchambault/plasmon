@@ -2,7 +2,7 @@
 
 package plasmon.semdb
 
-import scala.meta.internal.{semanticdb => s}
+import scala.meta.internal.semanticdb as s
 
 sealed abstract class TextDocumentLookup {
   case class MissingSemanticdb(uri: String)

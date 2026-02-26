@@ -2,14 +2,12 @@
 
 package plasmon.handlers.ontypefmt
 
-import scala.meta
+import org.eclipse.lsp4j as l
+import plasmon.PlasmonEnrichments.*
 
+import scala.meta
 import scala.meta.inputs.Position
 import scala.meta.tokens.Token
-
-import org.eclipse.{lsp4j => l}
-
-import plasmon.PlasmonEnrichments._
 
 /** Formatter that automatically converts a string literal to an interpolation when an interpolation
   * `${}` marker is added in the literal.

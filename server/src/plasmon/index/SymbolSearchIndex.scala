@@ -2,31 +2,30 @@
 
 package plasmon.index
 
-import scala.annotation.tailrec
-import scala.collection.concurrent.TrieMap
-import scala.collection.mutable
-
-import scala.meta.internal.mtags.GlobalSymbolIndex
-import scala.meta.internal.pc.InterruptException
-import scala.meta.pc.SymbolSearch
-import scala.meta.pc.SymbolSearchVisitor
-
-import ch.epfl.scala.{bsp4j => b}
-import org.eclipse.lsp4j.jsonrpc.CancelChecker
-import org.eclipse.{lsp4j => l}
-import scala.meta.internal.mtags.SourcePath
-import scala.meta.internal.metals.ExcludedPackagesHandler
-import scala.meta.internal.metals.ClasspathSearch
-import scala.meta.internal.metals.WorkspaceSymbolQuery
-import scala.meta.internal.metals.CompressedPackageIndex
-import scala.meta.internal.metals.WorkspaceSymbolInformation
-import scala.meta.internal.metals.Fuzzy
-import scala.meta.internal.metals.PackageIndex
-import plasmon.index.BspData
-import scala.meta.internal.metals.StringBloomFilter
-import plasmon.PlasmonEnrichments.*
+import ch.epfl.scala.bsp4j as b
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
+import org.eclipse.lsp4j as l
+import org.eclipse.lsp4j.jsonrpc.CancelChecker
+import plasmon.PlasmonEnrichments.*
+import plasmon.index.BspData
+
+import scala.annotation.tailrec
+import scala.collection.mutable
+import scala.collection.concurrent.TrieMap
+import scala.meta.internal.metals.{
+  ClasspathSearch,
+  CompressedPackageIndex,
+  ExcludedPackagesHandler,
+  Fuzzy,
+  PackageIndex,
+  StringBloomFilter,
+  WorkspaceSymbolInformation,
+  WorkspaceSymbolQuery
+}
+import scala.meta.internal.mtags.{GlobalSymbolIndex, SourcePath}
+import scala.meta.internal.pc.InterruptException
+import scala.meta.pc.{SymbolSearch, SymbolSearchVisitor}
 
 // MOSTLY INTERNAL TO SymbolSearchImpl
 

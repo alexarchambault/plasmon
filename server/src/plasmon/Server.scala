@@ -1,39 +1,33 @@
 package plasmon
 
-import ch.epfl.scala.{bsp4j => b}
-import org.eclipse.{lsp4j => l}
-import plasmon.bsp.{BspServers, PlasmonBuildClientImpl}
-import plasmon.languageclient._
-
-import java.nio.file.NoSuchFileException
-import java.util.concurrent.{CompletableFuture, TimeUnit}
-
-import scala.concurrent.Future
-import scala.meta.internal.metals.{Docstrings, ExcludedPackagesHandler}
-import scala.meta.internal.mtags.{IndexingExceptions, Mtags, OnDemandSymbolIndex, OpenClassLoader}
-import scala.meta.parsers.ParseException
-import scala.meta.tokenizers.TokenizeException
-import scala.meta.internal.mtags.SourcePath
-import plasmon.watch.{ProjectFileWatcher, WatchEvent}
-import scala.util.Success
-import scala.util.Failure
-import plasmon.bsp.BuildTool
-import plasmon.index.IndexerServerLike
-import plasmon.bsp.BspServersServerLike
-import plasmon.status.StatusActor
-import scala.concurrent.Promise
-import scala.concurrent.duration.DurationInt
-import scala.meta.internal.pc.CustomFileManager
-import scala.meta.internal.pc.JavaMetalsGlobal
-
-import plasmon.ide._
-
-import plasmon.PlasmonEnrichments._
-import scala.jdk.CollectionConverters._
-import scala.meta.internal.metals.ClasspathSearch
-
-import plasmon.index.{BspData, ReferenceIndex, SymbolSearchIndex}
-import plasmon.pc.PresentationCompilers
+import ch.epfl.scala.bsp4j as b
+import com.github.plokhotnyuk.jsoniter_scala.core.{
+  JsonReader,
+  JsonValueCodec,
+  JsonWriter,
+  WriterConfig
+}
+import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
+import com.google.gson.{FormattingStyle, Gson, GsonBuilder}
+import dotty.tools.dotc.interfaces.Diagnostic
+import org.eclipse.lsp4j as l
+import plasmon.PlasmonEnrichments.*
+import plasmon.bsp.{
+  BspServers,
+  BspServersActor,
+  BspServersServerLike,
+  BuildTool,
+  PlasmonBuildClientImpl
+}
+import plasmon.ide.*
+import plasmon.index.{
+  BspData,
+  IndexerServerLike,
+  ReferenceIndex,
+  SymbolSearchIndex
+}
+import plasmon.languageclient.*
+import plasmon.pc.{NopReportContext, PresentationCompilers}
 import plasmon.render.JsonCodecs.given
 import plasmon.semdb.{
   AggregateSemanticdbs,
@@ -42,29 +36,45 @@ import plasmon.semdb.{
   JavaInteractiveSemanticdb,
   SemanticdbIndexer
 }
-import plasmon.pc.NopReportContext
-import scala.meta.internal.pc.PresentationCompilerConfigImpl
-import scala.meta.internal.metals.JdkSources
-import scala.meta.internal.{semanticdb => s}
-import scala.meta.internal.mtags.GlobalSymbolIndex
-import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
-import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
-import com.github.plokhotnyuk.jsoniter_scala.core.JsonWriter
-import com.github.plokhotnyuk.jsoniter_scala.core.JsonReader
-import com.google.gson.Gson
-import java.nio.charset.StandardCharsets
-import scala.reflect.ClassTag
-import com.github.plokhotnyuk.jsoniter_scala.core.WriterConfig
-import com.google.gson.GsonBuilder
-import com.google.gson.FormattingStyle
-import plasmon.bsp.BspServersActor
-import dotty.tools.dotc.interfaces.Diagnostic
-import scala.util.Properties
-import scala.meta.internal.mtags.SymbolIndexBucket
-import scala.meta.internal.mtags.SymbolLocation
+import plasmon.status.StatusActor
+import plasmon.watch.{ProjectFileWatcher, WatchEvent}
+
 import java.io.OutputStream
+import java.nio.charset.StandardCharsets
+import java.nio.file.NoSuchFileException
+import java.util.concurrent.{CompletableFuture, TimeUnit}
+
 import scala.collection.immutable.ListMap
+import scala.concurrent.{Future, Promise}
+import scala.concurrent.duration.DurationInt
+import scala.jdk.CollectionConverters.*
 import scala.meta.Dialect
+import scala.meta.internal.semanticdb as s
+import scala.meta.internal.metals.{
+  ClasspathSearch,
+  Docstrings,
+  ExcludedPackagesHandler,
+  JdkSources
+}
+import scala.meta.internal.mtags.{
+  GlobalSymbolIndex,
+  IndexingExceptions,
+  Mtags,
+  OnDemandSymbolIndex,
+  OpenClassLoader,
+  SourcePath,
+  SymbolIndexBucket,
+  SymbolLocation
+}
+import scala.meta.internal.pc.{
+  CustomFileManager,
+  JavaMetalsGlobal,
+  PresentationCompilerConfigImpl
+}
+import scala.meta.parsers.ParseException
+import scala.meta.tokenizers.TokenizeException
+import scala.reflect.ClassTag
+import scala.util.{Failure, Properties, Success}
 
 // Many things here inspired by https://github.com/scalameta/metals/blob/030641d97ca5b982144898a54c3b60b2c08b9614/metals/src/main/scala/scala/meta/metals/MetalsLanguageServer.scala
 // and earlier version of that file

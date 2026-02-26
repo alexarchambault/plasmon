@@ -1,11 +1,11 @@
 package plasmon.servercommand
 
 import caseapp.core.RemainingArgs
+import plasmon.Server
 import plasmon.index.Indexer
 import plasmon.internal.Constants
 import plasmon.protocol.CommandClient
 import plasmon.protocol.CommandClient.ops.*
-import plasmon.Server
 
 final case class About(
   server: Server,

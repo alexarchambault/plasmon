@@ -2,53 +2,52 @@ package plasmon.command
 
 import caseapp.core.RemainingArgs
 import caseapp.core.app.CommandsEntryPoint
+import com.google.gson.{JsonArray, JsonDeserializer}
+import org.eclipse.lsp4j as l
 import org.eclipse.lsp4j.jsonrpc.Launcher
-import org.eclipse.{lsp4j => l}
+import plasmon.{handlers as h, protocol}
+import plasmon.PlasmonEnrichments.*
+import plasmon.bsp.BuildTool
 import plasmon.index.Indexer
-import plasmon.internal.{Constants, DebugInput}
-import plasmon.jsonrpc.{JsonrpcServer, NotificationHandler, RequestHandler}
+import plasmon.internal.{BinaryName, Constants, DebugInput, DisableScala2Pc}
+import plasmon.jsonrpc.{
+  CommandHandler,
+  Handlers,
+  JsonrpcServer,
+  NotificationHandler,
+  RequestHandler
+}
+import plasmon.languageclient.PlasmonLanguageClient
+import plasmon.pc.Scala2PresentationCompilerHandler
 import plasmon.protocol.{CommandClient, CommandServer}
 import plasmon.servercommand.*
 import plasmon.util.{ThreadUtil, TimerThreadsHack}
-import plasmon.jsonrpc.Handlers
-import plasmon.languageclient.PlasmonLanguageClient
-import plasmon.{handlers => h, protocol}
-import plasmon.PlasmonEnrichments.*
+import plasmon.watch.WatchEvent
 
+import java.io.RandomAccessFile
 import java.net.{StandardProtocolFamily, URI, UnixDomainSocketAddress}
 import java.nio.channels.{ClosedByInterruptException, ServerSocketChannel}
-import java.nio.file.Paths
-import java.util.Locale
-import java.util.concurrent.{CompletableFuture, CountDownLatch, ExecutorService}
-
-import scala.concurrent.duration.DurationInt
-import scala.concurrent.duration.DoubleMult
-import scala.jdk.CollectionConverters.*
-import java.util.{Map => JMap}
-import com.google.gson.JsonArray
-import plasmon.jsonrpc.CommandHandler
-import java.time.Instant
-import scala.concurrent.duration.Duration
-import scala.concurrent.duration.FiniteDuration
-import java.time.ZoneId
-import java.util.concurrent.ScheduledFuture
-import plasmon.internal.BinaryName
-import scala.concurrent.Future
-import scala.util.Success
-import scala.util.Failure
-import scala.concurrent.ExecutionContext
-import scala.annotation.nowarn
-import scala.util.Properties
-import plasmon.bsp.BuildTool
-import com.google.gson.JsonDeserializer
-import scala.concurrent.Await
-import plasmon.watch.WatchEvent
-import plasmon.pc.Scala2PresentationCompilerHandler
-import plasmon.internal.DisableScala2Pc
-import java.nio.file.Files
-import java.io.RandomAccessFile
-import scala.util.Using
 import java.nio.charset.StandardCharsets
+import java.nio.file.{Files, Paths}
+import java.time.{Instant, ZoneId}
+import java.util.{Locale, Map as JMap}
+import java.util.concurrent.{
+  CompletableFuture,
+  CountDownLatch,
+  ExecutorService,
+  ScheduledFuture
+}
+
+import scala.annotation.nowarn
+import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.concurrent.duration.{
+  DoubleMult,
+  Duration,
+  DurationInt,
+  FiniteDuration
+}
+import scala.jdk.CollectionConverters.*
+import scala.util.{Failure, Properties, Success, Using}
 
 object Server extends caseapp.Command[ServerOptions] {
 

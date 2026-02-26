@@ -2,11 +2,14 @@ package plasmon.jsonrpc
 
 import org.eclipse.lsp4j.jsonrpc.Endpoint
 import org.eclipse.lsp4j.jsonrpc.json.JsonRpcMethod
-import plasmon.jsonrpc.{Handlers, NotificationHandler, RequestHandler}
 import plasmon.Logger
+import plasmon.jsonrpc.{Handlers, NotificationHandler, RequestHandler}
 
-import java.util.concurrent.{CancellationException, CompletableFuture => JCFuture}
-import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.{
+  CancellationException,
+  CompletableFuture as JCFuture,
+  ConcurrentHashMap
+}
 import java.util.concurrent.atomic.AtomicInteger
 
 final class JsonrpcServer(

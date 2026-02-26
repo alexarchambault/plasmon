@@ -1,13 +1,14 @@
 package plasmon.handlers.docchange
 
-import plasmon.PlasmonEnrichments.*
+import org.eclipse.lsp4j as l
 import plasmon.Server
+import plasmon.PlasmonEnrichments.*
 import plasmon.jsonrpc.{Handlers, RequestHandler}
-import org.eclipse.{lsp4j => l}
 
-import scala.jdk.CollectionConverters._
 import java.util.concurrent.CompletableFuture
+
 import scala.concurrent.Future
+import scala.jdk.CollectionConverters.*
 
 // FIXME Unused?
 object Watch {

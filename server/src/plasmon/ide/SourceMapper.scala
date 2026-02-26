@@ -2,16 +2,15 @@
 
 package plasmon.ide
 
-import scala.meta.inputs.Input
-
-import ch.epfl.scala.{bsp4j => b}
-import org.eclipse.{lsp4j => l}
-import scala.meta.internal.mtags.SourcePath
+import ch.epfl.scala.bsp4j as b
+import org.eclipse.lsp4j as l
+import plasmon.PlasmonEnrichments.*
 import plasmon.ide.SbtBuildTool
 import plasmon.index.BspData
-
-import plasmon.PlasmonEnrichments._
 import plasmon.index.TargetData.MappedSource
+
+import scala.meta.inputs.Input
+import scala.meta.internal.mtags.SourcePath
 
 final case class SourceMapper(
   bspData: BspData,

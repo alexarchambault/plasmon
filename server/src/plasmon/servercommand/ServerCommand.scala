@@ -1,10 +1,10 @@
 package plasmon.servercommand
 
 import caseapp.core.help.Help
-import plasmon.command.ServerCommandThreadPools
-import plasmon.protocol.CommandClient
-import plasmon.index.Indexer
 import plasmon.Server
+import plasmon.command.ServerCommandThreadPools
+import plasmon.index.Indexer
+import plasmon.protocol.CommandClient
 
 abstract class ServerCommand[T](implicit val help: Help[T]) {
   def names: List[List[String]] =

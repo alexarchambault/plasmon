@@ -1,9 +1,8 @@
 package plasmon.command
 
+import caseapp.{HelpMessage, Hidden, Name}
 import caseapp.core.help.Help
 import caseapp.core.parser.Parser
-import caseapp.{HelpMessage, Hidden}
-import caseapp.Name
 
 // format: off
 final case class ServerOptions(

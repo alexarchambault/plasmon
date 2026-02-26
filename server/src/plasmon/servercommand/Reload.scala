@@ -1,10 +1,10 @@
 package plasmon.servercommand
 
 import caseapp.core.RemainingArgs
-import plasmon.command.ServerCommandThreadPools
-import plasmon.protocol.CommandClient
-import plasmon.index.Indexer
 import plasmon.Server
+import plasmon.command.ServerCommandThreadPools
+import plasmon.index.Indexer
+import plasmon.protocol.CommandClient
 
 final case class Reload(
   server: Server,

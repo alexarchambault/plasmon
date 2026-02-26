@@ -1,12 +1,11 @@
 package plasmon.ide
 
-import scala.collection.mutable.ArrayBuffer
-import scala.util.Try
-
-import scala.meta.inputs.Input
-
 import org.eclipse.jdt.core.ToolFactory
 import org.eclipse.jdt.core.compiler.ITerminalSymbols
+
+import scala.collection.mutable.ArrayBuffer
+import scala.meta.inputs.Input
+import scala.util.Try
 
 // Based on https://github.com/scalameta/metals/blob/0ad0bc184f82dbd178d01f76913ea6bdfa98db14/metals/src/main/scala/scala/meta/internal/parsing/JavaTokens.scala#L23-L74
 private object JavaTokens {

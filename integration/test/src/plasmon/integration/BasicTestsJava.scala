@@ -1,6 +1,6 @@
 package plasmon.integration
 
-import org.eclipse.{lsp4j => l}
+import org.eclipse.lsp4j as l
 import plasmon.integration.TestUtil.*
 
 import scala.concurrent.duration.IntMult

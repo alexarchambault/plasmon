@@ -1,20 +1,19 @@
 package plasmon.servercommand
 
 import caseapp.core.RemainingArgs
-import ch.epfl.scala.{bsp4j => b}
+import ch.epfl.scala.bsp4j as b
+import plasmon.Server
 import plasmon.command.ServerCommandThreadPools
+import plasmon.ide.Directories
+import plasmon.index.{Indexer, TargetData}
+import plasmon.pc.PresentationCompilers
 import plasmon.protocol.CommandClient
 import plasmon.util.PrintDiagnostic
-import plasmon.index.Indexer
-import plasmon.Server
 
 import java.time.ZoneId
 
 import scala.jdk.CollectionConverters.*
-import plasmon.ide.Directories
 import scala.meta.internal.pc.HasCompilerAccess
-import plasmon.index.TargetData
-import plasmon.pc.PresentationCompilers
 
 final case class Inspect(
   server: Server,

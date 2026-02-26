@@ -2,10 +2,10 @@
 
 package plasmon.ide
 
+import ch.epfl.scala.bsp4j as b
 import plasmon.PlasmonEnrichments.*
-import scala.jdk.CollectionConverters.*
 
-import ch.epfl.scala.{bsp4j => b}
+import scala.jdk.CollectionConverters.*
 
 case class JavaTarget(
   info: b.BuildTarget,

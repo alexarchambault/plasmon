@@ -1,8 +1,8 @@
 package plasmon.bsp
 
-import plasmon.Logger
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
+import plasmon.Logger
 
 final case class BuildServerLauncher(
   info: BuildServerInfo,

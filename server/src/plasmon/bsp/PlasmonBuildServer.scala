@@ -1,8 +1,8 @@
 package plasmon.bsp
 
-import scala.build.bsp.ScalaScriptBuildServer
+import ch.epfl.scala.bsp4j as b
 
-import ch.epfl.scala.{bsp4j => b}
+import scala.build.bsp.ScalaScriptBuildServer
 
 trait PlasmonBuildServer
     extends b.BuildServer

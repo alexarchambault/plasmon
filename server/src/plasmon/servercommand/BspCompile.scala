@@ -1,24 +1,23 @@
 package plasmon.servercommand
 
 import caseapp.core.RemainingArgs
-import ch.epfl.scala.{bsp4j => b}
+import ch.epfl.scala.bsp4j as b
+import org.eclipse.lsp4j.jsonrpc.ResponseErrorException
+import plasmon.Server
+import plasmon.PlasmonEnrichments.*
+import plasmon.bsp.PlasmonBuildClient
 import plasmon.index.Indexer
 import plasmon.protocol.CommandClient
 import plasmon.protocol.CommandClient.ops.*
 import plasmon.util.PrintDiagnostic
-import plasmon.bsp.PlasmonBuildClient
-import plasmon.Server
 
 import java.net.URI
 import java.util.UUID
-
-import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, ExecutionContext, Future}
-
-import plasmon.PlasmonEnrichments._
-import scala.jdk.CollectionConverters._
-import org.eclipse.lsp4j.jsonrpc.ResponseErrorException
 import java.util.concurrent.CompletionException
+
+import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.concurrent.duration.Duration
+import scala.jdk.CollectionConverters.*
 
 final case class BspCompile(
   server: Server,

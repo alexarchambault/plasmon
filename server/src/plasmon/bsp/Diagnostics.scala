@@ -2,33 +2,28 @@
 
 package plasmon.bsp
 
-import java.util.concurrent.ConcurrentLinkedQueue
-import java.util.concurrent.atomic.AtomicReference
-import java.util.{ArrayList, Collections, Queue => JQueue, LinkedList}
-
-import scala.collection.concurrent.TrieMap
-import scala.collection.mutable
-import scala.util.Try
-
-import scala.meta.inputs.Input
-import scala.meta.internal.metals.PositionSyntax._
-
-import ch.epfl.scala.{bsp4j => b}
-import com.google.gson.{Gson, JsonElement, JsonObject}
-import org.eclipse.lsp4j.services.LanguageClient
-import org.eclipse.{lsp4j => l}
-
-import plasmon.PlasmonEnrichments._
-import scala.jdk.CollectionConverters._
-import plasmon.ide.Buffers
-import plasmon.ide.Trees
-import plasmon.ide.TokenEditDistance
-import plasmon.ide.Directories
-import scala.meta.internal.mtags.GlobalSymbolIndex
-import plasmon.index.BspData
+import ch.epfl.scala.bsp4j as b
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
+import com.google.gson.{Gson, JsonElement, JsonObject}
+import org.eclipse.lsp4j as l
+import org.eclipse.lsp4j.services.LanguageClient
+import plasmon.PlasmonEnrichments.*
+import plasmon.ide.{Buffers, Directories, TokenEditDistance, Trees}
+import plasmon.index.BspData
 import plasmon.render.JsonCodecs.given
+
+import java.util.{ArrayList, Collections, LinkedList, Queue as JQueue}
+import java.util.concurrent.ConcurrentLinkedQueue
+import java.util.concurrent.atomic.AtomicReference
+
+import scala.collection.mutable
+import scala.collection.concurrent.TrieMap
+import scala.jdk.CollectionConverters.*
+import scala.meta.inputs.Input
+import scala.meta.internal.metals.PositionSyntax.*
+import scala.meta.internal.mtags.GlobalSymbolIndex
+import scala.util.Try
 
 /** (Original Metals doc) Converts diagnostics from the build server and Scalameta parser into LSP diagnostics.
   *

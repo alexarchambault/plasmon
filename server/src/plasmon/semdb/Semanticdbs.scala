@@ -2,19 +2,23 @@
 
 package plasmon.semdb
 
+import plasmon.PlasmonEnrichments.*
+
 import java.nio.charset.Charset
 
-import scala.meta.inputs.Input
-import scala.meta.inputs.Position
+import scala.meta.inputs.{Input, Position}
+import scala.meta.internal.semanticdb as s
 import scala.meta.internal.io.FileIO
-import scala.meta.internal.mtags.{GlobalSymbolIndex, MD5, Md5Fingerprints, SourcePath}
-import scala.meta.internal.mtags.ScalametaCommonEnrichments._
-import scala.meta.internal.mtags.SymbolOccurrenceOrdering._
-import scala.meta.internal.semanticdb.Scala._
+import scala.meta.internal.mtags.{
+  GlobalSymbolIndex,
+  MD5,
+  Md5Fingerprints,
+  SourcePath
+}
+import scala.meta.internal.mtags.ScalametaCommonEnrichments.*
+import scala.meta.internal.mtags.SymbolOccurrenceOrdering.*
 import scala.meta.internal.semanticdb.XtensionSemanticdbSymbolInformation
-import scala.meta.internal.{semanticdb => s}
-
-import plasmon.PlasmonEnrichments._
+import scala.meta.internal.semanticdb.Scala.*
 
 trait Semanticdbs {
   def textDocument(

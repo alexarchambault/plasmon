@@ -1,9 +1,8 @@
 package plasmon.internal
 
-import java.io.{InputStream, PipedInputStream, PipedOutputStream}
-import java.nio.charset.StandardCharsets
+import java.io.{InputStream, OutputStream, PipedInputStream, PipedOutputStream}
 import java.nio.{ByteBuffer, CharBuffer}
-import java.io.OutputStream
+import java.nio.charset.StandardCharsets
 
 object DebugInput {
 

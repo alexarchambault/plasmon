@@ -2,27 +2,26 @@
 
 package plasmon.index
 
-import scala.collection.mutable
-import scala.concurrent.ExecutionContext
-import scala.concurrent.Future
-
-import plasmon.bsp.PlasmonBuildServer
-
-import ch.epfl.scala.{bsp4j => b}
-import scala.meta.internal.mtags.SourcePath
-import scala.meta.{Dialect, dialects}
-import plasmon.ide.{Directories, JavaTarget, ScalaTarget}
-
-import plasmon.PlasmonEnrichments._
-import scala.jdk.CollectionConverters._
-import plasmon.bsp.PlasmonBuildClientImpl
-import scala.meta.internal.mtags.GlobalSymbolIndex
-import plasmon.bsp.BspServers
-import plasmon.bsp.BuildServerInfo
-import plasmon.render.JsonCodecs.given
+import ch.epfl.scala.bsp4j as b
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
+import plasmon.PlasmonEnrichments.*
+import plasmon.bsp.{
+  BspServers,
+  BuildServerInfo,
+  PlasmonBuildClientImpl,
+  PlasmonBuildServer
+}
+import plasmon.ide.{Directories, JavaTarget, ScalaTarget}
+import plasmon.render.JsonCodecs.given
+
 import java.util.concurrent.ConcurrentHashMap
+
+import scala.collection.mutable
+import scala.concurrent.{ExecutionContext, Future}
+import scala.jdk.CollectionConverters.*
+import scala.meta.{Dialect, dialects}
+import scala.meta.internal.mtags.{GlobalSymbolIndex, SourcePath}
 
 /** In-memory cache for looking up build server metadata.
   */

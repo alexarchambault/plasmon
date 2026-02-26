@@ -2,29 +2,26 @@
 
 package plasmon.index
 
+import org.eclipse.lsp4j as l
+import org.eclipse.lsp4j.jsonrpc.CancelChecker
+import plasmon.PlasmonEnrichments.*
+import plasmon.ide.Directories
+import plasmon.pc.NopReportContext
+
 import java.util.{ArrayList, Comparator}
 
 import scala.collection.mutable
-
-import scala.meta.Dialect
-import scala.meta.internal.mtags.GlobalSymbolIndex
-import scala.meta.internal.mtags.Symbol
-import scala.meta.internal.semanticdb.Scala.Descriptor
-import scala.meta.internal.semanticdb.Scala.Symbols
-import scala.meta.pc.SymbolSearchVisitor
-
-import org.eclipse.lsp4j.jsonrpc.CancelChecker
-import org.eclipse.{lsp4j => l}
-import scala.meta.internal.mtags.SourcePath
-import scala.meta.internal.metals.WorkspaceSymbolQuery
-import plasmon.ide.Directories
-import scala.meta.internal.metals.Classfile
-import scala.meta.internal.metals.SemanticdbDefinition
-import scala.meta.PlasmonHelpers
-import plasmon.pc.NopReportContext
 import scala.jdk.CollectionConverters.*
-import plasmon.PlasmonEnrichments.*
+import scala.meta.{Dialect, PlasmonHelpers}
+import scala.meta.internal.metals.{
+  Classfile,
+  SemanticdbDefinition,
+  WorkspaceSymbolQuery
+}
+import scala.meta.internal.mtags.{GlobalSymbolIndex, SourcePath, Symbol}
 import scala.meta.internal.mtags.ScalametaCommonEnrichments.XtensionWorkspaceSymbolQuery
+import scala.meta.internal.semanticdb.Scala.{Descriptor, Symbols}
+import scala.meta.pc.SymbolSearchVisitor
 
 /** A symbol search visitor for `workspace/symbol`.
   *

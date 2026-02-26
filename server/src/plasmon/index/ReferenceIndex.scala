@@ -2,52 +2,43 @@
 
 package plasmon.index
 
-import scala.meta.Dialect
-import scala.meta.inputs.Input
-import scala.meta.internal.tokenizers.LegacyScanner
-import scala.meta.internal.tokenizers.LegacyToken._
+import ch.epfl.scala.bsp4j as b
+import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
+import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
+import com.google.common.hash.{BloomFilter, Funnels}
+import org.eclipse.lsp4j as l
+import plasmon.PlasmonEnrichments.*
+import plasmon.ide.{
+  AdjustRange,
+  Buffers,
+  PatchedSymbolIndex,
+  ReferencesResult,
+  TokenEditDistance,
+  Trees
+}
+import plasmon.index.BspData
+import plasmon.pc.PresentationCompilers
+import plasmon.semdb.{SemanticdbIndexer, Semanticdbs, TextDocumentLookup}
 
 import java.nio.charset.StandardCharsets
 import java.util.concurrent.atomic.AtomicReference
 
-import scala.collection.concurrent.TrieMap
 import scala.collection.mutable
-import scala.concurrent.ExecutionContext
-import scala.concurrent.Future
-import scala.concurrent.Promise
-import scala.util.control.NonFatal
-
-import scala.meta.Importee
-import scala.meta.internal.mtags.DefinitionAlternatives.GlobalSymbol
-import scala.meta.internal.mtags.GlobalSymbolIndex
-import scala.meta.internal.mtags.Symbol
-import scala.meta.internal.semanticdb.Scala._
-import scala.meta.internal.semanticdb.XtensionSemanticdbSymbolInformation
-import scala.meta.internal.{semanticdb => s}
-import scala.meta.pc.CompletionItemPriority
-
-import ch.epfl.scala.{bsp4j => b}
-import com.google.common.hash.BloomFilter
-import com.google.common.hash.Funnels
-import org.eclipse.{lsp4j => l}
-import scala.meta.internal.mtags.SourcePath
-import plasmon.ide.ReferencesResult
+import scala.collection.concurrent.TrieMap
+import scala.concurrent.{ExecutionContext, Future, Promise}
+import scala.jdk.CollectionConverters.*
+import scala.meta.{Dialect, Importee}
+import scala.meta.inputs.Input
+import scala.meta.internal.semanticdb as s
 import scala.meta.internal.metals.EmptyCancelToken
-import plasmon.index.BspData
-import plasmon.pc.PresentationCompilers
-import plasmon.semdb.{SemanticdbIndexer, Semanticdbs}
-
-import plasmon.PlasmonEnrichments._
-import scala.jdk.CollectionConverters._
-import plasmon.ide.Buffers
-import plasmon.ide.PatchedSymbolIndex
-import plasmon.ide.Trees
-import plasmon.ide.AdjustRange
-import plasmon.ide.TokenEditDistance
-import scala.meta.internal.mtags.Mtags
-import plasmon.semdb.TextDocumentLookup
-import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
-import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
+import scala.meta.internal.mtags.{GlobalSymbolIndex, Mtags, SourcePath, Symbol}
+import scala.meta.internal.mtags.DefinitionAlternatives.GlobalSymbol
+import scala.meta.internal.semanticdb.XtensionSemanticdbSymbolInformation
+import scala.meta.internal.semanticdb.Scala.*
+import scala.meta.internal.tokenizers.LegacyScanner
+import scala.meta.internal.tokenizers.LegacyToken.*
+import scala.meta.pc.CompletionItemPriority
+import scala.util.control.NonFatal
 
 final class ReferenceIndex(
   workspace: os.Path,

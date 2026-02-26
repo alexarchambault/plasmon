@@ -2,28 +2,23 @@
 
 package plasmon.ide
 
+import ch.epfl.scala.bsp4j as b
+import difflib.*
+import org.eclipse.lsp4j as l
+import plasmon.PlasmonEnrichments.*
+import plasmon.ide.{EmptyResult, TokenOps}
+import plasmon.ide.TokenOps.syntax.*
+
+import java.util.Arrays
 import java.util.logging.Logger
 
 import scala.annotation.tailrec
-import scala.util.Failure
-import scala.util.Success
-
-import scala.meta.Input
-import scala.meta.Position
-import plasmon.ide.TokenOps.syntax._
-import scala.meta.internal.{semanticdb => s}
-import scala.meta.tokenizers.Tokenized
-
-import ch.epfl.scala.{bsp4j => b}
-import difflib._
-import org.eclipse.{lsp4j => l}
-import plasmon.ide.EmptyResult
-import plasmon.ide.TokenOps
-
-import plasmon.PlasmonEnrichments._
-import scala.jdk.CollectionConverters._
-import java.util.Arrays
+import scala.jdk.CollectionConverters.*
+import scala.meta.{Input, Position}
+import scala.meta.internal.semanticdb as s
 import scala.meta.internal.mtags.GlobalSymbolIndex
+import scala.meta.tokenizers.Tokenized
+import scala.util.{Failure, Success}
 
 /** Helper to map between position between two similar strings.
   */

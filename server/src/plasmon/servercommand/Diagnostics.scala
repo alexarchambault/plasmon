@@ -2,10 +2,10 @@ package plasmon.servercommand
 
 import caseapp.core.RemainingArgs
 import com.google.gson.Gson
+import plasmon.Server
+import plasmon.index.Indexer
 import plasmon.protocol.CommandClient
 import plasmon.util.PrintDiagnostic
-import plasmon.index.Indexer
-import plasmon.Server
 
 import scala.jdk.CollectionConverters.*
 

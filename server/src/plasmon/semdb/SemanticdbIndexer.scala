@@ -2,19 +2,16 @@
 
 package plasmon.semdb
 
-import java.nio.file.FileSystemException
-
-import scala.util.control.NonFatal
-
-import scala.meta.internal.semanticdb.TextDocument
-import scala.meta.internal.semanticdb.TextDocuments
-
 import com.google.protobuf.InvalidProtocolBufferException
+import plasmon.PlasmonEnrichments.*
 import plasmon.ide.Directories
 import plasmon.index.BspData
 
-import plasmon.PlasmonEnrichments._
+import java.nio.file.FileSystemException
+
 import scala.meta.internal.mtags.GlobalSymbolIndex
+import scala.meta.internal.semanticdb.{TextDocument, TextDocuments}
+import scala.util.control.NonFatal
 
 class SemanticdbIndexer(
   providers: List[SemanticdbIndexer.FeatureProvider],

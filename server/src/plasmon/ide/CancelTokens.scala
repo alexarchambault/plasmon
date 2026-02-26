@@ -4,13 +4,9 @@ package plasmon.ide
 
 import java.util.concurrent.CompletableFuture
 
-import scala.concurrent.ExecutionContextExecutorService
-import scala.concurrent.Future
-import scala.concurrent.Promise
-import scala.util.Failure
-import scala.util.Success
-
+import scala.concurrent.{ExecutionContextExecutorService, Future, Promise}
 import scala.meta.pc.CancelToken
+import scala.util.{Failure, Success}
 
 /** Constructs an async `CancelToken`.
   *

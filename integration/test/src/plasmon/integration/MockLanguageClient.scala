@@ -1,12 +1,12 @@
 package plasmon.integration
 
 import io.github.alexarchambault.testutil.TestUtil.*
+import org.eclipse.lsp4j as l
 import org.eclipse.lsp4j.jsonrpc.services.JsonNotification
 import org.eclipse.lsp4j.services.LanguageClient
-import org.eclipse.{lsp4j => l}
 
 import java.io.OutputStream
-import java.util.{List => JList}
+import java.util.List as JList
 import java.util.concurrent.CompletableFuture
 
 import scala.collection.mutable

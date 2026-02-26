@@ -1,9 +1,9 @@
 package plasmon.servercommand
 
 import caseapp.core.RemainingArgs
+import plasmon.Server
 import plasmon.index.Indexer
 import plasmon.protocol.CommandClient
-import plasmon.Server
 
 import java.util.concurrent.ExecutorService
 

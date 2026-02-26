@@ -1,17 +1,17 @@
 package plasmon.servercommand
 
 import caseapp.core.RemainingArgs
-import org.eclipse.{lsp4j => l}
-import plasmon.handlers.Hover
-import plasmon.protocol.CommandClient
-import plasmon.index.Indexer
+import org.eclipse.lsp4j as l
 import plasmon.{Logger, Server}
+import plasmon.PlasmonEnrichments.StringThingExtensions
+import plasmon.handlers.Hover
+import plasmon.ide.HoverExtParams
+import plasmon.index.Indexer
+import plasmon.protocol.CommandClient
 
 import java.net.URI
 
 import scala.jdk.CollectionConverters.*
-import plasmon.ide.HoverExtParams
-import plasmon.PlasmonEnrichments.StringThingExtensions
 
 final case class LspHover(
   server: Server,

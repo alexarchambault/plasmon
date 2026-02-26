@@ -1,21 +1,17 @@
 package plasmon.handlers.ref
 
-import org.eclipse.{lsp4j => l}
-import plasmon.jsonrpc.RequestHandler
-import plasmon.jsonrpc.Handlers
+import org.eclipse.lsp4j as l
 import plasmon.Server
+import plasmon.PlasmonEnrichments.*
+import plasmon.jsonrpc.{Handlers, RequestHandler}
 
-import java.util.{List => JList}
-
-import scala.concurrent.ExecutionContext
-import scala.meta.internal.mtags.SourcePath
-import scala.meta.internal.mtags.GlobalSymbolIndex
 import java.net.URI
+import java.util.List as JList
 import java.util.concurrent.CompletableFuture
 
-import plasmon.PlasmonEnrichments._
-import scala.jdk.CollectionConverters._
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
+import scala.jdk.CollectionConverters.*
+import scala.meta.internal.mtags.{GlobalSymbolIndex, SourcePath}
 
 object Reference {
 

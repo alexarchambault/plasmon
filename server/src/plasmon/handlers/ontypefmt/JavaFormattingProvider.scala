@@ -2,30 +2,26 @@
 
 package plasmon.handlers.ontypefmt
 
-import java.util
-
-import scala.concurrent.ExecutionContext
-import scala.concurrent.Future
-import scala.util.Try
-import scala.xml.Node
-
-import scala.meta._
-import scala.meta.{inputs => m}
-
-import org.eclipse.jdt.core.JavaCore
-import org.eclipse.jdt.core.ToolFactory
-import org.eclipse.jdt.core.formatter.CodeFormatter
-import org.eclipse.jdt.core.formatter.DefaultCodeFormatterConstants
+import org.eclipse.lsp4j as l
+import org.eclipse.jdt.core.{JavaCore, ToolFactory}
+import org.eclipse.jdt.core.formatter.{
+  CodeFormatter,
+  DefaultCodeFormatterConstants
+}
 import org.eclipse.jdt.internal.formatter.DefaultCodeFormatterOptions
-import org.eclipse.jface.text.BadLocationException
-import org.eclipse.jface.text.Document
+import org.eclipse.jface.text.{BadLocationException, Document}
 import org.eclipse.text.edits.MalformedTreeException
-import org.eclipse.{lsp4j => l}
-
-import plasmon.PlasmonEnrichments._
-import scala.jdk.CollectionConverters._
+import plasmon.PlasmonEnrichments.*
 import plasmon.ide.Buffers
 import plasmon.index.BspData
+
+import java.util
+
+import scala.concurrent.{ExecutionContext, Future}
+import scala.jdk.CollectionConverters.*
+import scala.meta.{inputs as m, *}
+import scala.util.Try
+import scala.xml.Node
 
 final class JavaFormattingProvider(
   buffers: Buffers,

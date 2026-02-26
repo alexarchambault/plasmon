@@ -2,35 +2,27 @@
 
 package plasmon.index
 
-import java.util.concurrent.ConcurrentLinkedQueue
-
-import scala.collection.concurrent.TrieMap
-import scala.collection.mutable
-import scala.collection.mutable.ListBuffer
-import scala.collection.mutable.{Map => MMap}
-import scala.concurrent.ExecutionContext
-import scala.concurrent.Future
-import scala.util.Properties
-
-import scala.meta.inputs.Input
-import plasmon.bsp.PlasmonBuildServer
-
-import ch.epfl.scala.{bsp4j => b}
-import org.eclipse.{lsp4j => l}
-import plasmon.ide.{JavaTarget, ScalaTarget, JvmTarget}
-import scala.meta.internal.metals.PackageIndex
-
-import plasmon.PlasmonEnrichments._
-import scala.jdk.CollectionConverters._
-import plasmon.ide.AdjustLspData
-
-import java.lang.{Boolean => JBoolean}
-import java.util.{Collections, HashSet => JHashSet, Set => JSet}
-import java.util.concurrent.ConcurrentHashMap
-import plasmon.bsp.PlasmonBuildClientImpl
-import plasmon.render.JsonCodecs.given
+import ch.epfl.scala.bsp4j as b
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
+import org.eclipse.lsp4j as l
+import plasmon.PlasmonEnrichments.*
+import plasmon.bsp.{PlasmonBuildClientImpl, PlasmonBuildServer}
+import plasmon.ide.{AdjustLspData, JavaTarget, JvmTarget, ScalaTarget}
+import plasmon.render.JsonCodecs.given
+
+import java.lang.Boolean as JBoolean
+import java.util.{Collections, HashSet as JHashSet, Set as JSet}
+import java.util.concurrent.{ConcurrentHashMap, ConcurrentLinkedQueue}
+
+import scala.collection.mutable
+import scala.collection.concurrent.TrieMap
+import scala.collection.mutable.{ListBuffer, Map as MMap}
+import scala.concurrent.{ExecutionContext, Future}
+import scala.jdk.CollectionConverters.*
+import scala.meta.inputs.Input
+import scala.meta.internal.metals.PackageIndex
+import scala.util.Properties
 
 final class TargetData {
 

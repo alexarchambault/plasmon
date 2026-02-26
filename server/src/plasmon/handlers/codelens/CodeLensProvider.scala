@@ -2,13 +2,11 @@
 
 package plasmon.handlers.codelens
 
+import org.eclipse.lsp4j as l
+
 import scala.concurrent.Future
-
-import scala.meta.internal.mtags.GlobalSymbolIndex
+import scala.meta.internal.mtags.{GlobalSymbolIndex, SourcePath}
 import scala.meta.internal.semanticdb.TextDocument
-import scala.meta.internal.mtags.SourcePath
-
-import org.eclipse.{lsp4j => l}
 
 trait CodeLensProvider {
   def isEnabled: Boolean

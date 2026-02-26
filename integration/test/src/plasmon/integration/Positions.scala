@@ -1,6 +1,6 @@
 package plasmon.integration
 
-import org.eclipse.{lsp4j => l}
+import org.eclipse.lsp4j as l
 
 final case class Positions(
   content: Map[os.SubPath, String],

@@ -2,20 +2,18 @@
 
 package plasmon.pc
 
+import ch.epfl.scala.bsp4j as b
+import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
+import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
+import plasmon.PlasmonEnrichments.*
+import plasmon.ide.Buffers
+import plasmon.index.BspData
+
 import java.util.Optional
 
 import scala.collection.concurrent.TrieMap
-
-import scala.meta.pc.{OutlineFiles => JOutlineFiles}
-
-import ch.epfl.scala.{bsp4j => b}
 import scala.meta.internal.metals.ScalaVersions
-
-import plasmon.PlasmonEnrichments._
-import plasmon.index.BspData
-import plasmon.ide.Buffers
-import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
-import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
+import scala.meta.pc.OutlineFiles as JOutlineFiles
 
 private class OutlineFilesProvider(
   bspData: BspData,

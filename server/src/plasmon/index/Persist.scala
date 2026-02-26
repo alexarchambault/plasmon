@@ -1,11 +1,9 @@
 package plasmon.index
 
-import ch.epfl.scala.{bsp4j => b}
-import com.github.plokhotnyuk.jsoniter_scala.core._
+import ch.epfl.scala.bsp4j as b
+import com.github.plokhotnyuk.jsoniter_scala.core.*
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
-import plasmon.bsp.ConnectionInfoJson
-import plasmon.bsp.BuildServerInfo
-import plasmon.bsp.BuildTool
+import plasmon.bsp.{BuildServerInfo, BuildTool, ConnectionInfoJson}
 
 object Persist {
 

@@ -1,7 +1,7 @@
 package plasmon.integration
 
 import com.eed3si9n.expecty.Expecty.expect
-import org.eclipse.{lsp4j => l}
+import org.eclipse.lsp4j as l
 import plasmon.integration.TestUtil.*
 
 import scala.jdk.CollectionConverters.*

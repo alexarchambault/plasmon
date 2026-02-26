@@ -1,37 +1,37 @@
 package plasmon.handlers
 
-import org.eclipse.{lsp4j => l}
-import plasmon.jsonrpc.RequestHandler
-import plasmon.jsonrpc.Handlers
-import plasmon.Server
-
-import java.util.{List => JList}
-
-import scala.concurrent.{ExecutionContext, Future}
-import scala.meta.pc.CancelToken
-import scala.meta.internal.semanticdb
-import scala.concurrent.ExecutionContextExecutorService
-import scala.meta.internal.mtags.SourcePath
-import scala.meta.internal.mtags.GlobalSymbolIndex
-import java.net.URI
-import java.util.concurrent.CompletableFuture
-import scala.meta.internal.semanticdb.SymbolOccurrence
-import scala.meta.internal.semanticdb.TextDocument
-import scala.meta.internal.mtags.Mtags
-import ch.epfl.scala.{bsp4j => b}
-import scala.meta.dialects
-import plasmon.ide.{Buffers, CancelTokens, TokenEditDistance, Trees}
+import ch.epfl.scala.bsp4j as b
+import org.eclipse.lsp4j as l
+import plasmon.{Logger, Server}
+import plasmon.PlasmonEnrichments.*
+import plasmon.ide.{
+  Buffers,
+  CancelTokens,
+  PatchedSymbolIndex,
+  TokenEditDistance,
+  Trees
+}
 import plasmon.index.BspData
+import plasmon.jsonrpc.{Handlers, RequestHandler}
 import plasmon.pc.PresentationCompilers
+import plasmon.semdb.{AggregateSemanticdbs, TextDocumentLookup}
 
-import plasmon.PlasmonEnrichments._
-import scala.jdk.CollectionConverters._
-import plasmon.ide.PatchedSymbolIndex
-import plasmon.semdb.AggregateSemanticdbs
-import plasmon.Logger
-import plasmon.semdb.TextDocumentLookup
-import scala.util.Success
-import scala.util.Failure
+import java.net.URI
+import java.util.List as JList
+import java.util.concurrent.CompletableFuture
+
+import scala.concurrent.{
+  ExecutionContext,
+  ExecutionContextExecutorService,
+  Future
+}
+import scala.jdk.CollectionConverters.*
+import scala.meta.dialects
+import scala.meta.internal.semanticdb
+import scala.meta.internal.mtags.{GlobalSymbolIndex, Mtags, SourcePath}
+import scala.meta.internal.semanticdb.{SymbolOccurrence, TextDocument}
+import scala.meta.pc.CancelToken
+import scala.util.{Failure, Success}
 
 object Definition {
 

@@ -1,17 +1,16 @@
 package plasmon.ide
 
-import java.util.concurrent.LinkedBlockingQueue
-import java.util.concurrent.TimeUnit
-
-import plasmon.PlasmonEnrichments.XtensionStringDoc
-import scala.concurrent.Promise
-import scala.util.Try
-import scala.concurrent.Future
-import plasmon.bsp.PlasmonBuildClientImpl
-import scala.meta.Dialect
-import scala.meta.internal.mtags.GlobalSymbolIndex
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
+import plasmon.PlasmonEnrichments.XtensionStringDoc
+import plasmon.bsp.PlasmonBuildClientImpl
+
+import java.util.concurrent.{LinkedBlockingQueue, TimeUnit}
+
+import scala.concurrent.{Future, Promise}
+import scala.meta.Dialect
+import scala.meta.internal.mtags.GlobalSymbolIndex
+import scala.util.Try
 
 class ParserQueue(
   buffers: Buffers,

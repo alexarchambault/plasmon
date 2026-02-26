@@ -2,9 +2,9 @@ package plasmon.servercommand
 
 // import ammonite.sshd.*
 import caseapp.core.RemainingArgs
-import plasmon.protocol.CommandClient
-import plasmon.index.Indexer
 import plasmon.Server
+import plasmon.index.Indexer
+import plasmon.protocol.CommandClient
 // import java.net.ServerSocket
 // import org.apache.sshd.server.auth.password.PasswordAuthenticator
 // import org.apache.sshd.server.session.ServerSession

@@ -1,14 +1,14 @@
 package plasmon.render
 
-import ch.epfl.scala.{bsp4j => b}
+import ch.epfl.scala.bsp4j as b
 import com.github.plokhotnyuk.jsoniter_scala.core.*
+import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import com.google.gson.GsonBuilder
-import org.eclipse.{lsp4j => l}
+import org.eclipse.lsp4j as l
 
 import java.nio.charset.StandardCharsets
 
 import scala.reflect.ClassTag
-import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 
 object JsonCodecs {
 

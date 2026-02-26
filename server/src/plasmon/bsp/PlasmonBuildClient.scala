@@ -1,8 +1,7 @@
 package plasmon.bsp
 
-import ch.epfl.scala.{bsp4j => b}
+import ch.epfl.scala.bsp4j as b
 import org.eclipse.lsp4j.jsonrpc.services.JsonNotification
-
 import plasmon.Logger
 
 trait PlasmonBuildClient {

@@ -1,11 +1,12 @@
 package plasmon.servercommand
 
 import caseapp.core.RemainingArgs
+import plasmon.Server
+import plasmon.bsp.{BuildServerInfo, BuildTool}
 import plasmon.command.ServerCommandThreadPools
 import plasmon.index.Indexer
 import plasmon.protocol.CommandClient
-import plasmon.bsp.{BuildServerInfo, BuildTool}
-import plasmon.Server
+
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 

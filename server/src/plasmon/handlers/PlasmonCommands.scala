@@ -1,61 +1,56 @@
 package plasmon.handlers
 
-import ch.epfl.scala.{bsp4j => b}
-import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, writeToStream, writeToString}
+import ch.epfl.scala.bsp4j as b
+import com.github.plokhotnyuk.jsoniter_scala.core.{
+  JsonValueCodec,
+  writeToStream,
+  writeToString
+}
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import com.google.gson.{Gson, JsonElement}
-import plasmon.command.ServerCommandThreadPools
-import plasmon.index.Indexer
-import plasmon.jsonrpc.CommandHandler
-import plasmon.jsonrpc.CommandHandler.ParamsHelpers.*
-import plasmon.servercommand.BspUtil
-import plasmon.bsp.{BuildServerInfo, ConnectionInfoJson}
-import plasmon.jsonrpc.Handlers
-import plasmon.Server
-
-import java.net.URI
-import java.util.concurrent.CompletableFuture
-
-import scala.util.{Failure, Success}
-import java.io.ByteArrayOutputStream
-import java.io.PrintWriter
-import java.nio.charset.StandardCharsets
-import scala.build.bsp.WrappedSourcesParams
-import java.util.concurrent.ExecutionException
+import coursier.version.Version
+import dotty.tools.pc.ScalaPresentationCompiler as Scala3PresentationCompiler
+import org.eclipse.lsp4j as l
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseErrorCode
-import scala.build.bsp.WrappedSourcesResult
-import scala.concurrent.Future
-import java.io.File
-import plasmon.Status
-import scala.concurrent.Await
-import scala.concurrent.duration.Duration
-import plasmon.bsp.BuildTool
-import plasmon.pc.PresentationCompilers
-
-import plasmon.PlasmonEnrichments._
-import scala.jdk.CollectionConverters._
-import plasmon.bsp.BspConnection
-import scala.meta.pc.PresentationCompiler
-import scala.meta.internal.pc.HasCompilerAccess
-import org.eclipse.{lsp4j => l}
-import scala.meta.pc.CancelToken
+import plasmon.{Server, Status}
+import plasmon.PlasmonEnrichments.*
+import plasmon.bsp.{
+  BspConnection,
+  BuildServerInfo,
+  BuildTool,
+  ConnectionInfoJson,
+  Diagnostics
+}
+import plasmon.command.ServerCommandThreadPools
 import plasmon.ide.CancelTokens
+import plasmon.index.Indexer
+import plasmon.index.IndexerActor.Message
+import plasmon.internal.Constants
+import plasmon.jsonrpc.{CommandHandler, Handlers}
+import plasmon.jsonrpc.CommandHandler.ParamsHelpers.*
+import plasmon.languageclient.PlasmonConfiguredLanguageClient
+import plasmon.pc.PresentationCompilers
+import plasmon.servercommand.BspUtil
+
+import java.io.{ByteArrayOutputStream, File, PrintStream, PrintWriter}
+import java.net.URI
+import java.nio.charset.StandardCharsets
+import java.util.concurrent.{CompletableFuture, ExecutionException}
+import java.util.concurrent.atomic.AtomicInteger
+
+import scala.build.bsp.{WrappedSourcesParams, WrappedSourcesResult}
+import scala.concurrent.{Await, Future}
+import scala.concurrent.duration.Duration
+import scala.jdk.CollectionConverters.*
+import scala.meta.cli.Reporter
 import scala.meta.internal.metals.EmptyCancelToken
 import scala.meta.internal.metap.DocumentPrinter
-import scala.meta.cli.Reporter
-import java.io.PrintStream
-import scala.meta.metap.Settings
-import scala.meta.metap.Format
+import scala.meta.internal.pc.HasCompilerAccess
 import scala.meta.internal.semanticdb.SymbolOccurrence
-import plasmon.languageclient.PlasmonConfiguredLanguageClient
-import java.util.concurrent.atomic.AtomicInteger
-import coursier.version.Version
-import plasmon.internal.Constants
-import plasmon.index.IndexerActor.Message
-import plasmon.bsp.Diagnostics
-import dotty.tools.pc.ScalaPresentationCompiler as Scala3PresentationCompiler
-import scala.util.Using
+import scala.meta.metap.{Format, Settings}
+import scala.meta.pc.{CancelToken, PresentationCompiler}
+import scala.util.{Failure, Success, Using}
 
 object PlasmonCommands {
 

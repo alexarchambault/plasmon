@@ -2,14 +2,13 @@
 
 package plasmon.ide
 
-import plasmon.PlasmonEnrichments._
+import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
+import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
+import plasmon.PlasmonEnrichments.*
 
 import scala.collection.concurrent.TrieMap
 import scala.meta.inputs.Input
-import scala.meta.internal.mtags.SourcePath
-import scala.meta.internal.mtags.GlobalSymbolIndex
-import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
-import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
+import scala.meta.internal.mtags.{GlobalSymbolIndex, SourcePath}
 
 /** Manages in-memory text contents of unsaved files in the editor.
   */

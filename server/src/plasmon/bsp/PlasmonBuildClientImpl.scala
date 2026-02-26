@@ -1,24 +1,22 @@
 package plasmon.bsp
 
-import ch.epfl.scala.{bsp4j => b}
-import com.github.plokhotnyuk.jsoniter_scala.core._
+import ch.epfl.scala.bsp4j as b
+import com.github.plokhotnyuk.jsoniter_scala.core.*
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import com.google.gson.Gson
+import org.eclipse.lsp4j as l
 import org.eclipse.lsp4j.jsonrpc.services.JsonNotification
-import org.eclipse.{lsp4j => l}
-
-import scala.jdk.CollectionConverters._
-
-import java.util.concurrent.ConcurrentHashMap
-
 import plasmon.Logger
-import java.net.URI
+import plasmon.PlasmonEnrichments.*
+import plasmon.ide.{Buffers, Trees}
 import plasmon.languageclient.PlasmonLanguageClient
+
+import java.net.URI
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
-import plasmon.ide.Buffers
-import plasmon.ide.Trees
+
+import scala.jdk.CollectionConverters.*
 import scala.meta.internal.mtags.GlobalSymbolIndex
-import plasmon.PlasmonEnrichments._
 
 class PlasmonBuildClientImpl(
   languageClient: PlasmonLanguageClient,

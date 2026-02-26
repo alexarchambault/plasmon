@@ -1,12 +1,11 @@
 package plasmon.handlers.ontypefmt
 
-import scala.meta.inputs.Input
-
-import org.eclipse.{lsp4j => l}
-
+import org.eclipse.lsp4j as l
+import plasmon.PlasmonEnrichments.*
 import plasmon.ide.{Buffers, Trees}
-import plasmon.PlasmonEnrichments._
 import plasmon.index.BspData
+
+import scala.meta.inputs.Input
 import scala.meta.internal.mtags.GlobalSymbolIndex
 
 // Originally based on https://github.com/scalameta/metals/blob/2a6f8a437a1ce7c44140673edfe34bb74dfd33be/metals/src/main/scala/scala/meta/internal/metals/formatting/OnTypeFormattingProvider.scala#L33-L74

@@ -1,12 +1,11 @@
 package plasmon.bsp
 
-import plasmon.HasState
-import java.util.concurrent.TimeUnit
 import bloop.rifle.BloopThreads
-
-import java.util.concurrent.ExecutorService
-import plasmon.Logger
+import plasmon.{HasState, Logger}
 import plasmon.servercommand.BspUtil
+
+import java.util.concurrent.{ExecutorService, TimeUnit}
+
 import scala.util.Try
 
 class BspServersActor(

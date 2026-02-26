@@ -1,11 +1,11 @@
 package plasmon.servercommand
 
 import caseapp.core.RemainingArgs
-import org.eclipse.{lsp4j => l}
-import plasmon.handlers.Completion
-import plasmon.protocol.CommandClient
-import plasmon.index.Indexer
+import org.eclipse.lsp4j as l
 import plasmon.Server
+import plasmon.handlers.Completion
+import plasmon.index.Indexer
+import plasmon.protocol.CommandClient
 
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration

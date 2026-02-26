@@ -1,14 +1,13 @@
 package plasmon.languageclient
 
+import org.eclipse.lsp4j as l
 import org.eclipse.lsp4j.jsonrpc.services.JsonNotification
-
-import java.lang.{Boolean => JBoolean, Integer => JInt}
-import java.util.{List => JList}
-import javax.annotation.Nullable
-import org.eclipse.{lsp4j => l}
 import org.eclipse.lsp4j.services.LanguageClient
+
+import java.lang.{Boolean as JBoolean, Integer as JInt}
+import java.util.{List as JList, UUID}
 import java.util.concurrent.CompletableFuture
-import java.util.UUID
+import javax.annotation.Nullable
 
 trait PlasmonLanguageClient extends LanguageClient {
 

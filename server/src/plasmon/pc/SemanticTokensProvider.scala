@@ -2,23 +2,18 @@
 
 package plasmon.pc
 
-import scala.annotation.switch
-import scala.annotation.tailrec
-import scala.collection.mutable.ListBuffer
-import scala.util.Failure
-import scala.util.Success
-import scala.util.Try
-import scala.util.matching.Regex
-
+import org.eclipse.lsp4j as l
 import plasmon.PlasmonEnrichments.*
-import scala.meta.internal.parsers.SoftKeywords
-import scala.meta.internal.pc.SemanticTokens._
-import scala.meta.pc.Node
-import scala.meta.pc.VirtualFileParams
-import scala.meta.tokens._
 
-import org.eclipse.{lsp4j => l}
+import scala.annotation.{switch, tailrec}
+import scala.collection.mutable.ListBuffer
 import scala.meta.PlasmonHelpers
+import scala.meta.internal.parsers.SoftKeywords
+import scala.meta.internal.pc.SemanticTokens.*
+import scala.meta.pc.{Node, VirtualFileParams}
+import scala.meta.tokens.*
+import scala.util.{Failure, Success, Try}
+import scala.util.matching.Regex
 
 /** Provides semantic tokens of file according to the LSP specification.
   */

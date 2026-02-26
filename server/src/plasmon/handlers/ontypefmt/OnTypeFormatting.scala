@@ -1,16 +1,14 @@
 package plasmon.handlers.ontypefmt
 
-import org.eclipse.{lsp4j => l}
-import plasmon.jsonrpc.RequestHandler
-import plasmon.jsonrpc.Handlers
+import org.eclipse.lsp4j as l
 import plasmon.Server
+import plasmon.PlasmonEnrichments.*
+import plasmon.jsonrpc.{Handlers, RequestHandler}
 
-import java.util.{List => JList}
+import java.util.List as JList
 
 import scala.concurrent.{ExecutionContext, Future}
-
-import plasmon.PlasmonEnrichments._
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 
 object OnTypeFormatting {
 

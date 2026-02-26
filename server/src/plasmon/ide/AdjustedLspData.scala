@@ -1,11 +1,11 @@
 package plasmon.ide
 
-import java.util.{List => JList}
+import org.eclipse.lsp4j as l
+import plasmon.PlasmonEnrichments.StringThingExtensions
+
+import java.util.List as JList
 
 import scala.jdk.CollectionConverters.*
-
-import org.eclipse.{lsp4j => l}
-import plasmon.PlasmonEnrichments.StringThingExtensions
 
 // Originally based on https://github.com/scalameta/metals/blob/2a6f8a437a1ce7c44140673edfe34bb74dfd33be/metals/src/main/scala/scala/meta/internal/metals/AdjustLspData.scala#L110-L134 or an earlier version of that file
 

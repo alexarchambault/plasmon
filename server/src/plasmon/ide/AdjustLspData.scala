@@ -1,14 +1,13 @@
 package plasmon.ide
 
-import java.util.{List => JList}
-
+import org.eclipse.lsp4j as l
 import plasmon.PlasmonEnrichments.*
+
+import java.util.List as JList
+
 import scala.jdk.CollectionConverters.*
 import scala.meta.pc
-import scala.meta.pc.AutoImportsResult
-import scala.meta.pc.HoverSignature
-
-import org.eclipse.{lsp4j => l}
+import scala.meta.pc.{AutoImportsResult, HoverSignature}
 
 // Originally based on https://github.com/scalameta/metals/blob/2a6f8a437a1ce7c44140673edfe34bb74dfd33be/metals/src/main/scala/scala/meta/internal/metals/AdjustLspData.scala#L19-L108 or an earlier version of that file
 

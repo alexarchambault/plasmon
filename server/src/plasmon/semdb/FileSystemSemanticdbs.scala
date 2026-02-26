@@ -2,18 +2,20 @@
 
 package plasmon.semdb
 
-import plasmon.PlasmonEnrichments._
-
-import scala.meta.internal.mtags.Md5Fingerprints
-import plasmon.semdb.Semanticdbs.FoundSemanticDbPath
-import plasmon.semdb.TextDocumentLookup
-import scala.meta.io.RelativePath
-import ch.epfl.scala.{bsp4j => b}
-import scala.meta.internal.mtags.SourcePath
+import ch.epfl.scala.bsp4j as b
+import plasmon.PlasmonEnrichments.*
 import plasmon.index.BspData
-import scala.meta.internal.mtags.GlobalSymbolIndex
+import plasmon.semdb.{Semanticdbs, TextDocumentLookup}
+import plasmon.semdb.Semanticdbs.FoundSemanticDbPath
+
 import java.nio.charset.StandardCharsets
-import plasmon.semdb.Semanticdbs
+
+import scala.meta.internal.mtags.{
+  GlobalSymbolIndex,
+  Md5Fingerprints,
+  SourcePath
+}
+import scala.meta.io.RelativePath
 
 /** Reads SemanticDBs from disk that are produces by the semanticdb-scalac compiler plugin.
   */

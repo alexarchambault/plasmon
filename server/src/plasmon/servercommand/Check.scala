@@ -1,31 +1,30 @@
 package plasmon.servercommand
 
 import caseapp.core.RemainingArgs
-import ch.epfl.scala.{bsp4j => b}
-import org.eclipse.{lsp4j => l}
-import plasmon.command.ServerCommandThreadPools
-import plasmon.protocol.CommandClient
-import plasmon.util.PrintDiagnostic
-import plasmon.bsp.PlasmonBuildClient
-import plasmon.index.Indexer
-import plasmon.PlasmonEnrichments.*
+import ch.epfl.scala.bsp4j as b
+import org.eclipse.lsp4j as l
 import plasmon.Server
+import plasmon.PlasmonEnrichments.*
+import plasmon.bsp.PlasmonBuildClient
+import plasmon.command.ServerCommandThreadPools
+import plasmon.index.Indexer
+import plasmon.protocol.CommandClient
+import plasmon.semdb.TextDocumentLookup
+import plasmon.util.PrintDiagnostic
 
 import java.io.{ByteArrayOutputStream, PrintStream}
 import java.net.URI
 import java.nio.charset.StandardCharsets
 import java.util.UUID
 
-import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Promise}
+import scala.concurrent.duration.Duration
+import scala.jdk.CollectionConverters.*
 import scala.meta.cli.Reporter
 import scala.meta.internal.metap.DocumentPrinter
-import plasmon.semdb.TextDocumentLookup
+import scala.meta.internal.mtags.SourcePath
 import scala.meta.internal.semanticdb.{Language, TextDocument}
 import scala.meta.metap.Settings
-import scala.meta.internal.mtags.SourcePath
-
-import scala.jdk.CollectionConverters._
 
 final case class Check(
   server: Server,

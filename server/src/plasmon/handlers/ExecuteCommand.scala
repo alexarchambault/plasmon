@@ -1,15 +1,14 @@
 package plasmon.handlers
 
-import org.eclipse.{lsp4j => l}
-import plasmon.jsonrpc.Handlers
+import org.eclipse.lsp4j as l
 import plasmon.Server
-import plasmon.jsonrpc.{CommandHandler, RequestHandler}
+import plasmon.jsonrpc.{CommandHandler, Handlers, RequestHandler}
+import plasmon.languageclient.PlasmonLanguageClient
 
+import java.util.UUID
 import java.util.concurrent.CompletableFuture
 
 import scala.jdk.CollectionConverters.*
-import plasmon.languageclient.PlasmonLanguageClient
-import java.util.UUID
 
 object ExecuteCommand {
 

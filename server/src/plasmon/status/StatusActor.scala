@@ -3,12 +3,15 @@ package plasmon.status
 import plasmon.Status
 import plasmon.languageclient.PlasmonLanguageClient
 
+import java.util.concurrent.{
+  ScheduledExecutorService,
+  ScheduledFuture,
+  TimeUnit
+}
+
+import scala.concurrent.duration.FiniteDuration
 import scala.jdk.CollectionConverters.*
 import scala.util.Try
-import scala.concurrent.duration.FiniteDuration
-import java.util.concurrent.ScheduledExecutorService
-import java.util.concurrent.TimeUnit
-import java.util.concurrent.ScheduledFuture
 
 class StatusActor(
   languageClient: PlasmonLanguageClient,

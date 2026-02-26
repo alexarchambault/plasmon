@@ -1,14 +1,14 @@
 package plasmon.handlers
 
-import org.eclipse.{lsp4j => l}
-import plasmon.jsonrpc.RequestHandler
-import plasmon.jsonrpc.Handlers
+import org.eclipse.lsp4j as l
 import plasmon.Server
+import plasmon.ide.CancelTokens
+import plasmon.jsonrpc.{Handlers, RequestHandler}
+
+import java.util.concurrent.CompletableFuture
 
 import scala.concurrent.{ExecutionContextExecutorService, Future}
 import scala.meta.internal.metals.EmptyCancelToken
-import java.util.concurrent.CompletableFuture
-import plasmon.ide.CancelTokens
 
 object Completion {
 
