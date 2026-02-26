@@ -1,19 +1,17 @@
 package plasmon.jsonrpc
 
-import com.google.gson.JsonPrimitive
-import org.eclipse.{lsp4j => l}
+import com.github.plokhotnyuk.jsoniter_scala.core.*
+import com.google.gson.{Gson, JsonElement, JsonPrimitive}
+import org.eclipse.lsp4j as l
+import plasmon.Logger
+import plasmon.PlasmonEnrichments.StringThingExtensions
 
 import java.net.URI
 import java.nio.file.InvalidPathException
 import java.util.concurrent.CompletableFuture
 
-import scala.jdk.CollectionConverters._
-import com.google.gson.Gson
-import com.google.gson.JsonElement
+import scala.jdk.CollectionConverters.*
 import scala.reflect.ClassTag
-import com.github.plokhotnyuk.jsoniter_scala.core._
-import plasmon.Logger
-import plasmon.PlasmonEnrichments.StringThingExtensions
 
 final case class CommandHandler(
   commandName: String,

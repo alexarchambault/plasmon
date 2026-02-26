@@ -1,12 +1,11 @@
 package plasmon.handlers
 
-import org.eclipse.{lsp4j => l}
-import plasmon.jsonrpc.RequestHandler
-import plasmon.jsonrpc.Handlers
+import org.eclipse.lsp4j as l
 import plasmon.Server
+import plasmon.ide.CancelTokens
+import plasmon.jsonrpc.{Handlers, RequestHandler}
 
 import scala.concurrent.ExecutionContextExecutorService
-import plasmon.ide.CancelTokens
 
 object SignatureHelp {
   def handlers(

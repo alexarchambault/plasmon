@@ -1,6 +1,7 @@
 package plasmon.pc
 
 import java.util.Optional
+
 import scala.meta.pc.reports.{ReportContext, Reporter}
 
 object NopReportContext extends ReportContext {

@@ -2,17 +2,18 @@
 
 package plasmon.pc
 
-import ch.epfl.scala.{bsp4j => b}
-import java.util.concurrent.atomic.AtomicBoolean
-
-import scala.jdk.CollectionConverters._
-import scala.meta.pc.VirtualFileParams
-import scala.meta.internal.metals.CompilerVirtualFileParams
-import plasmon.index.BspData
+import ch.epfl.scala.bsp4j as b
 import plasmon.ide.Buffers
+import plasmon.index.BspData
+
+import java.lang.Boolean as JBoolean
 import java.util.Collections
 import java.util.concurrent.ConcurrentHashMap
-import java.lang.{Boolean => JBoolean}
+import java.util.concurrent.atomic.AtomicBoolean
+
+import scala.jdk.CollectionConverters.*
+import scala.meta.internal.metals.CompilerVirtualFileParams
+import scala.meta.pc.VirtualFileParams
 
 private class BuildTargetOutlineFilesProvider(
   bspData: BspData,

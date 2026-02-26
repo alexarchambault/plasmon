@@ -2,14 +2,15 @@
 
 package plasmon.pc
 
+import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
+import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
+import plasmon.PlasmonEnrichments.*
+
+import java.util.zip.ZipFile
+
 import scala.collection.concurrent.TrieMap
 import scala.util.control.NonFatal
 import scala.xml.XML
-
-import plasmon.PlasmonEnrichments.*
-import java.util.zip.ZipFile
-import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
-import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 
 /** Responsible for disabling unsupported compiler plugins.
   *

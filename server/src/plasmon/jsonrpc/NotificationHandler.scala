@@ -1,9 +1,10 @@
 package plasmon.jsonrpc
 
+import plasmon.Logger
+
 import java.lang.reflect.Type
 
 import scala.reflect.ClassTag
-import plasmon.Logger
 
 final case class NotificationHandler[A](
   name: String,

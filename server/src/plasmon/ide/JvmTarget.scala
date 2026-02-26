@@ -2,9 +2,8 @@
 
 package plasmon.ide
 
+import ch.epfl.scala.bsp4j as b
 import plasmon.PlasmonEnrichments.*
-
-import ch.epfl.scala.{bsp4j => b}
 
 trait JvmTarget {
 

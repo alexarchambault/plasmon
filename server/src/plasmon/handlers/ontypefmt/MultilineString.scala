@@ -2,16 +2,13 @@
 
 package plasmon.handlers.ontypefmt
 
-import scala.meta.tokens.Tokens
-import scala.meta.tokens.Token
-
-import org.eclipse.{lsp4j => l}
-
-import scala.meta.XtensionClassifiable
+import org.eclipse.lsp4j as l
 import plasmon.PlasmonEnrichments.*
-import scala.meta.inputs.Position
+
 import scala.annotation.tailrec
-import scala.meta.inputs.Input
+import scala.meta.XtensionClassifiable
+import scala.meta.inputs.{Input, Position}
+import scala.meta.tokens.{Token, Tokens}
 
 private object MultilineString extends OnTypeFormatter with RangeFormatter {
 

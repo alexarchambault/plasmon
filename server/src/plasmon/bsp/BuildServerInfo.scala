@@ -1,10 +1,11 @@
 package plasmon.bsp
 
-import scala.util.Properties
-import plasmon.Logger
-import plasmon.render.JsonCodecs.given
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
+import plasmon.Logger
+import plasmon.render.JsonCodecs.given
+
+import scala.util.Properties
 
 sealed abstract class BuildServerInfo extends Product with Serializable {
   def `type`: String

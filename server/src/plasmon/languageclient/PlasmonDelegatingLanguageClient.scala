@@ -2,9 +2,10 @@
 
 package plasmon.languageclient
 
-import java.util.{List => JList}
+import org.eclipse.lsp4j as l
+
+import java.util.List as JList
 import java.util.concurrent.CompletableFuture
-import org.eclipse.{lsp4j => l}
 
 class PlasmonDelegatingLanguageClient(var underlying: PlasmonLanguageClient)
     extends PlasmonLanguageClient {

@@ -2,16 +2,15 @@
 
 package plasmon.bsp
 
-import ch.epfl.scala.{bsp4j => b}
+import ch.epfl.scala.bsp4j as b
 import plasmon.Logger
+import plasmon.languageclient.PlasmonLanguageClient
 
+import java.util.{Objects, UUID}
 import java.util.concurrent.CompletableFuture
 
-import scala.build.bsp.{WrappedSourcesParams, WrappedSourcesResult}
-import java.util.Objects
 import scala.annotation.nowarn
-import plasmon.languageclient.PlasmonLanguageClient
-import java.util.UUID
+import scala.build.bsp.{WrappedSourcesParams, WrappedSourcesResult}
 
 final class LoggingPlasmonBuildServer(
   underlying: PlasmonBuildServer,

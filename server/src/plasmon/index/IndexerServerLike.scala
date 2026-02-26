@@ -1,15 +1,15 @@
 package plasmon.index
 
-import plasmon.bsp.BspServers
-import scala.meta.internal.mtags.OnDemandSymbolIndex
-import plasmon.watch.FileWatcher
 import plasmon.ServerThreadPools
-import scala.meta.internal.metals.Docstrings
-import scala.meta.internal.pc.CustomFileManager
-import scala.meta.internal.mtags.SourcePath
-import plasmon.ide._
-import plasmon.pc.PresentationCompilers
+import plasmon.bsp.BspServers
+import plasmon.ide.*
 import plasmon.languageclient.PlasmonLanguageClient
+import plasmon.pc.PresentationCompilers
+import plasmon.watch.FileWatcher
+
+import scala.meta.internal.metals.Docstrings
+import scala.meta.internal.mtags.{OnDemandSymbolIndex, SourcePath}
+import scala.meta.internal.pc.CustomFileManager
 
 trait IndexerServerLike {
   def workingDir: os.Path

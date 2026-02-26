@@ -1,9 +1,9 @@
 package plasmon
 
+import caseapp.core.{Indexed, RemainingArgs}
 import caseapp.core.app.CommandsEntryPoint
 import caseapp.core.help.Help
 import caseapp.core.parser.Parser
-import caseapp.core.{Indexed, RemainingArgs}
 import plasmon.command.*
 
 object Plasmon extends CommandsEntryPoint {

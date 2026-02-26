@@ -1,16 +1,16 @@
 package plasmon.bsp
 
 import bloop.rifle.BspConnection
-import plasmon.Logger
-import java.io.ByteArrayOutputStream
-import java.io.PrintStream
-import java.nio.charset.StandardCharsets
-import plasmon.servercommand.BspUtil
-
-import scala.annotation.nowarn
-import plasmon.render.JsonCodecs.{given, *}
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
+import plasmon.Logger
+import plasmon.render.JsonCodecs.{given, *}
+import plasmon.servercommand.BspUtil
+
+import java.io.{ByteArrayOutputStream, PrintStream}
+import java.nio.charset.StandardCharsets
+
+import scala.annotation.nowarn
 
 sealed abstract class BuildServerProcess extends Product with Serializable with AutoCloseable {
   def managedProcess: Boolean

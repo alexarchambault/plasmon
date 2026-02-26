@@ -2,15 +2,14 @@ package plasmon.integration.project
 
 import com.google.gson.Gson
 import io.github.alexarchambault.testutil.TestOutput.FixedReadBytes
-import org.eclipse.{lsp4j => l}
+import org.eclipse.lsp4j as l
 import plasmon.integration.PlasmonSuite
 import plasmon.integration.TestUtil.*
 
 import java.io.OutputStream
 
-import scala.concurrent.duration.DurationInt
+import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.util.Properties
-import scala.concurrent.duration.FiniteDuration
 
 class CoursierTests extends PlasmonSuite {
 

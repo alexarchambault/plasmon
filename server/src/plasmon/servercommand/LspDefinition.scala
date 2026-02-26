@@ -1,12 +1,12 @@
 package plasmon.servercommand
 
 import caseapp.core.RemainingArgs
-import org.eclipse.{lsp4j => l}
-import plasmon.handlers.Definition
-import plasmon.protocol.CommandClient
-import plasmon.index.Indexer
+import org.eclipse.lsp4j as l
 import plasmon.{Logger, Server}
 import plasmon.PlasmonEnrichments.*
+import plasmon.handlers.Definition
+import plasmon.index.Indexer
+import plasmon.protocol.CommandClient
 
 import java.net.URI
 

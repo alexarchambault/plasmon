@@ -1,12 +1,11 @@
 package plasmon.index
 
-import ch.epfl.scala.{bsp4j => b}
+import ch.epfl.scala.bsp4j as b
 import plasmon.{HasState, Server}
 import plasmon.PlasmonEnrichments.*
 import plasmon.bsp.BuildServerInfo
 
-import scala.concurrent.Promise
-import scala.concurrent.Future
+import scala.concurrent.{Future, Promise}
 
 class Indexer(server: Server) extends HasState.Delegate[String] {
 

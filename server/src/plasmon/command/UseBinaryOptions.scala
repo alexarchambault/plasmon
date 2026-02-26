@@ -1,8 +1,8 @@
 package plasmon.command
 
+import caseapp.{@@, Counter, Name, Tag}
 import caseapp.core.help.Help
 import caseapp.core.parser.Parser
-import caseapp.{@@, Counter, Name, Tag}
 
 // format: off
 final case class UseBinaryOptions(

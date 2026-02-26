@@ -1,7 +1,7 @@
 package plasmon.integration
 
-import scala.concurrent.duration.{Duration, DurationInt, IntMult}
 import scala.concurrent.{Await, Future}
+import scala.concurrent.duration.{Duration, DurationInt, IntMult}
 import scala.util.{Failure, Success, Try}
 
 trait PlasmonSuite extends munit.FunSuite {

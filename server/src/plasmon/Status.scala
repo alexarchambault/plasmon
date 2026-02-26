@@ -1,33 +1,33 @@
 package plasmon
 
-import ch.epfl.scala.{bsp4j => b}
-import plasmon.bsp.{BuildServerInfo, BuildServerProcess}
-import plasmon.languageclient._
+import ch.epfl.scala.bsp4j as b
+import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
+import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
+import org.eclipse.lsp4j as l
+import org.eclipse.lsp4j.jsonrpc.ResponseErrorException
+import org.eclipse.lsp4j.jsonrpc.messages.ResponseErrorCode
+import plasmon.PlasmonEnrichments.*
+import plasmon.bsp.{BspConnection, BuildServerInfo, BuildServerProcess}
+import plasmon.languageclient.*
+import plasmon.languageclient.PlasmonLanguageClient.StatusUpdate
+import plasmon.pc.PresentationCompilers
+import plasmon.semdb.TextDocumentLookup
 import plasmon.servercommand.BspUtil
 
 import java.time.Instant
-import java.util.concurrent.ConcurrentHashMap
-import plasmon.semdb.TextDocumentLookup
+import java.util.concurrent.{
+  CompletableFuture,
+  CompletionException,
+  ConcurrentHashMap,
+  ScheduledExecutorService,
+  ScheduledFuture,
+  TimeUnit
+}
+import java.util.concurrent.atomic.AtomicReference
+
+import scala.jdk.CollectionConverters.*
 import scala.meta.internal.mtags.SourcePath
 import scala.meta.internal.pc.HasCompilerAccess
-import java.util.concurrent.ScheduledExecutorService
-import java.util.concurrent.TimeUnit
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.ScheduledFuture
-import java.util.concurrent.atomic.AtomicReference
-import java.util.concurrent.CompletionException
-import org.eclipse.{lsp4j => l}
-import org.eclipse.lsp4j.jsonrpc.ResponseErrorException
-import org.eclipse.lsp4j.jsonrpc.messages.ResponseErrorCode
-import plasmon.bsp.BspConnection
-
-import plasmon.pc.PresentationCompilers
-
-import plasmon.PlasmonEnrichments._
-import scala.jdk.CollectionConverters._
-import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
-import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
-import plasmon.languageclient.PlasmonLanguageClient.StatusUpdate
 
 class Status(
   server: Server,

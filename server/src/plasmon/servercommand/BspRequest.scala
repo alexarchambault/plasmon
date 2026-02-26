@@ -1,18 +1,22 @@
 package plasmon.servercommand
 
 import caseapp.core.RemainingArgs
-import ch.epfl.scala.{bsp4j => b}
+import ch.epfl.scala.bsp4j as b
 import com.google.gson.Gson
 import org.eclipse.lsp4j.jsonrpc.MessageIssueException
+import plasmon.Server
+import plasmon.index.Indexer
 import plasmon.protocol.CommandClient
 import plasmon.protocol.CommandClient.ops.*
-import plasmon.index.Indexer
-import plasmon.Server
 
-import java.util.concurrent.{CompletableFuture, ExecutionException, ExecutorService}
+import java.util.concurrent.{
+  CompletableFuture,
+  ExecutionException,
+  ExecutorService
+}
 
-import scala.jdk.CollectionConverters.*
 import scala.build.bsp.WrappedSourcesParams
+import scala.jdk.CollectionConverters.*
 
 final case class BspRequest(
   server: Server,

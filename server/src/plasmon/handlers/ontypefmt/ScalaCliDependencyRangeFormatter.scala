@@ -2,7 +2,7 @@
 
 package plasmon.handlers.ontypefmt
 
-import org.eclipse.{lsp4j => l}
+import org.eclipse.lsp4j as l
 
 object ScalaCliDependencyRangeFormatter extends RangeFormatter {
 

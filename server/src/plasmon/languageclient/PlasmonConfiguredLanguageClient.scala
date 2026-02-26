@@ -2,13 +2,14 @@
 
 package plasmon.languageclient
 
+import org.eclipse.lsp4j as l
+import plasmon.PlasmonEnrichments.*
+
+import java.util.List as JList
 import java.util.concurrent.CompletableFuture
-import java.util.{List => JList}
+import java.util.concurrent.atomic.AtomicBoolean
 
 import scala.concurrent.ExecutionContext
-import org.eclipse.{lsp4j => l}
-import java.util.concurrent.atomic.AtomicBoolean
-import plasmon.PlasmonEnrichments.*
 
 class PlasmonConfiguredLanguageClient(
   initial: PlasmonLanguageClient,

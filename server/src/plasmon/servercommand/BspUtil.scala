@@ -1,42 +1,53 @@
 package plasmon.servercommand
 
-import bloop.rifle.{BloopRifleConfig, BloopRifleLogger, BloopServer, BloopThreads, BloopVersion}
-import ch.epfl.scala.{bsp4j => b}
+import bloop.rifle.{
+  BloopRifle,
+  BloopRifleConfig,
+  BloopRifleLogger,
+  BloopServer,
+  BloopThreads,
+  BloopVersion
+}
+import bloop.rifle.bloop4j.BloopExtraBuildParams
+import ch.epfl.scala.bsp4j as b
 import com.github.plokhotnyuk.jsoniter_scala.core.*
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import com.google.gson.Gson
 import coursier.version.Version
+import org.eclipse.lsp4j as l
 import org.eclipse.lsp4j.jsonrpc.Launcher
-import org.eclipse.{lsp4j => l}
-import plasmon.internal.Directories
-import plasmon.bsp.{BuildServerInfo, BuildServerLauncher, BuildServerProcess, BuildTool}
 import plasmon.Logger
-import java.util.{List => JList}
-import plasmon.internal.Constants
+import plasmon.PlasmonEnrichments.*
+import plasmon.bsp.{
+  BspConnection,
+  BuildServerInfo,
+  BuildServerLauncher,
+  BuildServerProcess,
+  BuildTool,
+  LoggingPlasmonBuildServer,
+  PlasmonBuildClient,
+  PlasmonBuildClientImpl,
+  PlasmonBuildServer
+}
+import plasmon.index.{BspData, TargetData}
+import plasmon.internal.{Constants, DebugInput, Directories}
+import plasmon.languageclient.PlasmonLanguageClient
 
-import java.io.{File, InputStream, OutputStream}
+import java.io.{
+  ByteArrayOutputStream,
+  File,
+  InputStream,
+  OutputStream,
+  PrintStream,
+  PrintWriter
+}
 import java.net.URI
+import java.nio.charset.StandardCharsets
+import java.util.{List as JList, UUID}
 import java.util.concurrent.ExecutorService
 
 import scala.jdk.CollectionConverters.*
-import plasmon.bsp.PlasmonBuildServer
 import scala.util.Properties
-import java.io.ByteArrayOutputStream
-import java.io.PrintStream
-import java.nio.charset.StandardCharsets
-import plasmon.internal.DebugInput
-import bloop.rifle.bloop4j.BloopExtraBuildParams
-import plasmon.bsp.PlasmonBuildClient
-import plasmon.bsp.LoggingPlasmonBuildServer
-import bloop.rifle.BloopRifle
-import plasmon.bsp.BspConnection
-import plasmon.index.TargetData
-import plasmon.PlasmonEnrichments._
-import plasmon.bsp.PlasmonBuildClientImpl
-import plasmon.languageclient.PlasmonLanguageClient
-import java.util.UUID
-import java.io.PrintWriter
-import plasmon.index.BspData
 
 object BspUtil {
 

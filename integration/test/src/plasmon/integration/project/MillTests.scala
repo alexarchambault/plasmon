@@ -1,6 +1,6 @@
 package plasmon.integration.project
 
-import org.eclipse.{lsp4j => l}
+import org.eclipse.lsp4j as l
 import plasmon.integration.PlasmonSuite
 import plasmon.integration.TestUtil.*
 

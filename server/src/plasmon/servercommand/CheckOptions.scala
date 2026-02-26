@@ -1,8 +1,8 @@
 package plasmon.servercommand
 
+import caseapp.{HelpMessage, Name}
 import caseapp.core.help.Help
 import caseapp.core.parser.Parser
-import caseapp.{HelpMessage, Name}
 
 @HelpMessage("Run health checks on a source file")
 final case class CheckOptions(

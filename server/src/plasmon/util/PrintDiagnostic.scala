@@ -1,7 +1,7 @@
 package plasmon.util
 
-import ch.epfl.scala.{bsp4j => b}
-import org.eclipse.{lsp4j => l}
+import ch.epfl.scala.bsp4j as b
+import org.eclipse.lsp4j as l
 import plasmon.PlasmonEnrichments.*
 
 import java.io.File

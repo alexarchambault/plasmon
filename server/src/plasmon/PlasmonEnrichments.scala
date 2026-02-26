@@ -1,59 +1,58 @@
 package plasmon
 
-import scala.meta.io.AbsolutePath
-import scala.meta.inputs.Input
-import scala.meta.internal.mtags.SourcePath
-import java.util.concurrent.CompletionStage
-import scala.concurrent.Future
-import scala.compat.java8.FutureConverters
-import scala.meta.internal.semanticdb.Language
-import org.eclipse.{lsp4j => l}
-import scala.meta.internal.pc.CompletionItemData
-import org.eclipse.{lsp4j => l}
-import scala.meta.inputs.Position
-import java.util.Optional
-import org.eclipse.lsp4j.jsonrpc.messages.{Either => JEither}
-import scala.meta.internal.{semanticdb => s}
-import java.net.URI
-import plasmon.ide.EmptyResult
-import java.nio.file.Paths
-import java.io.IOException
-import scala.util.Properties
-import java.nio.file.FileAlreadyExistsException
-import plasmon.ide.Directories
-import scala.util.Try
-import scala.meta.internal.metals.CompilerRangeParamsUtils
-import scala.meta.internal.metals.EmptyCancelToken
-import scala.meta.pc.VirtualFileParams
-import scala.meta.internal.pc.RangeOffset
-import scala.meta.pc.OffsetParams
-import com.google.gson.Gson
-import com.google.gson.JsonElement
-import scala.util.control.NonFatal
-import ch.epfl.scala.{bsp4j => b}
-import scala.jdk.CollectionConverters._
-import scala.concurrent.ExecutionContext
-import scala.meta.internal.tokenizers.LegacyScanner
-import scala.meta.internal.tokenizers.LegacyTokenData
-import scala.meta.Dialect
-import org.scalameta.invariants.InvariantFailedException
+import ch.epfl.scala.bsp4j as b
+import com.google.gson.{
+  Gson,
+  GsonBuilder,
+  JsonDeserializationContext,
+  JsonDeserializer,
+  JsonElement,
+  JsonObject
+}
+import org.eclipse.lsp4j as l
+import org.eclipse.lsp4j.jsonrpc.messages.Either as JEither
 import org.scalameta.UnreachableError
-import scala.annotation.tailrec
-import scala.meta.internal.metals.ScalaVersions
-import java.util.concurrent.CompletableFuture
-import scala.meta.Tree
-import scala.meta.internal.semanticdb.SymbolInformation.{Kind => k}
-import plasmon.ide._
-import scala.meta.tokens.Token
-import java.util.concurrent.CancellationException
-import com.google.gson.JsonDeserializer
+import org.scalameta.invariants.InvariantFailedException
+import plasmon.ide.*
+
+import java.io.IOException
 import java.lang.reflect.Type
-import com.google.gson.JsonDeserializationContext
-import com.google.gson.JsonObject
-import com.google.gson.GsonBuilder
-import java.nio.file.FileSystemNotFoundException
-import scala.meta.internal.mtags.GlobalSymbolIndex
-import java.nio.file.Files
+import java.net.URI
+import java.nio.file.{
+  FileAlreadyExistsException,
+  FileSystemNotFoundException,
+  Files,
+  Paths
+}
+import java.util.Optional
+import java.util.concurrent.{
+  CancellationException,
+  CompletableFuture,
+  CompletionStage
+}
+
+import scala.annotation.tailrec
+import scala.compat.java8.FutureConverters
+import scala.concurrent.{ExecutionContext, Future}
+import scala.jdk.CollectionConverters.*
+import scala.meta.{Dialect, Tree}
+import scala.meta.inputs.{Input, Position}
+import scala.meta.internal.semanticdb as s
+import scala.meta.internal.metals.{
+  CompilerRangeParamsUtils,
+  EmptyCancelToken,
+  ScalaVersions
+}
+import scala.meta.internal.mtags.{GlobalSymbolIndex, SourcePath}
+import scala.meta.internal.pc.{CompletionItemData, RangeOffset}
+import scala.meta.internal.semanticdb.Language
+import scala.meta.internal.semanticdb.SymbolInformation.Kind as k
+import scala.meta.internal.tokenizers.{LegacyScanner, LegacyTokenData}
+import scala.meta.io.AbsolutePath
+import scala.meta.pc.{OffsetParams, VirtualFileParams}
+import scala.meta.tokens.Token
+import scala.util.{Properties, Try}
+import scala.util.control.NonFatal
 
 // Many things here copied from
 //   https://github.com/scalameta/metals/blob/0ad0bc184f82dbd178d01f76913ea6bdfa98db14/mtags-shared/src/main/scala/scala/meta/internal/mtags/CommonMtagsEnrichments.scala

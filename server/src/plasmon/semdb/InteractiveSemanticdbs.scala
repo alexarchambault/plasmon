@@ -2,26 +2,19 @@
 
 package plasmon.semdb
 
-import java.util.Collections
-
-import scala.util.Failure
-import scala.util.Success
-import scala.util.Try
-
-import scala.meta.internal.mtags.MD5
-import plasmon.semdb.TextDocumentLookup
-import scala.meta.internal.{semanticdb => s}
-
-import ch.epfl.scala.{bsp4j => b}
-import scala.meta.internal.mtags.SourcePath
-import plasmon.pc.PresentationCompilers
-
-import plasmon.PlasmonEnrichments._
-import plasmon.ide.Buffers
-import plasmon.semdb.Semanticdbs
-import scala.meta.internal.mtags.GlobalSymbolIndex
+import ch.epfl.scala.bsp4j as b
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
+import plasmon.PlasmonEnrichments.*
+import plasmon.ide.Buffers
+import plasmon.pc.PresentationCompilers
+import plasmon.semdb.{Semanticdbs, TextDocumentLookup}
+
+import java.util.Collections
+
+import scala.meta.internal.semanticdb as s
+import scala.meta.internal.mtags.{GlobalSymbolIndex, MD5, SourcePath}
+import scala.util.{Failure, Success, Try}
 
 /** Produces SemanticDBs on-demand by using the presentation compiler.
   *

@@ -1,17 +1,15 @@
 package plasmon.handlers.docchange
 
-import org.eclipse.{lsp4j => l}
-import plasmon.index.Indexer
-import plasmon.jsonrpc.NotificationHandler
-import plasmon.jsonrpc.Handlers
+import org.eclipse.lsp4j as l
 import plasmon.Server
+import plasmon.PlasmonEnrichments.*
+import plasmon.index.Indexer
+import plasmon.jsonrpc.{Handlers, NotificationHandler}
 
 import scala.concurrent.Future
-import scala.util.{Failure, Success}
+import scala.jdk.CollectionConverters.*
 import scala.meta.internal.mtags.SourcePath
-
-import plasmon.PlasmonEnrichments._
-import scala.jdk.CollectionConverters._
+import scala.util.{Failure, Success}
 
 object DocumentChange {
 

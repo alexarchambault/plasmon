@@ -2,21 +2,18 @@
 
 package plasmon.handlers.codelens
 
-import scala.concurrent.ExecutionContext
-import scala.concurrent.Future
+import org.eclipse.lsp4j as l
+import plasmon.PlasmonEnrichments.*
+import plasmon.ide.{Buffers, ServerCommands, Trees}
 
-import plasmon.ide.ServerCommands
-import scala.meta.internal.mtags.GlobalSymbolIndex
-import scala.meta.internal.semanticdb.Scala._
-import scala.meta.internal.semanticdb.SymbolInformation
-import scala.meta.internal.semanticdb.SymbolOccurrence
-
-import org.eclipse.{lsp4j => l}
-
-import plasmon.PlasmonEnrichments._
-import plasmon.ide.{Buffers, Trees}
-import scala.meta.internal.semanticdb.TextDocument
-import scala.meta.internal.mtags.SourcePath
+import scala.concurrent.{ExecutionContext, Future}
+import scala.meta.internal.mtags.{GlobalSymbolIndex, SourcePath}
+import scala.meta.internal.semanticdb.{
+  SymbolInformation,
+  SymbolOccurrence,
+  TextDocument
+}
+import scala.meta.internal.semanticdb.Scala.*
 
 private final class SuperMethodCodeLens(
   buffers: Buffers,

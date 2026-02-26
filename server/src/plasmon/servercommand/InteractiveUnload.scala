@@ -1,10 +1,10 @@
 package plasmon.servercommand
 
 import caseapp.core.RemainingArgs
-import ch.epfl.scala.{bsp4j => b}
-import plasmon.protocol.CommandClient
-import plasmon.index.Indexer
+import ch.epfl.scala.bsp4j as b
 import plasmon.Server
+import plasmon.index.Indexer
+import plasmon.protocol.CommandClient
 
 final case class InteractiveUnload(
   server: Server,

@@ -2,10 +2,10 @@
 
 package plasmon.languageclient
 
-import java.util.{List => JList}
-import java.util.concurrent.CompletableFuture
+import org.eclipse.lsp4j as l
 
-import org.eclipse.{lsp4j => l}
+import java.util.List as JList
+import java.util.concurrent.CompletableFuture
 
 abstract class PlasmonNoopLanguageClient extends PlasmonLanguageClient {
   override def telemetryEvent(`object`: Any): Unit = ()

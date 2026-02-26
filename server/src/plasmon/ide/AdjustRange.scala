@@ -1,8 +1,9 @@
 package plasmon.ide
 
-import org.eclipse.{lsp4j => l}
-import scala.meta.internal.{semanticdb => s}
-import plasmon.PlasmonEnrichments._
+import org.eclipse.lsp4j as l
+import plasmon.PlasmonEnrichments.*
+
+import scala.meta.internal.semanticdb as s
 
 // Originally based on https://github.com/scalameta/metals/blob/2a6f8a437a1ce7c44140673edfe34bb74dfd33be/metals/src/main/scala/scala/meta/internal/metals/ReferenceProvider.scala#L851-L883 or an earlier version of that file
 

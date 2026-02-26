@@ -1,11 +1,11 @@
 package plasmon.bsp
 
-import ch.epfl.scala.{bsp4j => b}
+import ch.epfl.scala.bsp4j as b
+import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
+import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import org.eclipse.lsp4j.jsonrpc.RemoteEndpoint
 import plasmon.Logger
 import plasmon.render.JsonCodecs.given
-import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
-import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 
 final case class BspConnection(
   params: b.InitializeBuildResult,

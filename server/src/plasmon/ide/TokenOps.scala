@@ -2,12 +2,11 @@
 
 package plasmon.ide
 
-import scala.meta.XtensionStructure
-import scala.meta.inputs.Input
-import scala.meta.inputs.Position
-import scala.meta.tokens.Token
-
 import difflib.myers.Equalizer
+
+import scala.meta.XtensionStructure
+import scala.meta.inputs.{Input, Position}
+import scala.meta.tokens.Token
 
 private trait TokenOps[T] {
   def pos(token: T): Position

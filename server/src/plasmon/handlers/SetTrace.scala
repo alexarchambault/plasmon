@@ -1,6 +1,6 @@
 package plasmon.handlers
 
-import org.eclipse.{lsp4j => l}
+import org.eclipse.lsp4j as l
 import plasmon.jsonrpc.{Handlers, NotificationHandler}
 
 object SetTrace {

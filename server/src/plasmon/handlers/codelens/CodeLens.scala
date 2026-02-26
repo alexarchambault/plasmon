@@ -1,25 +1,21 @@
 package plasmon.handlers.codelens
 
-import org.eclipse.{lsp4j => l}
-import plasmon.jsonrpc.CommandHandler.ParamsHelpers.*
-import plasmon.jsonrpc.{CommandHandler, RequestHandler}
-import plasmon.jsonrpc.Handlers
-import plasmon.Server
-
-import java.util.{List => JList}
-
-import scala.concurrent.Future
-import plasmon.ide.ClientCommands
-import scala.meta.internal.mtags.SourcePath
-import java.util.concurrent.CompletableFuture
-import scala.meta.internal.mtags.GlobalSymbolIndex
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
-
-import plasmon.PlasmonEnrichments._
-import scala.jdk.CollectionConverters._
+import org.eclipse.lsp4j as l
+import plasmon.Server
+import plasmon.PlasmonEnrichments.*
+import plasmon.ide.ClientCommands
+import plasmon.jsonrpc.{CommandHandler, Handlers, RequestHandler}
+import plasmon.jsonrpc.CommandHandler.ParamsHelpers.*
 import plasmon.semdb.Semanticdbs
-import scala.concurrent.ExecutionContext
+
+import java.util.List as JList
+import java.util.concurrent.CompletableFuture
+
+import scala.concurrent.{ExecutionContext, Future}
+import scala.jdk.CollectionConverters.*
+import scala.meta.internal.mtags.{GlobalSymbolIndex, SourcePath}
 
 object CodeLens {
 

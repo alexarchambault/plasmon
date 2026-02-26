@@ -1,6 +1,6 @@
 package plasmon.integration
 
-import java.lang.{Boolean => JBoolean}
+import java.lang.Boolean as JBoolean
 
 import scala.util.Properties
 

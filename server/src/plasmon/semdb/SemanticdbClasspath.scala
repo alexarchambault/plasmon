@@ -2,20 +2,21 @@
 
 package plasmon.semdb
 
-import java.nio.charset.Charset
-import java.nio.charset.StandardCharsets
+import plasmon.semdb.TextDocumentLookup
+
+import java.nio.charset.{Charset, StandardCharsets}
 import java.nio.file.Path
 
-import scala.meta.AbsolutePath
-import scala.meta.internal.mtags.ScalametaCommonEnrichments._
-import scala.meta.io.Classpath
-import scala.meta.io.RelativePath
-import scala.meta.internal.mtags.Md5Fingerprints
-import scala.meta.internal.mtags.OpenClassLoader
-import scala.meta.internal.mtags.SourcePath
-import scala.meta.internal.mtags.GlobalSymbolIndex
-import plasmon.semdb.TextDocumentLookup
 import scala.annotation.tailrec
+import scala.meta.AbsolutePath
+import scala.meta.internal.mtags.{
+  GlobalSymbolIndex,
+  Md5Fingerprints,
+  OpenClassLoader,
+  SourcePath
+}
+import scala.meta.internal.mtags.ScalametaCommonEnrichments.*
+import scala.meta.io.{Classpath, RelativePath}
 
 final case class SemanticdbClasspath(
   sourceroot: os.Path,

@@ -1,9 +1,9 @@
 package plasmon.pc
 
-import scala.meta.internal.mtags.GlobalSymbolIndex
-import java.util.function.Consumer
-import java.util.function.Supplier
 import java.nio.file.Path
+import java.util.function.{Consumer, Supplier}
+
+import scala.meta.internal.mtags.GlobalSymbolIndex
 import scala.meta.internal.pc.ScalaPresentationCompiler
 
 class Scala2PresentationCompilerHandlerHelper {

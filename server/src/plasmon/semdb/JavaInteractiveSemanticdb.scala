@@ -2,28 +2,21 @@
 
 package plasmon.semdb
 
-import java.io.File
-import java.io.PrintWriter
-import java.io.StringWriter
-
-import scala.util.Failure
-import scala.util.Properties
-import scala.util.Success
-import scala.util.Try
-
-import scala.meta.internal.mtags.MD5
-import scala.meta.internal.mtags.SourcePath
-import scala.meta.internal.pc.JavaMetalsGlobal
-import scala.meta.internal.{semanticdb => s}
-import ch.epfl.scala.{bsp4j => b}
-import javax.tools.JavaFileManager
+import ch.epfl.scala.bsp4j as b
+import plasmon.PlasmonEnrichments.*
 import plasmon.ide.Directories
-import scala.meta.internal.metals.JdkSources
 import plasmon.index.BspData
 import plasmon.internal.Constants
 
-import plasmon.PlasmonEnrichments._
-import scala.jdk.CollectionConverters._
+import java.io.{File, PrintWriter, StringWriter}
+import javax.tools.JavaFileManager
+
+import scala.jdk.CollectionConverters.*
+import scala.meta.internal.semanticdb as s
+import scala.meta.internal.metals.JdkSources
+import scala.meta.internal.mtags.{MD5, SourcePath}
+import scala.meta.internal.pc.JavaMetalsGlobal
+import scala.util.{Failure, Properties, Success, Try}
 
 trait JavaInteractiveSemanticdb {
   def textDocument(

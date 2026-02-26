@@ -1,16 +1,16 @@
 package plasmon.servercommand
 
 import caseapp.core.RemainingArgs
-import plasmon.command.ServerCommandThreadPools
-import plasmon.protocol.CommandClient
-import plasmon.index.Indexer
 import plasmon.Server
+import plasmon.command.ServerCommandThreadPools
+import plasmon.index.Indexer
+import plasmon.protocol.CommandClient
 
 import java.util.concurrent.ExecutorService
 
-import scala.jdk.CollectionConverters.*
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
+import scala.jdk.CollectionConverters.*
 
 final case class Import(
   server: Server,

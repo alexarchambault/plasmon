@@ -4,8 +4,7 @@ package plasmon.semdb
 
 import plasmon.semdb.{Semanticdbs, TextDocumentLookup}
 
-import scala.meta.internal.mtags.SourcePath
-import scala.meta.internal.mtags.GlobalSymbolIndex
+import scala.meta.internal.mtags.{GlobalSymbolIndex, SourcePath}
 import scala.util.control.NonFatal
 
 /** Implements `TextDocuments` trait with a list of underlying implementations.

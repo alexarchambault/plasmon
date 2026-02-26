@@ -1,57 +1,49 @@
 package plasmon.index
 
-import org.eclipse.{lsp4j => l}
-import ch.epfl.scala.{bsp4j => b}
-import scala.meta.internal.mtags.SourcePath
-import plasmon.bsp.BuildServerInfo
-import java.time.Instant
-import java.time.OffsetDateTime
-import java.time.ZoneId
-import plasmon.Logger
-import scala.concurrent.Future
-import scala.meta.internal.mtags.OnDemandSymbolIndex
-import scala.util.Success
-import scala.util.Failure
-import plasmon.servercommand.BspUtil
-import java.time.temporal.ChronoUnit
-import scala.meta.internal.metals.JdkSources
-import plasmon.HasState
-import plasmon.bsp.PlasmonBuildServer
-import scala.concurrent.Await
-import scala.concurrent.duration.Duration
-import scala.build.bsp.WrappedSourcesParams
+import ch.epfl.scala.bsp4j as b
+import com.google.gson.GsonBuilder
+import coursier.version.Version
+import org.eclipse.lsp4j as l
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseErrorCode
-import scala.build.bsp.WrappedSourcesResult
-import scala.meta.inputs.Input
-import scala.meta.internal.metals.ScalaVersions
-import scala.util.control.NonFatal
-import scala.collection.mutable.ArrayBuffer
-import scala.meta.internal.metals.WorkspaceSymbolInformation
-import scala.meta.internal.metals.SemanticdbDefinition
-import java.util.zip.ZipFile
-import java.net.URI
-import scala.meta.tokenizers.TokenizeException
-import scala.util.Properties
-import scala.meta.Dialect
-import scala.util.Try
-import scala.concurrent.ExecutionContext
-import java.util.concurrent.ExecutionException
-import scala.annotation.nowarn
+import plasmon.{HasState, Logger}
+import plasmon.PlasmonEnrichments.*
+import plasmon.bsp.{BspConnection, BuildServerInfo, PlasmonBuildServer}
 import plasmon.ide.{AdjustLspData, AdjustedLspData}
 import plasmon.index.TargetData
-
-import plasmon.PlasmonEnrichments._
-import scala.jdk.CollectionConverters._
 import plasmon.pc.NopReportContext
-import scala.meta.internal.mtags.GlobalSymbolIndex
-import coursier.version.Version
-import plasmon.bsp.BspConnection
-import scala.concurrent.Promise
-import sourcecode.FileName
-import sourcecode.Line
-import com.google.gson.GsonBuilder
+import plasmon.servercommand.BspUtil
+import sourcecode.{FileName, Line}
+
+import java.net.URI
+import java.time.{Instant, OffsetDateTime, ZoneId}
+import java.time.temporal.ChronoUnit
+import java.util.concurrent.ExecutionException
+import java.util.zip.ZipFile
+
+import scala.annotation.nowarn
+import scala.build.bsp.{WrappedSourcesParams, WrappedSourcesResult}
+import scala.collection.mutable.ArrayBuffer
+import scala.concurrent.{Await, ExecutionContext, Future, Promise}
+import scala.concurrent.duration.Duration
+import scala.jdk.CollectionConverters.*
+import scala.meta.Dialect
+import scala.meta.inputs.Input
+import scala.meta.internal.metals.{
+  JdkSources,
+  ScalaVersions,
+  SemanticdbDefinition,
+  WorkspaceSymbolInformation
+}
+import scala.meta.internal.mtags.{
+  GlobalSymbolIndex,
+  OnDemandSymbolIndex,
+  SourcePath
+}
+import scala.meta.tokenizers.TokenizeException
 import scala.reflect.ClassTag
+import scala.util.{Failure, Properties, Success, Try}
+import scala.util.control.NonFatal
 
 class IndexerActor(
   server: IndexerServerLike,

@@ -1,10 +1,10 @@
 package plasmon.ide
 
-import java.util.{List => JList}
+import org.eclipse.lsp4j as l
+
+import java.util.List as JList
 
 import scala.meta.pc.AutoImportsResult
-
-import org.eclipse.{lsp4j => l}
 
 // Based on https://github.com/scalameta/metals/blob/0ad0bc184f82dbd178d01f76913ea6bdfa98db14/metals/src/main/scala/scala/meta/internal/metals/AdjustLspData.scala#L136-L164
 object DefaultAdjustedData extends AdjustLspData {

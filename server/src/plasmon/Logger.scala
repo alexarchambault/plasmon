@@ -1,13 +1,13 @@
 package plasmon
 
-import java.io.ByteArrayOutputStream
-import java.io.PrintStream
+import java.io.{ByteArrayOutputStream, PrintStream}
 import java.nio.charset.StandardCharsets
 import java.time.Instant
 import java.time.temporal.ChronoUnit
-import java.util.concurrent.atomic.AtomicInteger
-import scala.concurrent.duration.Duration
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
+
+import scala.concurrent.duration.Duration
 
 trait Logger {
   def channel: Logger.Channel

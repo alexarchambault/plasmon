@@ -1,32 +1,29 @@
 package plasmon.integration
 
 import com.eed3si9n.expecty.Expecty.expect
-import com.github.plokhotnyuk.jsoniter_scala.core._
+import com.github.plokhotnyuk.jsoniter_scala.core.*
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
-import com.google.gson.{Gson, GsonBuilder}
+import com.google.gson.{Gson, GsonBuilder, JsonSyntaxException}
 import coursier.cache.FileCache
 import io.github.alexarchambault.testutil.{OutputFrame, ProcessTest}
 import io.github.alexarchambault.testutil.TestOutput.FixedReadBytes
 import io.github.alexarchambault.testutil.TestUtil.*
+import org.eclipse.lsp4j as l
 import org.eclipse.lsp4j.jsonrpc.Launcher
 import org.eclipse.lsp4j.services.LanguageServer
-import org.eclipse.{lsp4j => l}
 
 import java.io.OutputStream
 import java.net.URI
 import java.nio.charset.StandardCharsets
 import java.nio.file.Paths
-import java.util.Locale
-import java.util.concurrent.{Future => JFuture, _}
+import java.util.{Arrays, Locale}
+import java.util.concurrent.{Future as JFuture, *}
 
-import scala.concurrent.duration.{DurationInt, FiniteDuration}
+import scala.annotation.nowarn
+import scala.concurrent.duration.{Duration, DurationInt, FiniteDuration}
 import scala.jdk.CollectionConverters.*
 import scala.reflect.ClassTag
 import scala.util.Properties
-import java.util.Arrays
-import scala.annotation.nowarn
-import scala.concurrent.duration.Duration
-import com.google.gson.JsonSyntaxException
 
 object TestUtil {
 

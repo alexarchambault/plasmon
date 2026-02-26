@@ -2,19 +2,17 @@
 
 package plasmon.ide
 
-import scala.annotation.tailrec
-import scala.meta.internal.mtags.SourcePath
-
-import scala.meta._
-import scala.meta.internal.pc.Identifier
-
-import ch.epfl.scala.{bsp4j => b}
-import org.eclipse.{lsp4j => l}
-import org.eclipse.lsp4j.jsonrpc.messages.{Either => JEither}
-
-import plasmon.PlasmonEnrichments._
-import scala.jdk.CollectionConverters._
+import ch.epfl.scala.bsp4j as b
+import org.eclipse.lsp4j as l
+import org.eclipse.lsp4j.jsonrpc.messages.Either as JEither
+import plasmon.PlasmonEnrichments.*
 import plasmon.index.BspData
+
+import scala.annotation.tailrec
+import scala.jdk.CollectionConverters.*
+import scala.meta.*
+import scala.meta.internal.mtags.SourcePath
+import scala.meta.internal.pc.Identifier
 
 class PackageProvider(
   bspData: BspData,

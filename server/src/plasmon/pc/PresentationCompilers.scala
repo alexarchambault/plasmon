@@ -2,87 +2,92 @@
 
 package plasmon.pc
 
+import ch.epfl.scala.bsp4j as b
+import com.github.plokhotnyuk.jsoniter_scala.core.{
+  JsonValueCodec,
+  writeToArrayReentrant
+}
+import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
+import coursier.parse.RawJson
+import dotty.tools.dotc.reporting.Diagnostic
+import dotty.tools.pc.ScalaPresentationCompiler as Scala3PresentationCompiler
+import org.eclipse.lsp4j as l
+import org.eclipse.lsp4j.debug as d
+import org.eclipse.lsp4j.jsonrpc.messages.Either as JEither
+import plasmon.Logger
+import plasmon.PlasmonEnrichments.*
+import plasmon.ide.{
+  AdjustLspData,
+  AdjustRange,
+  AdjustedLspData,
+  Buffers,
+  Directories,
+  HoverExtParams,
+  PatchedSymbolIndex,
+  ReferencesResult,
+  SbtBuildTool,
+  ScalaTarget,
+  SourceMapper
+}
+import plasmon.index.{BspData, SymbolSearchImpl, SymbolSearchIndex}
+import plasmon.languageclient.PlasmonLanguageClient
+import plasmon.render.JsonCodecs.given
+import plasmon.servercommand.BspUtil
+
+import java.net.URI
 import java.nio.file.Paths
-import java.util.Collections
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.ScheduledExecutorService
-import java.util.{List => JList, Map => JMap, Optional}
+import java.util.{Collections, List as JList, Map as JMap, Optional, UUID}
+import java.util.concurrent.{
+  CompletableFuture,
+  ConcurrentHashMap,
+  ExecutorService,
+  ScheduledExecutorService,
+  TimeoutException
+}
+import java.util.concurrent.atomic.AtomicReference
+import javax.tools.JavaFileManager
 
 import scala.annotation.tailrec
 import scala.collection.concurrent.TrieMap
-import scala.concurrent.ExecutionContextExecutorService
-import scala.concurrent.Future
-import scala.util.control.NonFatal
-
-import scala.meta.inputs.Input
-import scala.meta.inputs.Position
-import scala.meta.internal.pc
-import plasmon.ide.SbtBuildTool
-import scala.meta.internal.metals.CompilerOffsetParamsUtils
-import scala.meta.internal.metals.CompilerRangeParamsUtils
-import scala.meta.internal.mtags.GlobalSymbolIndex
-import scala.meta.internal.mtags.MD5
-import scala.meta.internal.pc.JavaPresentationCompiler
-import scala.meta.internal.pc.LogMessages
-import scala.meta.internal.pc.PcSymbolInformation
-import scala.meta.internal.{semanticdb => s}
-import scala.meta.pc.AutoImportsResult
-import scala.meta.pc.CancelToken
-import scala.meta.pc.CodeActionId
-import scala.meta.pc.CompletionItemPriority
-import scala.meta.pc.HoverSignature
-import scala.meta.pc.OffsetParams
-import scala.meta.pc.PresentationCompiler
-import scala.meta.pc.SyntheticDecorationsParams
-
-import ch.epfl.scala.{bsp4j => b}
-import org.eclipse.lsp4j.jsonrpc.messages.{Either => JEither}
-import org.eclipse.lsp4j.{debug => d}
-import org.eclipse.{lsp4j => l}
-import scala.meta.pc.CompileResult
-import javax.tools.JavaFileManager
-import scala.meta.internal.metals.Testing
-import scala.meta.internal.metals.CompilerOffsetParams
-import scala.meta.internal.metals.ScalaVersions
-import plasmon.ide.HoverExtParams
-import plasmon.ide.AdjustedLspData
-import scala.meta.internal.metals.CompilerVirtualFileParams
-import scala.meta.internal.metals.CompilerInlayHintsParams
-import plasmon.ide.ReferencesResult
-import scala.meta.internal.metals.EmptyCancelToken
-import plasmon.index.{BspData, SymbolSearchImpl, SymbolSearchIndex}
-
-import plasmon.PlasmonEnrichments._
-import scala.jdk.CollectionConverters._
-import scala.meta.internal.metals.Docstrings
-
-import plasmon.ide.{AdjustLspData, AdjustRange, Buffers, PatchedSymbolIndex, SourceMapper}
-import plasmon.servercommand.BspUtil
-import scala.meta.internal.pc.ScalaPresentationCompiler as Scala2PresentationCompiler
-import dotty.tools.pc.ScalaPresentationCompiler as Scala3PresentationCompiler
-import java.util.concurrent.ConcurrentHashMap
-import scala.meta.internal.pc.InlayHints
-import scala.concurrent.Await
+import scala.concurrent.{Await, ExecutionContextExecutorService, Future}
 import scala.concurrent.duration.Duration
-import java.util.concurrent.TimeoutException
-import scala.util.Success
-import plasmon.ide.ScalaTarget
-import scala.meta.pc.SymbolSearch
-import java.util.concurrent.atomic.AtomicReference
-import java.util.concurrent.ExecutorService
-import plasmon.ide.Directories
-import scala.meta.pc.PresentationCompilerConfig
-import plasmon.languageclient.PlasmonLanguageClient
-import java.util.UUID
-import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, writeToArrayReentrant}
-import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
-import coursier.parse.RawJson
-import plasmon.render.JsonCodecs.given
-import scala.util.Failure
-import scala.util.Properties
-import java.net.URI
-import dotty.tools.dotc.reporting.Diagnostic
-import plasmon.Logger
+import scala.jdk.CollectionConverters.*
+import scala.meta.inputs.{Input, Position}
+import scala.meta.internal.{pc, semanticdb as s}
+import scala.meta.internal.metals.{
+  CompilerInlayHintsParams,
+  CompilerOffsetParams,
+  CompilerOffsetParamsUtils,
+  CompilerRangeParamsUtils,
+  CompilerVirtualFileParams,
+  Docstrings,
+  EmptyCancelToken,
+  ScalaVersions,
+  Testing
+}
+import scala.meta.internal.mtags.{GlobalSymbolIndex, MD5}
+import scala.meta.internal.pc.{
+  InlayHints,
+  JavaPresentationCompiler,
+  LogMessages,
+  PcSymbolInformation,
+  ScalaPresentationCompiler as Scala2PresentationCompiler
+}
+import scala.meta.pc.{
+  AutoImportsResult,
+  CancelToken,
+  CodeActionId,
+  CompileResult,
+  CompletionItemPriority,
+  HoverSignature,
+  OffsetParams,
+  PresentationCompiler,
+  PresentationCompilerConfig,
+  SymbolSearch,
+  SyntheticDecorationsParams
+}
+import scala.util.{Failure, Properties, Success}
+import scala.util.control.NonFatal
 
 /** Manages lifecycle for presentation compilers in all build targets.
   *

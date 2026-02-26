@@ -2,24 +2,19 @@
 
 package plasmon.ide
 
-import scala.collection.concurrent.TrieMap
-import scala.reflect.ClassTag
-
-import scala.meta._
-import scala.meta.inputs.Input
-import scala.meta.inputs.Position
-import scala.meta.parsers.ParseException
-import scala.meta.parsers.Parsed
-import scala.meta.tokens.Tokens
-
-import org.eclipse.{lsp4j => l}
-import scala.meta.internal.mtags.SourcePath
-
-import plasmon.PlasmonEnrichments._
-import scala.meta.internal.mtags.GlobalSymbolIndex
-import plasmon.index.BspData
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
+import org.eclipse.lsp4j as l
+import plasmon.PlasmonEnrichments.*
+import plasmon.index.BspData
+
+import scala.collection.concurrent.TrieMap
+import scala.meta.*
+import scala.meta.inputs.{Input, Position}
+import scala.meta.internal.mtags.{GlobalSymbolIndex, SourcePath}
+import scala.meta.parsers.{ParseException, Parsed}
+import scala.meta.tokens.Tokens
+import scala.reflect.ClassTag
 
 /** Manages parsing of Scala source files into Scalameta syntax trees.
   *

@@ -2,7 +2,7 @@
 
 package plasmon.watch
 
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 
 /** Trie representation of a set of paths
   *

@@ -1,13 +1,19 @@
 package plasmon.index
 
 import com.github.plokhotnyuk.jsoniter_scala.core.*
-import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodecMaker}
+import com.github.plokhotnyuk.jsoniter_scala.macros.{
+  CodecMakerConfig,
+  JsonCodecMaker
+}
 import net.jpountz.lz4.{LZ4FrameInputStream, LZ4FrameOutputStream}
 
 import java.io.{ByteArrayOutputStream, FileInputStream, FileOutputStream}
-import java.nio.file.{AtomicMoveNotSupportedException, FileAlreadyExistsException}
-import java.time.format.DateTimeFormatter
+import java.nio.file.{
+  AtomicMoveNotSupportedException,
+  FileAlreadyExistsException
+}
 import java.time.{Instant, LocalDateTime, ZoneOffset}
+import java.time.format.DateTimeFormatter
 import java.util.UUID
 
 import scala.annotation.tailrec

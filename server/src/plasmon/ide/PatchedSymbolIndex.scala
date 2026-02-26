@@ -2,25 +2,26 @@
 
 package plasmon.ide
 
-import java.util.{List => JList}
-
-import scala.jdk.CollectionConverters.*
-import scala.meta.internal.mtags.GlobalSymbolIndex
-import scala.meta.internal.mtags.Mtags
-import scala.meta.internal.mtags.SourcePath
-import scala.meta.internal.mtags.Symbol
-import scala.meta.internal.mtags.SymbolDefinition
-import scala.meta.internal.semanticdb.TextDocument
-
-import ch.epfl.scala.{bsp4j => b}
-import org.eclipse.{lsp4j => l}
-import plasmon.PlasmonEnrichments._
+import ch.epfl.scala.bsp4j as b
+import dotty.tools.dotc.semanticdb.TextDocuments
+import org.eclipse.lsp4j as l
+import plasmon.PlasmonEnrichments.*
 import plasmon.ide.*
 import plasmon.index.BspData
 import plasmon.pc.NopReportContext
-import plasmon.semdb.Semanticdbs
-import plasmon.semdb.SemanticdbProcessor
-import dotty.tools.dotc.semanticdb.TextDocuments
+import plasmon.semdb.{SemanticdbProcessor, Semanticdbs}
+
+import java.util.List as JList
+
+import scala.jdk.CollectionConverters.*
+import scala.meta.internal.mtags.{
+  GlobalSymbolIndex,
+  Mtags,
+  SourcePath,
+  Symbol,
+  SymbolDefinition
+}
+import scala.meta.internal.semanticdb.TextDocument
 
 /** Implements goto definition that works even in code that doesn't parse.
   *

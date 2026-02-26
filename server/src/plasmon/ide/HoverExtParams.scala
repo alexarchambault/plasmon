@@ -2,9 +2,9 @@
 
 package plasmon.ide
 
-import javax.annotation.Nullable
+import org.eclipse.lsp4j as l
 
-import org.eclipse.{lsp4j => l}
+import javax.annotation.Nullable
 
 case class HoverExtParams(
   textDocument: l.TextDocumentIdentifier,

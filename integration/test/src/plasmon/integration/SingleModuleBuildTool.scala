@@ -1,14 +1,14 @@
 package plasmon.integration
 
 import com.virtuslab.using_directives.UsingDirectivesProcessor
-
+import com.virtuslab.using_directives.custom.model.{Path, StringValue}
 import dependency.*
 import dependency.parser.DependencyParser
-import scala.jdk.CollectionConverters.*
-import com.virtuslab.using_directives.custom.model.Path
-import com.virtuslab.using_directives.custom.model.StringValue
+
 import java.io.OutputStream
+
 import scala.concurrent.duration.{DurationInt, FiniteDuration, IntMult}
+import scala.jdk.CollectionConverters.*
 
 abstract class SingleModuleBuildTool extends Product with Serializable {
   def id: String

@@ -1,9 +1,9 @@
 package plasmon.servercommand
 
 import caseapp.core.RemainingArgs
-import plasmon.protocol.CommandClient
-import plasmon.index.Indexer
 import plasmon.Server
+import plasmon.index.Indexer
+import plasmon.protocol.CommandClient
 
 final case class SymbolSearch(
   server: Server,

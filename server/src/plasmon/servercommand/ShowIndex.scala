@@ -1,9 +1,10 @@
 package plasmon.servercommand
 
 import caseapp.core.RemainingArgs
+import plasmon.Server
 import plasmon.index.Indexer
 import plasmon.protocol.CommandClient
-import plasmon.Server
+
 import scala.meta.internal.mtags.GlobalSymbolIndex
 
 final case class ShowIndex(

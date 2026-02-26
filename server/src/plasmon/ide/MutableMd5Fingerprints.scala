@@ -2,20 +2,17 @@
 
 package plasmon.ide
 
-import java.nio.charset.Charset
-import java.nio.charset.StandardCharsets
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.ConcurrentLinkedQueue
-
-import scala.meta.internal.io.FileIO
-import scala.meta.internal.jdk.CollectionConverters._
-import scala.meta.internal.mtags.MD5
-import scala.meta.internal.mtags.Md5Fingerprints
-import scala.meta.io.AbsolutePath
-
-import plasmon.PlasmonEnrichments.*
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
+import plasmon.PlasmonEnrichments.*
+
+import java.nio.charset.{Charset, StandardCharsets}
+import java.util.concurrent.{ConcurrentHashMap, ConcurrentLinkedQueue}
+
+import scala.meta.internal.io.FileIO
+import scala.meta.internal.jdk.CollectionConverters.*
+import scala.meta.internal.mtags.{MD5, Md5Fingerprints}
+import scala.meta.io.AbsolutePath
 
 final class MutableMd5Fingerprints extends Md5Fingerprints {
   private val fingerprints = new ConcurrentHashMap[os.Path, ConcurrentLinkedQueue[Fingerprint]]

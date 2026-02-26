@@ -1,11 +1,11 @@
 package plasmon
 package handlers
 
-import org.eclipse.{lsp4j => l}
+import org.eclipse.lsp4j as l
+import plasmon.ide.{CancelTokens, HoverExtParams}
 import plasmon.jsonrpc.*
 
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutorService}
-import plasmon.ide.{CancelTokens, HoverExtParams}
 
 object Hover {
 

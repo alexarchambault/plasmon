@@ -2,12 +2,11 @@ package plasmon.bsp
 
 import bloop.rifle.BloopThreads
 import com.github.plokhotnyuk.jsoniter_scala.core.*
+import plasmon.HasState
 
 import java.util.concurrent.ExecutorService
 
-import plasmon.HasState
-import scala.concurrent.Future
-import scala.concurrent.Promise
+import scala.concurrent.{Future, Promise}
 
 class BspServers(
   persistTo: Option[os.Path],

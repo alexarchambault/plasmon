@@ -2,33 +2,27 @@
 
 package plasmon.watch
 
-import java.util.concurrent.BlockingQueue
-import java.util.concurrent.LinkedBlockingQueue
-import java.util.concurrent.TimeoutException
-import java.util.concurrent.atomic.AtomicBoolean
-import java.util.concurrent.atomic.AtomicReference
+import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
+import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
+import com.swoval.files.{PathWatcher, PathWatchers}
+import com.swoval.files.FileTreeViews.Observer
+import com.swoval.files.PathWatchers.Event.Kind
+import plasmon.ide.Directories
+import plasmon.index.BspData
+
+import java.util.concurrent.{
+  BlockingQueue,
+  LinkedBlockingQueue,
+  TimeoutException
+}
+import java.util.concurrent.atomic.{AtomicBoolean, AtomicReference}
 import java.util.concurrent.locks.ReentrantLock
 
 import scala.annotation.tailrec
 import scala.collection.mutable
-import scala.concurrent.Await
-import scala.concurrent.ExecutionContext
-import scala.concurrent.Future
-import scala.concurrent.duration._
-import scala.util.Failure
-import scala.util.Try
-
-import plasmon.ide.Directories
-
-import com.swoval.files.FileTreeViews.Observer
-import com.swoval.files.PathWatcher
-import com.swoval.files.PathWatchers
-import com.swoval.files.PathWatchers.Event.Kind
-import plasmon.index.BspData
-import scala.util.Success
-import scala.concurrent.Promise
-import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
-import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
+import scala.concurrent.{Await, ExecutionContext, Future, Promise}
+import scala.concurrent.duration.*
+import scala.util.{Failure, Success, Try}
 
 /** Watch selected files and execute a callback on file events.
   *

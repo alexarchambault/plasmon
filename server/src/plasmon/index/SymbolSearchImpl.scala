@@ -2,33 +2,27 @@
 
 package plasmon.index
 
-import java.net.URI
-import java.util.{Collections, List => JList, Optional}
-
-import scala.collection.concurrent.TrieMap
-
-import scala.meta.internal.mtags.Mtags
-import scala.meta.pc.ContentType
-import scala.meta.pc.ParentSymbols
-import scala.meta.pc.SymbolDocumentation
-import scala.meta.pc.SymbolSearch
-import scala.meta.pc.SymbolSearchVisitor
-
-import org.eclipse.{lsp4j => l}
-import scala.meta.internal.mtags.Symbol
-import scala.meta.internal.mtags.SourcePath
-import scala.meta.internal.mtags.GlobalSymbolIndex
-import scala.meta.internal.metals.Docstrings
-import scala.meta.internal.metals.WorkspaceSymbolQuery
-
-import scala.jdk.CollectionConverters._
-
-import plasmon.index.SymbolSearchIndex
-import plasmon.ide.PatchedSymbolIndex
-import plasmon.PlasmonEnrichments.XtensionOsPath
-import plasmon.PlasmonEnrichments.StringThingExtensions
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
+import org.eclipse.lsp4j as l
+import plasmon.PlasmonEnrichments.{StringThingExtensions, XtensionOsPath}
+import plasmon.ide.PatchedSymbolIndex
+import plasmon.index.SymbolSearchIndex
+
+import java.net.URI
+import java.util.{Collections, List as JList, Optional}
+
+import scala.collection.concurrent.TrieMap
+import scala.jdk.CollectionConverters.*
+import scala.meta.internal.metals.{Docstrings, WorkspaceSymbolQuery}
+import scala.meta.internal.mtags.{GlobalSymbolIndex, Mtags, SourcePath, Symbol}
+import scala.meta.pc.{
+  ContentType,
+  ParentSymbols,
+  SymbolDocumentation,
+  SymbolSearch,
+  SymbolSearchVisitor
+}
 
 class SymbolSearchImpl(
   docs: Docstrings,

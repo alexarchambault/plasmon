@@ -2,9 +2,11 @@
 
 package plasmon.bsp
 
-import plasmon.PlasmonEnrichments._
-import scala.meta.internal.semver.SemVer
+import plasmon.PlasmonEnrichments.*
+
 import java.nio.charset.StandardCharsets
+
+import scala.meta.internal.semver.SemVer
 
 object SbtBuildTool {
 

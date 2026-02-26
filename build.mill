@@ -1,27 +1,24 @@
 //| mill-version: 1.1.0
 
-import mill.api.SystemStreams
-import org.apache.commons.io.input.TailerListener
-import java.nio.file.InvalidPathException
-import org.apache.commons.io.input.Tailer
+import coursier.cache.FileCache
+import coursier.jvm.{JavaHome, JvmCache}
 import io.github.alexarchambault.millnativeimage.NativeImage
-import mill._
-import mill.api.BuildCtx
-import mill.scalalib.publish._
-import mill.scalalib._
-import mill.scalajslib._
+import mill.*
+import mill.api.{BuildCtx, SystemStreams}
+import mill.scalajslib.*
 import mill.scalajslib.api.ModuleKind
+import mill.scalalib.*
+import mill.scalalib.publish.*
+import org.apache.commons.io.input.{Tailer, TailerListener}
+import plasmonbuild.*
 
 import java.io.File
 import java.nio.charset.StandardCharsets
+import java.nio.file.InvalidPathException
 import java.util.Arrays
 
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 import scala.util.{Properties, Using}
-import coursier.jvm.JavaHome
-import coursier.jvm.JvmCache
-import coursier.cache.FileCache
-import plasmonbuild.*
 
 object Versions {
   def scala2  = "2.13.18"

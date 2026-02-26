@@ -2,24 +2,21 @@
 
 package plasmon.ide
 
-import ch.epfl.scala.{bsp4j => b}
-
-import scala.collection.concurrent.TrieMap
-import scala.collection.immutable.ListMap
-import scala.collection.mutable
-import scala.concurrent.{ExecutionContext, Future, Promise}
-import scala.util.{Failure, Success}
+import ch.epfl.scala.bsp4j as b
+import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
+import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
+import plasmon.index.BspData
+import plasmon.render.JsonCodecs.given
 
 import java.time.OffsetDateTime
 import java.util.concurrent.CompletableFuture
 
-import scala.jdk.CollectionConverters._
-
-import plasmon.index.BspData
-import plasmon.render.JsonCodecs.given
-import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
-import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
-import scala.util.Try
+import scala.collection.mutable
+import scala.collection.concurrent.TrieMap
+import scala.collection.immutable.ListMap
+import scala.concurrent.{ExecutionContext, Future, Promise}
+import scala.jdk.CollectionConverters.*
+import scala.util.{Failure, Success, Try}
 
 final class Compilations(
   bspData: BspData,

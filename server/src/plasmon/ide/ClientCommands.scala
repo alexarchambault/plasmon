@@ -1,6 +1,6 @@
 package plasmon.ide
 
-import org.eclipse.{lsp4j => l}
+import org.eclipse.lsp4j as l
 
 object ClientCommands {
 

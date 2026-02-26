@@ -1,17 +1,16 @@
 package plasmon.servercommand
 
 import caseapp.core.RemainingArgs
-import ch.epfl.scala.{bsp4j => b}
+import ch.epfl.scala.bsp4j as b
+import plasmon.Server
+import plasmon.PlasmonEnrichments.*
 import plasmon.index.Indexer
 import plasmon.protocol.CommandClient
 import plasmon.protocol.CommandClient.ops.*
-import plasmon.Server
 
-import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, ExecutionContext, Future}
-
-import plasmon.PlasmonEnrichments._
-import scala.jdk.CollectionConverters._
+import scala.concurrent.duration.Duration
+import scala.jdk.CollectionConverters.*
 
 final case class BspClean(
   server: Server,

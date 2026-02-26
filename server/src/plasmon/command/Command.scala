@@ -1,10 +1,10 @@
 package plasmon.command
 
 import caseapp.core.RemainingArgs
+import org.eclipse.lsp4j as l
 import org.eclipse.lsp4j.jsonrpc.Launcher
-import org.eclipse.{lsp4j => l}
-import plasmon.internal.Directories
-import plasmon.protocol.{Command => ProtocolCommand, _}
+import plasmon.internal.{DebugInput, Directories}
+import plasmon.protocol.{Command as ProtocolCommand, *}
 import plasmon.util.ThreadUtil
 
 import java.net.{StandardProtocolFamily, UnixDomainSocketAddress}
@@ -13,7 +13,6 @@ import java.util.concurrent.{CompletableFuture, LinkedBlockingQueue, TimeUnit}
 
 import scala.concurrent.Promise
 import scala.util.{Properties, Success}
-import plasmon.internal.DebugInput
 
 object Command extends caseapp.Command[CommandOptions] {
 
