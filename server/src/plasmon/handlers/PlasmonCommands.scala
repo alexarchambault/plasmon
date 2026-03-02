@@ -1785,9 +1785,6 @@ object PlasmonCommands {
                       s"data.actualSources keys: ${data.actualSources.keys.toVector.map(_.getUri).sorted}"
                     )
                     for (map <- data.actualSources.get(targetId)) {
-                      scribe.info(
-                        s"data.actualSources($targetId) keys: ${map.keys.toVector.map(_.toString).sorted}"
-                      )
                       val lines = map.toVector
                         .sortBy(_._1)
                         .map {
