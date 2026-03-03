@@ -476,7 +476,7 @@ function createClient(
                   inProgressTasks[id] = deferred
                   vscode.window.withProgress(
                     {
-                      location: vscode.ProgressLocation.Notification,
+                      location: vscode.ProgressLocation.Window,
                       title: `${details.buildToolName}: ${details.request}`,
                       cancellable: false
                     },
