@@ -4,7 +4,7 @@ import org.eclipse.lsp4j as l
 import org.eclipse.lsp4j.jsonrpc.services.JsonNotification
 import org.eclipse.lsp4j.services.LanguageClient
 
-import java.lang.{Boolean as JBoolean, Integer as JInt}
+import java.lang.{Boolean as JBoolean, Double as JDouble, Integer as JInt}
 import java.util.{List as JList, UUID}
 import java.util.concurrent.CompletableFuture
 import javax.annotation.Nullable
@@ -44,7 +44,8 @@ trait PlasmonLanguageClient extends LanguageClient {
       buildToolName,
       requestId,
       request,
-      done = false
+      done = false,
+      progress = null
     )
     progress(details)
     try action
@@ -87,7 +88,8 @@ object PlasmonLanguageClient {
     buildToolName: String,
     requestId: String,
     request: String,
-    done: JBoolean
+    done: JBoolean,
+    progress: JDouble
   ) {
     def asDone: ProgressDetails =
       copy(done = true)

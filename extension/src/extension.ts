@@ -147,6 +147,7 @@ class Deferred<T> {
   }
 }
 let inProgressTasks: { [ids: string]: Deferred<void> } = {}
+let inProgressTasksReportProgress: { [ids: string]: vscode.Progress<{ message?: string; increment?: number }> } = {}
 
 function plasmonStartingStatus(isRestart: boolean): void {
   if (statusBarItem) {
@@ -434,6 +435,7 @@ function createClient(
           requestId: string
           request: string
           done: boolean
+          progress: number | undefined
         }
 
         clientSubscription(
@@ -447,13 +449,28 @@ function createClient(
                   const deferred = inProgressTasks[id]
                   deferred.resolve()
                   delete inProgressTasks[id]
+                  delete inProgressTasksReportProgress[id]
                 }
                 else
                   console.log(`Warning: ${details.buildToolId} ${details.requestId} not found in in-progress tasks (${JSON.stringify(Object.keys(inProgressTasks))})`)
               }
               else {
-                if (id in inProgressTasks)
-                  console.log(`Warning: ${details.buildToolId} ${details.requestId} already in in-progress tasks`)
+                if (id in inProgressTasks) {
+                  if (details.progress === undefined)
+                    console.log(`Warning: ${details.buildToolId} ${details.requestId} already in in-progress tasks`)
+                  else {
+                    if (id in inProgressTasksReportProgress) {
+                      inProgressTasksReportProgress[id].report(
+                        {
+                          increment: 100.0 * details.progress
+                        }
+                      )
+                    }
+                    else {
+                      console.log(`Warning: ${details.buildToolId} ${details.requestId} not found in in-progress tasks report helpers (${JSON.stringify(Object.keys(inProgressTasksReportProgress))})`)
+                    }
+                  }
+                }
                 else {
                   const deferred = new Deferred<void>()
                   inProgressTasks[id] = deferred
@@ -464,6 +481,7 @@ function createClient(
                       cancellable: false
                     },
                     (progress, token) => {
+                      inProgressTasksReportProgress[id] = progress
                       return deferred.promise
                     }
                   )

@@ -34,7 +34,8 @@ final class LoggingPlasmonBuildServer(
         buildToolName,
         reqId,
         reqName0,
-        done = false
+        done = false,
+        progress = null
       )
     )
     def done(): Unit =
@@ -44,7 +45,8 @@ final class LoggingPlasmonBuildServer(
           buildToolName,
           reqId,
           reqName0,
-          done = true
+          done = true,
+          progress = null
         )
       )
     val f0 =

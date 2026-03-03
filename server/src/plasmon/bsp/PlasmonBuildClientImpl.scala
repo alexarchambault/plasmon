@@ -17,6 +17,7 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import scala.jdk.CollectionConverters.*
 import scala.meta.internal.mtags.GlobalSymbolIndex
+import plasmon.languageclient.PlasmonLanguageClient.ProgressDetails
 
 class PlasmonBuildClientImpl(
   languageClient: PlasmonLanguageClient,
@@ -24,6 +25,7 @@ class PlasmonBuildClientImpl(
   trees: Trees,
   workspace: os.Path,
   onBuildTargetDidChangeFunc: b.DidChangeBuildTarget => Unit,
+  buildToolId: String,
   initialBuildToolName: String
 ) extends PlasmonBuildClient with AutoCloseable {
 
@@ -134,42 +136,76 @@ class PlasmonBuildClientImpl(
         logger.log(s"Data${Option(params.getDataKind).fold("")(kind => s" of kind $kind")}: $data")
     }
 
+    scribe.info("build/taskStart: " + pprint.apply(params))
+
     if (params.getDataKind == "compile-task") {
       val data = readFromGson[CompileTaskData](params.getData)
       val uri  = data.target.uri
       val details = TaskDetails(
         params.getTaskId.getId,
-        uri,
+        Some(uri),
         None
       )
       val success = tasksProgress.putIfAbsent(details.id, details) == null
       if (success)
-        tasksProgressIdFromUri.put(details.uri, details.id)
-      onProgress0.foreach(_(details.uri))
+        for (uri <- details.uri)
+          tasksProgressIdFromUri.put(uri, details.id)
+      for (f <- onProgress0; uri <- details.uri)
+        f(uri)
     }
-    else
-      scribe.info("build/taskStart: " + pprint.apply(params))
+
+    languageClient.progress(
+      ProgressDetails(
+        buildToolId = buildToolId,
+        buildToolName = initialBuildToolName,
+        requestId = s"task-${params.getTaskId.getId}",
+        request = params.getMessage,
+        done = false,
+        progress = null
+      )
+    )
   }
 
   def buildTaskProgress(params: b.TaskProgressParams): Unit = {
 
-    for (logger <- loggerOpt) {
-      val msg = s"Task ${params.getTaskId.getId} progress" +
-        Option(params.getProgress).fold("")(p => s" $p") +
-        Option(params.getTotal).fold("")(t => s" / $t") +
-        Option(params.getMessage).fold("")(msg => s" ($msg)")
-      logger.log(msg)
-      for (data <- Option(params.getData) if params.getDataKind != "compile-progress")
-        logger.log(s"Data${Option(params.getDataKind).fold("")(kind => s" of kind $kind")}: $data")
-    }
+    // Too verbose
+    // for (logger <- loggerOpt) {
+    //   val msg = s"Task ${params.getTaskId.getId} progress" +
+    //     Option(params.getProgress).fold("")(p => s" $p") +
+    //     Option(params.getTotal).fold("")(t => s" / $t") +
+    //     Option(params.getMessage).fold("")(msg => s" ($msg)")
+    //   logger.log(msg)
+    //   for (data <- Option(params.getData) if params.getDataKind != "compile-progress")
+    //     logger.log(s"Data${Option(params.getDataKind).fold("")(kind => s" of kind $kind")}: $data")
+    // }
 
     Option(tasksProgress.get(params.getTaskId.getId)) match {
       case Some(details) =>
         val updatedDetails = details.copy(progress = Some((params.getProgress, params.getTotal)))
         val replaced       = tasksProgress.replace(details.id, details, updatedDetails)
-        if (!replaced)
+        if (replaced) {
+          val incrOpt = (details.progress, updatedDetails.progress) match {
+            case (Some((countBefore, totalBefore)), Some((countAfter, totalAfter))) =>
+              Some(countAfter.toDouble / totalAfter - countBefore.toDouble / totalBefore)
+            case _ =>
+              None
+          }
+          for (incr <- incrOpt)
+            languageClient.progress(
+              ProgressDetails(
+                buildToolId = buildToolId,
+                buildToolName = initialBuildToolName,
+                requestId = s"task-${params.getTaskId.getId}",
+                request = params.getMessage,
+                done = false,
+                progress = incr
+              )
+            )
+        }
+        else
           scribe.warn(s"Could not keep track of progress for ${details.uri} via $params")
-        onProgress0.foreach(_(details.uri))
+        for (f <- onProgress0; uri <- details.uri)
+          f(uri)
       case None =>
         scribe.info("build/taskProgress: " + pprint.apply(params))
     }
@@ -186,14 +222,25 @@ class PlasmonBuildClientImpl(
         logger.log(s"Data${Option(params.getDataKind).fold("")(kind => s" of kind $kind")}: $data")
     }
 
-    Option(tasksProgress.get(params.getTaskId.getId)) match {
-      case Some(details) =>
-        val success = tasksProgress.remove(details.id) != null
-        if (success)
-          tasksProgressIdFromUri.remove(details.uri)
-        onProgress0.foreach(_(details.uri))
-      case None =>
-        scribe.info("build/taskFinish: " + pprint.apply(params))
+    scribe.info("build/taskFinish: " + pprint.apply(params))
+
+    languageClient.progress(
+      ProgressDetails(
+        buildToolId = buildToolId,
+        buildToolName = initialBuildToolName,
+        requestId = s"task-${params.getTaskId.getId}",
+        request = params.getMessage,
+        done = true,
+        progress = null
+      )
+    )
+
+    for (details <- Option(tasksProgress.get(params.getTaskId.getId))) {
+      val success = tasksProgress.remove(details.id) != null
+      if (success)
+        tasksProgressIdFromUri.remove(details.uri)
+      for (f <- onProgress0; uri <- details.uri)
+        f(uri)
     }
   }
 
@@ -277,7 +324,7 @@ object PlasmonBuildClientImpl {
 
   private final case class TaskDetails(
     id: String,
-    uri: String,
+    uri: Option[String],
     progress: Option[(Long, Long)]
   )
 

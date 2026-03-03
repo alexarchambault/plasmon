@@ -1260,7 +1260,14 @@ class PresentationCompilers(
         )
         refreshStatus()
         languageClient.progress(
-          PlasmonLanguageClient.ProgressDetails(id, label, reqId, name, done = false)
+          PlasmonLanguageClient.ProgressDetails(
+            id,
+            label,
+            reqId,
+            name,
+            done = false,
+            progress = null
+          )
         )
       }
       pc0.compilerAccess.afterAccess { (reqId, name, uri) =>
@@ -1277,7 +1284,14 @@ class PresentationCompilers(
         )
         refreshStatus()
         languageClient.progress(
-          PlasmonLanguageClient.ProgressDetails(id, label, reqId, name, done = true)
+          PlasmonLanguageClient.ProgressDetails(
+            id,
+            label,
+            reqId,
+            name,
+            done = true,
+            progress = null
+          )
         )
       }
     }
@@ -2126,12 +2140,26 @@ object PresentationCompilers {
           def run[T](name: String)(f: => T): T = {
             val uuid = UUID.randomUUID().toString
             languageClient.progress(
-              PlasmonLanguageClient.ProgressDetails(id, label, uuid, name, done = false)
+              PlasmonLanguageClient.ProgressDetails(
+                id,
+                label,
+                uuid,
+                name,
+                done = false,
+                progress = null
+              )
             )
             try f
             finally
               languageClient.progress(
-                PlasmonLanguageClient.ProgressDetails(id, label, uuid, name, done = true)
+                PlasmonLanguageClient.ProgressDetails(
+                  id,
+                  label,
+                  uuid,
+                  name,
+                  done = true,
+                  progress = null
+                )
               )
           }
         }
