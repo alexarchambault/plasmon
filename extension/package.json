@@ -96,6 +96,10 @@
         "title": "Plasmon: Test progress"
       },
       {
+        "command": "plasmon.test-editor-decoration",
+        "title": "Plasmon: Test editor decoration"
+      },
+      {
         "command": "plasmon.load-build-tool",
         "title": "Plasmon: Load or unload build tool"
       },

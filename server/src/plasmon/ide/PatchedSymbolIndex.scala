@@ -64,8 +64,10 @@ final class PatchedSymbolIndex(
 
     // Read text file from disk instead of editor buffers because the file
     // on disk is more likely to parse.
-    val path =
-      mappedToOpt.map(_.path.toNIO).map(SourcePath.Standard(_)).getOrElse(symbolDefinition.path)
+    val path = mappedToOpt
+      .map(_.path.toNIO)
+      .map(SourcePath.Standard(_))
+      .getOrElse(symbolDefinition.path)
     val parsed = {
       val semdb = new Mtags()(using NopReportContext).index(
         path.toLanguage,

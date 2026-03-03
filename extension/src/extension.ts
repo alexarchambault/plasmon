@@ -147,6 +147,7 @@ class Deferred<T> {
   }
 }
 let inProgressTasks: { [ids: string]: Deferred<void> } = {}
+let inProgressTasksReportProgress: { [ids: string]: vscode.Progress<{ message?: string; increment?: number }> } = {}
 
 function plasmonStartingStatus(isRestart: boolean): void {
   if (statusBarItem) {
@@ -434,6 +435,7 @@ function createClient(
           requestId: string
           request: string
           done: boolean
+          progress: number | undefined
         }
 
         clientSubscription(
@@ -447,23 +449,39 @@ function createClient(
                   const deferred = inProgressTasks[id]
                   deferred.resolve()
                   delete inProgressTasks[id]
+                  delete inProgressTasksReportProgress[id]
                 }
                 else
                   console.log(`Warning: ${details.buildToolId} ${details.requestId} not found in in-progress tasks (${JSON.stringify(Object.keys(inProgressTasks))})`)
               }
               else {
-                if (id in inProgressTasks)
-                  console.log(`Warning: ${details.buildToolId} ${details.requestId} already in in-progress tasks`)
+                if (id in inProgressTasks) {
+                  if (details.progress === undefined)
+                    console.log(`Warning: ${details.buildToolId} ${details.requestId} already in in-progress tasks`)
+                  else {
+                    if (id in inProgressTasksReportProgress) {
+                      inProgressTasksReportProgress[id].report(
+                        {
+                          increment: 100.0 * details.progress
+                        }
+                      )
+                    }
+                    else {
+                      console.log(`Warning: ${details.buildToolId} ${details.requestId} not found in in-progress tasks report helpers (${JSON.stringify(Object.keys(inProgressTasksReportProgress))})`)
+                    }
+                  }
+                }
                 else {
                   const deferred = new Deferred<void>()
                   inProgressTasks[id] = deferred
                   vscode.window.withProgress(
                     {
-                      location: vscode.ProgressLocation.Notification,
+                      location: vscode.ProgressLocation.Window,
                       title: `${details.buildToolName}: ${details.request}`,
                       cancellable: false
                     },
                     (progress, token) => {
+                      inProgressTasksReportProgress[id] = progress
                       return deferred.promise
                     }
                   )
@@ -1470,6 +1488,35 @@ export function activate(context: vscode.ExtensionContext) {
           token.isCancellationRequested
           return foo(10, progress, token)
         }
+      )
+    })
+  )
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand('plasmon.test-editor-decoration', () => {
+      const smallNumberDecorationType = vscode.window.createTextEditorDecorationType({
+        borderWidth: '1px',
+        borderStyle: 'solid',
+        overviewRulerColor: 'blue',
+        overviewRulerLane: vscode.OverviewRulerLane.Right,
+        light: {
+            // this color will be used in light color themes
+            borderColor: 'darkblue'
+        },
+        dark: {
+            // this color will be used in dark color themes
+            borderColor: 'lightblue'
+        }
+      });
+
+      vscode.window.activeTextEditor?.setDecorations(
+        smallNumberDecorationType,
+        [
+          {
+            range: new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 10)),
+            hoverMessage: new vscode.MarkdownString("## Title\n\nThe message\n*Hello*")
+          }
+        ]
       )
     })
   )

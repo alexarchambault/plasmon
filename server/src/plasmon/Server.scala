@@ -325,7 +325,7 @@ final class Server(
     bspData
   )
 
-  def createBuildClient(buildToolName: String): PlasmonBuildClientImpl = {
+  def createBuildClient(buildToolId: String, buildToolName: String): PlasmonBuildClientImpl = {
     val client = new PlasmonBuildClientImpl(
       languageClient,
       editorState.buffers,
@@ -336,6 +336,7 @@ final class Server(
           scribe.info(s"Some build targets changed ($params)")
           onBuildTargetDidChange(params)
         },
+      buildToolId,
       buildToolName
     )
     client.onProgress { _ =>

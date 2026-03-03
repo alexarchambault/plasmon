@@ -262,11 +262,10 @@ final class TargetData {
     if (dealiased != sourceItem)
       originalSourceItems.add(sourceItem)
 
-    val queue = sourceItemsToBuildTarget.getOrElseUpdate(
-      dealiased,
-      new ConcurrentLinkedQueue
-    )
-    queue.add(buildTarget)
+    sourceItemsToBuildTarget
+      .getOrElseUpdate(dealiased, new ConcurrentLinkedQueue)
+      .add(buildTarget)
+
     sourceBuildTargetsCache.clear()
   }
 
