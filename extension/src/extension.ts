@@ -1474,6 +1474,35 @@ export function activate(context: vscode.ExtensionContext) {
     })
   )
 
+  context.subscriptions.push(
+    vscode.commands.registerCommand('plasmon.test-editor-decoration', () => {
+      const smallNumberDecorationType = vscode.window.createTextEditorDecorationType({
+        borderWidth: '1px',
+        borderStyle: 'solid',
+        overviewRulerColor: 'blue',
+        overviewRulerLane: vscode.OverviewRulerLane.Right,
+        light: {
+            // this color will be used in light color themes
+            borderColor: 'darkblue'
+        },
+        dark: {
+            // this color will be used in dark color themes
+            borderColor: 'lightblue'
+        }
+      });
+
+      vscode.window.activeTextEditor?.setDecorations(
+        smallNumberDecorationType,
+        [
+          {
+            range: new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 10)),
+            hoverMessage: new vscode.MarkdownString("## Title\n\nThe message\n*Hello*")
+          }
+        ]
+      )
+    })
+  )
+
   // context.subscriptions.push(
   //   vscode.commands.registerCommand(`plasmon.test-error`, () => {
   //     vscode.window.showErrorMessage(
