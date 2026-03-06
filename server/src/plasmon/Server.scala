@@ -555,16 +555,16 @@ final class Server(
             for (buildClient <- bspServers.list.flatMap(_._2).map(_.client))
               buildClient.didDelete(event.path)
           case event: WatchEvent.Compile =>
-            compilations.compileTarget(
-              new b.BuildTargetIdentifier(event.targetId.targetId)
-            ).onComplete {
-              case Success(_) =>
-              case Failure(ex) =>
-                scribe.error(
-                  s"Error compiling target ${event.targetId.targetId} upon file watch event",
-                  ex
-                )
-            }(using pools.dummyEc)
+            compilations
+              .compileTarget(new b.BuildTargetIdentifier(event.targetId.targetId))
+              .onComplete {
+                case Success(_) =>
+                case Failure(ex) =>
+                  scribe.error(
+                    s"Error compiling target ${event.targetId.targetId} upon file watch event",
+                    ex
+                  )
+              }(using pools.dummyEc)
           case event: WatchEvent.ComputeInteractiveSemanticdb =>
             Future {
               interactiveSemanticdbs.textDocument(event.path, event.targetId)
@@ -625,145 +625,6 @@ final class Server(
             scribe.warn(s"Unhandled watch event $other")
         }
     )(using pools.fileWatcherEc)
-
-  def editorFileOpened(path: os.Path, currentContent: String, contentVersion: Int): Unit = {
-    editorState.updateFocusedDocument(path, os.read(path), currentContent)
-    refreshStatus()
-
-    def interactive =
-      bspData.inverseSources(path).foreach { target =>
-        interactiveSemanticdbs.textDocument(path, target.module)
-      }
-    // }
-    // We need both parser and semanticdb for synthetic decorations
-    val publishSynthetics = {
-      implicit val ec = pools.documentChangeEc
-      val checks = for {
-        targetId    <- bspData.inverseSources0(path).merge
-        buildClient <- bspData.buildClientOf(targetId).toSeq
-        dialect     <- bspData.getDialect(path.ext, path.isMill, targetId).toSeq
-      } yield parserQueue.check(targetId.module, path, buildClient, dialect)
-      val f = for {
-        _ <- Future.sequence(checks ++ Seq(Future(interactive)))
-        _ <- Future.sequence(
-          List[Future[?]](
-            // publishSynthetics0(path, server, cancelTokensEces, dummyEc)
-            // testProvider.didOpen(path),
-          )
-        )
-      } yield ()
-      f.onComplete {
-        case Success(()) =>
-        case Failure(ex) =>
-          scribe.warn(s"Error while publishing synthetics upon opening $path", ex)
-      }
-      f
-    }
-
-    if (!path.isDependencySource(workspace())) {
-      implicit val ec = pools.documentChangeEc
-      Future
-        .sequence(
-          List(
-            presentationCompilers.load(List(path)),
-            publishSynthetics
-          ) ++
-            compilations.compileFile(path).toSeq
-        )
-        .onComplete {
-          case Success(_) =>
-          case Failure(ex) =>
-            scribe.error(s"Error loading $path", ex)
-        }
-    }
-
-    SourcePath.withContext { implicit ctx =>
-      new PackageProvider(bspData, editorState.trees)
-        .workspaceEdit(
-          path,
-          currentContent,
-          Some(contentVersion)
-        )
-        .map(new l.ApplyWorkspaceEditParams(_))
-        .foreach(languageClient.applyEdit)
-    }
-  }
-
-  def editorFileChanged(path: os.Path, updatedContent: String): Unit = {
-    editorState.buffers.put(path, updatedContent)
-
-    refreshStatus()
-    for {
-      targetId    <- bspData.inverseSources0(path).merge
-      buildClient <- bspData.buildClientOf(targetId)
-    } {
-      buildClient.diagDidChange(path)
-
-      for (dialect <- bspData.getDialect(path.ext, path.isMill, targetId))
-        parserQueue
-          .check(targetId.module, path, buildClient, dialect)
-          .onComplete {
-            case Success(()) =>
-            case Failure(ex) => scribe.error(s"Error parsing $path", ex)
-          }(using pools.documentChangeEc)
-    }
-    //   .flatMap(_ => publishSynthetics0(path, server, cancelTokensEces, dummyEc))(using
-    //     pools.documentChangeEc
-    //   )
-    //   .ignoreValue(pools.documentChangeEc)
-  }
-
-  def editorFileSaved(path: os.Path): Unit = {
-    refreshStatus()
-    // savedFiles.add(path)
-    // read file from disk, we only remove files from buffers on didClose.
-    editorState.buffers.put(path, os.read(path))
-    reindexSource(path)
-    implicit val ec = pools.documentChangeEc
-    val checks = for {
-      targetId    <- bspData.inverseSources0(path).merge
-      buildClient <- bspData.buildClientOf(targetId).toSeq
-      dialect     <- bspData.getDialect(path.ext, path.isMill, targetId).toSeq
-    } yield parserQueue.check(targetId.module, path, buildClient, dialect)
-    Future
-      .sequence(
-        checks ++ List(
-          compilations.compileFiles(Seq(path)),
-          // onBuildChanged(paths).ignoreValue,
-          // Future.sequence(paths.map(onBuildToolAdded)),
-          bspData
-            .inverseSources(path)
-            .map { targetId =>
-              Future(interactiveSemanticdbs.textDocument(
-                path,
-                targetId.module
-              ))(using pools.documentChangeEc)
-            }
-            .getOrElse(Future.successful(()))
-        )
-        // renameProvider.runSave(),
-        // ++ // if we fixed the script, we might need to retry connection
-        // maybeImportScript(
-        //   path
-        // )
-      )
-      .ignoreValue
-      .onComplete {
-        case Success(()) =>
-        case Failure(ex) =>
-          scribe.error(s"Error handling save of $path", ex)
-      }
-  }
-
-  def editorFileClosed(path: os.Path): Unit = {
-    editorState.closed(path)
-    presentationCompilers.didClose(path)
-    for {
-      targetId    <- bspData.inverseSources0(path).merge
-      buildClient <- bspData.buildClientOf(targetId)
-    }
-      buildClient.onClose(targetId.module, path)
-  }
 
   private def fileChangedOrCreatedUpdateState(path: os.Path, created: Boolean): Unit = {
     if (created)
