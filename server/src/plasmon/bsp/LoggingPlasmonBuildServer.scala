@@ -246,7 +246,8 @@ private object LoggingPlasmonBuildServer {
       // logger.log("")
       // logger.log(s"Calling $methodCallStr")
       // logger.log("")
-      f.handle {
+      val f0 = f
+      val fWithHandler = f0.handle {
         (valueOrNull, exOrNull) =>
           if (exOrNull == null)
             // logger.log("")
@@ -261,6 +262,12 @@ private object LoggingPlasmonBuildServer {
             // logger.log("")
             throw exOrNull
       }
+      fWithHandler.whenComplete { (_, _) =>
+        if (fWithHandler.isCancelled)
+          f0.cancel(true)
+      }
+
+      fWithHandler
     }
   }
 }

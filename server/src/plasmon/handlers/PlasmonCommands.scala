@@ -206,6 +206,14 @@ object PlasmonCommands {
     implicit lazy val codec: JsonValueCodec[OrganizeImportsInModuleResponse] = JsonCodecMaker.make
   }
 
+  private final case class CancelAllCompilationsResponse(
+    cancelledCount: Int
+  )
+
+  private object CancelAllCompilationsResponse {
+    implicit lazy val codec: JsonValueCodec[CancelAllCompilationsResponse] = JsonCodecMaker.make
+  }
+
   // quite ineffective, but does the job
   private def writeToGson[T: JsonValueCodec](t: T, gson: Gson = new Gson): JsonElement = {
     val str = writeToString(t)
@@ -1082,6 +1090,13 @@ object PlasmonCommands {
         ???
         CompletableFuture.completedFuture(writeToGson(OrganizeImportsInModuleResponse(???, ???)))
       }
+    },
+    CommandHandler.of("plasmon/cancelAllCompilations", refreshStatus = true) { (params, logger) =>
+      Future {
+        val count = server.compilations.cancelAll()
+        val resp  = CancelAllCompilationsResponse(count)
+        writeToGson(resp)
+      }(using server.pools.requestsEces).asJava
     }
   )
 
