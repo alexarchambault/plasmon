@@ -442,8 +442,8 @@ final class Server(
         mappedToOpt match {
           case Some(mappedTo) =>
             val adjustBack = (range: s.Range) => {
-              val newStartLineOpt = mappedTo.lineForClient(range.startLine).filter(_ >= 0)
-              val newEndLineOpt   = mappedTo.lineForClient(range.endLine).filter(_ >= 0)
+              val newStartLineOpt = mappedTo.toUserLine(range.startLine).filter(_ >= 0)
+              val newEndLineOpt   = mappedTo.toUserLine(range.endLine).filter(_ >= 0)
               (newStartLineOpt, newEndLineOpt) match {
                 case (Some(newStartLine), Some(newEndLine)) =>
                   Some(s.Range(newStartLine, range.startCharacter, newEndLine, range.endCharacter))
@@ -451,7 +451,7 @@ final class Server(
                   None
               }
             }
-            (mappedTo.path.toAbsPath, adjustBack)
+            (mappedTo.compilerPath.toAbsPath, adjustBack)
           case None =>
             (path.toOs.toAbsPath, Some(_))
         }

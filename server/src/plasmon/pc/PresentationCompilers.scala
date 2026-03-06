@@ -1057,7 +1057,7 @@ class PresentationCompilers(
     token: CancelToken,
     findTypeDef: Boolean
   ): Future[Seq[l.Location]] =
-    withPCAndAdjustLsp(params) { (pc, pos, adjust) =>
+    withPCAndAdjustLsp(params) { (pc, pos, _) =>
       val params0 = CompilerOffsetParamsUtils.fromPos(
         pos,
         token,
@@ -1070,11 +1070,20 @@ class PresentationCompilers(
           pc.definition(CompilerOffsetParamsUtils.fromPos(pos, token))
       defResult.asScala.map { c =>
         for {
-          (appliesTo, userPath) <- adjust.paths
-          loc                   <- c.locations.asScala
-          if loc.getUri.osPathFromUri == appliesTo
+          loc <- c.locations.asScala
+          mappedSource <- bspData.mappedFrom(
+            // FIXME This only looks at wrapped files in the same module as the input source
+            new b.BuildTargetIdentifier(pc.buildTargetId()),
+            loc.getUri.osPathFromUri
+          )
+          startLine <- mappedSource.toUserLine(loc.getRange.getStart.getLine)
+          endLine   <- mappedSource.toUserLine(loc.getRange.getEnd.getLine)
+        } {
+          // FIXME Always a bit risky to mutate that kind of thing…
+          loc.setUri(mappedSource.userPath.toNIO.toUri.toASCIIString)
+          loc.getRange.getStart.setLine(startLine)
+          loc.getRange.getEnd.setLine(endLine)
         }
-          adjust.adjustLocations(c.locations())
         c.locations().asScala.toSeq
       }
     }.getOrElse(Future.successful(Nil))
@@ -1245,6 +1254,8 @@ class PresentationCompilers(
     (id, label)
   }
 
+  private val diagnosticSource = s"Scala ${Properties.versionNumberString} presentation compiler"
+
   private def resolve(
     targetId: b.BuildTargetIdentifier,
     scalaVersion: String
@@ -1302,36 +1313,48 @@ class PresentationCompilers(
           javaHome.toNIO,
           () => logger().consumer,
           emitDiagnostics = (uri, diags) => {
-            val mappedToOpt = bspData.mappedTo(targetId, uri.toOsPath)
-            val updateLine: Int => Int = mappedToOpt match {
-              case Some(mappedTo) => l => mappedTo.lineForClient(l).getOrElse(l)
-              case None           => identity
-            }
             val logger0 = logger()
-            for (diag <- diags if !diag.pos.span.exists)
-              logger0.log(s"No span diagnostic: $diag")
-            val diags0 = diags.collect {
-              case diag if diag.pos.span.exists =>
-                new l.Diagnostic(
-                  new l.Range(
-                    new l.Position(updateLine(diag.pos.startLine), diag.pos.startColumn),
-                    new l.Position(updateLine(diag.pos.endLine), diag.pos.endColumn)
-                  ),
-                  diag.message,
-                  diag.level match {
-                    case dotty.tools.dotc.interfaces.Diagnostic.WARNING =>
-                      l.DiagnosticSeverity.Warning
-                    case dotty.tools.dotc.interfaces.Diagnostic.ERROR => l.DiagnosticSeverity.Error
-                    case _ => l.DiagnosticSeverity.Information
-                  },
-                  s"Scala ${Properties.versionNumberString} presentation compiler"
-                )
+            val path    = uri.toOsPath
+            bspData.mappedTo(targetId, path) match {
+              case Some(mappedTo) =>
+                logger0.log(s"Got wrongful diagnostics for wrapped source $path, ignoring them")
+              case None =>
+                val mappedSourceOpt = bspData.mappedFrom(targetId, path)
+                val updateLine: Int => Int = mappedSourceOpt match {
+                  case Some(mappedSource) =>
+                    line => mappedSource.toUserLine(line).getOrElse(0)
+                  case None =>
+                    identity
+                }
+                for (diag <- diags if !diag.pos.span.exists)
+                  logger0.log(s"No span diagnostic: $diag")
+                val diags0 = diags.collect {
+                  case diag if diag.pos.span.exists =>
+                    scribe.info(s"raw diag in ${uri.toOsPath.relativeTo(workspace)}: $diag")
+                    new l.Diagnostic(
+                      new l.Range(
+                        new l.Position(updateLine(diag.pos.startLine), diag.pos.startColumn),
+                        new l.Position(updateLine(diag.pos.endLine), diag.pos.endColumn)
+                      ),
+                      diag.message,
+                      diag.level match {
+                        case dotty.tools.dotc.interfaces.Diagnostic.WARNING =>
+                          l.DiagnosticSeverity.Warning
+                        case dotty.tools.dotc.interfaces.Diagnostic.ERROR =>
+                          l.DiagnosticSeverity.Error
+                        case _ =>
+                          l.DiagnosticSeverity.Information
+                      },
+                      diagnosticSource
+                    )
+                }
+                emitDiagnostics(pc, targetId.module, uri, diags0, logger0)
             }
-            emitDiagnostics(pc, targetId.module, uri, diags0, logger0)
           },
           module = targetId.module
         )
         setupPc(pc)
+        pc.preferSymbolSearch = PatchedSymbolIndex.millBuildPackagePattern.matches
         pc
       }
       val extraCp =

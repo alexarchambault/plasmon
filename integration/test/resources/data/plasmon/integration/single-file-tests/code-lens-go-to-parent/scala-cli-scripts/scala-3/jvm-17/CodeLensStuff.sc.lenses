@@ -42,5 +42,37 @@
         }
       ]
     }
+  },
+  {
+    "range": {
+      "start": {
+        "line": 8,
+        "character": 0
+      },
+      "end": {
+        "line": 8,
+        "character": 0
+      }
+    },
+    "command": {
+      "title": "$(arrow-left) Go to compiled source",
+      "command": "plasmon-goto-location",
+      "arguments": [
+        {
+          "uri": "file:///workspace/.scala-build/test-project_d5c0a6989e/src_generated/main/CodeLensStuff.scala",
+          "range": {
+            "start": {
+              "line": 6,
+              "character": 0
+            },
+            "end": {
+              "line": 6,
+              "character": 0
+            }
+          },
+          "otherWindow": false
+        }
+      ]
+    }
   }
 ]

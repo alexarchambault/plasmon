@@ -1,0 +1,11 @@
+[
+  {
+    "path": "dash-thing/package.mill",
+    "line": 9,
+    "colRange": [
+      8,
+      20
+    ],
+    "content": "utestVersion"
+  }
+]

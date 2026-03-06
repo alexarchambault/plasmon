@@ -1,0 +1,20 @@
+[
+  {
+    "path": "thing/package.mill",
+    "line": 13,
+    "colRange": [
+      15,
+      23
+    ],
+    "content": "` extend"
+  },
+  {
+    "path": "thing/package.mill",
+    "line": 13,
+    "colRange": [
+      15,
+      23
+    ],
+    "content": "` extend"
+  }
+]

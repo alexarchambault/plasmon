@@ -1,0 +1,28 @@
+```scala
+val thing: build_.thing
+```
+
+***
+**Expression type**
+```scala
+package_
+```
+
+
+***
+
+```scala
+def apply[V >: M <: Cross.Module[?]](resolver: Resolver[V]): M
+```
+
+***
+
+Fetch the relevant cross module given the implicit resolver you have in
+scope. This is often the first cross module whose cross-version is
+compatible with the current module.
+
+***
+**Expression type**
+```scala
+package_
+```

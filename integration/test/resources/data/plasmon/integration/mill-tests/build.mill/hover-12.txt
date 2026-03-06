@@ -1,0 +1,21 @@
+```scala
+def apply(): T
+```
+
+***
+
+```scala
+def mvnDeps: Simple[Seq[Dep]]
+```
+
+***
+
+Any ivy dependencies you want to add to this Module, in the format
+mvn"org::name:version" for Scala dependencies or mvn"org:name:version"
+for Java dependencies
+
+***
+**Expression type**
+```scala
+T
+```

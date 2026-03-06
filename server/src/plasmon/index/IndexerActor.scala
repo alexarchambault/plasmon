@@ -679,7 +679,7 @@ class IndexerActor(
         item       <- wrappedSourcesRes.getItems.asScala.toVector
         sourceItem <- item.getSources.asScala.toVector
       } yield {
-        val userPath = sourceItem.getUri.osPathFromUri
+        val userPath0 = sourceItem.getUri.osPathFromUri
         val mappedSource: TargetData.MappedSource =
           new TargetData.MappedSource {
             val generatedPath       = sourceItem.getGeneratedUri.osPathFromUri
@@ -697,13 +697,14 @@ class IndexerActor(
                   scalaPos.getCharacter
                 )
 
-            def path = generatedPath
+            def compilerPath = generatedPath
+            def userPath     = userPath0
             def update(
               content: String
             ): (Input.VirtualFile, l.Position => l.Position, AdjustLspData) = {
               val adjustLspData = AdjustedLspData.create(
                 generatedPath,
-                userPath,
+                userPath0,
                 fromScala
               )
               val actualContent =
@@ -738,16 +739,16 @@ class IndexerActor(
                 adjustLspData
               )
             }
-            override def lineForServer(line: Int): Option[Int] =
+            override def toCompilerLine(line: Int): Option[Int] =
               Some(line + topWrapperLineCount)
-            override def lineForClient(line: Int): Option[Int] =
+            override def toUserLine(line: Int): Option[Int] =
               Some(line - topWrapperLineCount).filter(_ >= 0)
           }
-        (item.getTarget, userPath, mappedSource)
+        (item.getTarget, mappedSource)
       }
 
-    for ((targetId, path, mappedSource) <- mappedSources)
-      targetData.addMappedSource(targetId, path, mappedSource)
+    for ((targetId, mappedSource) <- mappedSources)
+      targetData.addMappedSource(targetId, mappedSource)
 
     val sourcesRes = maybeCached("buildTargetSources") {
       buildServer.buildTargetSources(new b.SourcesParams(targetList)).get()
@@ -834,7 +835,8 @@ class IndexerActor(
     dialectOpt: Option[Dialect]
   ): Unit =
     try {
-      val sourceToIndex0 = server.bspData.mappedTo(target, source).map(_.path).getOrElse(source)
+      val sourceToIndex0 =
+        server.bspData.mappedTo(target, source).map(_.compilerPath).getOrElse(source)
       if (os.exists(sourceToIndex0))
         // Since the `symbols` here are toplevel symbols,
         // we cannot use `symbols` for expiring the cache for all symbols in the source.
@@ -878,7 +880,8 @@ class IndexerActor(
   ): Unit =
     try {
       import scala.meta.internal.semanticdb.Scala.*
-      val sourceToIndex0 = server.bspData.mappedTo(target, source).map(_.path).getOrElse(source)
+      val sourceToIndex0 =
+        server.bspData.mappedTo(target, source).map(_.compilerPath).getOrElse(source)
       if (os.exists(sourceToIndex0)) {
         val dialectOpt    = sourceDialect(target, data)
         val reluri        = source.toIdeallyRelativeURI(sourceItem)

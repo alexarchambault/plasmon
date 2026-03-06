@@ -1,0 +1,27 @@
+```scala
+type build = package_
+```
+
+```scala
+object foo
+```
+
+***
+
+```scala
+type build = package_
+```
+
+```scala
+def apply(arg0: Any, args: Any*): M
+```
+
+***
+
+Fetch the cross module corresponding to the given cross values
+
+***
+**Expression type**
+```scala
+build.foo
+```

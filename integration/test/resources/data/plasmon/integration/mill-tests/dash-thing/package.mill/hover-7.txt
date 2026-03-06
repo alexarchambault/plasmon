@@ -1,0 +1,7 @@
+```scala
+trait ScalaModule
+```
+
+***
+
+Core configuration required to compile a single Scala module

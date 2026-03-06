@@ -1,0 +1,11 @@
+[
+  {
+    "path": ".plasmon/readonly/dependencies/mill-libs-javalib_3-1.1.3-sources.jar/mill/javalib/package.scala",
+    "line": 9,
+    "colRange": [
+      8,
+      11
+    ],
+    "content": "mvn"
+  }
+]

@@ -57,7 +57,7 @@ final class PatchedSymbolIndex(
     symbolDefinition: SymbolDefinition
   )(implicit ctx: SourcePath.Context): TextDocument = {
 
-    val mappedToOpt = sourceMapper.mappedTo0(
+    val mappedToOpt = sourceMapper.mappedTo(
       new b.BuildTargetIdentifier(module.targetId),
       symbolDefinition.path
     )
@@ -65,7 +65,7 @@ final class PatchedSymbolIndex(
     // Read text file from disk instead of editor buffers because the file
     // on disk is more likely to parse.
     val path = mappedToOpt
-      .map(_.path.toNIO)
+      .map(_.compilerPath.toNIO)
       .map(SourcePath.Standard(_))
       .getOrElse(symbolDefinition.path)
     val parsed = {
@@ -84,7 +84,7 @@ final class PatchedSymbolIndex(
             originalCode = os.read(path0),
             // FIXME workspace might not be the right source root, does it matter?
             originalPath = path0.relativeTo(workspace),
-            adjust = mappedTo.lineForClient,
+            adjust = mappedTo.toUserLine,
             doc = semdb
           )
         case None =>
@@ -113,59 +113,64 @@ final class PatchedSymbolIndex(
     symbol: String
   )(implicit ctx: SourcePath.Context): JList[l.Location] = {
 
-    def definitionOf(symbol0: String): List[SymbolDefinition] =
-      index
-        .definitions(module, Symbol(symbol0))
-        .filter(_.path.exists())
-
-    def proceed(symbol0: String): Seq[l.Location] =
-      definitionOf(symbol0)
-        .flatMap { defn =>
-          val destinationPath =
-            if (saveDefFileToDisk) defn.path.toFileOnDisk(workspace)
-            else defn.path
-
-          defn.range match {
-            // read only source - no need to adjust positions
-            case Some(range) if defn.path.filePath.isEmpty =>
-              Seq(range.toLocation(destinationPath.uri))
-            case _ =>
-              val destinationDoc = bestTextDocument(module, defn)
-              for {
-                location <-
-                  destinationDoc.toLocation(destinationPath.uri, defn.definitionSymbol.value)
-                result <- buffers
-                  .tokenEditDistance(
-                    module,
-                    destinationPath,
-                    destinationDoc.text,
-                    trees
-                  )
-                  .toRevised(
-                    location.getRange.getStart.getLine,
-                    location.getRange.getStart.getCharacter
-                  )
-                  .toLocation(location)
-              } yield result
-          }
-        }
-
-    val baseResult = proceed(symbol)
-
-    val millBuildAlternativeOpt =
-      if (symbol.startsWith("build_/package_.") && symbol.endsWith("."))
-        // FIXME Might not be fine with dots inside `...`
-        Some("build_/" + symbol.stripPrefix("build_/package_.").replace(".", "/") + "package_#")
-      else
-        None
-
-    val extraResult = millBuildAlternativeOpt match {
-      case Some(millBuildAlternative) =>
-        proceed(millBuildAlternative)
+    // Transform things like
+    //     build_/package_.thing.
+    //     build_/thing/package_.other.
+    // to
+    //     build_/thing/package_#
+    //     build_/thing/other/package_#
+    val symbol0 = PatchedSymbolIndex.millBuildPackagePattern.findFirstMatchIn(symbol) match {
+      case Some(match0) =>
+        "build_/" + match0.group(1) + match0.group(2) + "/package_#"
       case None =>
-        Nil
+        symbol
     }
 
-    (baseResult ++ extraResult).asJava
+    index
+      .definitions(module, Symbol(symbol0))
+      .filter(_.path.exists())
+      .flatMap { defn =>
+        val destinationPath =
+          if (saveDefFileToDisk) defn.path.toFileOnDisk(workspace)
+          else defn.path
+
+        defn.range match {
+          // read only source - no need to adjust positions
+          case Some(range) if defn.path.filePath.isEmpty =>
+            Seq(range.toLocation(destinationPath.uri))
+          case _ =>
+            val destinationDoc = bestTextDocument(module, defn)
+            for {
+              location <-
+                destinationDoc.toLocation(destinationPath.uri, defn.definitionSymbol.value)
+              result <- buffers
+                .tokenEditDistance(
+                  module,
+                  destinationPath,
+                  destinationDoc.text,
+                  trees
+                )
+                .toRevised(
+                  location.getRange.getStart.getLine,
+                  location.getRange.getStart.getCharacter
+                )
+                .toLocation(location)
+            } yield result
+        }
+      }
+      .asJava
+  }
+}
+
+object PatchedSymbolIndex {
+  // Written with the help of Claude Sonnet 4.6
+  val millBuildPackagePattern = {
+    val segment    = """[a-z][a-zA-Z0-9_]*"""
+    val quoted     = """`[^`]+`"""
+    val either     = s"(?:$quoted|$segment)"
+    val middlePart = s"((?:(?:$either)/)*?)"
+    val lastPart   = s"($either)"
+
+    s"""^build_/${middlePart}package_\\.$lastPart\\.""".r
   }
 }

@@ -1,0 +1,16 @@
+```scala
+trait Cross
+```
+
+***
+
+Models "cross-builds": sets of duplicate builds which differ only in the
+value of one or more "case" variables whose values are determined at runtime.
+Used via:
+
+```
+object foo extends Cross[FooModule]("bar", "baz", "qux")
+trait FooModule extends Cross.Module[String]{
+  ... crossValue ...
+}
+```

@@ -18,16 +18,7 @@ final case class SourceMapper(
 ) {
   def mappedTo(targetId: b.BuildTargetIdentifier, path: os.Path): Option[MappedSource] =
     bspData.mappedTo(targetId, path)
-  def mappedTo(targetId: b.BuildTargetIdentifier, path: SourcePath): Option[SourcePath] =
-    path match {
-      case s: SourcePath.Standard =>
-        mappedTo(targetId, os.Path(s.path))
-          .map(_.path.toNIO)
-          .map(SourcePath.Standard(_))
-      case _ => None
-    }
-
-  def mappedTo0(targetId: b.BuildTargetIdentifier, path: SourcePath): Option[MappedSource] =
+  def mappedTo(targetId: b.BuildTargetIdentifier, path: SourcePath): Option[MappedSource] =
     path match {
       case s: SourcePath.Standard =>
         mappedTo(targetId, os.Path(s.path))

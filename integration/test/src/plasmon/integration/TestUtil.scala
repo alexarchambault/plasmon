@@ -369,6 +369,48 @@ object TestUtil {
     DefinitionResult(GoToDefResult(defPath0, startPos, endPos, content))
   }
 
+  def goToDefs(
+    remoteServer: LanguageServer,
+    workspace: os.Path,
+    path: os.Path,
+    pos: l.Position
+  ): Seq[DefinitionResult] = {
+
+    val defResp = remoteServer
+      .getTextDocumentService
+      .definition(new l.DefinitionParams(identifier(path), pos))
+      .get()
+    expect(defResp != null)
+    expect(defResp.isLeft())
+
+    defResp.getLeft.asScala.toSeq.map { location =>
+      val defPath = os.Path(Paths.get(new URI(location.getUri)))
+
+      val startPos = (location.getRange.getStart.getLine, location.getRange.getStart.getCharacter)
+      val endPos   = (location.getRange.getEnd.getLine, location.getRange.getEnd.getCharacter)
+
+      val content = os.read(defPath)
+        .linesWithSeparators
+        .zipWithIndex
+        .map {
+          case (line, idx) =>
+            val line0 =
+              if (idx == endPos._1) line.take(endPos._2)
+              else line
+            if (idx == startPos._1) line0.drop(startPos._2)
+            else line0
+        }
+        .drop(startPos._1)
+        .take(endPos._1 - startPos._1 + 1)
+        .mkString
+
+      val defPath0 =
+        if (defPath.startsWith(workspace)) Right(defPath.relativeTo(workspace).asSubPath)
+        else Left(defPath)
+      DefinitionResult(GoToDefResult(defPath0, startPos, endPos, content))
+    }
+  }
+
   final case class DefinitionResult(
     path: String,
     line: Int,
@@ -385,7 +427,8 @@ object TestUtil {
       (colRange._1 + colRange._2) / 2
   }
   object DefinitionResult {
-    implicit lazy val codec: JsonValueCodec[DefinitionResult] = JsonCodecMaker.make
+    implicit lazy val codec: JsonValueCodec[DefinitionResult]         = JsonCodecMaker.make
+    implicit lazy val seqCodec: JsonValueCodec[Seq[DefinitionResult]] = JsonCodecMaker.make
     def apply(goToDefResult: GoToDefResult): DefinitionResult = {
       if (goToDefResult.startPos._1 != goToDefResult.endPos._1)
         sys.error(s"Expected single line destination ($goToDefResult)")
@@ -663,6 +706,9 @@ object TestUtil {
         if (os.exists(path))
           try Some(read(os.read.bytes(path)))
           catch {
+            case e: JsonReaderException =>
+              System.err.println(s"Warning: caught $e while reading $path")
+              None
             case e: JsonSyntaxException =>
               System.err.println(s"Warning: caught $e while reading $path")
               None
@@ -752,12 +798,7 @@ object TestUtil {
       path,
       res,
       osOpt,
-      b =>
-        try readFromArray(b)
-        catch {
-          case e: JsonReaderException =>
-            throw new Exception(e)
-        },
+      b => readFromArray(b),
       writeToArray(_, WriterConfig.withIndentionStep(2)),
       alternativePaths = alternativePaths
     )

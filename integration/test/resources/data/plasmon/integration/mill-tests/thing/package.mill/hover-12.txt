@@ -1,0 +1,7 @@
+```scala
+def utestVersion: Simple[String]
+```
+
+***
+
+The UTest version to use, or the empty string, if you want to provide the UTest-dependency yourself.

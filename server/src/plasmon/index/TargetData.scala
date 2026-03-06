@@ -78,7 +78,9 @@ final class TargetData {
       Iterable[b.BuildTargetIdentifier]
     ]]
 
-  val actualSources: MMap[b.BuildTargetIdentifier, MMap[os.Path, MappedSource]] =
+  val mappedTo: MMap[b.BuildTargetIdentifier, MMap[os.Path, MappedSource]] =
+    TrieMap.empty
+  val mappedFrom: MMap[b.BuildTargetIdentifier, MMap[os.Path, MappedSource]] =
     TrieMap.empty
 
   def sourceBuildTargets(
@@ -375,12 +377,14 @@ final class TargetData {
 
   def addMappedSource(
     target: b.BuildTargetIdentifier,
-    path: os.Path,
     mapped: MappedSource
   ): Unit = {
-    actualSources.getOrElseUpdate(target, TrieMap.empty)
-      .update(path, mapped)
-    addSourceItem(path, target)
+    mappedTo.getOrElseUpdate(target, TrieMap.empty)
+      .update(mapped.userPath, mapped)
+    mappedFrom.getOrElseUpdate(target, TrieMap.empty)
+      .update(mapped.compilerPath, mapped)
+    addSourceItem(mapped.userPath, target)
+    addSourceItem(mapped.compilerPath, target)
   }
 
   def resetConnections(
@@ -463,7 +467,11 @@ final class TargetData {
         case (k, v) =>
           (k.toString, v.map(_.toSeq.sortBy(_.toString)))
       },
-      actualSources = actualSources.toMap.map {
+      mappedTo = mappedTo.toMap.map {
+        case (k, v) =>
+          (k.toString, v.toMap.map { case (k0, v0) => (k0.toString, v0.toString) })
+      },
+      mappedFrom = mappedFrom.toMap.map {
         case (k, v) =>
           (k.toString, v.toMap.map { case (k0, v0) => (k0.toString, v0.toString) })
       }
@@ -473,9 +481,10 @@ final class TargetData {
 object TargetData {
 
   trait MappedSource {
-    def path: os.Path
-    def lineForServer(line: Int): Option[Int] = None
-    def lineForClient(line: Int): Option[Int] = None
+    def userPath: os.Path
+    def compilerPath: os.Path
+    def toCompilerLine(line: Int): Option[Int] = None
+    def toUserLine(line: Int): Option[Int]     = None
     def update(
       content: String
     ): (Input.VirtualFile, l.Position => l.Position, AdjustLspData)
@@ -517,7 +526,8 @@ object TargetData {
     buildClientOpt: Option[String],
     workspaceBuildTargetsRespOpt: Option[TargetData.WorkspaceBuildTargets],
     sourceBuildTargetsCache: Map[String, Option[Seq[b.BuildTargetIdentifier]]],
-    actualSources: Map[String, Map[String, String]]
+    mappedTo: Map[String, Map[String, String]],
+    mappedFrom: Map[String, Map[String, String]]
   )
 
   given JsonValueCodec[AsJson] =

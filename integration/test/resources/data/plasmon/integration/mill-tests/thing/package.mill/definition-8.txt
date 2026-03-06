@@ -1,0 +1,11 @@
+[
+  {
+    "path": "thing/package.mill",
+    "line": 8,
+    "colRange": [
+      9,
+      13
+    ],
+    "content": "test"
+  }
+]

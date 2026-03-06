@@ -1,0 +1,11 @@
+[
+  {
+    "path": "build.mill",
+    "line": 8,
+    "colRange": [
+      6,
+      16
+    ],
+    "content": "moduleDeps"
+  }
+]

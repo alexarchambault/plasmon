@@ -1,0 +1,40 @@
+```scala
+override def apply[A](elems: A*): Seq[A]
+```
+
+***
+
+Creates a collection with the specified elements.
+
+
+***
+
+**Type Parameters**
+- `A`: the type of the ${coll}'s elements
+
+
+***
+
+**Parameters**
+- `elems`: the elements of the created collection
+
+**Returns** a new collection with elements `elems`
+
+***
+**Expression type**
+```scala
+Seq[Thing]
+```
+
+
+***
+
+```scala
+val Seq: scala.collection.immutable
+```
+
+***
+**Expression type**
+```scala
+Seq[Thing]
+```

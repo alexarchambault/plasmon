@@ -63,7 +63,9 @@ final class BspData(
   def sourceItems: Iterable[os.Path] =
     data.iterable.flatMap(_.sourceItemsToBuildTarget.keys)
   def mappedTo(target: b.BuildTargetIdentifier, path: os.Path): Option[TargetData.MappedSource] =
-    data.fromOptions(_.actualSources.get(target).flatMap(_.get(path)))
+    data.fromOptions(_.mappedTo.get(target).flatMap(_.get(path)))
+  def mappedFrom(target: b.BuildTargetIdentifier, path: os.Path): Option[TargetData.MappedSource] =
+    data.fromOptions(_.mappedFrom.get(target).flatMap(_.get(path)))
 
   def allTargetRoots: Iterator[os.Path] =
     data.fromIterators(_.allTargetRoots)

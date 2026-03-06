@@ -1,0 +1,11 @@
+[
+  {
+    "path": "build.mill",
+    "line": 14,
+    "colRange": [
+      7,
+      10
+    ],
+    "content": "foo"
+  }
+]

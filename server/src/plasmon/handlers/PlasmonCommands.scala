@@ -1782,14 +1782,24 @@ object PlasmonCommands {
                     for (workspace <- data.targetToWorkspace.get(targetId))
                       out ++= "Workspace: " + workspace.toString + nl + nl
                     scribe.info(
-                      s"data.actualSources keys: ${data.actualSources.keys.toVector.map(_.getUri).sorted}"
+                      s"data.mappedTo keys: ${data.mappedTo.keys.toVector.map(_.getUri).sorted}"
                     )
-                    for (map <- data.actualSources.get(targetId)) {
+                    for (map <- data.mappedTo.get(targetId)) {
                       val lines = map.toVector
                         .sortBy(_._1)
                         .map {
                           case (path, mapped) =>
-                            s"  $path --> ${mapped.path}" + nl
+                            s"  $path --> ${mapped.compilerPath}" + nl
+                        }
+                        .mkString
+                      out ++= "Mapped sources: " + nl + lines + nl
+                    }
+                    for (map <- data.mappedFrom.get(targetId)) {
+                      val lines = map.toVector
+                        .sortBy(_._1)
+                        .map {
+                          case (path, mapped) =>
+                            s"  $path --> ${mapped.userPath}" + nl
                         }
                         .mkString
                       out ++= "Mapped sources: " + nl + lines + nl

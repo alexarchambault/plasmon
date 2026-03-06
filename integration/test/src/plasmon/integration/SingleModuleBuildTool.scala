@@ -229,7 +229,7 @@ object SingleModuleBuildTool {
       (map, files0 ++ Seq((os.sub / "build.mill", buildMill0)))
     }
 
-    private lazy val millwPath = {
+    lazy val millwPath = {
       val f = coursierapi.Cache.create()
         .get(coursierapi.Artifact.of(
           s"https://github.com/com-lihaoyi/mill/raw/${IntegrationConstants.millwCommit}/mill",
@@ -238,7 +238,7 @@ object SingleModuleBuildTool {
         ))
       os.Path(f, os.pwd)
     }
-    private lazy val millwBatPath = {
+    lazy val millwBatPath = {
       val f = coursierapi.Cache.create()
         .get(coursierapi.Artifact.of(
           s"https://github.com/com-lihaoyi/mill/raw/${IntegrationConstants.millwCommit}/mill.bat",

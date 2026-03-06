@@ -1,0 +1,20 @@
+[
+  {
+    "path": ".plasmon/readonly/dependencies/scala-library-3.8.2-sources.jar/scala/collection/Factory.scala",
+    "line": 306,
+    "colRange": [
+      17,
+      22
+    ],
+    "content": "apply"
+  },
+  {
+    "path": ".plasmon/readonly/dependencies/scala-library-3.8.2-sources.jar/scala/package.scala",
+    "line": 60,
+    "colRange": [
+      6,
+      9
+    ],
+    "content": "Seq"
+  }
+]
