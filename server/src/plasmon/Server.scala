@@ -37,7 +37,7 @@ import plasmon.semdb.{
   SemanticdbIndexer
 }
 import plasmon.status.StatusActor
-import plasmon.watch.{ProjectFileWatcher, WatchEvent}
+import plasmon.watch.{FileWatcher, WatchEvent}
 
 import java.io.OutputStream
 import java.nio.charset.StandardCharsets
@@ -503,8 +503,8 @@ final class Server(
     bspServers.close()
   }
 
-  lazy val fileWatcher: ProjectFileWatcher =
-    new ProjectFileWatcher(
+  lazy val fileWatcher: FileWatcher =
+    new FileWatcher(
       () => workingDir,
       bspData,
       watchFilter = {
@@ -964,7 +964,7 @@ object Server {
     referenceIndex: ReferenceIndex.AsJson,
     symbolSearchIndex: SymbolSearchIndex.AsJson,
     status: Status.AsJson,
-    fileWatcher: ProjectFileWatcher.AsJson,
+    fileWatcher: FileWatcher.AsJson,
     symbolIndex: SymbolIndexJson
   )
 
