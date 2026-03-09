@@ -84,7 +84,7 @@ jobs:
       run: ./generate-native-image.bat
     - name: Copy artifacts
       run: ./mill ci.copyLauncher --directory artifacts/
-    - uses: actions/attest-build-provenance@v3
+    - uses: actions/attest-build-provenance@v4
       if: startsWith(github.ref, 'refs/tags/v')
       with:
         subject-path: 'artifacts/*'
@@ -140,7 +140,7 @@ jobs:
       run: ./mill -i ci.waitForSync
     - name: Copy artifacts
       run: ./mill -i ci.copyJarLaunchers
-    - uses: actions/attest-build-provenance@v3
+    - uses: actions/attest-build-provenance@v4
       if: startsWith(github.ref, 'refs/tags/v')
       with:
         subject-path: 'artifacts/*'
