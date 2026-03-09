@@ -193,7 +193,8 @@ object server extends ScalaModule with PlasmonPublishModule {
   )
   def scalacOptions = super.scalacOptions() ++ Seq(
     "-deprecation",
-    "-feature"
+    "-feature",
+    "-Wunused:all"
     // "-Ydebug"
   )
 
@@ -709,7 +710,8 @@ object integration extends ScalaModule {
 
   def scalacOptions = super.scalacOptions() ++ Seq(
     "-deprecation",
-    "-feature"
+    "-feature",
+    "-Wunused:all"
   )
 
   def sharedForkArgs = Task {
