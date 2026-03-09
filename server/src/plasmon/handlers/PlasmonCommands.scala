@@ -23,25 +23,21 @@ import plasmon.bsp.{
   Diagnostics
 }
 import plasmon.command.ServerCommandThreadPools
-import plasmon.ide.CancelTokens
 import plasmon.index.Indexer
 import plasmon.index.IndexerActor.Message
 import plasmon.internal.Constants
 import plasmon.jsonrpc.{CommandHandler, Handlers}
 import plasmon.jsonrpc.CommandHandler.ParamsHelpers.*
-import plasmon.languageclient.PlasmonConfiguredLanguageClient
 import plasmon.pc.PresentationCompilers
 import plasmon.servercommand.BspUtil
 
 import java.io.{ByteArrayOutputStream, File, PrintStream, PrintWriter}
-import java.net.URI
 import java.nio.charset.StandardCharsets
 import java.util.concurrent.{CompletableFuture, ExecutionException}
 import java.util.concurrent.atomic.AtomicInteger
 
 import scala.build.bsp.{WrappedSourcesParams, WrappedSourcesResult}
-import scala.concurrent.{Await, Future}
-import scala.concurrent.duration.Duration
+import scala.concurrent.Future
 import scala.jdk.CollectionConverters.*
 import scala.meta.cli.Reporter
 import scala.meta.internal.metals.EmptyCancelToken
@@ -49,7 +45,7 @@ import scala.meta.internal.metap.DocumentPrinter
 import scala.meta.internal.pc.HasCompilerAccess
 import scala.meta.internal.semanticdb.SymbolOccurrence
 import scala.meta.metap.{Format, Settings}
-import scala.meta.pc.{CancelToken, PresentationCompiler}
+import scala.meta.pc.PresentationCompiler
 import scala.util.{Failure, Success, Using}
 
 object PlasmonCommands {
@@ -172,22 +168,6 @@ object PlasmonCommands {
     implicit lazy val codec: JsonValueCodec[ReImportResponse] = JsonCodecMaker.make
   }
 
-  private final case class EnableFallbackCompilerResponse(
-    enabled: Boolean
-  )
-
-  private object EnableFallbackCompilerResponse {
-    implicit lazy val codec: JsonValueCodec[EnableFallbackCompilerResponse] = JsonCodecMaker.make
-  }
-
-  private final case class DisableFallbackCompilerResponse(
-    disabled: Boolean
-  )
-
-  private object DisableFallbackCompilerResponse {
-    implicit lazy val codec: JsonValueCodec[DisableFallbackCompilerResponse] = JsonCodecMaker.make
-  }
-
   private final case class OrganizeImportsResponse(
     error: Option[String],
     fileChanged: Boolean
@@ -226,10 +206,10 @@ object PlasmonCommands {
     alreadyAdded: Set[plasmon.bsp.BuildTool],
     tools: BuildTool.Tools
   ): Seq[BuildToolOrModule.BuildTool] = {
-    val discovered           = BspUtil.discoverBuildTools(workspace, fileOpt, alreadyAdded)
-    val (mayUnload, mayLoad) = discovered.partition(tool => alreadyAdded.contains(tool.buildTool))
+    val discovered   = BspUtil.discoverBuildTools(workspace, fileOpt, alreadyAdded)
+    val (_, mayLoad) = discovered.partition(tool => alreadyAdded.contains(tool.buildTool))
 
-    val mayLoadEntries = mayLoad.map { tool =>
+    mayLoad.map { tool =>
       val infos =
         ConnectionInfoJson(
           tool.buildTool.launcher(tools).info
@@ -245,28 +225,9 @@ object PlasmonCommands {
         alreadyAdded = false
       )
     }
-    val mayUnloadEntries = mayUnload.map { tool =>
-      val infos =
-        ConnectionInfoJson(
-          tool.buildTool.launcher(tools).info
-        ) +: tool.buildTool.extraLaunchers.map(t =>
-          ConnectionInfoJson(t.info)
-        )
-      BuildToolOrModule.BuildTool(
-        tool.buildTool.id,
-        tool.discoverId,
-        tool.buildTool.description(workspace),
-        "Unload build tool" + tool.warning.fold("")(msg => s" (warning: $msg)"),
-        infos,
-        alreadyAdded = true
-      )
-    }
-
-    mayLoadEntries // ++ mayUnloadEntries
   }
 
   private def listModules(
-    workspace: os.Path,
     file: os.Path,
     server: Server
   ): Seq[BuildToolOrModule.Module] = {
@@ -484,7 +445,7 @@ object PlasmonCommands {
     commandName: String,
     hard: Boolean
   ) =
-    CommandHandler.of(commandName, refreshStatus = true) { (params, logger) =>
+    CommandHandler.of(commandName, refreshStatus = true) { (params, _) =>
       params.as[String](
         commandName,
         onError = msg =>
@@ -550,7 +511,7 @@ object PlasmonCommands {
     }
 
   def buildToolsCommands(server: Server, indexer: Indexer, pools: ServerCommandThreadPools) = Seq(
-    CommandHandler.of("plasmon/listRunningBuildTools") { (params, logger) =>
+    CommandHandler.of("plasmon/listRunningBuildTools") { (_, _) =>
       Future {
         val buildTools = server.bspServers.list.map {
           case (buildTool, conns) =>
@@ -566,7 +527,7 @@ object PlasmonCommands {
         writeToGson(buildTools)(using BuildToolOrModule.seqCodec)
       }(using server.pools.requestsEces).asJava
     },
-    CommandHandler.of("plasmon/listBuildTools") { (params, logger) =>
+    CommandHandler.of("plasmon/listBuildTools") { (params, _) =>
       params.asOpt[String]("plasmon/listBuildTools") { fileOpt0 =>
         Future {
           val workspace = server.workspace()
@@ -582,7 +543,7 @@ object PlasmonCommands {
         }(using server.pools.requestsEces).asJava
       }
     },
-    CommandHandler.of("plasmon/listBuildToolsOrModules") { (params, logger) =>
+    CommandHandler.of("plasmon/listBuildToolsOrModules") { (params, _) =>
       params.asOpt[String]("plasmon/listBuildToolsOrModules") { fileOpt0 =>
         Future {
           val workspace = os.Path(server.workspace().toNIO)
@@ -594,12 +555,12 @@ object PlasmonCommands {
               server.bspServers.list.map(_._1).toSet,
               server.tools
             )
-          val modules = fileOpt.toSeq.flatMap(listModules(workspace, _, server))
+          val modules = fileOpt.toSeq.flatMap(listModules(_, server))
           writeToGson(buildTools ++ modules)(using BuildToolOrModule.seqCodec)
         }(using server.pools.requestsEces).asJava
       }
     },
-    CommandHandler.of("plasmon/listModulesOf") { (params, logger) =>
+    CommandHandler.of("plasmon/listModulesOf") { (params, _) =>
       params.asOpt[String]("plasmon/listModulesOf") { fileOpt0 =>
         Future {
           val workspace = os.Path(server.workspace().toNIO)
@@ -611,12 +572,12 @@ object PlasmonCommands {
               server.bspServers.list.map(_._1).toSet,
               server.tools
             )
-          val modules = fileOpt.toSeq.flatMap(listModules(workspace, _, server))
+          val modules = fileOpt.toSeq.flatMap(listModules(_, server))
           writeToGson(buildTools ++ modules)(using BuildToolOrModule.seqCodec)
         }(using server.pools.requestsEces).asJava
       }
     },
-    CommandHandler.of("plasmon/loadBuildTool", refreshStatus = true) { (params, logger) =>
+    CommandHandler.of("plasmon/loadBuildTool", refreshStatus = true) { (params, _) =>
 
       def load(
         discoverId: String,
@@ -689,7 +650,7 @@ object PlasmonCommands {
             load(discoverId, toolId, Some(strPath.osPathFromUri))
         }
     },
-    CommandHandler.of("plasmon/unloadBuildTool", refreshStatus = true) { (params, logger) =>
+    CommandHandler.of("plasmon/unloadBuildTool", refreshStatus = true) { (params, _) =>
 
       def unload(
         discoverId: String,
@@ -859,7 +820,7 @@ object PlasmonCommands {
         )
       }(using server.pools.requestsEces).asJava
     },
-    CommandHandler.of("plasmon/compile", refreshStatus = true) { (params, logger) =>
+    CommandHandler.of("plasmon/compile", refreshStatus = true) { (params, _) =>
       params.asFileUri("plasmon/compile") { file =>
         val f = Future {
           server.compilations.compileFile(file) match {
@@ -884,7 +845,7 @@ object PlasmonCommands {
         f0.asJava
       }
     },
-    CommandHandler.of("plasmon/clean", refreshStatus = true) { (params, logger) =>
+    CommandHandler.of("plasmon/clean", refreshStatus = true) { (params, _) =>
       params.asFileUri("plasmon/clean") { file =>
         val f: Future[CompletableFuture[CleanResponse]] = Future {
           server.bspData.inverseSources(file) match {
@@ -950,7 +911,7 @@ object PlasmonCommands {
     CommandHandler.of("plasmon/cleanAll", refreshStatus = true) { (_, _) =>
       ???
     },
-    CommandHandler.of("plasmon/reImport", refreshStatus = true) { (params, logger) =>
+    CommandHandler.of("plasmon/reImport", refreshStatus = true) { (params, _) =>
       params.asFileUri("plasmon/reImport") { file =>
         Future {
           buildServer(server, file) match {
@@ -994,7 +955,7 @@ object PlasmonCommands {
           .asJava
       }
     },
-    CommandHandler.of("plasmon/organizeImports", refreshStatus = true) { (params, logger) =>
+    CommandHandler.of("plasmon/organizeImports", refreshStatus = true) { (params, _) =>
       params.asFileUri("plasmon/organizeImports") { file =>
         Future {
           val resp = buildServer(server, file) match {
@@ -1085,13 +1046,13 @@ object PlasmonCommands {
         }(using server.pools.requestsEces).asJava
       }
     },
-    CommandHandler.of("plasmon/organizeImportsInModule", refreshStatus = true) { (params, logger) =>
+    CommandHandler.of("plasmon/organizeImportsInModule", refreshStatus = true) { (params, _) =>
       params.asFileUri("plasmon/organizeImportsInModule") { _ =>
         ???
         CompletableFuture.completedFuture(writeToGson(OrganizeImportsInModuleResponse(???, ???)))
       }
     },
-    CommandHandler.of("plasmon/cancelAllCompilations", refreshStatus = true) { (params, logger) =>
+    CommandHandler.of("plasmon/cancelAllCompilations", refreshStatus = true) { (_, _) =>
       Future {
         val count = server.compilations.cancelAll()
         val resp  = CancelAllCompilationsResponse(count)
@@ -1104,7 +1065,6 @@ object PlasmonCommands {
     CommandHandler.of("plasmon/listModuleActions") { (params, logger) =>
       params.asOpt[String]("plasmon/listModuleActions") { fileOpt0 =>
         Future {
-          val workspace = server.workspace()
           val fileOpt = fileOpt0.map(_.osPathFromUri)
             .orElse(server.editorState.focusedDocument)
 
@@ -1157,7 +1117,7 @@ object PlasmonCommands {
         }(using server.pools.requestsEces).asJava
       }
     },
-    CommandHandler.of("plasmon/loadModule", refreshStatus = true) { (params, logger) =>
+    CommandHandler.of("plasmon/loadModule", refreshStatus = true) { (params, _) =>
       params.asValues[String, String, String]("plasmon/loadModule") {
         (workspaceUri, name, moduleUri) =>
           Future {
@@ -1188,7 +1148,7 @@ object PlasmonCommands {
           }(using server.pools.requestsEces).asJava
       }
     },
-    CommandHandler.of("plasmon/unloadModule", refreshStatus = true) { (params, logger) =>
+    CommandHandler.of("plasmon/unloadModule", refreshStatus = true) { (params, _) =>
       params.asValues[String, String, String]("plasmon/unloadModule") {
         (workspaceUri, name, moduleUri) =>
           Future {
@@ -1236,7 +1196,7 @@ object PlasmonCommands {
 
   def reindexCommands(server: Server, indexer: Indexer, pools: ServerCommandThreadPools) =
     Seq(
-      CommandHandler.of("plasmon/reIndexActions") { (params, logger) =>
+      CommandHandler.of("plasmon/reIndexActions") { (params, _) =>
         params.as[String]("plasmon/reIndexActions") { strUri =>
           Future {
             val file        = strUri.osPathFromUri
@@ -1309,7 +1269,7 @@ object PlasmonCommands {
 
   def interactiveCompilerCommands(server: Server) =
     Seq(
-      CommandHandler.of("plasmon/interactiveCompilerActions") { (params, logger) =>
+      CommandHandler.of("plasmon/interactiveCompilerActions") { (params, _) =>
         scribe.info("params=" + pprint.apply(params))
         params.asFileUri("plasmon/interactiveCompilerActions") { file =>
           Future {
@@ -1381,7 +1341,7 @@ object PlasmonCommands {
         }
       },
       CommandHandler.of("plasmon/interactiveCompilerStart", refreshStatus = true) {
-        (params, logger) =>
+        (params, _) =>
           params.asValues[String, String]("plasmon/interactiveCompilerStart") {
             (targetOrPath, compilerId) =>
               Future {
@@ -1414,7 +1374,7 @@ object PlasmonCommands {
           }
       },
       CommandHandler.of("plasmon/interactiveCompilerRemove", refreshStatus = true) {
-        (params, logger) =>
+        (params, _) =>
           params.asValues[String, String]("plasmon/interactiveCompilerRemove") {
             (targetOrPath, compilerId) =>
               Future {
@@ -1446,7 +1406,7 @@ object PlasmonCommands {
           }
       },
       CommandHandler.of("plasmon/interactiveCompilerInterrupt", refreshStatus = true) {
-        (params, logger) =>
+        (params, _) =>
           params.asValues[String, String]("plasmon/interactiveCompilerInterrupt") {
             (targetOrPath, compilerId) =>
               Future {
@@ -1492,7 +1452,7 @@ object PlasmonCommands {
           }
       },
       CommandHandler.of("plasmon/enablePcDiagnostics") {
-        (params, logger) =>
+        (params, _) =>
           params.as[Boolean]("plasmon/enablePcDiagnostics") { enable =>
             Future {
               val clients = server.bspServers.list.flatMap(_._2).map(_.client)
@@ -1510,7 +1470,7 @@ object PlasmonCommands {
           }
       },
       CommandHandler.of("plasmon/togglePcDiagnostics") {
-        (params, logger) =>
+        (_, _) =>
           Future {
             val clients = server.bspServers.list.flatMap(_._2).map(_.client)
             for (client <- clients) {
@@ -1628,8 +1588,8 @@ object PlasmonCommands {
 
   def debugCommands(server: Server) =
     Seq(
-      CommandHandler.of("plasmon/pcDebug") { (params, logger) =>
-        params.asValues[String, Boolean]("plasmon/pcDebug") { (uri, enable) =>
+      CommandHandler.of("plasmon/pcDebug") { (params, _) =>
+        params.asValues[String, Boolean]("plasmon/pcDebug") { (uri, _) =>
           Future {
             val path           = uri.osPathFromUri
             val buildTargetOpt = server.bspData.inverseSources(path)
@@ -1644,7 +1604,7 @@ object PlasmonCommands {
                       val (logName, _) =
                         server.presentationCompilers.loggerIdName(targetId, pc.scalaVersion)
                       Right(PcDebugResp(logName, formerValue, ""))
-                    case other =>
+                    case _ =>
                       Left("")
                   }
               }
@@ -1656,7 +1616,7 @@ object PlasmonCommands {
         }
       },
       // TODO Merge debugSymbolIndex and debugFullTree?
-      CommandHandler.of("plasmon/debugSymbolIndex") { (params, logger) =>
+      CommandHandler.of("plasmon/debugSymbolIndex") { (params, _) =>
         params.asFileUri("plasmon/debugSymbolIndex") { file =>
           Future {
             val buildTargetOpt = server.bspData.inverseSources(file)
@@ -1721,7 +1681,7 @@ object PlasmonCommands {
           }(using server.pools.requestsEces).asJava
         }
       },
-      CommandHandler.of("plasmon/debugFullTree") { (params, logger) =>
+      CommandHandler.of("plasmon/debugFullTree") { (params, _) =>
         params.asFileUri("plasmon/debugFullTree") { file =>
           val f = Future {
             val buildTargetOpt = server.bspData.inverseSources(file)
@@ -1760,7 +1720,7 @@ object PlasmonCommands {
           f0.asJava
         }
       },
-      CommandHandler.of("plasmon/debugBspData") { (params, logger) =>
+      CommandHandler.of("plasmon/debugBspData") { (params, _) =>
         params.asFileUri("plasmon/debugBspData") { file =>
           Future {
             val buildTargetOpt = server.bspData.inverseSources(file)
@@ -1834,7 +1794,7 @@ object PlasmonCommands {
           }(using server.pools.requestsEces).asJava
         }
       },
-      CommandHandler.of("plasmon/debugSemanticdbLookup") { (params, logger) =>
+      CommandHandler.of("plasmon/debugSemanticdbLookup") { (params, _) =>
         params.asValues[String, Boolean]("plasmon/debugSemanticdbLookup") {
           case (fileUri, detailed) =>
             Future {
@@ -1896,7 +1856,7 @@ object PlasmonCommands {
             }(using server.pools.requestsEces).asJava
         }
       },
-      CommandHandler.of("plasmon/debugServerState") { (params, logger) =>
+      CommandHandler.of("plasmon/debugServerState") { (_, _) =>
         Future {
           val dest    = server.workspace() / ".plasmon/server-state.json"
           val tmpDest = os.temp(prefix = "plasmon-server-state", suffix = ".json")
@@ -1922,7 +1882,7 @@ object PlasmonCommands {
           writeToGson(resp)
         }(using server.pools.requestsEces).asJava
       },
-      CommandHandler.of("plasmon/debugPresentationCompiler") { (params, logger) =>
+      CommandHandler.of("plasmon/debugPresentationCompiler") { (params, _) =>
         params.as[Boolean]("plasmon/debugPresentationCompiler") { enable =>
           Future {
             val changed = server.presentationCompilers.setDebug(enable)

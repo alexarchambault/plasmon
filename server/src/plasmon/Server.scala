@@ -4,12 +4,9 @@ import ch.epfl.scala.bsp4j as b
 import com.github.plokhotnyuk.jsoniter_scala.core.{
   JsonReader,
   JsonValueCodec,
-  JsonWriter,
-  WriterConfig
+  JsonWriter
 }
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
-import com.google.gson.{FormattingStyle, Gson, GsonBuilder}
-import dotty.tools.dotc.interfaces.Diagnostic
 import org.eclipse.lsp4j as l
 import plasmon.PlasmonEnrichments.*
 import plasmon.bsp.{
@@ -39,8 +36,6 @@ import plasmon.semdb.{
 import plasmon.status.StatusActor
 import plasmon.watch.{FileWatcher, WatchEvent}
 
-import java.io.OutputStream
-import java.nio.charset.StandardCharsets
 import java.nio.file.NoSuchFileException
 import java.util.concurrent.{CompletableFuture, TimeUnit}
 
@@ -74,7 +69,7 @@ import scala.meta.internal.pc.{
 import scala.meta.parsers.ParseException
 import scala.meta.tokenizers.TokenizeException
 import scala.reflect.ClassTag
-import scala.util.{Failure, Properties, Success}
+import scala.util.{Failure, Success}
 
 // Many things here inspired by https://github.com/scalameta/metals/blob/030641d97ca5b982144898a54c3b60b2c08b9614/metals/src/main/scala/scala/meta/metals/MetalsLanguageServer.scala
 // and earlier version of that file
@@ -296,7 +291,7 @@ final class Server(
     refreshStatus = refreshStatus,
     languageClient = languageClient,
     scala2Compat = scala2Compat,
-    emitDiagnostics = { (pc, module, uri, diags, pcLogger) =>
+    emitDiagnostics = { (_, module, uri, diags, _) =>
       val path = uri.toOsPath
       bspData.inverseSources(path) match {
         case Some(targetId) =>

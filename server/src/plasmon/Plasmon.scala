@@ -18,7 +18,7 @@ object Plasmon extends CommandsEntryPoint {
   private def remoteCommands: Seq[caseapp.Command[?]] =
     Server.remoteCommands.map { command =>
       val commandNames = command.names
-      new caseapp.Command[NoArgs]()(Parser[NoArgs], command.help.as[NoArgs]) {
+      new caseapp.Command[NoArgs]()(using Parser[NoArgs], command.help.as[NoArgs]) {
         override def hasHelp: Boolean        = false
         override def hasFullHelp: Boolean    = false
         override def names                   = commandNames

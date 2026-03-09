@@ -7,7 +7,7 @@ import dependency.parser.DependencyParser
 
 import java.io.OutputStream
 
-import scala.concurrent.duration.{DurationInt, FiniteDuration, IntMult}
+import scala.concurrent.duration.{FiniteDuration, IntMult}
 import scala.jdk.CollectionConverters.*
 
 abstract class SingleModuleBuildTool extends Product with Serializable {

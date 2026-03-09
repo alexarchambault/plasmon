@@ -2,7 +2,6 @@ package plasmon.index
 
 import ch.epfl.scala.bsp4j as b
 import com.google.gson.GsonBuilder
-import coursier.version.Version
 import org.eclipse.lsp4j as l
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseErrorCode
@@ -15,13 +14,11 @@ import plasmon.pc.NopReportContext
 import plasmon.servercommand.BspUtil
 import sourcecode.{FileName, Line}
 
-import java.net.URI
 import java.time.{Instant, OffsetDateTime, ZoneId}
 import java.time.temporal.ChronoUnit
 import java.util.concurrent.ExecutionException
 import java.util.zip.ZipFile
 
-import scala.annotation.nowarn
 import scala.build.bsp.{WrappedSourcesParams, WrappedSourcesResult}
 import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.{Await, ExecutionContext, Future, Promise}
@@ -30,7 +27,6 @@ import scala.jdk.CollectionConverters.*
 import scala.meta.Dialect
 import scala.meta.inputs.Input
 import scala.meta.internal.metals.{
-  JdkSources,
   ScalaVersions,
   SemanticdbDefinition,
   WorkspaceSymbolInformation
@@ -530,7 +526,6 @@ class IndexerActor(
         }(using server.pools.indexingEc)
     }
 
-    @nowarn
     implicit val ec: ExecutionContext = server.pools.indexingEc
 
     shouldStop.onComplete {
@@ -791,7 +786,6 @@ class IndexerActor(
     ignoreToplevelSymbolsErrors: Boolean,
     interruptIndexing: () => Boolean
   )(implicit ctx: SourcePath.Context): Unit = {
-    import scala.meta.dialects.Scala213
     for ((targetId, sourceUri) <- dependencySources)
       if (!interruptIndexing())
         try {
@@ -1060,7 +1054,6 @@ class IndexerActor(
       None
   }
 
-  private lazy val substitutableVersionCutoff = Version("3.8.0-RC1")
   private def isSubstitutableScalaLibrary(fileName: String): Boolean =
     fileName.startsWith("scala-library-") &&
     fileName.endsWith(".jar")

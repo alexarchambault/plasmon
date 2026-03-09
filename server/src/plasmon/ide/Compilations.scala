@@ -43,7 +43,7 @@ final class Compilations(
       queues
         .iterator
         .exists {
-          case (buildServer, queue) =>
+          case (_, queue) =>
             queue.exists(_.promise.isCompleted)
         }
     if (toProcess().nonEmpty)

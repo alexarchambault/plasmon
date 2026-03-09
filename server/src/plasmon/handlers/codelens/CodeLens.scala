@@ -5,13 +5,12 @@ import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import org.eclipse.lsp4j as l
 import plasmon.Server
 import plasmon.PlasmonEnrichments.*
-import plasmon.ide.{Buffers, ClientCommands}
+import plasmon.ide.ClientCommands
 import plasmon.jsonrpc.{CommandHandler, Handlers, RequestHandler}
 import plasmon.jsonrpc.CommandHandler.ParamsHelpers.*
 import plasmon.semdb.Semanticdbs
 
 import java.util.List as JList
-import java.util.concurrent.CompletableFuture
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.jdk.CollectionConverters.*
@@ -56,7 +55,7 @@ object CodeLens {
         )(using server.pools.codeLensEc)
       )
 
-      (params, logger) =>
+      (params, _) =>
         val f = Future {
           val path = params.getTextDocument.getUri.osPathFromUri
           server.bspData.inverseSources(path) match {

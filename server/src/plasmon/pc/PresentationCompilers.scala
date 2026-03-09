@@ -970,8 +970,7 @@ class PresentationCompilers(
     targetId: b.BuildTargetIdentifier,
     token: CancelToken
   ): Option[Future[CompileResult]] =
-    withPCAndAdjustLsp(params, targetId) { (input, pc, adjust) =>
-      val path = params.getUri.osPathFromUri
+    withPCAndAdjustLsp(params, targetId) { (input, pc, _) =>
       val params0 = CompilerVirtualFileParams(
         new URI(input.path),
         input.value,
