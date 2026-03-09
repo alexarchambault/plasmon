@@ -17,7 +17,7 @@ abstract class PlasmonNoopLanguageClient extends PlasmonLanguageClient {
   ): CompletableFuture[l.MessageActionItem] =
     new CompletableFuture[l.MessageActionItem]()
   override def logMessage(message: l.MessageParams): Unit = ()
-  override def metalsExecuteClientCommand(params: l.ExecuteCommandParams): Unit =
+  override def executeClientCommand(params: l.ExecuteCommandParams): Unit =
     ()
 
   override def refreshModel(): CompletableFuture[Unit] =

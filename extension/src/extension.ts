@@ -403,7 +403,7 @@ function createClient(
 
         clientSubscription(
           client0.onNotification(
-            "metals/executeClientCommand",
+            "plasmon/executeClientCommand",
             (params: ExecuteCommandParams) => {
               vscode.commands.executeCommand(params.command, ...(params.arguments ?? [])).then(
                 () => {},

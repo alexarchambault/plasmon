@@ -41,8 +41,8 @@ class PlasmonConfiguredLanguageClient(
       underlying.refreshCodeLenses.thenApply(_ => ())
     else CompletableFuture.completedFuture(())
 
-  override def metalsExecuteClientCommand(params: l.ExecuteCommandParams): Unit =
-    underlying.metalsExecuteClientCommand(params)
+  override def executeClientCommand(params: l.ExecuteCommandParams): Unit =
+    underlying.executeClientCommand(params)
 
   override def statusUpdate(uri: String, updates: JList[PlasmonLanguageClient.StatusUpdate]): Unit =
     underlying.statusUpdate(uri, updates)

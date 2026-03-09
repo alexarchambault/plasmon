@@ -175,7 +175,7 @@ object CodeLens {
                 .asScala
             }
             for (location <- locations.headOption)
-              server.languageClient.metalsExecuteClientCommand(
+              server.languageClient.executeClientCommand(
                 ClientCommands.GotoLocation.toExecuteCommandParams(
                   ClientCommands.WindowLocation(location.getUri, location.getRange)
                 )
