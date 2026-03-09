@@ -626,24 +626,6 @@ final class Server(
       editorState.fingerprints.add(path, os.read(path))
   }
 
-  private def fileChangedOrCreatedInternal(path: os.Path, created: Boolean): Unit = {
-    if (created)
-      bspData.onCreate(path)
-  }
-
-  def fileChangedOrCreated(path: os.Path, created: Boolean): Unit = {
-    fileChangedOrCreatedUpdateState(path, created)
-    fileWatcher.enqueue(WatchEvent.CreateOrModify(path))
-  }
-
-  private def fileDeletedInternal(path: os.Path): Unit = {
-    for (buildClient <- bspServers.list.flatMap(_._2).map(_.client))
-      buildClient.didDelete(path)
-  }
-
-  def fileDeleted(path: os.Path): Unit =
-    fileWatcher.enqueue(WatchEvent.Delete(path))
-
   private def onNewSemanticdb(
     module: GlobalSymbolIndex.Module,
     path: os.Path,
