@@ -753,7 +753,7 @@ class IndexerActor(
       item       <- sourcesRes.getItems.asScala
       sourceItem <- item.getSources.asScala
     }
-      targetData.addSourceItem(sourceItem, item.getTarget)
+      targetData.addSourceItem(sourceItem.getUri.osPathFromUri, item.getTarget)
 
     val depSourcesRes = maybeCached("buildTargetDependencySources") {
       buildServer

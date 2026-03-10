@@ -102,12 +102,10 @@ object FileWatcher {
     val files       = mutable.Set.empty[os.Path]
 
     def collect(path: os.Path): Unit = {
-      val shouldBeWatched =
-        !bspData.isInsideSourceRoot(path) &&
-        !bspData.checkIfGeneratedSource(path)
+      val shouldBeWatched = !bspData.isInsideSourceRoot(path)
 
       if (shouldBeWatched)
-        if (bspData.isSourceFile(path))
+        if (os.isFile(path))
           files.add(path)
         else
           directories.add(path)

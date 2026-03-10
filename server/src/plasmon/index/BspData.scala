@@ -348,12 +348,6 @@ final class BspData(
       .filter(root => path.toNIO.startsWith(root.toNIO))
       .find(_ => true)
 
-  def isSourceFile(source: os.Path): Boolean =
-    data.iterator.exists(_.isSourceFile(source))
-
-  def checkIfGeneratedSource(source: os.Path): Boolean =
-    data.iterator.exists(_.checkIfGeneratedSource(source))
-
   def buildServerOf(id: b.BuildTargetIdentifier): Option[PlasmonBuildServer] =
     data.fromOptions { data =>
       if (data.targetToWorkspace.contains(id)) data.buildServerOpt
