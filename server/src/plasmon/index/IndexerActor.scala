@@ -344,11 +344,17 @@ class IndexerActor(
       case _ => None
     }
 
-    val (targets, depSourcesRes) =
+    val (targets, sourcesRes, depSourcesRes, wrappedSourcesRes) =
       inState(stateName(), Some(logger), progress = s"Fetching BSP data for ${conn.enhancedName}") {
         logger.timed(s"Fetching BSP data for ${conn.enhancedName}") {
           conn.info.workspace
-          val (workspaceBuildTargetsResp, targets0, depSourcesRes0) = fetchBspData(
+          val (
+            workspaceBuildTargetsResp,
+            targets0,
+            sourcesRes0,
+            depSourcesRes0,
+            wrappedSourcesRes0
+          ) = fetchBspData(
             message,
             buildServer,
             info,
@@ -366,7 +372,7 @@ class IndexerActor(
             conn.client,
             workspaceBuildTargetsResp
           )
-          (targets0, depSourcesRes0)
+          (targets0, sourcesRes0, depSourcesRes0, wrappedSourcesRes0)
         }
       }
 
@@ -406,9 +412,11 @@ class IndexerActor(
       val files =
         languageClient.reportProgress(progressId, progressName, "Listing workspace sources") {
           logger.timed("Listing workspace sources") {
-            for {
-              (sourceItem, targets) <- targetData.sourceItemsToBuildTarget.toVector
-              target = targets.asScala.headOption.getOrElse(sys.error("cannot happen"))
+            val fromMainSources = for {
+              item        <- sourcesRes.getItems.asScala.toSeq
+              sourceItem0 <- item.getSources.asScala
+              sourceItem = sourceItem0.getUri.osPathFromUri
+              target     = item.getTarget
               source <- {
                 if (interruptIndexing())
                   Nil
@@ -421,6 +429,23 @@ class IndexerActor(
               }
               if source.isScalaOrJava
             } yield (sourceItem, target, source)
+
+            val fromGeneratedSources = for {
+              item        <- wrappedSourcesRes.getItems.asScala.toSeq
+              sourceItem0 <- item.getSources.asScala
+              sourcePath          = sourceItem0.getUri.osPathFromUri
+              generatedSourcePath = sourceItem0.getGeneratedUri.osPathFromUri
+              target              = item.getTarget
+              source <- {
+                if (interruptIndexing())
+                  Nil
+                else
+                  Seq(sourcePath, generatedSourcePath).filter(os.isFile)
+              }
+              if source.isScalaOrJava
+            } yield (source, target, source)
+
+            fromMainSources ++ fromGeneratedSources
           }
         }
       val sourcesStr = if (files.length == 1) "source" else "sources"
@@ -510,22 +535,6 @@ class IndexerActor(
 
     @volatile var shouldStop0 = false
 
-    val futures = files.map {
-      case (sourceItem, target, source) =>
-        Future {
-          if (!shouldStop0) {
-            val dialectOpt =
-              if (source.last.endsWith(".sbt")) Some(scala.meta.dialects.Sbt)
-              else sourceDialect(target, Seq(data))
-            // FIXME Factor that so that we compute it only once per target
-            if (!shouldStop0)
-              doExpireSymbolDocDefinitions(source, target, dialectOpt)
-            if (!shouldStop0)
-              doIndexWorkspaceSourceSymbols(source, Some(sourceItem), target, Seq(data))
-          }
-        }(using server.pools.indexingEc)
-    }
-
     implicit val ec: ExecutionContext = server.pools.indexingEc
 
     shouldStop.onComplete {
@@ -534,7 +543,50 @@ class IndexerActor(
       case _ =>
     }
 
-    Future.sequence(futures).map(_ => ())
+    def deIndexDocFuture = Future.traverse(files) {
+      case (_, target, source) =>
+        Future {
+          if (!shouldStop0) {
+            val dialectOpt =
+              if (source.last.endsWith(".sbt")) Some(scala.meta.dialects.Sbt)
+              else sourceDialect(target, Seq(data))
+            // FIXME Factor that so that we compute it only once per target
+            if (!shouldStop0)
+              doExpireSymbolDocDefinitions(source, target, dialectOpt)
+          }
+        }(using server.pools.indexingEc)
+    }
+
+    def futureData = Future.traverse(files) {
+      case (sourceItem, target, source) =>
+        Future {
+          Option.when(!shouldStop0) {
+            val (symbols, methodSymbols, topLevelSymbols) =
+              doIndexWorkspaceSourceSymbols0(source, Some(sourceItem), target, Seq(data))
+
+            (source, symbols, methodSymbols, topLevelSymbols)
+          }
+        }(using server.pools.indexingEc)
+    }
+
+    for {
+      _    <- deIndexDocFuture
+      data <- futureData
+      _ = {
+        for ((source, symbols, methodSymbols, topLevelSymbols) <- data.flatten) {
+          for (tl <- topLevelSymbols)
+            server.symbolIndex.addToplevelSymbol(
+              tl.module,
+              tl.relUri,
+              tl.path,
+              tl.symbol,
+              tl.dialectOpt
+            )
+
+          server.symbolSearchIndex.didChange(source, symbols, methodSymbols)
+        }
+      }
+    } yield ()
   }
 
   private def fetchBspData(
@@ -545,7 +597,13 @@ class IndexerActor(
     jdkCp: List[String],
     millHack: Boolean,
     cacheDirOpt: Option[(os.Path, Boolean)]
-  ): (b.WorkspaceBuildTargetsResult, Seq[b.BuildTarget], b.DependencySourcesResult) = {
+  ): (
+    b.WorkspaceBuildTargetsResult,
+    Seq[b.BuildTarget],
+    b.SourcesResult,
+    b.DependencySourcesResult,
+    WrappedSourcesResult
+  ) = {
 
     lazy val gson = new GsonBuilder().create()
     def maybeCached[T: ClassTag](name: String)(get: => T): T =
@@ -761,7 +819,7 @@ class IndexerActor(
         .get()
     }
 
-    (workspaceBuildTargetsResp, targets0, depSourcesRes)
+    (workspaceBuildTargetsResp, targets0, sourcesRes, depSourcesRes, wrappedSourcesRes)
   }
 
   private def addDependencySources(
@@ -871,17 +929,49 @@ class IndexerActor(
     sourceItem: Option[os.Path],
     target: b.BuildTargetIdentifier,
     data: Seq[TargetData]
-  ): Unit =
+  ): Unit = {
+
+    val (symbols, methodSymbols, topLevelSymbols) =
+      doIndexWorkspaceSourceSymbols0(source, sourceItem, target, data)
+
+    for (tl <- topLevelSymbols)
+      server.symbolIndex.addToplevelSymbol(
+        tl.module,
+        tl.relUri,
+        tl.path,
+        tl.symbol,
+        tl.dialectOpt
+      )
+
+    server.symbolSearchIndex.didChange(source, symbols, methodSymbols)
+  }
+
+  private final case class TopLevelSymbol(
+    module: GlobalSymbolIndex.Module,
+    relUri: String,
+    path: SourcePath,
+    symbol: String,
+    dialectOpt: Option[Dialect]
+  )
+
+  private def doIndexWorkspaceSourceSymbols0(
+    source: os.Path,
+    sourceItem: Option[os.Path],
+    target: b.BuildTargetIdentifier,
+    data: Seq[TargetData]
+  ): (Seq[WorkspaceSymbolInformation], Seq[WorkspaceSymbolInformation], Seq[TopLevelSymbol]) =
     try {
       import scala.meta.internal.semanticdb.Scala.*
       val sourceToIndex0 =
         server.bspData.mappedTo(target, source).map(_.compilerPath).getOrElse(source)
+      val symbols         = new ArrayBuffer[WorkspaceSymbolInformation]
+      val methodSymbols   = new ArrayBuffer[WorkspaceSymbolInformation]
+      val topLevelSymbols = new ArrayBuffer[TopLevelSymbol]
+
       if (os.exists(sourceToIndex0)) {
-        val dialectOpt    = sourceDialect(target, data)
-        val reluri        = source.toIdeallyRelativeURI(sourceItem)
-        val input         = sourceToIndex0.toInput
-        val symbols       = ArrayBuffer.empty[WorkspaceSymbolInformation]
-        val methodSymbols = ArrayBuffer.empty[WorkspaceSymbolInformation]
+        val dialectOpt = sourceDialect(target, data)
+        val reluri     = source.toIdeallyRelativeURI(sourceItem)
+        val input      = sourceToIndex0.toInput
         SemanticdbDefinition.foreach(
           input,
           dialectOpt,
@@ -890,27 +980,26 @@ class IndexerActor(
         ) {
           case SemanticdbDefinition(info, occ, owner) =>
             if (info.isExtension)
-              occ.range.foreach { range =>
+              for (range <- occ.range)
                 methodSymbols += WorkspaceSymbolInformation(
                   info.symbol,
                   info.kind,
                   range.toLsp
                 )
-              }
             else if (info.kind.isRelevantKind)
-              occ.range.foreach { range =>
+              for (range <- occ.range)
                 symbols += WorkspaceSymbolInformation(
                   info.symbol,
                   info.kind,
                   range.toLsp
                 )
-              }
+
             if (
               sourceItem.isDefined &&
               !info.symbol.isPackage &&
               (owner.isPackage || source.isScalaScript)
             )
-              server.symbolIndex.addToplevelSymbol(
+              topLevelSymbols += TopLevelSymbol(
                 target.module,
                 reluri,
                 SourcePath.Standard(source.toNIO),
@@ -918,12 +1007,16 @@ class IndexerActor(
                 dialectOpt
               )
         }(using NopReportContext)
-        server.symbolSearchIndex.didChange(source, symbols.toSeq, methodSymbols.toSeq)
+
+        (symbols.toSeq, methodSymbols.toSeq, topLevelSymbols.toSeq)
       }
+      else
+        (Nil, Nil, Nil)
     }
     catch {
       case NonFatal(e) =>
         scribe.error(source.toString(), e)
+        (Nil, Nil, Nil)
     }
 
   private def addSourceJarSymbols(
