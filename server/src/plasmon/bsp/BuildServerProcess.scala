@@ -4,7 +4,7 @@ import bloop.rifle.BspConnection
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import plasmon.Logger
-import plasmon.render.JsonCodecs.{given, *}
+import plasmon.render.JsonCodecs.*
 import plasmon.servercommand.BspUtil
 
 import java.io.{ByteArrayOutputStream, PrintStream}

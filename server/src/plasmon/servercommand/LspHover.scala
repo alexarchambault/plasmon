@@ -9,8 +9,6 @@ import plasmon.ide.HoverExtParams
 import plasmon.index.Indexer
 import plasmon.protocol.CommandClient
 
-import java.net.URI
-
 import scala.jdk.CollectionConverters.*
 
 final case class LspHover(

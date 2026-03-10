@@ -325,7 +325,6 @@ final class Server(
       languageClient,
       editorState.buffers,
       editorState.trees,
-      workspace(),
       onBuildTargetDidChangeFunc = params =>
         if (params.getChanges.asScala.nonEmpty) {
           scribe.info(s"Some build targets changed ($params)")
@@ -467,7 +466,7 @@ final class Server(
   // STATE
   lazy val symbolDocs = new Docstrings(symbolIndex)(using NopReportContext)
 
-  val status = new Status(this, pools.bspHealthCheckScheduler)
+  val status = new Status(this)
 
   val statusActor = new StatusActor(
     languageClient,

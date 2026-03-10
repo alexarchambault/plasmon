@@ -16,7 +16,6 @@ import java.util.concurrent.{
   TimeoutException
 }
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicReference}
-import java.util.concurrent.locks.ReentrantLock
 
 import scala.annotation.tailrec
 import scala.collection.mutable
@@ -261,7 +260,6 @@ object FileWatcher {
       }
 
       override def onNext(event: PathWatchers.Event): Unit = {
-        val path = event.getTypedPath.getPath
         for (path <- Option(event.getTypedPath.getPath).map(os.Path(_)) if watchFilter(path))
           event.getKind match {
             // Swoval PathWatcher may not disambiguate between create and modify events on macOS

@@ -21,7 +21,7 @@ object SignatureHelp {
     cancelTokensEces: ExecutionContextExecutorService
   ) =
     RequestHandler.of[l.TextDocumentPositionParams, l.SignatureHelp]("textDocument/signatureHelp") {
-      (params, logger) =>
+      (params, _) =>
         CancelTokens.future { token =>
           server.presentationCompilers.signatureHelp(params, token)
         }(using cancelTokensEces)

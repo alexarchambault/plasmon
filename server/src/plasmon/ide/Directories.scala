@@ -2,8 +2,6 @@
 
 package plasmon.ide
 
-import scala.meta.io.RelativePath
-
 object Directories {
   def readonly0: os.SubPath =
     os.sub / ".plasmon/readonly"

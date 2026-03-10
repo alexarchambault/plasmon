@@ -86,10 +86,10 @@ class PackageProvider(
       acc: PackagesStructure = PackagesStructure.empty
     ): PackagesStructure =
       tree match {
-        case p @ Pkg(_, Nil)     => acc.addPackage(p)
-        case p @ Pkg(_, st :: _) => extractOuterPackage(st, acc.addPackage(p))
-        case p: Pkg.Object       => acc.withObject(p)
-        case _                   => acc
+        case p @ Pkg.After_4_9_9(_, Pkg.Body(Nil))     => acc.addPackage(p)
+        case p @ Pkg.After_4_9_9(_, Pkg.Body(st :: _)) => extractOuterPackage(st, acc.addPackage(p))
+        case p: Pkg.Object                             => acc.withObject(p)
+        case _                                         => acc
       }
 
     tree match {

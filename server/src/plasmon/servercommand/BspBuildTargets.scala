@@ -17,13 +17,6 @@ final case class BspBuildTargets(
   override def names = BspBuildTargets.names
   def run(options: BspBuildTargetsOptions, args: RemainingArgs): Unit = {
 
-    val path = args.all match {
-      case Seq()      => os.pwd
-      case Seq(path0) => os.Path(path0, os.pwd)
-      case _ =>
-        sys.error("Cannot look into several projects for now")
-    }
-
     for (buildServer <- server.bspServers.list.flatMap(_._2)) {
 
       // TODO Say if each build target is loaded or not

@@ -6,10 +6,9 @@ import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import plasmon.PlasmonEnrichments.*
 
-import java.nio.charset.{Charset, StandardCharsets}
+import java.nio.charset.Charset
 import java.util.concurrent.{ConcurrentHashMap, ConcurrentLinkedQueue}
 
-import scala.meta.internal.io.FileIO
 import scala.meta.internal.jdk.CollectionConverters.*
 import scala.meta.internal.mtags.{MD5, Md5Fingerprints}
 import scala.meta.io.AbsolutePath

@@ -3,7 +3,6 @@
 package plasmon.ide
 
 import ch.epfl.scala.bsp4j as b
-import dotty.tools.dotc.semanticdb.TextDocuments
 import org.eclipse.lsp4j as l
 import plasmon.PlasmonEnrichments.*
 import plasmon.ide.*

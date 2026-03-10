@@ -2,8 +2,6 @@
 
 package plasmon.watch
 
-import scala.jdk.CollectionConverters.*
-
 /** Trie representation of a set of paths
   *
   * Each path segment is represented by a node in a tree. Can be used to efficiently check if the

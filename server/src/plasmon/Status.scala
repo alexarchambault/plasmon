@@ -26,12 +26,10 @@ import java.util.concurrent.{
 import java.util.concurrent.atomic.AtomicReference
 
 import scala.jdk.CollectionConverters.*
-import scala.meta.internal.mtags.SourcePath
 import scala.meta.internal.pc.HasCompilerAccess
 
 class Status(
-  server: Server,
-  healthCheckScheduler: ScheduledExecutorService
+  server: Server
 ) {
 
   import Status._
@@ -66,18 +64,6 @@ class Status(
       command = "plasmon.show-log",
       tooltip = "Show log",
       arguments = List(logId).asJava
-    )
-
-  private def showDocCommand(
-    docName: String,
-    docContent: String,
-    docLanguage: Option[String]
-  ) =
-    PlasmonLanguageClient.Command(
-      title = "Show document",
-      command = "plasmon.show-doc",
-      tooltip = "Show doc",
-      arguments = (List(docName, docContent) ++ docLanguage.toList).asJava
     )
 
   private def indexerUpdate(

@@ -150,12 +150,7 @@ object CodeLens {
           }
         }(using server.pools.requestsEces)
 
-        val f0 = {
-          implicit val ec = server.pools.requestsEces
-          f.flatten
-        }
-
-        f0.asJava
+        f.flatten.asJava
     }
 
   final case class GotoCommandParams(symbol: String, module: String)
@@ -164,7 +159,7 @@ object CodeLens {
   }
   def commandHandlers(server: Server) =
     Seq(
-      CommandHandler.of("goto") { (params, logger) =>
+      CommandHandler.of("goto") { (params, _) =>
         params.as[GsonValue[GotoCommandParams]]("goto") { params =>
           val module = GlobalSymbolIndex.Module.fromString(params.value.module)
           Future {

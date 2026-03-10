@@ -837,12 +837,7 @@ object PlasmonCommands {
           }
         }(using server.pools.requestsEces)
 
-        val f0 = {
-          implicit val ec = server.pools.requestsEces
-          f.flatten
-        }
-
-        f0.asJava
+        f.flatten.asJava
       }
     },
     CommandHandler.of("plasmon/clean", refreshStatus = true) { (params, _) =>
@@ -1062,7 +1057,7 @@ object PlasmonCommands {
   )
 
   def listModulesCommands(server: Server, indexer: Indexer, pools: ServerCommandThreadPools) = Seq(
-    CommandHandler.of("plasmon/listModuleActions") { (params, logger) =>
+    CommandHandler.of("plasmon/listModuleActions") { (params, _) =>
       params.asOpt[String]("plasmon/listModuleActions") { fileOpt0 =>
         Future {
           val fileOpt = fileOpt0.map(_.osPathFromUri)
@@ -1713,11 +1708,7 @@ object PlasmonCommands {
                   }(using server.pools.dummyEc)
             }
           }(using server.pools.requestsEces)
-          val f0 = {
-            implicit val ec = server.pools.requestsEces
-            f.flatten
-          }
-          f0.asJava
+          f.flatten.asJava
         }
       },
       CommandHandler.of("plasmon/debugBspData") { (params, _) =>

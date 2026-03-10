@@ -48,11 +48,6 @@ class SemanticdbIndexer(
     for (dir <- SemanticdbClasspath.semanticdbRoot(path))
       onChangeDirectory(dir)
 
-  private def semanticdbFiles(dir: os.Path): Option[Seq[os.Path]] =
-    Option.when(os.isDir(dir)) {
-      os.walk(dir).filter(_.isSemanticdb)
-    }
-
   private def onChangeDirectory(dir: os.Path): Unit =
     if (os.isDir(dir)) {
       def javaTargets  = bspData.allJava.filter(target => dir.startsWith(target.classDirectory))

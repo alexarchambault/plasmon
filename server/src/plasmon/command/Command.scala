@@ -9,7 +9,7 @@ import plasmon.util.ThreadUtil
 
 import java.net.{StandardProtocolFamily, UnixDomainSocketAddress}
 import java.nio.channels.SocketChannel
-import java.util.concurrent.{CompletableFuture, LinkedBlockingQueue, TimeUnit}
+import java.util.concurrent.{LinkedBlockingQueue, TimeUnit}
 
 import scala.concurrent.Promise
 import scala.util.{Properties, Success}

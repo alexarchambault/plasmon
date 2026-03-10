@@ -9,19 +9,15 @@ import com.github.plokhotnyuk.jsoniter_scala.core.{
 }
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import coursier.parse.RawJson
-import dotty.tools.dotc.reporting.Diagnostic
 import dotty.tools.pc.ScalaPresentationCompiler as Scala3PresentationCompiler
 import org.eclipse.lsp4j as l
-import org.eclipse.lsp4j.debug as d
 import org.eclipse.lsp4j.jsonrpc.messages.Either as JEither
 import plasmon.Logger
 import plasmon.PlasmonEnrichments.*
 import plasmon.ide.{
   AdjustLspData,
   AdjustRange,
-  AdjustedLspData,
   Buffers,
-  Directories,
   HoverExtParams,
   PatchedSymbolIndex,
   ReferencesResult,
@@ -48,7 +44,6 @@ import java.util.concurrent.atomic.AtomicReference
 import javax.tools.JavaFileManager
 
 import scala.annotation.tailrec
-import scala.collection.concurrent.TrieMap
 import scala.concurrent.{Await, ExecutionContextExecutorService, Future}
 import scala.concurrent.duration.Duration
 import scala.jdk.CollectionConverters.*
@@ -194,17 +189,6 @@ class PresentationCompilers(
 
   private val cache           = jcache.asScala
   private val completionCache = jCompletionCache.asScala
-  private def buildTargetPCFromCache(
-    id: b.BuildTargetIdentifier
-  ): Seq[PresentationCompiler] = {
-    val seq = cache.get(PresentationCompilerKey.ScalaBuildTarget(id)).toSeq ++
-      completionCache.get(PresentationCompilerKey.ScalaBuildTarget(id)).toSeq
-    seq
-      .collect {
-        case lazyPc if lazyPc != null => lazyPc.await.toSeq
-      }
-      .flatten
-  }
   private def buildTargetCompletionPCFromCache(id: b.BuildTargetIdentifier)
     : Option[PresentationCompiler] =
     completionCache
@@ -1140,7 +1124,7 @@ class PresentationCompilers(
             val logger0 = logger()
             val path    = uri.toOsPath
             bspData.mappedTo(targetId, path) match {
-              case Some(mappedTo) =>
+              case Some(_) =>
                 logger0.log(s"Got wrongful diagnostics for wrapped source $path, ignoring them")
               case None =>
                 val mappedSourceOpt = bspData.mappedFrom(targetId, path)
@@ -1427,81 +1411,6 @@ class PresentationCompilers(
     uri: String
   ): (Input.VirtualFile, l.Position => l.Position, AdjustLspData) =
     sourceMapper.pcMapping(target, uri.osPathFromUri)
-
-  private def toDebugCompletionType(
-    kind: l.CompletionItemKind
-  ): d.CompletionItemType =
-    kind match {
-      case l.CompletionItemKind.Constant      => d.CompletionItemType.VALUE
-      case l.CompletionItemKind.Value         => d.CompletionItemType.VALUE
-      case l.CompletionItemKind.Keyword       => d.CompletionItemType.KEYWORD
-      case l.CompletionItemKind.Class         => d.CompletionItemType.CLASS
-      case l.CompletionItemKind.TypeParameter => d.CompletionItemType.CLASS
-      case l.CompletionItemKind.Operator      => d.CompletionItemType.FUNCTION
-      case l.CompletionItemKind.Field         => d.CompletionItemType.FIELD
-      case l.CompletionItemKind.Method        => d.CompletionItemType.METHOD
-      case l.CompletionItemKind.Unit          => d.CompletionItemType.UNIT
-      case l.CompletionItemKind.Enum          => d.CompletionItemType.ENUM
-      case l.CompletionItemKind.Interface     => d.CompletionItemType.INTERFACE
-      case l.CompletionItemKind.Constructor   => d.CompletionItemType.CONSTRUCTOR
-      case l.CompletionItemKind.Folder        => d.CompletionItemType.FILE
-      case l.CompletionItemKind.Module        => d.CompletionItemType.MODULE
-      case l.CompletionItemKind.EnumMember    => d.CompletionItemType.ENUM
-      case l.CompletionItemKind.Snippet       => d.CompletionItemType.SNIPPET
-      case l.CompletionItemKind.Function      => d.CompletionItemType.FUNCTION
-      case l.CompletionItemKind.Color         => d.CompletionItemType.COLOR
-      case l.CompletionItemKind.Text          => d.CompletionItemType.TEXT
-      case l.CompletionItemKind.Property      => d.CompletionItemType.PROPERTY
-      case l.CompletionItemKind.Reference     => d.CompletionItemType.REFERENCE
-      case l.CompletionItemKind.Variable      => d.CompletionItemType.VARIABLE
-      case l.CompletionItemKind.Struct        => d.CompletionItemType.MODULE
-      case l.CompletionItemKind.File          => d.CompletionItemType.FILE
-      case _                                  => d.CompletionItemType.TEXT
-    }
-
-  private def toDebugCompletionItem(
-    item: l.CompletionItem,
-    adjustStart: Int,
-    insertTextPosition: Position.Range
-  ): d.CompletionItem = {
-    val debugItem = new d.CompletionItem()
-    debugItem.setLabel(item.getLabel)
-    val (newText, range) = Option(item.getTextEdit).map(_.asScala) match {
-      case Some(Left(textEdit)) =>
-        (textEdit.getNewText, textEdit.getRange)
-      case Some(Right(insertReplace)) =>
-        (insertReplace.getNewText, insertReplace.getReplace)
-      case None =>
-        Option(item.getInsertText).orElse(Option(item.getLabel)) match {
-          case Some(text) =>
-            (text, insertTextPosition.toLsp)
-          case None =>
-            throw new RuntimeException(
-              "Completion item does not contain expected data"
-            )
-        }
-    }
-    val start = range.getStart.getCharacter + adjustStart
-
-    val length = range.getEnd.getCharacter - range.getStart.getCharacter
-    debugItem.setLength(length)
-
-    // remove snippets, since they are not supported in DAP
-    val fullText = newText.replaceAll("\\$[1-9]+", "")
-
-    val selection = fullText.indexOf("$0")
-
-    // Find the spot for the cursor
-    if (selection >= 0)
-      debugItem.setSelectionStart(selection)
-
-    debugItem.setDetail(item.getDetail)
-    debugItem.setText(fullText.replace("$0", ""))
-    debugItem.setStart(start)
-    debugItem.setType(toDebugCompletionType(item.getKind))
-    debugItem.setSortText(item.getFilterText)
-    debugItem
-  }
 
   def semanticdbTextDocument(
     source: os.Path,

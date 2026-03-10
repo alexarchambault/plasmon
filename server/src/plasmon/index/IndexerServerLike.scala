@@ -8,8 +8,7 @@ import plasmon.pc.PresentationCompilers
 import plasmon.watch.FileWatcher
 
 import scala.meta.internal.metals.Docstrings
-import scala.meta.internal.mtags.{OnDemandSymbolIndex, SourcePath}
-import scala.meta.internal.pc.CustomFileManager
+import scala.meta.internal.mtags.OnDemandSymbolIndex
 
 trait IndexerServerLike {
   def workingDir: os.Path

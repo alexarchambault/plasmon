@@ -9,8 +9,7 @@ import com.google.gson.{Gson, JsonElement, JsonObject}
 import org.eclipse.lsp4j as l
 import org.eclipse.lsp4j.services.LanguageClient
 import plasmon.PlasmonEnrichments.*
-import plasmon.ide.{Buffers, Directories, TokenEditDistance, Trees}
-import plasmon.index.BspData
+import plasmon.ide.{Buffers, TokenEditDistance, Trees}
 import plasmon.render.JsonCodecs.given
 
 import java.util.{ArrayList, Collections, LinkedList, Queue as JQueue}
@@ -40,7 +39,6 @@ import scala.util.Try
 private final class Diagnostics(
   buffers: Buffers,
   languageClient: LanguageClient,
-  workspace: os.Path,
   trees: Trees,
   private var defaultSource: String
 ) extends AutoCloseable {
@@ -206,7 +204,7 @@ private final class Diagnostics(
           all.add(freshDiagnostic)
       if (enabledTypes(Type.Syntax))
         for {
-          (module0, d) <- syntaxError.getOrElse(path, Nil)
+          (_, d) <- syntaxError.getOrElse(path, Nil)
           // De-duplicate only the most common and basic syntax errors.
           isSameMessage = all.asScala.exists(diag =>
             diag.getRange == d.getRange && diag.getMessage == d.getMessage
@@ -428,6 +426,6 @@ object Diagnostics {
     diagnosticsBuffer: Seq[(String, os.Path)]
   )
 
-  private given JsonValueCodec[AsJson] =
+  given JsonValueCodec[AsJson] =
     JsonCodecMaker.make
 }

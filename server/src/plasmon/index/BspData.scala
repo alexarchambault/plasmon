@@ -292,13 +292,6 @@ final class BspData(
       .toSeq
   }
 
-  private case class InferredBuildTarget(
-    jar: os.Path,
-    symbol: String,
-    id: b.BuildTargetIdentifier,
-    sourceJar: Option[os.Path]
-  )
-
   def sourceBuildTargets(
     sourceItem: os.Path
   ): Option[Iterable[b.BuildTargetIdentifier]] =
