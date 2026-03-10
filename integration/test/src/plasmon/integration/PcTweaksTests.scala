@@ -1,6 +1,5 @@
 package plasmon.integration
 
-import com.eed3si9n.expecty.Expecty.expect
 import plasmon.integration.TestUtil.*
 
 class PcTweaksTests extends PlasmonSuite {
