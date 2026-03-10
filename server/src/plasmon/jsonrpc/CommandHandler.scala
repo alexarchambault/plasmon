@@ -6,7 +6,6 @@ import org.eclipse.lsp4j as l
 import plasmon.Logger
 import plasmon.PlasmonEnrichments.StringThingExtensions
 
-import java.net.URI
 import java.nio.file.InvalidPathException
 import java.util.concurrent.CompletableFuture
 

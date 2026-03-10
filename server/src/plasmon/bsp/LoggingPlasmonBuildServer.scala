@@ -9,8 +9,8 @@ import plasmon.languageclient.PlasmonLanguageClient
 import java.util.{Objects, UUID}
 import java.util.concurrent.CompletableFuture
 
-import scala.annotation.nowarn
 import scala.build.bsp.{WrappedSourcesParams, WrappedSourcesResult}
+import scala.annotation.nowarn
 
 final class LoggingPlasmonBuildServer(
   underlying: PlasmonBuildServer,
@@ -241,12 +241,13 @@ private object LoggingPlasmonBuildServer {
       methodName: String,
       params: Object = null
     )(f: => CompletableFuture[T]): CompletableFuture[T] = {
-      val methodCallStr =
-        s"$methodName ${if (params == null) "()" else "( " + params.toString + " )"}"
+      // val methodCallStr =
+      //   s"$methodName ${if (params == null) "()" else "( " + params.toString + " )"}"
       // logger.log("")
       // logger.log(s"Calling $methodCallStr")
       // logger.log("")
-      f.handle {
+      val f0 = f
+      val fWithHandler = f0.handle {
         (valueOrNull, exOrNull) =>
           if (exOrNull == null)
             // logger.log("")
@@ -261,6 +262,12 @@ private object LoggingPlasmonBuildServer {
             // logger.log("")
             throw exOrNull
       }
+      fWithHandler.whenComplete { (_, _) =>
+        if (fWithHandler.isCancelled)
+          f0.cancel(true)
+      }
+
+      fWithHandler
     }
   }
 }

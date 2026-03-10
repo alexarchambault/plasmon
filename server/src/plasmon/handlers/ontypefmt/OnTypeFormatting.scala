@@ -15,7 +15,7 @@ object OnTypeFormatting {
   def handler(server: Server, ec: ExecutionContext) =
     RequestHandler.of[l.DocumentOnTypeFormattingParams, JList[l.TextEdit]](
       "textDocument/onTypeFormatting"
-    ) { (params, logger) =>
+    ) { (params, _) =>
       val onTypeFormattingProvider =
         new OnTypeFormattingProvider(
           server.editorState.buffers,

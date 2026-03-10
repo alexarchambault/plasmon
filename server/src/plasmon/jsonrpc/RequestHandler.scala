@@ -43,7 +43,7 @@ object RequestHandler {
   def fail(name: String, cause: Throwable = null): RequestHandler[Object, Object] =
     RequestHandler[Object, Object](
       name,
-      (params, logger) => {
+      (_, logger) => {
         logger.log("Unhandled request")
         CompletableFuture.failedFuture(new Exception(s"Request $name", cause))
       },

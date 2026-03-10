@@ -1,0 +1,29 @@
+[
+  {
+    "path": "build.mill",
+    "line": 14,
+    "colRange": [
+      7,
+      10
+    ],
+    "content": "foo"
+  },
+  {
+    "path": "build.mill",
+    "line": 14,
+    "colRange": [
+      7,
+      10
+    ],
+    "content": "foo"
+  },
+  {
+    "path": ".plasmon/readonly/dependencies/mill-core-api_3-1.1.3-sources.jar/mill/api/Cross.scala",
+    "line": 278,
+    "colRange": [
+      6,
+      11
+    ],
+    "content": "apply"
+  }
+]

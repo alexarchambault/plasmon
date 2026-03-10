@@ -20,8 +20,6 @@ import java.util
 import scala.concurrent.{ExecutionContext, Future}
 import scala.jdk.CollectionConverters.*
 import scala.meta.{inputs as m, *}
-import scala.util.Try
-import scala.xml.Node
 
 final class JavaFormattingProvider(
   buffers: Buffers,
@@ -29,45 +27,6 @@ final class JavaFormattingProvider(
 )(implicit
   ec: ExecutionContext
 ) {
-  private def decodeProfile(node: Node): Map[String, String] = {
-    val settings = for {
-      child <- node.child
-      id    <- child.attribute("id")
-      value <- child.attribute("value")
-    } yield (id.text, value.text)
-    settings.toMap
-  }
-
-  private def parseEclipseFormatFile(
-    text: String,
-    profileName: Option[String]
-  ): Try[Map[String, String]] = {
-    import scala.xml.XML
-    Try {
-      val node = XML.loadString(text)
-      val profiles = node.child.filter { child =>
-        val foundKind = child.attributes
-          .get("kind")
-          .map(_.text)
-          .contains("CodeFormatterProfile")
-        val foundProfile = profileName.isEmpty || child.attributes
-          .get("name")
-          .map(_.text) == profileName
-
-        foundKind && foundProfile
-      }
-      if (profiles.isEmpty) {
-        if (profileName.isEmpty)
-          scribe.error("No Java formatting profiles found")
-        else
-          scribe.error(s"Java formatting profile ${profileName.get} not found")
-        defaultSettings
-      }
-      else
-        decodeProfile(profiles.head)
-    }
-  }
-
   private lazy val defaultSettings =
     DefaultCodeFormatterOptions.getEclipseDefaultSettings.getMap.asScala.toMap
 

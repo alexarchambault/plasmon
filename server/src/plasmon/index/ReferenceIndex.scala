@@ -18,25 +18,20 @@ import plasmon.ide.{
 }
 import plasmon.index.BspData
 import plasmon.pc.PresentationCompilers
-import plasmon.semdb.{SemanticdbIndexer, Semanticdbs, TextDocumentLookup}
+import plasmon.semdb.{SemanticdbIndexer, Semanticdbs}
 
 import java.nio.charset.StandardCharsets
-import java.util.concurrent.atomic.AtomicReference
 
-import scala.collection.mutable
 import scala.collection.concurrent.TrieMap
-import scala.concurrent.{ExecutionContext, Future, Promise}
+import scala.concurrent.{ExecutionContext, Future}
 import scala.jdk.CollectionConverters.*
-import scala.meta.{Dialect, Importee}
-import scala.meta.inputs.Input
+import scala.meta.Importee
 import scala.meta.internal.semanticdb as s
 import scala.meta.internal.metals.EmptyCancelToken
 import scala.meta.internal.mtags.{GlobalSymbolIndex, Mtags, SourcePath, Symbol}
 import scala.meta.internal.mtags.DefinitionAlternatives.GlobalSymbol
 import scala.meta.internal.semanticdb.XtensionSemanticdbSymbolInformation
 import scala.meta.internal.semanticdb.Scala.*
-import scala.meta.internal.tokenizers.LegacyScanner
-import scala.meta.internal.tokenizers.LegacyToken.*
 import scala.meta.pc.CompletionItemPriority
 import scala.util.control.NonFatal
 

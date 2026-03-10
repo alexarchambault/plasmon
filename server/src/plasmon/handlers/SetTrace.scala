@@ -6,7 +6,7 @@ import plasmon.jsonrpc.{Handlers, NotificationHandler}
 object SetTrace {
 
   def handler() =
-    NotificationHandler.of[l.SetTraceParams]("$/setTrace") { (params, logger) =>
+    NotificationHandler.of[l.SetTraceParams]("$/setTrace") { (params, _) =>
       scribe.warn(s"Ignoring setTrace ${params.getValue}")
     }
 

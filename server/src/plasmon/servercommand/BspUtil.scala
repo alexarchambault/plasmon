@@ -35,15 +35,12 @@ import plasmon.languageclient.PlasmonLanguageClient
 
 import java.io.{
   ByteArrayOutputStream,
-  File,
   InputStream,
   OutputStream,
-  PrintStream,
-  PrintWriter
+  PrintStream
 }
-import java.net.URI
 import java.nio.charset.StandardCharsets
-import java.util.{List as JList, UUID}
+import java.util.List as JList
 import java.util.concurrent.ExecutorService
 
 import scala.jdk.CollectionConverters.*
@@ -631,8 +628,6 @@ object BspUtil {
 
   def targetsByConnection(
     allTargetData: Seq[TargetData],
-    log: String => Unit,
-    path: os.Path,
     options: SharedBspOptions
   ) = {
 
@@ -875,9 +870,6 @@ object BspUtil {
           )
         }
       }
-
-      private def isScalaCliDirOrFile(path: os.Path): Boolean =
-        isScalaCliDir(path) || isScalaCliFile(path)
 
       private def isScalaCliDir(path: os.Path): Boolean =
         os.isDir(path) && os.list(path).exists(isScalaCliFile)

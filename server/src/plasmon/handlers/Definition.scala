@@ -16,7 +16,6 @@ import plasmon.jsonrpc.{Handlers, RequestHandler}
 import plasmon.pc.PresentationCompilers
 import plasmon.semdb.{AggregateSemanticdbs, TextDocumentLookup}
 
-import java.net.URI
 import java.util.List as JList
 import java.util.concurrent.CompletableFuture
 

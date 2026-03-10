@@ -31,12 +31,12 @@
         }
       },
       {
-        "label": "ListSet[A](elems: A*): ListSet[A]",
+        "label": "LazyListIterable[A](elems: A*): LazyListIterable[A]",
         "kind": "Method",
         "tags": [],
-        "detail": "[A](elems: A*): ListSet[A]",
+        "detail": "[A](elems: A*): LazyListIterable[A]",
         "sortText": "00001",
-        "filterText": "ListSet",
+        "filterText": "LazyListIterable",
         "insertTextFormat": "Snippet",
         "textEdit": {
           "range": {
@@ -49,7 +49,7 @@
               "character": 30
             }
           },
-          "newText": "ListSet($0)"
+          "newText": "LazyListIterable($0)"
         },
         "additionalTextEdits": [],
         "data": {
@@ -87,12 +87,12 @@
         }
       },
       {
-        "label": "LazyListIterable[A](elems: A*): LazyListIterable[A]",
+        "label": "ListSet[A](elems: A*): ListSet[A]",
         "kind": "Method",
         "tags": [],
-        "detail": "[A](elems: A*): LazyListIterable[A]",
+        "detail": "[A](elems: A*): ListSet[A]",
         "sortText": "00003",
-        "filterText": "LazyListIterable",
+        "filterText": "ListSet",
         "insertTextFormat": "Snippet",
         "textEdit": {
           "range": {
@@ -105,7 +105,7 @@
               "character": 30
             }
           },
-          "newText": "LazyListIterable($0)"
+          "newText": "ListSet($0)"
         },
         "additionalTextEdits": [],
         "data": {

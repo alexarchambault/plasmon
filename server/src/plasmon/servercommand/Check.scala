@@ -13,7 +13,6 @@ import plasmon.semdb.TextDocumentLookup
 import plasmon.util.PrintDiagnostic
 
 import java.io.{ByteArrayOutputStream, PrintStream}
-import java.net.URI
 import java.nio.charset.StandardCharsets
 import java.util.UUID
 
@@ -22,7 +21,6 @@ import scala.concurrent.duration.Duration
 import scala.jdk.CollectionConverters.*
 import scala.meta.cli.Reporter
 import scala.meta.internal.metap.DocumentPrinter
-import scala.meta.internal.mtags.SourcePath
 import scala.meta.internal.semanticdb.{Language, TextDocument}
 import scala.meta.metap.Settings
 

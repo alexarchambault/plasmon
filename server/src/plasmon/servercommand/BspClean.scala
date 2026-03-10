@@ -6,7 +6,6 @@ import plasmon.Server
 import plasmon.PlasmonEnrichments.*
 import plasmon.index.Indexer
 import plasmon.protocol.CommandClient
-import plasmon.protocol.CommandClient.ops.*
 
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.concurrent.duration.Duration
@@ -20,15 +19,8 @@ final case class BspClean(
   override def names = BspClean.names
   def run(options: BspCleanOptions, args: RemainingArgs): Unit = {
 
-    val path = options.sharedBsp.workspace
-      .filter(_.trim.nonEmpty)
-      .map(os.Path(_, server.workingDir))
-      .getOrElse(server.workingDir)
-
     val targetsByConnection = BspUtil.targetsByConnection(
       server.bspData.allTargetData,
-      client.printLine(_, toStderr = true),
-      path,
       options.sharedBsp
     )
 

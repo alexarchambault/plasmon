@@ -5,7 +5,6 @@ package plasmon.index
 import org.eclipse.lsp4j as l
 import org.eclipse.lsp4j.jsonrpc.CancelChecker
 import plasmon.PlasmonEnrichments.*
-import plasmon.ide.Directories
 import plasmon.pc.NopReportContext
 
 import java.util.{ArrayList, Comparator}

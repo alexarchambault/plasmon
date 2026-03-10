@@ -23,7 +23,6 @@ class PlasmonBuildClientImpl(
   languageClient: PlasmonLanguageClient,
   buffers: Buffers,
   trees: Trees,
-  workspace: os.Path,
   onBuildTargetDidChangeFunc: b.DidChangeBuildTarget => Unit,
   buildToolId: String,
   initialBuildToolName: String
@@ -39,7 +38,7 @@ class PlasmonBuildClientImpl(
   def setDiagnosticTypes(types: Set[Diagnostics.Type]): Unit =
     diagnostics.setTypes(types)
 
-  private val diagnostics = new Diagnostics(buffers, languageClient, workspace, trees, initialBuildToolName)
+  private val diagnostics = new Diagnostics(buffers, languageClient, trees, initialBuildToolName)
 
   private val requestCount = new AtomicInteger
   private var loggerOpt    = Option.empty[Logger]

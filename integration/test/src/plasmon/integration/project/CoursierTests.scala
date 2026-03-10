@@ -86,7 +86,7 @@ class CoursierTests extends PlasmonSuite {
         val diagnostics = new Gson().fromJson(jsonDiag, classOf[Array[l.Diagnostic]])
 
         checkGsonFixture(
-          fixtureDir / "plasmon/integration/coursier-tests/diagnostics.json",
+          fixtureDir / "plasmon/integration/project/coursier-tests/diagnostics.json",
           diagnostics,
           osOpt,
           roundTrip = true
@@ -98,7 +98,7 @@ class CoursierTests extends PlasmonSuite {
           new l.Position(145, 30)
         )
         checkTextFixture(
-          fixtureDir / "plasmon/integration/coursier-tests/hover-0.txt",
+          fixtureDir / "plasmon/integration/project/coursier-tests/hover-0.txt",
           hover0,
           osOpt
         )
@@ -109,7 +109,7 @@ class CoursierTests extends PlasmonSuite {
           new l.Position(148, 18)
         )
         checkTextFixture(
-          fixtureDir / "plasmon/integration/coursier-tests/hover-1.txt",
+          fixtureDir / "plasmon/integration/project/coursier-tests/hover-1.txt",
           hover1,
           osOpt
         )
@@ -128,7 +128,7 @@ class CoursierTests extends PlasmonSuite {
         val consoleDimHover = hoverMarkdown(server, consoleDimPath, new l.Position(13, 16))
 
         checkTextFixture(
-          fixtureDir / "plasmon/integration/coursier-tests/load-hover.txt",
+          fixtureDir / "plasmon/integration/project/coursier-tests/load-hover.txt",
           consoleDimHover,
           osOpt
         )

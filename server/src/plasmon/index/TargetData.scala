@@ -52,18 +52,12 @@ final class TargetData {
     TrieMap.empty
   val inverseDependencySources: MMap[os.Path, Set[b.BuildTargetIdentifier]] =
     TrieMap.empty
-  val buildTargetGeneratedDirs: MMap[os.Path, Unit] =
-    TrieMap.empty
-  val buildTargetGeneratedFiles: MMap[os.Path, Unit] =
-    TrieMap.empty
   val sourceJarNameToJarFile: MMap[String, os.Path] =
     TrieMap.empty
   val isSourceRoot: JSet[os.Path] =
     concurrentHashSet()
   // if workspace contains symlinks, original source items are kept here and source items dealiased
   val originalSourceItems: JSet[os.Path] =
-    concurrentHashSet()
-  val sourceItemFiles: JSet[os.Path] =
     concurrentHashSet()
 
   val targetToWorkspace: MMap[b.BuildTargetIdentifier, os.Path] =
@@ -78,7 +72,9 @@ final class TargetData {
       Iterable[b.BuildTargetIdentifier]
     ]]
 
-  val actualSources: MMap[b.BuildTargetIdentifier, MMap[os.Path, MappedSource]] =
+  val mappedTo: MMap[b.BuildTargetIdentifier, MMap[os.Path, MappedSource]] =
+    TrieMap.empty
+  val mappedFrom: MMap[b.BuildTargetIdentifier, MMap[os.Path, MappedSource]] =
     TrieMap.empty
 
   def sourceBuildTargets(
@@ -87,9 +83,7 @@ final class TargetData {
     val valueOrNull = sourceBuildTargetsCache.get(sourceItem)
     if (valueOrNull == null) {
       val value = sourceItemsToBuildTarget.collectFirst {
-        case (source, buildTargets)
-            if sourceItem.toNIO.getFileSystem == source.toNIO.getFileSystem &&
-            sourceItem.startsWith(source) =>
+        case (source, buildTargets) if sourceItem.startsWith(source) =>
           buildTargets.asScala
       }
       val prevOrNull = sourceBuildTargetsCache.putIfAbsent(sourceItem, value)
@@ -269,24 +263,6 @@ final class TargetData {
     sourceBuildTargetsCache.clear()
   }
 
-  def addSourceItem(
-    sourceItem: b.SourceItem,
-    buildTarget: b.BuildTargetIdentifier
-  ): Unit = {
-    val sourceItemPath = sourceItem.getUri.osPathFromUri
-
-    sourceItem.getKind match {
-      case b.SourceItemKind.DIRECTORY =>
-        if (sourceItem.getGenerated)
-          buildTargetGeneratedDirs(sourceItemPath) = ()
-      case b.SourceItemKind.FILE =>
-        if (sourceItem.getGenerated)
-          buildTargetGeneratedFiles(sourceItemPath) = ()
-        sourceItemFiles.add(sourceItemPath)
-    }
-    addSourceItem(sourceItemPath, buildTarget)
-  }
-
   def linkSourceFile(id: b.BuildTargetIdentifier, source: os.Path): Unit = {
     val set = buildTargetSources.getOrElseUpdate(id, concurrentHashSet())
     set.add(source)
@@ -302,8 +278,6 @@ final class TargetData {
     dependencySourcesInfo.clear()
     inverseDependencies.clear()
     buildTargetSources.clear()
-    buildTargetGeneratedDirs.clear()
-    buildTargetGeneratedFiles.clear()
     inverseDependencySources.clear()
     sourceJarNameToJarFile.clear()
     isSourceRoot.clear()
@@ -318,16 +292,6 @@ final class TargetData {
         buf += target.getId
       }
     }
-
-  def isSourceFile(source: os.Path): Boolean =
-    sourceItemFiles.contains(source)
-
-  def checkIfGeneratedSource(source: os.Path): Boolean =
-    buildTargetGeneratedFiles.contains(source) ||
-    buildTargetGeneratedDirs.keys.exists(source.startsWith)
-
-  def checkIfGeneratedDir(path: os.Path): Boolean =
-    buildTargetGeneratedDirs.contains(path)
 
   def addScalacOptions(result: b.ScalacOptionsResult): Unit =
     for {
@@ -375,12 +339,14 @@ final class TargetData {
 
   def addMappedSource(
     target: b.BuildTargetIdentifier,
-    path: os.Path,
     mapped: MappedSource
   ): Unit = {
-    actualSources.getOrElseUpdate(target, TrieMap.empty)
-      .update(path, mapped)
-    addSourceItem(path, target)
+    mappedTo.getOrElseUpdate(target, TrieMap.empty)
+      .update(mapped.userPath, mapped)
+    mappedFrom.getOrElseUpdate(target, TrieMap.empty)
+      .update(mapped.compilerPath, mapped)
+    addSourceItem(mapped.userPath, target)
+    addSourceItem(mapped.compilerPath, target)
   }
 
   def resetConnections(
@@ -446,12 +412,9 @@ final class TargetData {
         case (k, v) =>
           (k.toString, v.toSeq.sortBy(_.getUri))
       },
-      buildTargetGeneratedDirs = buildTargetGeneratedDirs.keySet.toSeq.sortBy(_.toString),
-      buildTargetGeneratedFiles = buildTargetGeneratedFiles.keySet.toSeq.sortBy(_.toString),
       sourceJarNameToJarFile = sourceJarNameToJarFile.toMap,
       isSourceRoot = isSourceRoot.asScala.toSeq.sortBy(_.toString),
       originalSourceItems = originalSourceItems.asScala.toSeq.sortBy(_.toString),
-      sourceItemFiles = sourceItemFiles.asScala.toSeq.sortBy(_.toString),
       targetToWorkspace = targetToWorkspace.toMap.map {
         case (k, v) =>
           (k.getUri, v)
@@ -463,7 +426,11 @@ final class TargetData {
         case (k, v) =>
           (k.toString, v.map(_.toSeq.sortBy(_.toString)))
       },
-      actualSources = actualSources.toMap.map {
+      mappedTo = mappedTo.toMap.map {
+        case (k, v) =>
+          (k.toString, v.toMap.map { case (k0, v0) => (k0.toString, v0.toString) })
+      },
+      mappedFrom = mappedFrom.toMap.map {
         case (k, v) =>
           (k.toString, v.toMap.map { case (k0, v0) => (k0.toString, v0.toString) })
       }
@@ -473,9 +440,10 @@ final class TargetData {
 object TargetData {
 
   trait MappedSource {
-    def path: os.Path
-    def lineForServer(line: Int): Option[Int] = None
-    def lineForClient(line: Int): Option[Int] = None
+    def userPath: os.Path
+    def compilerPath: os.Path
+    def toCompilerLine(line: Int): Option[Int] = None
+    def toUserLine(line: Int): Option[Int]     = None
     def update(
       content: String
     ): (Input.VirtualFile, l.Position => l.Position, AdjustLspData)
@@ -506,18 +474,16 @@ object TargetData {
     buildTargetClasspath: Map[String, Seq[String]],
     buildTargetDependencyModules: Map[String, Seq[b.MavenDependencyModule]],
     inverseDependencySources: Map[String, Seq[b.BuildTargetIdentifier]],
-    buildTargetGeneratedDirs: Seq[os.Path],
-    buildTargetGeneratedFiles: Seq[os.Path],
     sourceJarNameToJarFile: Map[String, os.Path],
     isSourceRoot: Seq[os.Path],
     originalSourceItems: Seq[os.Path],
-    sourceItemFiles: Seq[os.Path],
     targetToWorkspace: Map[String, os.Path],
     buildServerOpt: Option[String],
     buildClientOpt: Option[String],
     workspaceBuildTargetsRespOpt: Option[TargetData.WorkspaceBuildTargets],
     sourceBuildTargetsCache: Map[String, Option[Seq[b.BuildTargetIdentifier]]],
-    actualSources: Map[String, Map[String, String]]
+    mappedTo: Map[String, Map[String, String]],
+    mappedFrom: Map[String, Map[String, String]]
   )
 
   given JsonValueCodec[AsJson] =

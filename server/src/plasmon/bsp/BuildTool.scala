@@ -4,15 +4,12 @@ import com.github.plokhotnyuk.jsoniter_scala.core.*
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import plasmon.Logger
 import plasmon.internal.Constants
-import plasmon.render.JsonCodecs.{given, *}
-import plasmon.servercommand.BuildToolAdd.buildTool
+import plasmon.render.JsonCodecs.given
 
 import java.math.BigInteger
 import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
 import java.util.Properties as JProperties
-
-import scala.util.Properties
 
 sealed abstract class BuildTool extends Product with Serializable {
   def launcher(tools: BuildTool.Tools): BuildServerLauncher

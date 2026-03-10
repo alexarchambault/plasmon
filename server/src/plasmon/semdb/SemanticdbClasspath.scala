@@ -8,7 +8,6 @@ import java.nio.charset.{Charset, StandardCharsets}
 import java.nio.file.Path
 
 import scala.annotation.tailrec
-import scala.meta.AbsolutePath
 import scala.meta.internal.mtags.{
   GlobalSymbolIndex,
   Md5Fingerprints,
@@ -16,7 +15,7 @@ import scala.meta.internal.mtags.{
   SourcePath
 }
 import scala.meta.internal.mtags.ScalametaCommonEnrichments.*
-import scala.meta.io.{Classpath, RelativePath}
+import scala.meta.io.Classpath
 
 final case class SemanticdbClasspath(
   sourceroot: os.Path,
@@ -39,7 +38,7 @@ final case class SemanticdbClasspath(
       optScalaVersion = None,
       charset,
       fingerprints,
-      path =>
+      _ =>
         // loader
         //   .resolve(path.toNIO)
         //   .map(AbsolutePath(_))

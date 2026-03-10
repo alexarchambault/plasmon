@@ -403,7 +403,7 @@ function createClient(
 
         clientSubscription(
           client0.onNotification(
-            "metals/executeClientCommand",
+            "plasmon/executeClientCommand",
             (params: ExecuteCommandParams) => {
               vscode.commands.executeCommand(params.command, ...(params.arguments ?? [])).then(
                 () => {},
@@ -435,7 +435,8 @@ function createClient(
           requestId: string
           request: string
           done: boolean
-          progress: number | undefined
+          progress: number | undefined,
+          cancellable: boolean
         }
 
         clientSubscription(
@@ -478,9 +479,14 @@ function createClient(
                     {
                       location: vscode.ProgressLocation.Window,
                       title: `${details.buildToolName}: ${details.request}`,
-                      cancellable: false
+                      cancellable: details.cancellable
                     },
                     (progress, token) => {
+                      token.onCancellationRequested(
+                        () => {
+                          // ???
+                        }
+                      )
                       inProgressTasksReportProgress[id] = progress
                       return deferred.promise
                     }
@@ -1973,6 +1979,28 @@ export function activate(context: vscode.ExtensionContext) {
         (err) => {
           console.log(`Failed to compile ${uri}: ${JSON.stringify(err)}`)
           vscode.window.showErrorMessage(`Compilation request failed: ${err}`)
+        }
+      )
+    })
+  )
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand("plasmon.cancel-all-compilations", () => {
+      interface Resp {
+        cancelledCount: number
+      }
+      client?.sendRequest(ExecuteCommandRequest.type, { command: "plasmon/cancelAllCompilations" }).then(
+        (resp: Resp) => {
+          if (resp.cancelledCount == 0)
+            vscode.window.showInformationMessage(`No on-going compilations to cancel`)
+          else if (resp.cancelledCount == 1)
+            vscode.window.showInformationMessage(`Cancelled one compilation`)
+          else
+            vscode.window.showInformationMessage(`Cancelled ${resp.cancelledCount} compilations`)
+        },
+        (err) => {
+          console.log(`Failed to cancel all compilations: ${JSON.stringify(err)}`)
+          vscode.window.showErrorMessage(`Cancel all compilations request failed: ${err}`)
         }
       )
     })

@@ -37,12 +37,22 @@ final class Compilations(
         .iterator
         .filter {
           case (buildServer, queue) =>
-            queue.nonEmpty && !running.contains(buildServer)
+            queue.exists(!_.promise.isCompleted) && !running.contains(buildServer)
+        }
+    def needsCleanUp(): Boolean =
+      queues
+        .iterator
+        .exists {
+          case (_, queue) =>
+            queue.exists(_.promise.isCompleted)
         }
     if (toProcess().nonEmpty)
       queueLock.synchronized {
-        for ((buildServer, queue) <- toProcess().toVector) {
-          val elem = queue.dequeue()
+        for {
+          (buildServer, queue) <- toProcess().toVector
+          _ = queue.dequeueAll(_.promise.isCompleted)
+          elem <- queue.dequeueFirst(!_.promise.isCompleted)
+        } {
           onStartCompilation()
           val params = new b.CompileParams(elem.targets.asJava)
           if (bestEffortEnabled)
@@ -60,11 +70,18 @@ final class Compilations(
             val res = if (ex == null) Success(compileRes) else Failure(ex)
             if (ex == null)
               afterSuccessfulCompilation(elem.targets)
-            running -= buildServer
             elem.promise.complete(res)
+            for (elem0 <- queue if !elem0.promise.isCompleted && elem0.targets == elem.targets)
+              elem0.promise.complete(res)
+            running -= buildServer
             checkQueue() // FIXME Run that on a specific thread pool instead?
           }
         }
+      }
+    else if (needsCleanUp())
+      queueLock.synchronized {
+        for ((_, queue) <- queues)
+          queue.dequeueAll(_.promise.isCompleted)
       }
   }
 
@@ -72,6 +89,23 @@ final class Compilations(
     b.BuildTargetIdentifier,
     (Option[PastCompilation], Option[OnGoingCompilation])
   ]
+
+  def cancelAll(): Int =
+    if (queues.isEmpty)
+      0
+    else
+      queueLock.synchronized {
+        var count = 0
+        queues = ListMap.empty
+        for ((_, (_, f)) <- running)
+          if (f.cancel(true))
+            count += 1
+        running.clear()
+        for (target <- latestCompilations.keysIterator.toVector)
+          clearOnGoingCompilations(target)
+
+        count
+      }
 
   def compileTarget(target: b.BuildTargetIdentifier): Future[b.CompileResult] = {
 
@@ -132,16 +166,6 @@ final class Compilations(
     Future.sequence(compilations.map(_._2.promise.future)).map(_ => ())
   }
 
-  def cancel(): Unit = {
-    queueLock.synchronized {
-      queues = ListMap.empty
-      for ((_, (_, f)) <- running)
-        f.cancel(true)
-      running.clear()
-    }
-    latestCompilations.clear()
-  }
-
   private def updateLatestCompilations(
     target: b.BuildTargetIdentifier,
     startTime: OffsetDateTime
@@ -180,6 +204,23 @@ final class Compilations(
           latestCompilations
             .putIfAbsent(target, (updatedValueOpt, None))
             .isEmpty
+      }
+    while (!update()) {}
+  }
+
+  private def clearOnGoingCompilations(target: b.BuildTargetIdentifier): Unit = {
+    def update(): Boolean =
+      latestCompilations.get(target) match {
+        case Some(previousValue @ (None, Some(_))) =>
+          latestCompilations.remove(target, previousValue)
+        case Some(previousValue @ (pastCompilationOpt, Some(_))) =>
+          latestCompilations.replace(
+            target,
+            previousValue,
+            (pastCompilationOpt, None)
+          )
+        case _ =>
+          true
       }
     while (!update()) {}
   }

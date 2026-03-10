@@ -39,8 +39,8 @@ class PlasmonDelegatingLanguageClient(var underlying: PlasmonLanguageClient)
   override def logMessage(message: l.MessageParams): Unit =
     underlying.logMessage(message)
 
-  override def metalsExecuteClientCommand(params: l.ExecuteCommandParams): Unit =
-    underlying.metalsExecuteClientCommand(params)
+  override def executeClientCommand(params: l.ExecuteCommandParams): Unit =
+    underlying.executeClientCommand(params)
 
   override def refreshModel(): CompletableFuture[Unit] =
     underlying.refreshModel()

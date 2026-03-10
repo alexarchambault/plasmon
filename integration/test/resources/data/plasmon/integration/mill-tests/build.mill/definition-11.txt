@@ -1,0 +1,11 @@
+[
+  {
+    "path": "build.mill",
+    "line": 9,
+    "colRange": [
+      6,
+      13
+    ],
+    "content": "mvnDeps"
+  }
+]

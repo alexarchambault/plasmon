@@ -63,7 +63,9 @@ final class BspData(
   def sourceItems: Iterable[os.Path] =
     data.iterable.flatMap(_.sourceItemsToBuildTarget.keys)
   def mappedTo(target: b.BuildTargetIdentifier, path: os.Path): Option[TargetData.MappedSource] =
-    data.fromOptions(_.actualSources.get(target).flatMap(_.get(path)))
+    data.fromOptions(_.mappedTo.get(target).flatMap(_.get(path)))
+  def mappedFrom(target: b.BuildTargetIdentifier, path: os.Path): Option[TargetData.MappedSource] =
+    data.fromOptions(_.mappedFrom.get(target).flatMap(_.get(path)))
 
   def allTargetRoots: Iterator[os.Path] =
     data.fromIterators(_.allTargetRoots)
@@ -290,13 +292,6 @@ final class BspData(
       .toSeq
   }
 
-  private case class InferredBuildTarget(
-    jar: os.Path,
-    symbol: String,
-    id: b.BuildTargetIdentifier,
-    sourceJar: Option[os.Path]
-  )
-
   def sourceBuildTargets(
     sourceItem: os.Path
   ): Option[Iterable[b.BuildTargetIdentifier]] =
@@ -352,12 +347,6 @@ final class BspData(
       .fromIterators(_.isSourceRoot.asScala.iterator)
       .filter(root => path.toNIO.startsWith(root.toNIO))
       .find(_ => true)
-
-  def isSourceFile(source: os.Path): Boolean =
-    data.iterator.exists(_.isSourceFile(source))
-
-  def checkIfGeneratedSource(source: os.Path): Boolean =
-    data.iterator.exists(_.checkIfGeneratedSource(source))
 
   def buildServerOf(id: b.BuildTargetIdentifier): Option[PlasmonBuildServer] =
     data.fromOptions { data =>

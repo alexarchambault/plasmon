@@ -1,0 +1,11 @@
+[
+  {
+    "path": ".plasmon/readonly/dependencies/mill-libs-scalalib_3-1.1.3-sources.jar/mill/scalalib/ScalaModule.scala",
+    "line": 30,
+    "colRange": [
+      8,
+      18
+    ],
+    "content": "ScalaTests"
+  }
+]

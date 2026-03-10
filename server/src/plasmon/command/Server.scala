@@ -1,11 +1,10 @@
 package plasmon.command
 
 import caseapp.core.RemainingArgs
-import caseapp.core.app.CommandsEntryPoint
 import com.google.gson.{JsonArray, JsonDeserializer}
 import org.eclipse.lsp4j as l
 import org.eclipse.lsp4j.jsonrpc.Launcher
-import plasmon.{handlers as h, protocol}
+import plasmon.handlers as h
 import plasmon.PlasmonEnrichments.*
 import plasmon.bsp.BuildTool
 import plasmon.index.Indexer
@@ -25,10 +24,10 @@ import plasmon.util.{ThreadUtil, TimerThreadsHack}
 import plasmon.watch.WatchEvent
 
 import java.io.RandomAccessFile
-import java.net.{StandardProtocolFamily, URI, UnixDomainSocketAddress}
+import java.net.{StandardProtocolFamily, UnixDomainSocketAddress}
 import java.nio.channels.{ClosedByInterruptException, ServerSocketChannel}
 import java.nio.charset.StandardCharsets
-import java.nio.file.{Files, Paths}
+import java.nio.file.Paths
 import java.time.{Instant, ZoneId}
 import java.util.{Locale, Map as JMap}
 import java.util.concurrent.{
@@ -38,7 +37,6 @@ import java.util.concurrent.{
   ScheduledFuture
 }
 
-import scala.annotation.nowarn
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.concurrent.duration.{
   DoubleMult,
@@ -170,8 +168,7 @@ object Server extends caseapp.Command[ServerOptions] {
 
       scribe.info(s"Default locale: ${Locale.getDefault}")
 
-      var workspaceOpt        = Option.empty[os.Path]
-      var initializeParamsOpt = Option.empty[l.InitializeParams]
+      var workspaceOpt = Option.empty[os.Path]
 
       val pools = ServerCommandThreadPools.noobNaiveDontUsePools()
 
@@ -322,11 +319,9 @@ object Server extends caseapp.Command[ServerOptions] {
             .flatMap(_.asScala.headOption)
             .map(_.getUri.osPathFromUri)
           def viaRootUriOpt = {
-            @nowarn
             def rootUri = params.getRootUri
             Option(rootUri).map(_.osPathFromUri)
           }
-          @nowarn
           def rootPath = params.getRootPath
           def viaRootPathOpt = Option(rootPath)
             .map(Paths.get(_).maybeToRealPath)
@@ -334,7 +329,6 @@ object Server extends caseapp.Command[ServerOptions] {
           viaFoldersOpt.orElse(viaRootUriOpt).orElse(viaRootPathOpt)
         }
         workspaceOpt = updateWorkspaceOpt.orElse(workspaceOpt)
-        initializeParamsOpt = Some(params)
         server.setInitializeParams(params)
 
         val cap = new l.ServerCapabilities
@@ -417,7 +411,7 @@ object Server extends caseapp.Command[ServerOptions] {
         notificationHandlers = Nil,
         requestHandlers = Seq(
           RequestHandler.of[l.InitializeParams, l.InitializeResult]("initialize") {
-            (params, logger) =>
+            (params, _) =>
               Future {
                 init(params, commands)
               }(using server.pools.requestsEces).asJava
@@ -465,7 +459,7 @@ object Server extends caseapp.Command[ServerOptions] {
             NotificationHandler.of[l.DidChangeConfigurationParams](
               "workspace/didChangeConfiguration"
             )((_, _) => ()),
-            NotificationHandler.of[Object]("metals/didFocusTextDocument") { (param, logger) =>
+            NotificationHandler.of[Object]("metals/didFocusTextDocument") { (param, _) =>
               // adapted from Metals didFocus stuff
               val uriOpt = param match {
                 case str: String => Some(str)
@@ -685,7 +679,7 @@ object Server extends caseapp.Command[ServerOptions] {
               .setRemoteInterface(classOf[PlasmonLanguageClient])
               .setLocalService(lspServer)
               .configureGson { gsonBuilder =>
-                val d: JsonDeserializer[Void] = (json, tpe, ctx) => null
+                val d: JsonDeserializer[Void] = (_, _, _) => null
                 gsonBuilder.registerTypeAdapter(classOf[Void], d)
                 gsonBuilder.registerTypeAdapter(Void.TYPE, d)
               }
@@ -701,7 +695,8 @@ object Server extends caseapp.Command[ServerOptions] {
             ThreadUtil.withCachedThreadPool("plasmon-server-exit-watcher") { exitPool =>
               implicit val ec = ExecutionContext.fromExecutorService(exitPool)
               val stdinFuture = Future {
-                launcher.startListening().get(); "stdin"
+                launcher.startListening().get()
+                "stdin"
               }
               val exitFuture = Future {
                 done.await()
@@ -728,7 +723,7 @@ object Server extends caseapp.Command[ServerOptions] {
     os.makeDir.all(path / os.up)
     Using.resource(new RandomAccessFile(path.toIO, "rw")) { raf =>
       System.err.println("Opened lock file")
-      Using.resource(raf.getChannel.lock()) { lock =>
+      Using.resource(raf.getChannel.lock()) { _ =>
         System.err.println("Lock acquired")
         raf.setLength(0L)
         raf.write(s"pid=$pid".getBytes(StandardCharsets.UTF_8))

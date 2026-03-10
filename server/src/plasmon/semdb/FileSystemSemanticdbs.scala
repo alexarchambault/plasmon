@@ -15,7 +15,6 @@ import scala.meta.internal.mtags.{
   Md5Fingerprints,
   SourcePath
 }
-import scala.meta.io.RelativePath
 
 /** Reads SemanticDBs from disk that are produces by the semanticdb-scalac compiler plugin.
   */
@@ -29,7 +28,7 @@ final class FileSystemSemanticdbs(
     module: GlobalSymbolIndex.Module
   ): Either[String, TextDocumentLookup] =
     source match {
-      case z: SourcePath.ZipEntry => Left("No file system semanticdb for zip entries")
+      case _: SourcePath.ZipEntry => Left("No file system semanticdb for zip entries")
       case p: SourcePath.Standard =>
         module match {
           case t: GlobalSymbolIndex.BuildTarget =>

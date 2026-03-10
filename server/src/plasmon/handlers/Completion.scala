@@ -5,8 +5,6 @@ import plasmon.Server
 import plasmon.ide.CancelTokens
 import plasmon.jsonrpc.{Handlers, RequestHandler}
 
-import java.util.concurrent.CompletableFuture
-
 import scala.concurrent.{ExecutionContextExecutorService, Future}
 import scala.meta.internal.metals.EmptyCancelToken
 
@@ -20,7 +18,7 @@ object Completion {
     cancelTokensEces: ExecutionContextExecutorService
   ) =
     RequestHandler.of[l.CompletionParams, l.CompletionList]("textDocument/completion") {
-      (params, logger) =>
+      (params, _) =>
         CancelTokens.future { token =>
           server.presentationCompilers.completions(params, token)
         }(using cancelTokensEces)
@@ -31,7 +29,7 @@ object Completion {
     cancelTokensEces: ExecutionContextExecutorService
   ) =
     RequestHandler.of[l.CompletionItem, l.CompletionItem]("completionItem/resolve") {
-      (item, logger) =>
+      (item, _) =>
         CancelTokens.future { _ =>
           server.presentationCompilers.completionItemResolve(item)
         }(using cancelTokensEces)

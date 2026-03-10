@@ -7,7 +7,6 @@ import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import plasmon.PlasmonEnrichments.*
 import plasmon.ide.Buffers
-import plasmon.pc.PresentationCompilers
 import plasmon.semdb.{Semanticdbs, TextDocumentLookup}
 
 import java.util.Collections

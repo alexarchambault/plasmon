@@ -1,0 +1,8 @@
+```scala
+trait Utest
+```
+
+***
+
+TestModule that uses UTest Framework to run tests.
+You can override the [utestVersion](utestVersion) task or provide the UTest-dependency yourself.

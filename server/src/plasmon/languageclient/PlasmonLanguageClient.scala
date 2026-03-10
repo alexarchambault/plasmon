@@ -11,8 +11,8 @@ import javax.annotation.Nullable
 
 trait PlasmonLanguageClient extends LanguageClient {
 
-  @JsonNotification("metals/executeClientCommand")
-  def metalsExecuteClientCommand(params: l.ExecuteCommandParams): Unit
+  @JsonNotification("plasmon/executeClientCommand")
+  def executeClientCommand(params: l.ExecuteCommandParams): Unit
 
   def refreshModel(): CompletableFuture[Unit]
 

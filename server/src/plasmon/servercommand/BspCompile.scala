@@ -11,7 +11,6 @@ import plasmon.protocol.CommandClient
 import plasmon.protocol.CommandClient.ops.*
 import plasmon.util.PrintDiagnostic
 
-import java.net.URI
 import java.util.UUID
 import java.util.concurrent.CompletionException
 
@@ -27,15 +26,8 @@ final case class BspCompile(
   override def names = BspCompile.names
   def run(options: BspCompileOptions, args: RemainingArgs): Unit = {
 
-    val path = options.sharedBsp.workspace
-      .filter(_.trim.nonEmpty)
-      .map(os.Path(_, server.workingDir))
-      .getOrElse(server.workingDir)
-
     val targetsByConnection = BspUtil.targetsByConnection(
       server.bspData.allTargetData,
-      client.printLine(_, toStderr = true),
-      path,
       options.sharedBsp
     )
 

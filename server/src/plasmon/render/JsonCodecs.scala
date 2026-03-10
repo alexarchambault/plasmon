@@ -2,7 +2,6 @@ package plasmon.render
 
 import ch.epfl.scala.bsp4j as b
 import com.github.plokhotnyuk.jsoniter_scala.core.*
-import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import com.google.gson.GsonBuilder
 import org.eclipse.lsp4j as l
 

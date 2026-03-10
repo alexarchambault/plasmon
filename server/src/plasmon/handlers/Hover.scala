@@ -14,7 +14,7 @@ object Hover {
     cancelTokensEces: ExecutionContextExecutorService,
     hoverStuffEc: ExecutionContext
   ): RequestHandler[HoverExtParams, l.Hover] =
-    RequestHandler.of[HoverExtParams, l.Hover]("textDocument/hover") { (params, logger) =>
+    RequestHandler.of[HoverExtParams, l.Hover]("textDocument/hover") { (params, _) =>
       CancelTokens.future { token =>
         server.presentationCompilers.hover(params, token)
           .map(_.map(_.toLsp()).orNull)(using hoverStuffEc)

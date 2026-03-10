@@ -1,0 +1,7 @@
+```scala
+type build = package_
+```
+
+```scala
+object foo
+```

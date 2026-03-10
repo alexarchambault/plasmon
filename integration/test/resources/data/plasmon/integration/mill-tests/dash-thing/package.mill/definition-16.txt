@@ -1,0 +1,11 @@
+[
+  {
+    "path": "dash-thing/package.mill",
+    "line": 7,
+    "colRange": [
+      6,
+      18
+    ],
+    "content": "scalaVersion"
+  }
+]

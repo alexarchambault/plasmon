@@ -9,19 +9,15 @@ import com.github.plokhotnyuk.jsoniter_scala.core.{
 }
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import coursier.parse.RawJson
-import dotty.tools.dotc.reporting.Diagnostic
 import dotty.tools.pc.ScalaPresentationCompiler as Scala3PresentationCompiler
 import org.eclipse.lsp4j as l
-import org.eclipse.lsp4j.debug as d
 import org.eclipse.lsp4j.jsonrpc.messages.Either as JEither
 import plasmon.Logger
 import plasmon.PlasmonEnrichments.*
 import plasmon.ide.{
   AdjustLspData,
   AdjustRange,
-  AdjustedLspData,
   Buffers,
-  Directories,
   HoverExtParams,
   PatchedSymbolIndex,
   ReferencesResult,
@@ -48,7 +44,6 @@ import java.util.concurrent.atomic.AtomicReference
 import javax.tools.JavaFileManager
 
 import scala.annotation.tailrec
-import scala.collection.concurrent.TrieMap
 import scala.concurrent.{Await, ExecutionContextExecutorService, Future}
 import scala.concurrent.duration.Duration
 import scala.jdk.CollectionConverters.*
@@ -194,17 +189,6 @@ class PresentationCompilers(
 
   private val cache           = jcache.asScala
   private val completionCache = jCompletionCache.asScala
-  private def buildTargetPCFromCache(
-    id: b.BuildTargetIdentifier
-  ): Seq[PresentationCompiler] = {
-    val seq = cache.get(PresentationCompilerKey.ScalaBuildTarget(id)).toSeq ++
-      completionCache.get(PresentationCompilerKey.ScalaBuildTarget(id)).toSeq
-    seq
-      .collect {
-        case lazyPc if lazyPc != null => lazyPc.await.toSeq
-      }
-      .flatten
-  }
   private def buildTargetCompletionPCFromCache(id: b.BuildTargetIdentifier)
     : Option[PresentationCompiler] =
     completionCache
@@ -263,187 +247,12 @@ class PresentationCompilers(
     loadCompiler(path).foreach(_.didClose(path.toNIO.toUri()))
   }
 
-  def didChange(path: os.Path): Future[List[l.Diagnostic]] =
-    loadCompiler(path)
-      .map { pc =>
-        val (input, adjust) = (path.toInputFromBuffers(buffers), AdjustedLspData.default)
-        outlineFilesProvider.didChange(pc.buildTargetId(), path)
-        pc
-          .didChange(CompilerVirtualFileParams(path.toNIO.toUri(), input.value))
-          .asScala
-          .map(_.asScala.map(adjust.adjustDiagnostic).toList)
-      }
-      .getOrElse(Future.successful(Nil))
-
-  def didCompile(report: b.CompileReport): Unit = {
-    val isSuccessful = report.getErrors == 0
-    val isBestEffortCompilation =
-      bspData
-        .scalaTarget(report.getTarget)
-        .map(_.isBestEffort)
-        .getOrElse(false)
-    for (pc <- buildTargetPCFromCache(report.getTarget))
-      if (
-        outlineFilesProvider.shouldRestartPc(
-          report.getTarget,
-          OutlineFilesProvider.DidCompile(isSuccessful)
-        )
-      )
-        pc.restart()
-
-    outlineFilesProvider.onDidCompile(report.getTarget, isSuccessful)
-
-    if (isSuccessful || isBestEffortCompilation)
-      // Restart PC for all build targets that depend on this target since the classfiles
-      // may have changed.
-      for {
-        target <- bspData.allInverseDependencies(report.getTarget)
-        if target != report.getTarget
-        if outlineFilesProvider.shouldRestartPc(target, OutlineFilesProvider.InverseDependency)
-        compiler <- buildTargetPCFromCache(target)
-      }
-        compiler.restart()
-  }
-
   def completionItemResolve(item: l.CompletionItem): Future[l.CompletionItem] = {
     val maybeItemFuture = for {
       data     <- item.data
       compiler <- buildTargetCompletionPCFromCache(new b.BuildTargetIdentifier(data.target))
     } yield compiler.completionItemResolve(item, data.symbol).asScala
     maybeItemFuture.getOrElse(Future.successful(item))
-  }
-
-  /** Calculates completions for a expression evaluator at breakpointPosition
-    *
-    * @param path
-    *   path to file containing ht ebreakpoint
-    * @param breakpointPosition
-    *   actual breakpoint position
-    * @param token
-    *   cancel token for the compiler
-    * @param expression
-    *   expression that is currently being types
-    * @param isZeroBased
-    *   whether the client supports starting at 0 or 1 index
-    * @return
-    */
-  def debugCompletions(
-    path: os.Path,
-    breakpointPosition: l.Position,
-    token: CancelToken,
-    expression: d.CompletionsArguments,
-    isZeroBased: Boolean
-  ): Future[Seq[d.CompletionItem]] = {
-
-    /** Find the offset of the cursor inside the modified expression. We need it to give the
-      * compiler the right offset.
-      *
-      * @param modified
-      *   modified expression with indentation inserted
-      * @param indentation
-      *   indentation of the current breakpoint
-      * @return
-      *   offset where the compiler should insert completions
-      */
-    def expressionOffset(modified: String, indentation: String) = {
-      val line   = expression.getLine
-      val column = expression.getColumn
-      modified.split("\n").zipWithIndex.take(line).foldLeft(0) {
-        case (offset, (lineText, index)) =>
-          if (index + 1 == line)
-            if (line > 1)
-              offset + column + indentation.size - 1
-            else
-              offset + column - 1
-          else offset + lineText.size + 1
-      }
-    }
-
-    loadCompiler(path)
-      .map { compiler =>
-        val input = path.toInputFromBuffers(buffers)
-        breakpointPosition.toMeta(input) match {
-          case Some(metaPos) =>
-            val oldText = metaPos.input.text
-            val lineStart = oldText.indexWhere(
-              c => c != ' ' && c != '\t',
-              metaPos.start + 1
-            )
-
-            val indentationSize = lineStart - metaPos.start
-            val indentationChar =
-              if (oldText.lift(lineStart - 1).exists(_ == '\t')) '\t' else ' '
-            val indentation = indentationChar.toString * indentationSize
-
-            val expressionText =
-              expression.getText.replace("\n", s"\n$indentation")
-
-            val prev = oldText.substring(0, lineStart)
-            val succ = oldText.substring(lineStart)
-            // insert expression at the start of breakpoint's line and move the lines one down
-            val modified = s"$prev;$expressionText\n$indentation$succ"
-
-            val rangeEnd =
-              lineStart + expressionOffset(expressionText, indentation) + 1
-
-            /** Calculate the start if insertText is used for item, which does not declare an exact
-              * start.
-              */
-            def insertStart = {
-              var i = rangeEnd - 1
-              while (modified.charAt(i).isLetterOrDigit) i -= 1
-              if (isZeroBased) i else i + 1
-            }
-
-            val offsetParams =
-              CompilerOffsetParams(
-                path.toNIO.toUri,
-                modified,
-                rangeEnd,
-                token,
-                outlineFilesProvider.getOutlineFiles(compilerTargetId(compiler))
-              )
-
-            val previousLines = expression
-              .getText
-              .split("\n")
-
-            // we need to adjust start to point at the start of the replacement in the expression
-            val adjustStart =
-              /* For multiple line we need to insert at the correct offset and
-               * then adjust column by indentation that was added to the expression
-               */
-              if (previousLines.size > 1)
-                previousLines
-                  .take(expression.getLine - 1)
-                  .map(_.size + 1)
-                  .sum - indentationSize
-              // for one line we only need to adjust column with indentation + ; that was added to the expression
-              else -(1 + indentationSize)
-
-            compiler
-              .complete(offsetParams)
-              .asScala
-              .map(list =>
-                list.getItems.asScala.toSeq
-                  .map(
-                    toDebugCompletionItem(
-                      _,
-                      adjustStart,
-                      Position.Range(
-                        input.copy(value = modified),
-                        insertStart,
-                        rangeEnd
-                      )
-                    )
-                  )
-              )
-          case None =>
-            scribe.debug(s"$breakpointPosition was not found in $path ")
-            Future.successful(Nil)
-        }
-      }
-      .getOrElse(Future.successful(Nil))
   }
 
   def semanticTokens(
@@ -970,8 +779,7 @@ class PresentationCompilers(
     targetId: b.BuildTargetIdentifier,
     token: CancelToken
   ): Option[Future[CompileResult]] =
-    withPCAndAdjustLsp(params, targetId) { (input, pc, adjust) =>
-      val path = params.getUri.osPathFromUri
+    withPCAndAdjustLsp(params, targetId) { (input, pc, _) =>
       val params0 = CompilerVirtualFileParams(
         new URI(input.path),
         input.value,
@@ -1057,7 +865,7 @@ class PresentationCompilers(
     token: CancelToken,
     findTypeDef: Boolean
   ): Future[Seq[l.Location]] =
-    withPCAndAdjustLsp(params) { (pc, pos, adjust) =>
+    withPCAndAdjustLsp(params) { (pc, pos, _) =>
       val params0 = CompilerOffsetParamsUtils.fromPos(
         pos,
         token,
@@ -1070,11 +878,20 @@ class PresentationCompilers(
           pc.definition(CompilerOffsetParamsUtils.fromPos(pos, token))
       defResult.asScala.map { c =>
         for {
-          (appliesTo, userPath) <- adjust.paths
-          loc                   <- c.locations.asScala
-          if loc.getUri.osPathFromUri == appliesTo
+          loc <- c.locations.asScala
+          mappedSource <- bspData.mappedFrom(
+            // FIXME This only looks at wrapped files in the same module as the input source
+            new b.BuildTargetIdentifier(pc.buildTargetId()),
+            loc.getUri.osPathFromUri
+          )
+          startLine <- mappedSource.toUserLine(loc.getRange.getStart.getLine)
+          endLine   <- mappedSource.toUserLine(loc.getRange.getEnd.getLine)
+        } {
+          // FIXME Always a bit risky to mutate that kind of thing…
+          loc.setUri(mappedSource.userPath.toNIO.toUri.toASCIIString)
+          loc.getRange.getStart.setLine(startLine)
+          loc.getRange.getEnd.setLine(endLine)
         }
-          adjust.adjustLocations(c.locations())
         c.locations().asScala.toSeq
       }
     }.getOrElse(Future.successful(Nil))
@@ -1245,6 +1062,8 @@ class PresentationCompilers(
     (id, label)
   }
 
+  private val diagnosticSource = s"Scala ${Properties.versionNumberString} presentation compiler"
+
   private def resolve(
     targetId: b.BuildTargetIdentifier,
     scalaVersion: String
@@ -1302,36 +1121,48 @@ class PresentationCompilers(
           javaHome.toNIO,
           () => logger().consumer,
           emitDiagnostics = (uri, diags) => {
-            val mappedToOpt = bspData.mappedTo(targetId, uri.toOsPath)
-            val updateLine: Int => Int = mappedToOpt match {
-              case Some(mappedTo) => l => mappedTo.lineForClient(l).getOrElse(l)
-              case None           => identity
-            }
             val logger0 = logger()
-            for (diag <- diags if !diag.pos.span.exists)
-              logger0.log(s"No span diagnostic: $diag")
-            val diags0 = diags.collect {
-              case diag if diag.pos.span.exists =>
-                new l.Diagnostic(
-                  new l.Range(
-                    new l.Position(updateLine(diag.pos.startLine), diag.pos.startColumn),
-                    new l.Position(updateLine(diag.pos.endLine), diag.pos.endColumn)
-                  ),
-                  diag.message,
-                  diag.level match {
-                    case dotty.tools.dotc.interfaces.Diagnostic.WARNING =>
-                      l.DiagnosticSeverity.Warning
-                    case dotty.tools.dotc.interfaces.Diagnostic.ERROR => l.DiagnosticSeverity.Error
-                    case _ => l.DiagnosticSeverity.Information
-                  },
-                  s"Scala ${Properties.versionNumberString} presentation compiler"
-                )
+            val path    = uri.toOsPath
+            bspData.mappedTo(targetId, path) match {
+              case Some(_) =>
+                logger0.log(s"Got wrongful diagnostics for wrapped source $path, ignoring them")
+              case None =>
+                val mappedSourceOpt = bspData.mappedFrom(targetId, path)
+                val updateLine: Int => Int = mappedSourceOpt match {
+                  case Some(mappedSource) =>
+                    line => mappedSource.toUserLine(line).getOrElse(0)
+                  case None =>
+                    identity
+                }
+                for (diag <- diags if !diag.pos.span.exists)
+                  logger0.log(s"No span diagnostic: $diag")
+                val diags0 = diags.collect {
+                  case diag if diag.pos.span.exists =>
+                    scribe.info(s"raw diag in ${uri.toOsPath.relativeTo(workspace)}: $diag")
+                    new l.Diagnostic(
+                      new l.Range(
+                        new l.Position(updateLine(diag.pos.startLine), diag.pos.startColumn),
+                        new l.Position(updateLine(diag.pos.endLine), diag.pos.endColumn)
+                      ),
+                      diag.message,
+                      diag.level match {
+                        case dotty.tools.dotc.interfaces.Diagnostic.WARNING =>
+                          l.DiagnosticSeverity.Warning
+                        case dotty.tools.dotc.interfaces.Diagnostic.ERROR =>
+                          l.DiagnosticSeverity.Error
+                        case _ =>
+                          l.DiagnosticSeverity.Information
+                      },
+                      diagnosticSource
+                    )
+                }
+                emitDiagnostics(pc, targetId.module, uri, diags0, logger0)
             }
-            emitDiagnostics(pc, targetId.module, uri, diags0, logger0)
           },
           module = targetId.module
         )
         setupPc(pc)
+        pc.preferSymbolSearch = PatchedSymbolIndex.millBuildPackagePattern.matches
         pc
       }
       val extraCp =
@@ -1580,81 +1411,6 @@ class PresentationCompilers(
     uri: String
   ): (Input.VirtualFile, l.Position => l.Position, AdjustLspData) =
     sourceMapper.pcMapping(target, uri.osPathFromUri)
-
-  private def toDebugCompletionType(
-    kind: l.CompletionItemKind
-  ): d.CompletionItemType =
-    kind match {
-      case l.CompletionItemKind.Constant      => d.CompletionItemType.VALUE
-      case l.CompletionItemKind.Value         => d.CompletionItemType.VALUE
-      case l.CompletionItemKind.Keyword       => d.CompletionItemType.KEYWORD
-      case l.CompletionItemKind.Class         => d.CompletionItemType.CLASS
-      case l.CompletionItemKind.TypeParameter => d.CompletionItemType.CLASS
-      case l.CompletionItemKind.Operator      => d.CompletionItemType.FUNCTION
-      case l.CompletionItemKind.Field         => d.CompletionItemType.FIELD
-      case l.CompletionItemKind.Method        => d.CompletionItemType.METHOD
-      case l.CompletionItemKind.Unit          => d.CompletionItemType.UNIT
-      case l.CompletionItemKind.Enum          => d.CompletionItemType.ENUM
-      case l.CompletionItemKind.Interface     => d.CompletionItemType.INTERFACE
-      case l.CompletionItemKind.Constructor   => d.CompletionItemType.CONSTRUCTOR
-      case l.CompletionItemKind.Folder        => d.CompletionItemType.FILE
-      case l.CompletionItemKind.Module        => d.CompletionItemType.MODULE
-      case l.CompletionItemKind.EnumMember    => d.CompletionItemType.ENUM
-      case l.CompletionItemKind.Snippet       => d.CompletionItemType.SNIPPET
-      case l.CompletionItemKind.Function      => d.CompletionItemType.FUNCTION
-      case l.CompletionItemKind.Color         => d.CompletionItemType.COLOR
-      case l.CompletionItemKind.Text          => d.CompletionItemType.TEXT
-      case l.CompletionItemKind.Property      => d.CompletionItemType.PROPERTY
-      case l.CompletionItemKind.Reference     => d.CompletionItemType.REFERENCE
-      case l.CompletionItemKind.Variable      => d.CompletionItemType.VARIABLE
-      case l.CompletionItemKind.Struct        => d.CompletionItemType.MODULE
-      case l.CompletionItemKind.File          => d.CompletionItemType.FILE
-      case _                                  => d.CompletionItemType.TEXT
-    }
-
-  private def toDebugCompletionItem(
-    item: l.CompletionItem,
-    adjustStart: Int,
-    insertTextPosition: Position.Range
-  ): d.CompletionItem = {
-    val debugItem = new d.CompletionItem()
-    debugItem.setLabel(item.getLabel)
-    val (newText, range) = Option(item.getTextEdit).map(_.asScala) match {
-      case Some(Left(textEdit)) =>
-        (textEdit.getNewText, textEdit.getRange)
-      case Some(Right(insertReplace)) =>
-        (insertReplace.getNewText, insertReplace.getReplace)
-      case None =>
-        Option(item.getInsertText).orElse(Option(item.getLabel)) match {
-          case Some(text) =>
-            (text, insertTextPosition.toLsp)
-          case None =>
-            throw new RuntimeException(
-              "Completion item does not contain expected data"
-            )
-        }
-    }
-    val start = range.getStart.getCharacter + adjustStart
-
-    val length = range.getEnd.getCharacter - range.getStart.getCharacter
-    debugItem.setLength(length)
-
-    // remove snippets, since they are not supported in DAP
-    val fullText = newText.replaceAll("\\$[1-9]+", "")
-
-    val selection = fullText.indexOf("$0")
-
-    // Find the spot for the cursor
-    if (selection >= 0)
-      debugItem.setSelectionStart(selection)
-
-    debugItem.setDetail(item.getDetail)
-    debugItem.setText(fullText.replace("$0", ""))
-    debugItem.setStart(start)
-    debugItem.setType(toDebugCompletionType(item.getKind))
-    debugItem.setSortText(item.getFilterText)
-    debugItem
-  }
 
   def semanticdbTextDocument(
     source: os.Path,

@@ -4,12 +4,9 @@ import ch.epfl.scala.bsp4j as b
 import com.github.plokhotnyuk.jsoniter_scala.core.{
   JsonReader,
   JsonValueCodec,
-  JsonWriter,
-  WriterConfig
+  JsonWriter
 }
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
-import com.google.gson.{FormattingStyle, Gson, GsonBuilder}
-import dotty.tools.dotc.interfaces.Diagnostic
 import org.eclipse.lsp4j as l
 import plasmon.PlasmonEnrichments.*
 import plasmon.bsp.{
@@ -37,10 +34,8 @@ import plasmon.semdb.{
   SemanticdbIndexer
 }
 import plasmon.status.StatusActor
-import plasmon.watch.{ProjectFileWatcher, WatchEvent}
+import plasmon.watch.{FileWatcher, WatchEvent}
 
-import java.io.OutputStream
-import java.nio.charset.StandardCharsets
 import java.nio.file.NoSuchFileException
 import java.util.concurrent.{CompletableFuture, TimeUnit}
 
@@ -74,7 +69,7 @@ import scala.meta.internal.pc.{
 import scala.meta.parsers.ParseException
 import scala.meta.tokenizers.TokenizeException
 import scala.reflect.ClassTag
-import scala.util.{Failure, Properties, Success}
+import scala.util.{Failure, Success}
 
 // Many things here inspired by https://github.com/scalameta/metals/blob/030641d97ca5b982144898a54c3b60b2c08b9614/metals/src/main/scala/scala/meta/metals/MetalsLanguageServer.scala
 // and earlier version of that file
@@ -296,7 +291,7 @@ final class Server(
     refreshStatus = refreshStatus,
     languageClient = languageClient,
     scala2Compat = scala2Compat,
-    emitDiagnostics = { (pc, module, uri, diags, pcLogger) =>
+    emitDiagnostics = { (_, module, uri, diags, _) =>
       val path = uri.toOsPath
       bspData.inverseSources(path) match {
         case Some(targetId) =>
@@ -330,7 +325,6 @@ final class Server(
       languageClient,
       editorState.buffers,
       editorState.trees,
-      workspace(),
       onBuildTargetDidChangeFunc = params =>
         if (params.getChanges.asScala.nonEmpty) {
           scribe.info(s"Some build targets changed ($params)")
@@ -442,8 +436,8 @@ final class Server(
         mappedToOpt match {
           case Some(mappedTo) =>
             val adjustBack = (range: s.Range) => {
-              val newStartLineOpt = mappedTo.lineForClient(range.startLine).filter(_ >= 0)
-              val newEndLineOpt   = mappedTo.lineForClient(range.endLine).filter(_ >= 0)
+              val newStartLineOpt = mappedTo.toUserLine(range.startLine).filter(_ >= 0)
+              val newEndLineOpt   = mappedTo.toUserLine(range.endLine).filter(_ >= 0)
               (newStartLineOpt, newEndLineOpt) match {
                 case (Some(newStartLine), Some(newEndLine)) =>
                   Some(s.Range(newStartLine, range.startCharacter, newEndLine, range.endCharacter))
@@ -451,7 +445,7 @@ final class Server(
                   None
               }
             }
-            (mappedTo.path.toAbsPath, adjustBack)
+            (mappedTo.compilerPath.toAbsPath, adjustBack)
           case None =>
             (path.toOs.toAbsPath, Some(_))
         }
@@ -472,7 +466,7 @@ final class Server(
   // STATE
   lazy val symbolDocs = new Docstrings(symbolIndex)(using NopReportContext)
 
-  val status = new Status(this, pools.bspHealthCheckScheduler)
+  val status = new Status(this)
 
   val statusActor = new StatusActor(
     languageClient,
@@ -503,8 +497,8 @@ final class Server(
     bspServers.close()
   }
 
-  lazy val fileWatcher: ProjectFileWatcher =
-    new ProjectFileWatcher(
+  lazy val fileWatcher: FileWatcher =
+    new FileWatcher(
       () => workingDir,
       bspData,
       watchFilter = {
@@ -555,16 +549,16 @@ final class Server(
             for (buildClient <- bspServers.list.flatMap(_._2).map(_.client))
               buildClient.didDelete(event.path)
           case event: WatchEvent.Compile =>
-            compilations.compileTarget(
-              new b.BuildTargetIdentifier(event.targetId.targetId)
-            ).onComplete {
-              case Success(_) =>
-              case Failure(ex) =>
-                scribe.error(
-                  s"Error compiling target ${event.targetId.targetId} upon file watch event",
-                  ex
-                )
-            }(using pools.dummyEc)
+            compilations
+              .compileTarget(new b.BuildTargetIdentifier(event.targetId.targetId))
+              .onComplete {
+                case Success(_) =>
+                case Failure(ex) =>
+                  scribe.error(
+                    s"Error compiling target ${event.targetId.targetId} upon file watch event",
+                    ex
+                  )
+              }(using pools.dummyEc)
           case event: WatchEvent.ComputeInteractiveSemanticdb =>
             Future {
               interactiveSemanticdbs.textDocument(event.path, event.targetId)
@@ -626,167 +620,10 @@ final class Server(
         }
     )(using pools.fileWatcherEc)
 
-  def editorFileOpened(path: os.Path, currentContent: String, contentVersion: Int): Unit = {
-    editorState.updateFocusedDocument(path, os.read(path), currentContent)
-    refreshStatus()
-
-    def interactive =
-      bspData.inverseSources(path).foreach { target =>
-        interactiveSemanticdbs.textDocument(path, target.module)
-      }
-    // }
-    // We need both parser and semanticdb for synthetic decorations
-    val publishSynthetics = {
-      implicit val ec = pools.documentChangeEc
-      val checks = for {
-        targetId    <- bspData.inverseSources0(path).merge
-        buildClient <- bspData.buildClientOf(targetId).toSeq
-        dialect     <- bspData.getDialect(path.ext, path.isMill, targetId).toSeq
-      } yield parserQueue.check(targetId.module, path, buildClient, dialect)
-      val f = for {
-        _ <- Future.sequence(checks ++ Seq(Future(interactive)))
-        _ <- Future.sequence(
-          List[Future[?]](
-            // publishSynthetics0(path, server, cancelTokensEces, dummyEc)
-            // testProvider.didOpen(path),
-          )
-        )
-      } yield ()
-      f.onComplete {
-        case Success(()) =>
-        case Failure(ex) =>
-          scribe.warn(s"Error while publishing synthetics upon opening $path", ex)
-      }
-      f
-    }
-
-    if (!path.isDependencySource(workspace())) {
-      implicit val ec = pools.documentChangeEc
-      Future
-        .sequence(
-          List(
-            presentationCompilers.load(List(path)),
-            publishSynthetics
-          ) ++
-            compilations.compileFile(path).toSeq
-        )
-        .onComplete {
-          case Success(_) =>
-          case Failure(ex) =>
-            scribe.error(s"Error loading $path", ex)
-        }
-    }
-
-    SourcePath.withContext { implicit ctx =>
-      new PackageProvider(bspData, editorState.trees)
-        .workspaceEdit(
-          path,
-          currentContent,
-          Some(contentVersion)
-        )
-        .map(new l.ApplyWorkspaceEditParams(_))
-        .foreach(languageClient.applyEdit)
-    }
-  }
-
-  def editorFileChanged(path: os.Path, updatedContent: String): Unit = {
-    editorState.buffers.put(path, updatedContent)
-
-    refreshStatus()
-    for {
-      targetId    <- bspData.inverseSources0(path).merge
-      buildClient <- bspData.buildClientOf(targetId)
-    } {
-      buildClient.diagDidChange(path)
-
-      for (dialect <- bspData.getDialect(path.ext, path.isMill, targetId))
-        parserQueue
-          .check(targetId.module, path, buildClient, dialect)
-          .onComplete {
-            case Success(()) =>
-            case Failure(ex) => scribe.error(s"Error parsing $path", ex)
-          }(using pools.documentChangeEc)
-    }
-    //   .flatMap(_ => publishSynthetics0(path, server, cancelTokensEces, dummyEc))(using
-    //     pools.documentChangeEc
-    //   )
-    //   .ignoreValue(pools.documentChangeEc)
-  }
-
-  def editorFileSaved(path: os.Path): Unit = {
-    refreshStatus()
-    // savedFiles.add(path)
-    // read file from disk, we only remove files from buffers on didClose.
-    editorState.buffers.put(path, os.read(path))
-    reindexSource(path)
-    implicit val ec = pools.documentChangeEc
-    val checks = for {
-      targetId    <- bspData.inverseSources0(path).merge
-      buildClient <- bspData.buildClientOf(targetId).toSeq
-      dialect     <- bspData.getDialect(path.ext, path.isMill, targetId).toSeq
-    } yield parserQueue.check(targetId.module, path, buildClient, dialect)
-    Future
-      .sequence(
-        checks ++ List(
-          compilations.compileFiles(Seq(path)),
-          // onBuildChanged(paths).ignoreValue,
-          // Future.sequence(paths.map(onBuildToolAdded)),
-          bspData
-            .inverseSources(path)
-            .map { targetId =>
-              Future(interactiveSemanticdbs.textDocument(
-                path,
-                targetId.module
-              ))(using pools.documentChangeEc)
-            }
-            .getOrElse(Future.successful(()))
-        )
-        // renameProvider.runSave(),
-        // ++ // if we fixed the script, we might need to retry connection
-        // maybeImportScript(
-        //   path
-        // )
-      )
-      .ignoreValue
-      .onComplete {
-        case Success(()) =>
-        case Failure(ex) =>
-          scribe.error(s"Error handling save of $path", ex)
-      }
-  }
-
-  def editorFileClosed(path: os.Path): Unit = {
-    editorState.closed(path)
-    presentationCompilers.didClose(path)
-    for {
-      targetId    <- bspData.inverseSources0(path).merge
-      buildClient <- bspData.buildClientOf(targetId)
-    }
-      buildClient.onClose(targetId.module, path)
-  }
-
   private def fileChangedOrCreatedUpdateState(path: os.Path, created: Boolean): Unit = {
     if (created)
       editorState.fingerprints.add(path, os.read(path))
   }
-
-  private def fileChangedOrCreatedInternal(path: os.Path, created: Boolean): Unit = {
-    if (created)
-      bspData.onCreate(path)
-  }
-
-  def fileChangedOrCreated(path: os.Path, created: Boolean): Unit = {
-    fileChangedOrCreatedUpdateState(path, created)
-    fileWatcher.enqueue(WatchEvent.CreateOrModify(path))
-  }
-
-  private def fileDeletedInternal(path: os.Path): Unit = {
-    for (buildClient <- bspServers.list.flatMap(_._2).map(_.client))
-      buildClient.didDelete(path)
-  }
-
-  def fileDeleted(path: os.Path): Unit =
-    fileWatcher.enqueue(WatchEvent.Delete(path))
 
   private def onNewSemanticdb(
     module: GlobalSymbolIndex.Module,
@@ -964,7 +801,7 @@ object Server {
     referenceIndex: ReferenceIndex.AsJson,
     symbolSearchIndex: SymbolSearchIndex.AsJson,
     status: Status.AsJson,
-    fileWatcher: ProjectFileWatcher.AsJson,
+    fileWatcher: FileWatcher.AsJson,
     symbolIndex: SymbolIndexJson
   )
 

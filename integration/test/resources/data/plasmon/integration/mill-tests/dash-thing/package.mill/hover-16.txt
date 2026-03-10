@@ -1,0 +1,7 @@
+```scala
+def scalaVersion: Simple[String]
+```
+
+***
+
+What version of Scala to use
