@@ -693,7 +693,6 @@ object TestUtil {
     osOpt: Option[OutputStream],
     read: Array[Byte] => T,
     write: T => Array[Byte],
-    alternativePaths: Seq[os.Path] = Nil,
     roundTrip: Boolean = false
   ): Unit = {
 
@@ -721,60 +720,13 @@ object TestUtil {
           os0.flush()
           // over is for when parsing the file failed, see JsonSyntaxException above
           os.write.over(path, write(res), createFolders = true)
-          for (alt <- alternativePaths)
-            os.remove(alt)
         case Some(expectedRes) =>
-          if (!same(res0, expectedRes))
-            if (alternativePaths.isEmpty) {
-              os0.write((s"Updating $path" + System.lineSeparator()).getBytes("UTF-8"))
-              os0.flush()
-              os.write.over(path, write(res))
-            }
-            else {
-              val possibleExpectedRes = alternativePaths
-                .takeWhile(os.exists(_))
-                .map(p => read(os.read.bytes(p)))
-              val isInAlternatives = possibleExpectedRes.exists(same(res0, _))
-              if (!isInAlternatives) {
-                val nextPathOpt = alternativePaths.drop(possibleExpectedRes.length).headOption
-                nextPathOpt match {
-                  case Some(nextPath) =>
-                    os0.write((s"Writing $nextPath" + System.lineSeparator()).getBytes("UTF-8"))
-                    os0.flush()
-                    os.write.over(nextPath, write(res))
-                  case None =>
-                    sys.error(
-                      s"Cannot write alternative result for $path (needs more than ${alternativePaths.length} alternative paths)"
-                    )
-                }
-              }
-            }
-      }
-    }
-    else if (TestParams.updateAlternativeSnapshots && alternativePaths.nonEmpty) {
-      val possibleExpectedRes = (path +: alternativePaths)
-        .takeWhile(os.exists(_))
-        .map(p => read(os.read.bytes(p)))
-
-      if (!possibleExpectedRes.exists(same(res0, _))) {
-        val nextPathOpt = (path +: alternativePaths).drop(possibleExpectedRes.length).headOption
-        nextPathOpt match {
-          case Some(nextPath) =>
-            os0.write((s"Writing $nextPath" + System.lineSeparator()).getBytes("UTF-8"))
+          if (!same(res0, expectedRes)) {
+            os0.write((s"Updating $path" + System.lineSeparator()).getBytes("UTF-8"))
             os0.flush()
-            os.write.over(nextPath, write(res))
-          case None =>
-            sys.error(
-              s"Cannot write alternative result for $path (needs more than ${alternativePaths.length} alternative paths)"
-            )
-        }
+            os.write.over(path, write(res))
+          }
       }
-    }
-    else if (alternativePaths.nonEmpty) {
-      val possibleExpectedRes = (path +: alternativePaths)
-        .takeWhile(os.exists(_))
-        .map(p => read(os.read.bytes(p)))
-      expect(possibleExpectedRes.exists(same(res0, _)))
     }
     else {
       val expectedRes = read(os.read.bytes(path))
@@ -791,16 +743,14 @@ object TestUtil {
   def checkJsoniterFixture[T: JsonValueCodec](
     path: os.Path,
     res: T,
-    osOpt: Option[OutputStream],
-    alternativePaths: Seq[os.Path] = Nil
+    osOpt: Option[OutputStream]
   ): Unit =
     checkFixture[T](
       path,
       res,
       osOpt,
       b => readFromArray(b),
-      writeToArray(_, WriterConfig.withIndentionStep(2)),
-      alternativePaths = alternativePaths
+      writeToArray(_, WriterConfig.withIndentionStep(2))
     )
 
   def doReplaceAll(replaceAll: Seq[(String, String)])(
@@ -818,7 +768,6 @@ object TestUtil {
     res: T,
     osOpt: Option[OutputStream],
     replaceAll: Seq[(String, String)] = Nil,
-    alternativePaths: Seq[os.Path] = Nil,
     roundTrip: Boolean = false
   ): Unit =
     checkFixture[T](
@@ -837,23 +786,20 @@ object TestUtil {
           .toJson(t, implicitly[ClassTag[T]].runtimeClass)
         doReplaceAll(replaceAll)(s).getBytes(StandardCharsets.UTF_8)
       },
-      alternativePaths = alternativePaths,
       roundTrip = roundTrip
     )
 
   def checkTextFixture(
     path: os.Path,
     res: String,
-    osOpt: Option[OutputStream],
-    alternativePaths: Seq[os.Path] = Nil
+    osOpt: Option[OutputStream]
   ): Unit =
     checkFixture[String](
       path,
       res,
       osOpt,
       new String(_, "UTF-8"),
-      _.getBytes("UTF-8"),
-      alternativePaths = alternativePaths
+      _.getBytes("UTF-8")
     )
 
   def standardReplacements(workspace: os.Path): Seq[(String, String)] =

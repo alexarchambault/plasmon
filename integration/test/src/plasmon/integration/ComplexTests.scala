@@ -51,7 +51,7 @@ class ComplexTests extends PlasmonSuite {
 
         buildTool.setup(workspace, osOpt, compiles = false)
 
-        def completionAtPos(pos: Int, deterministicScala3: Boolean = true): Unit = {
+        def completionAtPos(pos: Int): Unit = {
 
           val completions = completions0(
             remoteServer,
@@ -75,25 +75,15 @@ class ComplexTests extends PlasmonSuite {
             completions,
             osOpt,
             replaceAll = standardReplacements(workspace),
-            alternativePaths = {
-              val nonDeterministic = !deterministicScala3 &&
-                scalaVersionOpt.exists(sv =>
-                  sv.value.startsWith("3.") || sv.label.endsWith("-compat")
-                )
-              if (nonDeterministic)
-                (1 to 10).map(_.toString).map(path(_))
-              else
-                Nil
-            },
             roundTrip = true
           )
         }
 
         completionAtPos(1)
-        completionAtPos(3, deterministicScala3 = false)
+        completionAtPos(3)
         completionAtPos(5)
         completionAtPos(7)
-        completionAtPos(9, deterministicScala3 = false)
+        completionAtPos(9)
         completionAtPos(10)
     }
   }
