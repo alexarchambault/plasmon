@@ -9,14 +9,15 @@ import plasmon.index.BspData
 import plasmon.internal.Constants
 
 import java.io.{File, PrintWriter, StringWriter}
-import javax.tools.JavaFileManager
+import java.util.zip.{ZipException, ZipFile}
+import javax.tools.{Diagnostic, DiagnosticListener, JavaFileManager, JavaFileObject}
 
 import scala.jdk.CollectionConverters.*
 import scala.meta.internal.semanticdb as s
 import scala.meta.internal.metals.JdkSources
 import scala.meta.internal.mtags.{MD5, SourcePath}
 import scala.meta.internal.pc.JavaMetalsGlobal
-import scala.util.{Failure, Properties, Success, Try}
+import scala.util.{Failure, Success, Try, Using}
 
 trait JavaInteractiveSemanticdb {
   def textDocument(
@@ -51,127 +52,140 @@ object JavaInteractiveSemanticdb {
       source: os.Path,
       text: String,
       targetId: Option[b.BuildTargetIdentifier] = None
-    ): s.TextDocument = {
-      val workDir    = os.temp.dir(prefix = "plasmon-javac-semanticdb").dealias
-      val targetRoot = workDir / "target"
-      os.makeDir(targetRoot)
+    ): s.TextDocument =
+      if (source.startsWith(workspace)) {
+        val workDir    = os.temp.dir(prefix = "plasmon-javac-semanticdb").dealias
+        val targetRoot = workDir / "target"
+        os.makeDir(targetRoot)
 
-      val localSource =
-        if (source.isSameFileSystem(workspace))
-          source
-        else {
-          val sourceRoot = workDir / "source"
-          os.makeDir(sourceRoot)
-          val localSource = sourceRoot / source.last
-          os.write(localSource, text)
-          localSource
+        val targetClasspath = targetId match {
+          case None =>
+            bspData
+              .inferBuildTarget(SourcePath.Standard(source.toNIO))
+              .flatMap(bspData.targetJarClasspath)
+              .getOrElse(Nil)
+          case Some(targetId0) =>
+            bspData
+              .targetJarClasspath(targetId0)
+              .getOrElse {
+                sys.error(s"Build target ${targetId0.getUri} not loaded")
+              }
         }
 
-      val sourceRoot = localSource / os.up
-      val targetClasspath = targetId match {
-        case None =>
-          bspData
-            .inferBuildTarget(SourcePath.Standard(source.toNIO))
-            .flatMap(bspData.targetJarClasspath)
-            .getOrElse(Nil)
-            .map(_.toString)
-        case Some(targetId0) =>
-          bspData
-            .targetJarClasspath(targetId0)
-            .getOrElse {
-              sys.error(s"Build target ${targetId0.getUri} not loaded")
+        val filteredTargetClassPath = targetClasspath.filter { elem =>
+          !os.isFile(elem) || {
+            try
+              Using.resource(new ZipFile(elem.toIO)) { zf =>
+                // Keep this JAR only if it doesn't look like another java semdb plugin
+                zf.getEntry("com/sourcegraph/semanticdb_javac/SemanticdbPlugin.class") == null
+              }
+            catch {
+              case _: ZipException =>
+                true
             }
-            .map(_.toString)
-      }
+          }
+        }
 
-      val extraOptions =
-        Option(System.getenv("PLASMON_JAVAC_EXTRA_OPTIONS")).toList
+        val extraOptions = Option(System.getenv("PLASMON_JAVAC_EXTRA_OPTIONS"))
+          .toList
           .flatMap(_.split(',').toList)
-      val jigsawOptions = patchModuleFlags(localSource, sourceRoot, source)
-      val mainOptions =
-        List(
-          "-cp",
-          (pluginJars ++ targetClasspath).mkString(File.pathSeparator),
-          "-d",
-          targetRoot.toString
-          // "-verbose"
-        )
-      val pluginOption =
-        s"-Xplugin:semanticdb -sourceroot:$sourceRoot -targetroot:$targetRoot"
-      val allOptions =
-        mainOptions ::: jigsawOptions ::: extraOptions ::: pluginOption :: Nil
-
-      val writer      = new StringWriter()
-      val printWriter = new PrintWriter(writer)
-      val successOpt =
-        try {
-          // JavacFileManager#getLocationForModule specifically tests that JavaFileObject is instanceof PathFileObject when using Patch-Module
-          // so can't use Metals SourceJavaFileObject
-          val javaFileObject = JavaMetalsGlobal.makeFileObject(localSource.toIO)
-
-          val javacTask = JavaMetalsGlobal.classpathCompilationTask(
-            javaFileObject,
-            Some(printWriter),
-            allOptions,
-            javaFileManager()
+        val jigsawOptions = patchModuleFlags(source, workspace, source)
+        val mainOptions =
+          List(
+            "-cp",
+            (pluginJars ++ filteredTargetClassPath).mkString(File.pathSeparator),
+            "-d",
+            targetRoot.toString
+            // "-verbose"
           )
+        val pluginOption =
+          s"-Xplugin:semanticdb -sourceroot:$workspace -targetroot:$targetRoot"
+        val allOptions =
+          mainOptions ::: jigsawOptions ::: extraOptions ::: pluginOption :: Nil
 
-          Some(javacTask.call())
-        }
-        catch {
-          case e: Throwable =>
-            scribe.error(
-              s"Can't run javac on $localSource with options: [${allOptions.mkString("\n")}]",
-              e
-            )
-            None
-        }
-      for (success <- successOpt if !success) {
-        printWriter.flush()
-        val log = writer.getBuffer
-        scribe.error(
-          s"Error running javac on $localSource with options: " +
-            s"[${allOptions.mkString("\n")}]: $log"
-        )
-      }
+        val writer      = new StringWriter
+        val printWriter = new PrintWriter(writer)
+        val successOpt =
+          try {
+            // JavacFileManager#getLocationForModule specifically tests that JavaFileObject is instanceof PathFileObject when using Patch-Module
+            // so can't use Metals SourceJavaFileObject
+            val javaFileObject = JavaMetalsGlobal.makeFileObject(source.toIO)
 
-      val semanticdbFile =
-        targetRoot / "META-INF/semanticdb" / s"${localSource.last}.semanticdb"
+            // We call COMPILER.getTask directly (rather than via classpathCompilationTask)
+            // so we can pass a capturing DiagnosticListener. classpathCompilationTask hardcodes
+            // a noopDiagnosticListener that silently drops all errors; the out Writer only
+            // receives "additional notes" from javac, not diagnostic messages.
+            val diagnosticListener: DiagnosticListener[JavaFileObject] =
+              (d: Diagnostic[? <: JavaFileObject]) =>
+                printWriter.println(
+                  s"${d.getKind}: ${d.getMessage(null)}" +
+                    Option(d.getSource)
+                      .map(src => s" (${src.getName}:${d.getLineNumber})")
+                      .getOrElse("")
+                )
+            val javacTask = JavaMetalsGlobal.COMPILER
+              .getTask(
+                printWriter,
+                javaFileManager(),
+                diagnosticListener,
+                allOptions.asJava,
+                null,
+                java.util.List.of(javaFileObject)
+              )
+              .asInstanceOf[com.sun.source.util.JavacTask]
 
-      val doc =
-        if (os.exists(semanticdbFile))
-          readAllDocuments(semanticdbFile).headOption.getOrElse(s.TextDocument())
-        else {
+            Some(javacTask.call())
+          }
+          catch {
+            case e: Throwable =>
+              scribe.error(
+                s"Can't run javac on $source with options: [${allOptions.mkString("\n")}]",
+                e
+              )
+              None
+          }
+        for (success <- successOpt if !success) {
           printWriter.flush()
-          val log         = writer.getBuffer
-          val targetRoot0 = os.Path(targetRoot.toNIO, os.pwd)
-          val files       = os.walk(targetRoot0).toVector.map(_.relativeTo(targetRoot0))
-          scribe.warn(
-            s"Running javac-semanticdb failed for ${source.toNIO.toUri.toASCIIString}, " +
-              s"options: [${allOptions.mkString("\n")}]. " +
-              s"Output:\n$log\nFiles:\n${files.map(_.toString + "\n")}"
+          val log = writer.getBuffer
+          scribe.error(
+            s"Error running javac on $source with options: " +
+              s"[${allOptions.mkString("\n")}]: $log"
           )
-          s.TextDocument()
         }
 
-      val documentSource = Try(workspace.toNIO.relativize(source.toNIO)).toOption
-        .map { relativeUri =>
-          val relativeString =
-            if (Properties.isWin) relativeUri.toString().replace("\\", "/")
-            else relativeUri.toString()
-          relativeString
+        val semanticdbFile = {
+          val subPath = source.subRelativeTo(workspace)
+          targetRoot / "META-INF/semanticdb" / (subPath / os.up) / s"${subPath.last}.semanticdb"
         }
-        .getOrElse(source.toString())
 
-      val out = doc.copy(
-        uri = documentSource,
-        text = text,
-        md5 = MD5.compute(text)
-      )
+        val doc =
+          if (os.exists(semanticdbFile))
+            readAllDocuments(semanticdbFile).headOption.getOrElse(s.TextDocument())
+          else {
+            printWriter.flush()
+            val log   = writer.getBuffer
+            val files = os.walk(targetRoot).toVector.map(_.subRelativeTo(targetRoot))
+            scribe.warn(
+              s"Running javac-semanticdb failed for ${source.toNIO.toUri.toASCIIString}, " +
+                s"options: [${allOptions.mkString("\n")}]. " +
+                s"Output:\n$log\nFiles:\n${files.map(_.toString + "\n")}"
+            )
+            s.TextDocument()
+          }
 
-      os.remove.all(workDir)
-      out
-    }
+        val out = doc.copy(
+          uri = source.subRelativeTo(workspace).toString,
+          text = text,
+          md5 = MD5.compute(text)
+        )
+
+        os.remove.all(workDir)
+        out
+      }
+      else {
+        scribe.error(s"Cannot get Java interactive semanticdb for $source: not in $workspace")
+        s.TextDocument()
+      }
 
     private def readAllDocuments(path: os.Path): Seq[s.TextDocument] = {
       val stream = os.read.inputStream(path)
@@ -230,7 +244,7 @@ object JavaInteractiveSemanticdb {
         else {
           logger.accept {
             val jars = if (pluginJars.length == 1) "JAR" else "JARs"
-            s"${pluginJars.length} plugin $jars"
+            s"${pluginJars.length} Java semanticdb plugin $jars"
           }
           for (jar <- pluginJars)
             logger.accept(s"  $jar")
