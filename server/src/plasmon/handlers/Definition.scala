@@ -200,9 +200,9 @@ object Definition {
     def logLookup(lookup: TextDocumentLookup): Unit =
       lookup match {
         case success: TextDocumentLookup.Success =>
-          logger.log(s"Found semandicdb at ${success.path}")
+          logger.log(s"Found semanticdb at ${success.path}")
         case stale: TextDocumentLookup.Stale =>
-          logger.log(s"Found stale semandicdb at ${stale.file}")
+          logger.log(s"Found stale semanticdb at ${stale.file}")
         case _: TextDocumentLookup.NotFound =>
           logger.log("Semanticdb not found")
         case agg: TextDocumentLookup.Aggregate =>
