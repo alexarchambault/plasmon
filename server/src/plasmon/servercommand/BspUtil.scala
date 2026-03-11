@@ -8,7 +8,6 @@ import bloop.rifle.{
   BloopThreads,
   BloopVersion
 }
-import bloop.rifle.bloop4j.BloopExtraBuildParams
 import ch.epfl.scala.bsp4j as b
 import com.github.plokhotnyuk.jsoniter_scala.core.*
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
@@ -40,7 +39,6 @@ import java.io.{
   PrintStream
 }
 import java.nio.charset.StandardCharsets
-import java.util.List as JList
 import java.util.concurrent.ExecutorService
 
 import scala.jdk.CollectionConverters.*
@@ -222,8 +220,7 @@ object BspUtil {
     bloopJavaHome: () => os.Path,
     logger: Logger,
     outputLogger: Logger,
-    logJsonrpcInput: Boolean,
-    enableBestEffortMode: Boolean
+    logJsonrpcInput: Boolean
   ): BspConnection = {
 
     launcher.prepare.foreach(_(logger, false))
@@ -250,8 +247,7 @@ object BspUtil {
           extraEnv = Map.empty,
           logger,
           outputLogger,
-          logJsonrpcInput,
-          enableBestEffortMode
+          logJsonrpcInput
         )
 
         BspConnection(initRes, launcher, buildServer, proc0, remoteEndpoint, buildClient0, logger)
@@ -278,22 +274,8 @@ object BspUtil {
           buildToolId,
           buildToolName,
           bspPool,
-          logJsonrpcInput, {
-            val bloopExtraParams = new BloopExtraBuildParams
-            // bloopExtraParams.setClientClassesRootDir((b.workspace / "foo").toNIO.toUri.toASCIIString)
-            // bloopExtraParams.setOwnsBuildFiles(true)
-            bloopExtraParams.setSemanticdbVersion(Constants.scalametaVersion)
-            bloopExtraParams.setSupportedScalaVersions(
-              List(Constants.scala2Version).asJava
-            )
-
-            BspExtraBuildParams(
-              javaSemanticdbVersion = Constants.semanticdbJavaVersion,
-              semanticdbVersion = Constants.scalametaVersion,
-              supportedScalaVersions = Seq(Constants.scala2Version).asJava,
-              enableBestEffortMode = enableBestEffortMode
-            )
-          },
+          logJsonrpcInput,
+          null,
           fakeMetals = true,
           logger
         )
@@ -327,8 +309,7 @@ object BspUtil {
           ),
           logger,
           outputLogger,
-          logJsonrpcInput,
-          enableBestEffortMode
+          logJsonrpcInput
         )
 
         BspConnection(initRes, launcher, buildServer, proc0, remoteEndpoint, buildClient0, logger)
@@ -359,8 +340,7 @@ object BspUtil {
           ),
           logger,
           outputLogger,
-          logJsonrpcInput,
-          enableBestEffortMode
+          logJsonrpcInput
         )
 
         BspConnection(initRes, launcher, buildServer, proc0, remoteEndpoint, buildClient0, logger)
@@ -384,8 +364,7 @@ object BspUtil {
           extraEnv = Map.empty,
           logger,
           outputLogger,
-          logJsonrpcInput,
-          enableBestEffortMode
+          logJsonrpcInput
         )
 
         BspConnection(initRes, launcher, buildServer, proc0, remoteEndpoint, buildClient0, logger)
@@ -403,8 +382,7 @@ object BspUtil {
     bspPool: ExecutorService,
     logger: Logger,
     outputLogger: Logger,
-    logJsonrpcInput: Boolean,
-    enableBestEffortMode: Boolean
+    logJsonrpcInput: Boolean
   ): (
     BuildServerProcess.Process,
     PlasmonBuildServer,
@@ -430,8 +408,7 @@ object BspUtil {
       extraEnv = ???,
       logger,
       outputLogger,
-      logJsonrpcInput,
-      enableBestEffortMode
+      logJsonrpcInput
     )
   }
 
@@ -447,8 +424,7 @@ object BspUtil {
     extraEnv: Map[String, String],
     logger: Logger,
     outputLogger: Logger,
-    logJsonrpcInput: Boolean,
-    enableBestEffortMode: Boolean
+    logJsonrpcInput: Boolean
   ): (
     BuildServerProcess.Process,
     PlasmonBuildServer,
@@ -482,13 +458,7 @@ object BspUtil {
       buildToolName,
       bspPool,
       logJsonrpcInput,
-      // for Mill?
-      BspExtraBuildParams(
-        javaSemanticdbVersion = Constants.semanticdbJavaVersion,
-        semanticdbVersion = Constants.scalametaVersion,
-        supportedScalaVersions = Seq(Constants.scala2Version).asJava,
-        enableBestEffortMode = enableBestEffortMode
-      ),
+      null,
       fakeMetals = true,
       logger
     )
@@ -892,11 +862,4 @@ object BspUtil {
     alreadyAdded: Set[plasmon.bsp.BuildTool]
   ): Seq[DiscoveredBuildTool] =
     BuildToolDiscover.all.flatMap(_.check(workspace, currentFile, alreadyAdded))
-
-  final case class BspExtraBuildParams(
-    javaSemanticdbVersion: String,
-    semanticdbVersion: String,
-    supportedScalaVersions: JList[String],
-    enableBestEffortMode: Boolean
-  )
 }

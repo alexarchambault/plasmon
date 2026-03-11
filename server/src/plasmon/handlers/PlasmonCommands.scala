@@ -13,7 +13,7 @@ import dotty.tools.pc.ScalaPresentationCompiler as Scala3PresentationCompiler
 import org.eclipse.lsp4j as l
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseErrorCode
-import plasmon.{Server, Status}
+import plasmon.Server
 import plasmon.PlasmonEnrichments.*
 import plasmon.bsp.{
   BspConnection,
@@ -955,84 +955,73 @@ object PlasmonCommands {
         Future {
           val resp = buildServer(server, file) match {
             case Right((_, conn, targetId)) =>
-              val semdbStatus = server.status.semdbStatus(targetId, file)
-              semdbStatus match {
-                case Status.SemdbStatus.Stale =>
-                  OrganizeImportsResponse(error = Some("Stale semantic db"), fileChanged = false)
-                case Status.SemdbStatus.NotFound =>
+              server.bspData.targetData(conn.info) match {
+                case Some(data) =>
+                  // TODO scalafix config
+                  val cp = data.scalaTarget(targetId).flatMap(_.classpath).getOrElse(Nil)
+                  val scalacOptions = {
+                    val baseOptions = data.scalaTarget(targetId).map(_.options).getOrElse(Nil)
+                    val is213 =
+                      data.scalaTarget(targetId).exists(_.scalaVersion.startsWith("2.13."))
+                    val unusedOpt = if (is213) "-Wunused:imports" else "-Ywarn-unused-import"
+                    if (baseOptions.contains(unusedOpt)) baseOptions
+                    else unusedOpt :: baseOptions
+                  }
+                  val sourceRoot = server.workingDir // FIXME
+                  val logger     = server.loggerManager.create("scalafix", "Scalafix")
+                  val res = logger.logCommand(os.proc(
+                    "scalafix-native",
+                    "--classpath",
+                    cp.map(_.toString).mkString(File.pathSeparator),
+                    "--sourceroot",
+                    sourceRoot,
+                    "-f",
+                    file,
+                    scalacOptions.flatMap(opt => List("--scalac-options", opt)),
+                    "-r",
+                    "OrganizeImports"
+                  ))
+                    .call(
+                      cwd = server.workingDir,
+                      stderr = logger.processOutput,
+                      check = false
+                    )
+                  if (res.exitCode == 0) {
+                    val patchStr = res.out.text()
+                    val patch =
+                      difflib.DiffUtils.parseUnifiedDiff(patchStr.linesIterator.toList.asJava)
+                    val content = os.read(file)
+                    val lineSep = content.linesIterator.zip(content.linesWithSeparators)
+                      .map {
+                        case (line, lineWithSep) =>
+                          lineWithSep.stripPrefix(line)
+                      }
+                      .find(_.nonEmpty)
+                      .getOrElse(System.lineSeparator())
+                    val updatedContent =
+                      patch.applyTo(content.linesIterator.toVector.asJava).asScala
+                        .iterator
+                        .map(_ + lineSep)
+                        .mkString // FIXME Preserve missing line sep at end of file?
+                    val fileChanged =
+                      if (content == updatedContent) false
+                      else {
+                        os.write.over(file, updatedContent.getBytes(StandardCharsets.UTF_8))
+                        true
+                      }
+                    OrganizeImportsResponse(error = None, fileChanged = fileChanged)
+                  }
+                  else
+                    // TODO Pass command to open log
+                    OrganizeImportsResponse(
+                      error = Some("Error running scalafix-native"),
+                      fileChanged = false
+                    )
+                case None =>
                   OrganizeImportsResponse(
-                    error = Some("Semantic db not found"),
+                    error = Some(s"Internal error (no target data found for ${conn.name})"),
                     fileChanged = false
                   )
-                case Status.SemdbStatus.UpToDate =>
-                  server.bspData.targetData(conn.info) match {
-                    case Some(data) =>
-                      // TODO scalafix config
-                      val cp = data.scalaTarget(targetId).flatMap(_.classpath).getOrElse(Nil)
-                      val scalacOptions = {
-                        val baseOptions = data.scalaTarget(targetId).map(_.options).getOrElse(Nil)
-                        val is213 =
-                          data.scalaTarget(targetId).exists(_.scalaVersion.startsWith("2.13."))
-                        val unusedOpt = if (is213) "-Wunused:imports" else "-Ywarn-unused-import"
-                        if (baseOptions.contains(unusedOpt)) baseOptions
-                        else unusedOpt :: baseOptions
-                      }
-                      val sourceRoot = server.workingDir // FIXME
-                      val logger     = server.loggerManager.create("scalafix", "Scalafix")
-                      val res = logger.logCommand(os.proc(
-                        "scalafix-native",
-                        "--classpath",
-                        cp.map(_.toString).mkString(File.pathSeparator),
-                        "--sourceroot",
-                        sourceRoot,
-                        "-f",
-                        file,
-                        scalacOptions.flatMap(opt => List("--scalac-options", opt)),
-                        "-r",
-                        "OrganizeImports"
-                      ))
-                        .call(
-                          cwd = server.workingDir,
-                          stderr = logger.processOutput,
-                          check = false
-                        )
-                      if (res.exitCode == 0) {
-                        val patchStr = res.out.text()
-                        val patch =
-                          difflib.DiffUtils.parseUnifiedDiff(patchStr.linesIterator.toList.asJava)
-                        val content = os.read(file)
-                        val lineSep = content.linesIterator.zip(content.linesWithSeparators)
-                          .map {
-                            case (line, lineWithSep) =>
-                              lineWithSep.stripPrefix(line)
-                          }
-                          .find(_.nonEmpty)
-                          .getOrElse(System.lineSeparator())
-                        val updatedContent =
-                          patch.applyTo(content.linesIterator.toVector.asJava).asScala
-                            .iterator
-                            .map(_ + lineSep)
-                            .mkString // FIXME Preserve missing line sep at end of file?
-                        val fileChanged =
-                          if (content == updatedContent) false
-                          else {
-                            os.write.over(file, updatedContent.getBytes(StandardCharsets.UTF_8))
-                            true
-                          }
-                        OrganizeImportsResponse(error = None, fileChanged = fileChanged)
-                      }
-                      else
-                        // TODO Pass command to open log
-                        OrganizeImportsResponse(
-                          error = Some("Error running scalafix-native"),
-                          fileChanged = false
-                        )
-                    case None =>
-                      OrganizeImportsResponse(
-                        error = Some(s"Internal error (no target data found for ${conn.name})"),
-                        fileChanged = false
-                      )
-                  }
               }
             case Left(error) =>
               OrganizeImportsResponse(error = Some(error), fileChanged = false)

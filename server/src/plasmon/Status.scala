@@ -11,7 +11,6 @@ import plasmon.bsp.{BspConnection, BuildServerInfo, BuildServerProcess}
 import plasmon.languageclient.*
 import plasmon.languageclient.PlasmonLanguageClient.StatusUpdate
 import plasmon.pc.PresentationCompilers
-import plasmon.semdb.TextDocumentLookup
 import plasmon.servercommand.BspUtil
 
 import java.time.Instant
@@ -33,9 +32,6 @@ class Status(
 ) {
 
   import Status._
-
-  private val semdbStatusCache =
-    new ConcurrentHashMap[(b.BuildTargetIdentifier, os.Path), SemdbStatusDetails]
 
   private val buildToolStatusCache = new ConcurrentHashMap[BuildServerInfo, BuildToolStatus]
 
@@ -212,29 +208,6 @@ class Status(
       )
     }
   }
-
-  def semdbStatus(targetId: b.BuildTargetIdentifier, source: os.Path): SemdbStatus =
-    Option(semdbStatusCache.get((targetId, source)))
-      .filter(!_.shouldUpdate(source))
-      .map(_.status(source))
-      .getOrElse {
-        val mtime = Instant.ofEpochMilli(os.mtime(source))
-        val lookup = server.fileSystemSemanticdbs
-          .textDocument0(source, targetId)
-        lookup match {
-          case Right(s: TextDocumentLookup.Success) =>
-            val details = SemdbStatusDetails(
-              mtime,
-              s.path,
-              Instant.ofEpochMilli(os.mtime(s.path)),
-              s.document.text
-            )
-            semdbStatusCache.put((targetId, source), details)
-            details.status(source)
-          case _ =>
-            SemdbStatus.NotFound
-        }
-      }
 
   def plasmonFileStatus(): Option[(os.Path, Seq[PlasmonLanguageClient.StatusUpdate])] =
     server.editorState.focusedDocument
@@ -536,36 +509,10 @@ class Status(
                     val infoSuffix = if (isStale) " (stale)" else ""
                     pastCompilation.result.getStatusCode match {
                       case b.StatusCode.OK =>
-                        val semdbStatus0 = semdbStatus(buildTarget, path) match {
-                          case SemdbStatus.Stale if isStale => SemdbStatus.UpToDate
-                          case other                        => other
-                        }
-                        semdbStatus0 match {
-                          case SemdbStatus.UpToDate =>
-                            compilerUpdate(
-                              "Compiled" + infoSuffix,
-                              buildTarget = Some(buildTarget)
-                            )
-                          case SemdbStatus.Stale =>
-                            compilerUpdate(
-                              "Stale semantic info",
-                              buildTarget = Some(buildTarget),
-                              severity = 1
-                            )
-                          case SemdbStatus.NotFound =>
-                            compilerUpdate(
-                              "Missing semantic info",
-                              buildTarget = Some(buildTarget),
-                              severity = 1,
-                              commandOpt = Some(
-                                PlasmonLanguageClient.Command(
-                                  title = "Get semanticdb lookup result",
-                                  command = "plasmon.dump-semanticdb-details",
-                                  tooltip = "Get semanticdb lookup result"
-                                )
-                              )
-                            )
-                        }
+                        compilerUpdate(
+                          "Compiled" + infoSuffix,
+                          buildTarget = Some(buildTarget)
+                        )
                       case b.StatusCode.ERROR =>
                         compilerUpdate(
                           "Compilation failed" + infoSuffix,
@@ -646,31 +593,6 @@ class Status(
 }
 
 object Status {
-
-  private final case class SemdbStatusDetails(
-    lastModified: Instant,
-    semdbPath: os.Path,
-    semdbLastModified: Instant,
-    text: String
-  ) {
-    // race conditions likely around these things
-    def shouldUpdate(path: os.Path): Boolean =
-      !os.exists(path) || os.mtime(path) != lastModified.toEpochMilli ||
-      !os.exists(semdbPath) || os.mtime(semdbPath) != semdbLastModified.toEpochMilli ||
-      semdbLastModified.compareTo(lastModified) < 0 && os.read(path) != text
-    def status(path: os.Path): SemdbStatus =
-      if (os.exists(path))
-        if (shouldUpdate(path)) SemdbStatus.Stale
-        else SemdbStatus.UpToDate
-      else
-        SemdbStatus.NotFound
-  }
-  sealed abstract class SemdbStatus extends Product with Serializable
-  object SemdbStatus {
-    case object UpToDate extends SemdbStatus
-    case object Stale    extends SemdbStatus
-    case object NotFound extends SemdbStatus
-  }
 
   private sealed abstract class BuildServerState(val message: Option[(String, Int)]) extends Product
       with Serializable

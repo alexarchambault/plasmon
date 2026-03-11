@@ -17,9 +17,8 @@ object TestParams {
     (!Properties.isWin || io.github.alexarchambault.isterminal.IsTerminal.isTerminal()) &&
     !isCI
 
-  def updateSnapshotsFast        = updateSnapshots
-  def updateSnapshots            = isCI
-  def updateAlternativeSnapshots = false
+  def updateSnapshotsFast = updateSnapshots
+  def updateSnapshots     = isCI
 
   def cleanUpAfterTests = true
 

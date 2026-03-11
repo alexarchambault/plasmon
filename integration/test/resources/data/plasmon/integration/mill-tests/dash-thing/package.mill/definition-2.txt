@@ -1,3 +1,11 @@
 [
-  
+  {
+    "path": "dash-thing/package.mill",
+    "line": 0,
+    "colRange": [
+      14,
+      26
+    ],
+    "content": "`dash-thing`"
+  }
 ]

@@ -27,11 +27,10 @@ import plasmon.languageclient.*
 import plasmon.pc.{NopReportContext, PresentationCompilers}
 import plasmon.render.JsonCodecs.given
 import plasmon.semdb.{
-  AggregateSemanticdbs,
-  FileSystemSemanticdbs,
   InteractiveSemanticdbs,
   JavaInteractiveSemanticdb,
-  SemanticdbIndexer
+  SemanticdbIndexer,
+  Semanticdbs
 }
 import plasmon.status.StatusActor
 import plasmon.watch.{FileWatcher, WatchEvent}
@@ -372,16 +371,7 @@ final class Server(
       computeInteractiveSemanticdb = computeInteractiveSemanticdb(_, _, _)
     )
 
-  // stateless
-  def fileSystemSemanticdbs = new FileSystemSemanticdbs(bspData, editorState.fingerprints)
-
-  // stateless
-  def semanticdbs: AggregateSemanticdbs = AggregateSemanticdbs(
-    List(
-      fileSystemSemanticdbs,
-      interactiveSemanticdbs
-    )
-  )
+  def semanticdbs: Semanticdbs = interactiveSemanticdbs
 
   // STATE
   // EVENT: upon unloading targets, do some clean-up
