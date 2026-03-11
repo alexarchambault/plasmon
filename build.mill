@@ -70,7 +70,7 @@ object Deps {
   def munit  = mvn"org.scalameta::munit:1.1.0"
   def osLib  = mvn"com.lihaoyi::os-lib:0.10.7"
   def pprint = mvn"com.lihaoyi::pprint:0.8.1"
-  def semanticdbJavac  = mvn"com.sourcegraph:semanticdb-javac:0.9.6"
+  def semanticdbJavac  = mvn"com.sourcegraph:semanticdb-javac:0.11.1"
   def semanticDbScalac = mvn"org.scalameta:::semanticdb-scalac:4.13.3"
   def svm              = mvn"org.graalvm.nativeimage:svm:24.0.2"
 }
