@@ -14,7 +14,7 @@ import plasmon.ide.{
 import plasmon.index.BspData
 import plasmon.jsonrpc.{Handlers, RequestHandler}
 import plasmon.pc.PresentationCompilers
-import plasmon.semdb.{AggregateSemanticdbs, TextDocumentLookup}
+import plasmon.semdb.{Semanticdbs, TextDocumentLookup}
 
 import java.util.List as JList
 import java.util.concurrent.CompletableFuture
@@ -71,7 +71,7 @@ object Definition {
   }
 
   private def fromSemanticDb(
-    semanticDbs: AggregateSemanticdbs,
+    semanticDbs: Semanticdbs,
     module: GlobalSymbolIndex.Module,
     params: l.TextDocumentPositionParams,
     buffers: Buffers,

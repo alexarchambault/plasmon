@@ -65,17 +65,8 @@ final class InteractiveSemanticdbs(
             if (os.exists(source)) Some(os.read(source))
             else None
           }
-        def shouldTryCalculateInteractiveSemanticdb =
-          unsavedContents.isDefined ||
-          source.isInReadonlyDirectory(workspace) || // dependencies
-          source.isSbt ||                            // sbt files
-          source.isMill ||                           // mill files
-          // starts with shebang
-          sourceText.exists(_.startsWith(Shebang.shebang))
 
-        if (!shouldTryCalculateInteractiveSemanticdb)
-          Left("Not a file we should compute interactive semanticdbs for")
-        else
+        if (source.isScalaFilename || source.isJavaFilename)
           unsavedContents.orElse(sourceText) match {
             case None => Left(s"No content for $source")
             case Some(text) =>
@@ -109,6 +100,8 @@ final class InteractiveSemanticdbs(
                   Right(TextDocumentLookup.Success(existingDoc, source))
               }
           }
+        else
+          Left("No interactive semanticdb, not a Scala or Java file")
     }
 
   def asJson: InteractiveSemanticdbs.AsJson =
