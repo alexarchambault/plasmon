@@ -158,8 +158,7 @@ class BspServersActor(
             server.bloopJavaHome,
             logger,
             outputLogger,
-            server.logJsonrpcInput,
-            server.enableBestEffortMode
+            server.logJsonrpcInput
           )
         }
         scribe.info(

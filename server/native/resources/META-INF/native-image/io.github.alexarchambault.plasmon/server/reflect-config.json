@@ -439,13 +439,6 @@
     "allPublicClasses": true
   },
   {
-    "name": "plasmon.servercommand.BspUtil$BspExtraBuildParams",
-    "allDeclaredConstructors": true,
-    "allPublicConstructors": true,
-    "allDeclaredMethods": true,
-    "allDeclaredFields": true
-  },
-  {
     "name": "scala.Symbol",
     "methods": [
       {
