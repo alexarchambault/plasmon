@@ -73,14 +73,7 @@ final class InteractiveSemanticdbs(
           // starts with shebang
           sourceText.exists(_.startsWith(Shebang.shebang))
 
-        // anything aside from `*.scala`, `*.sbt`, `*.mill`, `*.sc`, `*.java` file
-        def isExcludedFile = !source.isScalaFilename && !source.isJavaFilename
-
-        if (isExcludedFile)
-          Left("No interactive semanticdb, not a Scala or Java file")
-        else if (!source.isSameFileSystem(workspace))
-          Left("Not in the main file system")
-        else if (!shouldTryCalculateInteractiveSemanticdb)
+        if (!shouldTryCalculateInteractiveSemanticdb)
           Left("Not a file we should compute interactive semanticdbs for")
         else
           unsavedContents.orElse(sourceText) match {
@@ -88,7 +81,7 @@ final class InteractiveSemanticdbs(
             case Some(text) =>
               val adjustedText =
                 if (text.startsWith(Shebang.shebang))
-                  "//" + text.drop(2)
+                  "//" + text.drop(Shebang.shebang.length)
                 else text
               def sha            = MD5.compute(adjustedText)
               val existingDocOpt = Option(textDocumentCache.get(source)).filter(_.md5 == sha)
