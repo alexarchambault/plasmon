@@ -104,6 +104,7 @@ jobs:
     - name: Diff
       shell: bash
       run: |
+        git add -N -- integration/test/resources/data
         git diff
         git diff-index HEAD --quiet || ( echo "Some test data differ"; exit 1 )
 
