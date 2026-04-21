@@ -95,7 +95,7 @@ jobs:
         if-no-files-found: error
         retention-days: 2
     - name: Warm-up
-      run: ./mill -i integration.native.testForked "plasmon.integration.BasicTests.test Scala CLI Scala 2.13 Java 17"
+      run: ./mill -i integration.native.testForked "plasmon.integration.BasicTests.test Scala CLI Scala 3 Java 17"
       env:
         PLASMON_TIMEOUT_OVERRIDE: "5 minutes"
         PLASMON_SILENT_OVERRIDE: false
