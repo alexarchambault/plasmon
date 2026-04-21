@@ -24,7 +24,7 @@ object Versions {
   def scala2  = "2.13.18"
   def scalaJs = "1.20.1"
 
-  def coursier          = "2.1.25-M19"
+  def coursier          = "2.1.25-M24"
   def coursierInterface = "1.0.29-M3"
   def mtags             = "1.6.6-3"
   def scalaCli          = "1.11.0"
