@@ -72,10 +72,10 @@ jobs:
         jvm: 17
     - name: Prepare for native image
       if: runner.os != 'Windows'
-      run: ./mill -i server.native.writeNativeImageScript --scriptDest generate-native-image.sh --imageDest=
+      run: ./mill -i server.native.base-image.writeNativeImageScript --scriptDest generate-native-image.sh --imageDest=
     - name: Prepare for native image (Windows)
       if: runner.os == 'Windows'
-      run: ./mill -i server.native.writeNativeImageScript --scriptDest generate-native-image.bat --imageDest=
+      run: ./mill -i server.native.base-image.writeNativeImageScript --scriptDest generate-native-image.bat --imageDest=
     - name: Generate native image
       if: runner.os != 'Windows'
       run: jps -ml; ./generate-native-image.sh
