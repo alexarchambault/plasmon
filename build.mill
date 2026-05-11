@@ -24,7 +24,8 @@ object Versions {
   def scala2  = "2.13.18"
   def scalaJs = "1.20.1"
 
-  def coursier          = "2.1.25-M19"
+  def coursier          = "2.1.25-M24"
+  def coursierDocker    = "2.1.25-M24"
   def coursierInterface = "1.0.29-M3"
   def mtags             = "1.6.6-3"
   def scalaCli          = "1.11.0"
@@ -307,7 +308,7 @@ object server extends ScalaModule with PlasmonPublishModule {
     super.resources() ++ Seq(PathRef(vsixDir)) ++ settingsEditDir()
   }
 
-  object native extends ScalaModule with NativeImage with FormatNativeImageConf {
+  trait PlasmonNativeImage extends ScalaModule with NativeImage with FormatNativeImageConf {
     def scalaVersion = Versions.scala
     def moduleDeps   = Seq(server)
     def compileMvnDeps = Seq(
@@ -318,15 +319,6 @@ object server extends ScalaModule with PlasmonPublishModule {
       Deps.mtags,
       Deps.semanticdbJavac
     )
-
-    // Remove and just use writeNativeImageScript from mill-native-image
-    // once switching to mill-native-image 0.2.4
-    def writeNativeImageScript0(scriptDest: String, imageDest: String = ""): Task.Command[Unit] =
-      Task.Command {
-        val scriptDest0 = os.Path(scriptDest, BuildCtx.workspaceRoot)
-        val script      = nativeImageScript(imageDest)().path
-        os.copy(script, scriptDest0, replaceExisting = true, createFolders = true)
-      }
 
     def nativeImageGraalvmHome =
       if (Properties.isWin)
@@ -617,7 +609,7 @@ object server extends ScalaModule with PlasmonPublishModule {
     }
 
     def resources = Task {
-      super.resources() ++ lsp4jGraalvmStuff() ++ bsp4jGraalvmStuff()
+      Seq(native.resources()) ++ lsp4jGraalvmStuff() ++ bsp4jGraalvmStuff()
     }
 
     def nativeImageName      = "plasmon"
@@ -670,6 +662,51 @@ object server extends ScalaModule with PlasmonPublishModule {
 
     def nativeImagePersist      = System.getenv("CI") != null
     def nativeImageGraalVmJvmId = s"liberica-nik:${Versions.libericaNik}"
+
+    def sources = Task {
+      Seq(native.src())
+    }
+  }
+
+  object native extends Module {
+
+    def src       = Task.Source("src")
+    def resources = Task.Source("resources")
+
+    object `base-image` extends PlasmonNativeImage
+
+    private val arch = sys.props.getOrElse("os.arch", "").toLowerCase(java.util.Locale.ROOT)
+    private def isCI = System.getenv("CI") != null
+    private def linuxCsLauncher = arch match {
+      case "arm64" | "aarch64" =>
+        s"https://github.com/coursier/coursier/releases/download/v${Versions.coursierDocker}/cs-aarch64-pc-linux.gz"
+      case _ =>
+        s"https://github.com/coursier/coursier/releases/download/v${Versions.coursierDocker}/cs-x86_64-pc-linux.gz"
+    }
+
+    def nativeImage =
+      if (Properties.isLinux && isCI)
+        `linux-docker-image`.nativeImage
+      else
+        `base-image`.nativeImage
+
+    object `linux-docker-image` extends PlasmonNativeImage {
+      def nativeImageDockerParams = Some(
+        NativeImage.DockerParams(
+          imageName = "ubuntu:20.04",
+          prepareCommand =
+            """apt-get update -q -y &&\
+              |apt-get install -q -y build-essential libz-dev zlib1g-dev git python3-pip curl zip locales
+              |locale-gen en_US.UTF-8
+              |export LANG=en_US.UTF-8
+              |export LANGUAGE=en_US:en
+              |export LC_ALL=en_US.UTF-8""".stripMargin,
+          csUrl = linuxCsLauncher,
+          extraNativeImageArgs = Nil
+        )
+      )
+      def generateNativeImageWithFileSystemChecker = false
+    }
 
     def validatedNativeImage = Task {
       val ref = nativeImage()

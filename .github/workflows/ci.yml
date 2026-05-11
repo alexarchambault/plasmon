@@ -72,10 +72,10 @@ jobs:
         jvm: 17
     - name: Prepare for native image
       if: runner.os != 'Windows'
-      run: ./mill -i server.native.writeNativeImageScript0 --scriptDest generate-native-image.sh
+      run: ./mill -i server.native.base-image.writeNativeImageScript --scriptDest generate-native-image.sh --imageDest=
     - name: Prepare for native image (Windows)
       if: runner.os == 'Windows'
-      run: ./mill -i server.native.writeNativeImageScript0 --scriptDest generate-native-image.bat
+      run: ./mill -i server.native.base-image.writeNativeImageScript --scriptDest generate-native-image.bat --imageDest=
     - name: Generate native image
       if: runner.os != 'Windows'
       run: jps -ml; ./generate-native-image.sh
@@ -95,7 +95,7 @@ jobs:
         if-no-files-found: error
         retention-days: 2
     - name: Warm-up
-      run: ./mill -i integration.native.testForked "plasmon.integration.BasicTests.test Scala CLI Scala 2.13 Java 17"
+      run: ./mill -i integration.native.testForked "plasmon.integration.BasicTests.test Scala CLI Scala 3 Java 17"
       env:
         PLASMON_TIMEOUT_OVERRIDE: "5 minutes"
         PLASMON_SILENT_OVERRIDE: false
