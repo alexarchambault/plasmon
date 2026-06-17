@@ -1,6 +1,6 @@
 {
-  "path": ".plasmon/readonly/dependencies/scala-library-3.8.2-sources.jar/scala/collection/StrictOptimizedIterableOps.scala",
-  "line": 89,
+  "path": ".plasmon/readonly/dependencies/scala-library-3.8.4-sources.jar/scala/collection/StrictOptimizedIterableOps.scala",
+  "line": 88,
   "colRange": [
     15,
     18
