@@ -828,12 +828,23 @@ object PlasmonCommands {
               scribe.warn(s"No build target found for $file, nothing to compile")
               Future.successful[Object](null)
             case Some(f) =>
-              f.onComplete {
+              val recovered = f.recover {
+                case ex if Iterator
+                      .iterate(Option(ex))(_.flatMap(e => Option(e.getCause)))
+                      .takeWhile(_.nonEmpty)
+                      .flatten
+                      .exists(e =>
+                        e.isInstanceOf[ResponseErrorException] &&
+                        Option(e.getMessage).exists(_.contains("Compilation failed"))
+                      ) =>
+                  new b.CompileResult(b.StatusCode.ERROR)
+              }(using server.pools.compilationEc)
+              recovered.onComplete {
                 case Success(_) =>
                 case Failure(ex) =>
                   scribe.error(s"Compiling $file failed", ex)
               }(using server.pools.compilationEc)
-              f.map[Object](_ => null)(using server.pools.dummyEc)
+              recovered.map[Object](_ => null)(using server.pools.dummyEc)
           }
         }(using server.pools.requestsEces)
 

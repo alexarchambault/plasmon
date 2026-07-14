@@ -152,8 +152,8 @@ object SingleModuleBuildTool {
       else
         TestUtil.runCommand(workspace, osOpt)(TestUtil.scalaCli, "setup-ide", ".")
       val file = sourceFile(workspace)
-      TestUtil.loadBuildToolViaLsp(remoteServer, id, id, file)
-      TestUtil.loadModuleOfViaLsp(remoteServer, file)
+      TestUtil.loadBuildToolViaLsp(remoteServer, "scala-cli", "scala-cli", file)
+      TestUtil.importViaLsp(remoteServer, readOnlyToplevelSymbolsCache)
       if (compiles)
         TestUtil.compileViaLsp(remoteServer, file)
     }
