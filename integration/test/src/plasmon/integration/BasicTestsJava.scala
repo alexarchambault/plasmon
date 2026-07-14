@@ -55,7 +55,7 @@ class BasicTestsJava extends PlasmonSuite {
     )(files*) {
       (workspace, server, positions, osOpt) =>
 
-        buildTool.setup(workspace, osOpt)
+        buildTool.setup(workspace, server, osOpt)
 
         val mainSourceFile = actualPath(os.sub / "Foo.java")
 

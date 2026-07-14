@@ -69,20 +69,10 @@ class MillTests extends PlasmonSuite {
         os.copy(SingleModuleBuildTool.Mill.millwPath, workspace / "mill")
         os.copy(SingleModuleBuildTool.Mill.millwBatPath, workspace / "mill.bat")
         (workspace / "mill").toIO.setExecutable(true)
-        TestUtil.runServerCommand(workspace, osOpt)(
-          "build-tool",
-          "add",
-          ".",
-          "--mill"
-        )
-        TestUtil.runServerCommand(workspace, osOpt)(
-          "import",
-          "--ignore-toplevel-symbols-errors=false"
-        )
-        TestUtil.runServerCommand(workspace, osOpt)(
-          "bsp",
-          "compile"
-        )
+        val buildFile = workspace / "build.mill"
+        TestUtil.loadBuildToolViaLsp(server, "mill", "mill", buildFile)
+        TestUtil.importViaLsp(server, toplevelCacheOnly = false)
+        TestUtil.compileViaLsp(server, buildFile)
 
         def hoverAt(source: os.SubPath, pos: Int): Unit =
           checkTextFixture(

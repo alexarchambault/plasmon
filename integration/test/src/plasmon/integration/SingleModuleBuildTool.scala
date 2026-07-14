@@ -4,6 +4,7 @@ import com.virtuslab.using_directives.UsingDirectivesProcessor
 import com.virtuslab.using_directives.custom.model.{Path, StringValue}
 import dependency.*
 import dependency.parser.DependencyParser
+import org.eclipse.lsp4j.services.LanguageServer
 
 import java.io.OutputStream
 
@@ -21,12 +22,14 @@ abstract class SingleModuleBuildTool extends Product with Serializable {
   ): (Map[os.SubPath, os.SubPath], Seq[(os.SubPath, String)])
   def setup(
     workspace: os.Path,
+    remoteServer: LanguageServer,
     osOpt: Option[OutputStream],
     readOnlyToplevelSymbolsCache: Boolean = false,
     compiles: Boolean = true
   ): Unit
   def compile(
     workspace: os.Path,
+    remoteServer: LanguageServer,
     osOpt: Option[OutputStream]
   ): Unit
 
@@ -38,6 +41,18 @@ abstract class SingleModuleBuildTool extends Product with Serializable {
 }
 
 object SingleModuleBuildTool {
+
+  private def sourceFile(workspace: os.Path): os.Path =
+    os.walk(workspace)
+      .filter(os.isFile)
+      .filter(path =>
+        path.last.endsWith(".scala") ||
+        path.last.endsWith(".sc") ||
+        path.last.endsWith(".java")
+      )
+      .sortBy(_.relativeTo(workspace).toString)
+      .headOption
+      .getOrElse(sys.error(s"No source file found under $workspace"))
 
   private def scalaVersion(source: String): Option[String] = {
     val processor  = new UsingDirectivesProcessor
@@ -127,6 +142,7 @@ object SingleModuleBuildTool {
     }
     def setup(
       workspace: os.Path,
+      remoteServer: LanguageServer,
       osOpt: Option[OutputStream],
       readOnlyToplevelSymbolsCache: Boolean,
       compiles: Boolean
@@ -135,21 +151,18 @@ object SingleModuleBuildTool {
         TestUtil.runCommand(workspace, osOpt)(TestUtil.scalaCli, "compile", ".")
       else
         TestUtil.runCommand(workspace, osOpt)(TestUtil.scalaCli, "setup-ide", ".")
-      TestUtil.runServerCommand(workspace, osOpt)("build-tool", "add", ".", "--scala-cli")
-      TestUtil.runServerCommand(workspace, osOpt)(
-        "import",
-        ".",
-        "--ignore-toplevel-symbols-errors=false",
-        if (readOnlyToplevelSymbolsCache) Seq("--toplevel-cache-only") else Nil
-      )
+      val file = sourceFile(workspace)
+      TestUtil.loadBuildToolViaLsp(remoteServer, id, id, file)
+      TestUtil.loadModuleOfViaLsp(remoteServer, file)
       if (compiles)
-        TestUtil.runServerCommand(workspace, osOpt)("bsp", "compile")
+        TestUtil.compileViaLsp(remoteServer, file)
     }
     def compile(
       workspace: os.Path,
+      remoteServer: LanguageServer,
       osOpt: Option[OutputStream]
     ): Unit =
-      TestUtil.runServerCommand(workspace, osOpt)("bsp", "compile")
+      TestUtil.compileViaLsp(remoteServer, sourceFile(workspace))
   }
 
   case object Mill extends SingleModuleBuildTool {
@@ -249,42 +262,34 @@ object SingleModuleBuildTool {
     }
     def setup(
       workspace: os.Path,
+      remoteServer: LanguageServer,
       osOpt: Option[OutputStream],
       readOnlyToplevelSymbolsCache: Boolean,
       compiles: Boolean
     ): Unit =
       millSetup(
         workspace,
-        osOpt,
-        readOnlyToplevelSymbolsCache
+        remoteServer
       )
     def millSetup(
       workspace: os.Path,
-      osOpt: Option[OutputStream],
-      readOnlyToplevelSymbolsCache: Boolean
+      remoteServer: LanguageServer
     ): Unit = {
       os.copy(millwPath, workspace / "mill")
       os.copy(millwBatPath, workspace / "mill.bat")
       os.write(workspace / ".mill-version", IntegrationConstants.millVersion)
       (workspace / "mill").toIO.setExecutable(true)
-      TestUtil.runServerCommand(workspace, osOpt)(
-        "build-tool",
-        "add",
-        ".",
-        "--mill"
-      )
-      TestUtil.runServerCommand(workspace, osOpt)(
-        "import",
-        "--ignore-toplevel-symbols-errors=false",
-        if (readOnlyToplevelSymbolsCache) Seq("--toplevel-cache-only") else Nil
-      )
-      TestUtil.runServerCommand(workspace, osOpt)("bsp", "compile")
+      val file = sourceFile(workspace)
+      TestUtil.loadBuildToolViaLsp(remoteServer, id, id, file)
+      TestUtil.loadModuleOfViaLsp(remoteServer, file)
+      TestUtil.compileViaLsp(remoteServer, file)
     }
     def compile(
       workspace: os.Path,
+      remoteServer: LanguageServer,
       osOpt: Option[OutputStream]
     ): Unit =
-      TestUtil.runServerCommand(workspace, osOpt)("bsp", "compile")
+      TestUtil.compileViaLsp(remoteServer, sourceFile(workspace))
     override def isSlow: Boolean = true
   }
 
@@ -395,6 +400,7 @@ object SingleModuleBuildTool {
     }
     def setup(
       workspace: os.Path,
+      remoteServer: LanguageServer,
       osOpt: Option[OutputStream],
       readOnlyToplevelSymbolsCache: Boolean,
       compiles: Boolean
@@ -406,20 +412,17 @@ object SingleModuleBuildTool {
         createFolders = true
       )
       (workspace / "sbt").toIO.setExecutable(true)
-      TestUtil.runServerCommand(workspace, osOpt)("build-tool", "add", ".", "--sbt")
-      TestUtil.runServerCommand(workspace, osOpt)(
-        "import",
-        ".",
-        "--ignore-toplevel-symbols-errors=false",
-        if (readOnlyToplevelSymbolsCache) Seq("--toplevel-cache-only") else Nil
-      )
-      TestUtil.runServerCommand(workspace, osOpt)("bsp", "compile", "--dumb-build-tool-hacks")
+      val file = sourceFile(workspace)
+      TestUtil.loadBuildToolViaLsp(remoteServer, id, id, file)
+      TestUtil.loadModuleOfViaLsp(remoteServer, file)
+      TestUtil.compileViaLsp(remoteServer, file)
     }
     def compile(
       workspace: os.Path,
+      remoteServer: LanguageServer,
       osOpt: Option[OutputStream]
     ): Unit =
-      TestUtil.runServerCommand(workspace, osOpt)("bsp", "compile", "--dumb-build-tool-hacks")
+      TestUtil.compileViaLsp(remoteServer, sourceFile(workspace))
     override def isSlow: Boolean = true
   }
 

@@ -75,7 +75,7 @@ class CompletionTests extends PlasmonSuite {
     )(files*) {
       (workspace, remoteServer, positions, osOpt) =>
 
-        buildTool.setup(workspace, osOpt, compiles = false)
+        buildTool.setup(workspace, remoteServer, osOpt, compiles = false)
 
         for ((testInput, idx) <- testInputs.zipWithIndex) {
           val sourceFile = actualPath(os.sub / s"Foo$idx.scala")
@@ -140,7 +140,7 @@ class CompletionTests extends PlasmonSuite {
     )(files*) {
       (workspace, remoteServer, positions0, osOpt) =>
 
-        buildTool.setup(workspace, osOpt, compiles = false)
+        buildTool.setup(workspace, remoteServer, osOpt, compiles = false)
 
         var positions = positions0
 

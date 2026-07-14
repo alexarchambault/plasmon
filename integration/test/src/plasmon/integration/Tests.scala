@@ -74,7 +74,7 @@ class Tests extends PlasmonSuite {
     )(files*) {
       (workspace, remoteServer, positions, osOpt) =>
 
-        buildTool.setup(workspace, osOpt)
+        buildTool.setup(workspace, remoteServer, osOpt)
 
         val hoverSourceFile = actualPath(os.sub / "Hover.scala")
         val markdown = hoverMarkdown(

@@ -49,7 +49,7 @@ class ComplexTests extends PlasmonSuite {
     )(files*) {
       (workspace, remoteServer, positions, osOpt) =>
 
-        buildTool.setup(workspace, osOpt, compiles = false)
+        buildTool.setup(workspace, remoteServer, osOpt, compiles = false)
 
         def completionAtPos(pos: Int): Unit = {
 
@@ -157,8 +157,7 @@ class ComplexTests extends PlasmonSuite {
       (workspace, server, positions, osOpt) =>
         SingleModuleBuildTool.Mill.millSetup(
           workspace,
-          osOpt,
-          readOnlyToplevelSymbolsCache = false
+          server
         )
 
         for (i <- (1 to 4).iterator ++ (11 to 14).iterator) {
