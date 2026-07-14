@@ -46,6 +46,7 @@ jobs:
       run: ./mill -i __.checkNativeImageConfFormat
 
   native-test:
+    if: matrix.OS != 'macos-15-xlarge' || startsWith(github.ref, 'refs/tags/v')
     strategy:
       fail-fast: false
       matrix:
