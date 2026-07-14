@@ -4,3 +4,9 @@
 [submodule "integration/projects/mill"]
 	path = integration/projects/mill
 	url = https://github.com/alexarchambault/mill.git
+[submodule "submodules/metals"]
+	path = submodules/metals
+	url = https://github.com/plasmon-scala/metals.git
+[submodule "submodules/scala3"]
+	path = submodules/scala3
+	url = https://github.com/plasmon-scala/scala3.git
