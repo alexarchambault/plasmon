@@ -49,9 +49,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        OS: ["ubuntu-latest"]
+        OS_SHORT: ["linux"]
         include:
-          - OS: "ubuntu-latest"
-            OS_SHORT: "linux"
           - OS: "windows-latest"
             OS_SHORT: "windows"
           - OS: "macos-15-intel"
@@ -111,12 +111,7 @@ jobs:
   # always runs the cheaper matrix entries on every CI trigger.
   native-test-macos-arm:
     if: startsWith(github.ref, 'refs/tags/v')
-    strategy:
-      matrix:
-        include:
-          - OS: "macos-15-xlarge"
-            OS_SHORT: "mac-arm"
-    runs-on: ${{ matrix.OS }}
+    runs-on: macos-15-xlarge
     steps:
     - uses: actions/checkout@v7
       with:
@@ -127,17 +122,9 @@ jobs:
         apps: sbt scala-cli
         jvm: 17
     - name: Prepare for native image
-      if: runner.os != 'Windows'
       run: ./mill -i server.native.base-image.writeNativeImageScript --scriptDest generate-native-image.sh --imageDest=
-    - name: Prepare for native image (Windows)
-      if: runner.os == 'Windows'
-      run: ./mill -i server.native.base-image.writeNativeImageScript --scriptDest generate-native-image.bat --imageDest=
     - name: Generate native image
-      if: runner.os != 'Windows'
       run: jps -ml; ./generate-native-image.sh
-    - name: Generate native image (Windows)
-      if: runner.os == 'Windows'
-      run: ./generate-native-image.bat
     - name: Copy artifacts
       run: ./mill ci.copyLauncher --directory artifacts/
     - uses: actions/attest-build-provenance@v4
@@ -146,7 +133,7 @@ jobs:
         subject-path: 'artifacts/*'
     - uses: actions/upload-artifact@v7
       with:
-        name: launchers-${{ matrix.OS_SHORT }}
+        name: launchers-mac-arm
         path: artifacts/
         if-no-files-found: error
         retention-days: 2
