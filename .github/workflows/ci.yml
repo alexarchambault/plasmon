@@ -56,8 +56,6 @@ jobs:
             OS_SHORT: "windows"
           - OS: "macos-15-intel"
             OS_SHORT: "mac"
-          - OS: "macos-15-xlarge"
-            OS_SHORT: "mac-arm"
           - OS: "ubuntu-24.04-arm"
             OS_SHORT: "linux-arm"
     runs-on: ${{ matrix.OS }}
@@ -91,6 +89,51 @@ jobs:
     - uses: actions/upload-artifact@v7
       with:
         name: launchers-${{ matrix.OS_SHORT }}
+        path: artifacts/
+        if-no-files-found: error
+        retention-days: 2
+    - name: Warm-up
+      run: ./mill -i integration.native.testForked "plasmon.integration.BasicTests.test Scala CLI Scala 3 Java 17"
+      env:
+        PLASMON_TIMEOUT_OVERRIDE: "5 minutes"
+        PLASMON_SILENT_OVERRIDE: false
+    - name: Test
+      run: ./mill -i integration.native.testForked
+    - name: Diff
+      shell: bash
+      run: |
+        git add -N -- integration/test/resources/data
+        git diff
+        git diff-index HEAD --quiet || ( echo "Some test data differ"; exit 1 )
+
+  # Separate job so the expensive macos-15-xlarge runner is only used for
+  # actual releases (tags starting with v). The main native-test job above
+  # always runs the cheaper matrix entries on every CI trigger.
+  native-test-macos-arm:
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: macos-15-xlarge
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        fetch-depth: 0
+        submodules: true
+    - uses: coursier/setup-action@v3
+      with:
+        apps: sbt scala-cli
+        jvm: 17
+    - name: Prepare for native image
+      run: ./mill -i server.native.base-image.writeNativeImageScript --scriptDest generate-native-image.sh --imageDest=
+    - name: Generate native image
+      run: jps -ml; ./generate-native-image.sh
+    - name: Copy artifacts
+      run: ./mill ci.copyLauncher --directory artifacts/
+    - uses: actions/attest-build-provenance@v4
+      if: startsWith(github.ref, 'refs/tags/v')
+      with:
+        subject-path: 'artifacts/*'
+    - uses: actions/upload-artifact@v7
+      with:
+        name: launchers-mac-arm
         path: artifacts/
         if-no-files-found: error
         retention-days: 2
@@ -154,7 +197,7 @@ jobs:
 
   upload-launchers:
     name: Upload launchers to GitHub release assets
-    needs: [test, native-test]
+    needs: [test, native-test, native-test-macos-arm]
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     steps:
