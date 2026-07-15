@@ -829,7 +829,8 @@ object PlasmonCommands {
               Future.successful[Object](null)
             case Some(f) =>
               val recovered = f.recover {
-                case ex if Iterator
+                case ex
+                    if Iterator
                       .iterate(Option(ex))(_.flatMap(e => Option(e.getCause)))
                       .takeWhile(_.nonEmpty)
                       .flatten

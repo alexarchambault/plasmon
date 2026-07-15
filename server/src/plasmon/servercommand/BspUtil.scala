@@ -846,13 +846,14 @@ object BspUtil {
 
       private def isScalaCliFile(path: os.Path): Boolean =
         os.isFile(path) &&
-        path.last.endsWith(".sc") || (path.last.endsWith(".scala") &&
+        (path.last.endsWith(".sc") ||
+        path.last.endsWith(".java") || (path.last.endsWith(".scala") &&
         os.read.lines(path)
           .iterator
           .dropWhile(_.startsWith("#!")) // FIXME Multi-line preambles??
           .filter(!_.trim.isEmpty)
           .takeWhile(_.startsWith("//> "))
-          .hasNext)
+          .hasNext))
     }
   }
 
