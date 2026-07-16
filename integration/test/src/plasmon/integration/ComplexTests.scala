@@ -157,7 +157,8 @@ class ComplexTests extends PlasmonSuite {
       (workspace, server, positions, osOpt) =>
         SingleModuleBuildTool.Mill.millSetup(
           workspace,
-          server
+          server,
+          readOnlyToplevelSymbolsCache = false
         )
 
         for (i <- (1 to 4).iterator ++ (11 to 14).iterator) {

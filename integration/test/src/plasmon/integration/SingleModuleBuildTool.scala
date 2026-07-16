@@ -269,11 +269,13 @@ object SingleModuleBuildTool {
     ): Unit =
       millSetup(
         workspace,
-        remoteServer
+        remoteServer,
+        readOnlyToplevelSymbolsCache
       )
     def millSetup(
       workspace: os.Path,
-      remoteServer: LanguageServer
+      remoteServer: LanguageServer,
+      readOnlyToplevelSymbolsCache: Boolean
     ): Unit = {
       os.copy(millwPath, workspace / "mill")
       os.copy(millwBatPath, workspace / "mill.bat")
@@ -281,7 +283,7 @@ object SingleModuleBuildTool {
       (workspace / "mill").toIO.setExecutable(true)
       val file = sourceFile(workspace)
       TestUtil.loadBuildToolViaLsp(remoteServer, id, id, file)
-      TestUtil.loadModuleOfViaLsp(remoteServer, file)
+      TestUtil.importViaLsp(remoteServer, readOnlyToplevelSymbolsCache)
       TestUtil.compileViaLsp(remoteServer, file)
     }
     def compile(
@@ -414,7 +416,7 @@ object SingleModuleBuildTool {
       (workspace / "sbt").toIO.setExecutable(true)
       val file = sourceFile(workspace)
       TestUtil.loadBuildToolViaLsp(remoteServer, id, id, file)
-      TestUtil.loadModuleOfViaLsp(remoteServer, file)
+      TestUtil.importViaLsp(remoteServer, readOnlyToplevelSymbolsCache)
       TestUtil.compileViaLsp(remoteServer, file)
     }
     def compile(
