@@ -58,22 +58,127 @@ object Deps {
   def coursierInterface = mvn"io.get-coursier:interface:${Versions.coursierInterface}"
   def coursierInterfaceNoShading =
     mvn"io.get-coursier:interface-no-shading_2.13:${Versions.coursierInterface}"
-  def expecty        = mvn"com.eed3si9n.expecty::expecty:0.16.0"
-  def jniUtils       = mvn"io.get-coursier.jniutils:windows-jni-utils:0.3.3"
-  def jsoniterCore   = mvn"com.github.plokhotnyuk.jsoniter-scala::jsoniter-scala-core:2.24.2"
-  def jsoniterMacros = mvn"com.github.plokhotnyuk.jsoniter-scala::jsoniter-scala-macros:2.24.2"
-  def libdaemonjvm   = mvn"io.github.alexarchambault.libdaemon::libdaemon:0.0.11"
-  def lsp4j          = mvn"org.eclipse.lsp4j:org.eclipse.lsp4j:1.0.0"
-  def lz4Java        = mvn"org.lz4:lz4-java:1.8.0"
-  def mtagsScala2    = mvn"io.github.plasmon-scala:mtags_${Versions.scala2}:${Versions.mtags}"
-  def mtagsJava      = mvn"io.github.plasmon-scala:mtags-java_2.13:${Versions.mtags}"
-  def mtags  = mvn"io.github.plasmon-scala:scala3-presentation-compiler_3:${Versions.scala3Pc}"
-  def munit  = mvn"org.scalameta::munit:1.1.0"
-  def osLib  = mvn"com.lihaoyi::os-lib:0.10.7"
-  def pprint = mvn"com.lihaoyi::pprint:0.8.1"
+  def expecty          = mvn"com.eed3si9n.expecty::expecty:0.16.0"
+  def jniUtils         = mvn"io.get-coursier.jniutils:windows-jni-utils:0.3.3"
+  def jsoniterCore     = mvn"com.github.plokhotnyuk.jsoniter-scala::jsoniter-scala-core:2.24.2"
+  def jsoniterMacros   = mvn"com.github.plokhotnyuk.jsoniter-scala::jsoniter-scala-macros:2.24.2"
+  def libdaemonjvm     = mvn"io.github.alexarchambault.libdaemon::libdaemon:0.0.11"
+  def lsp4j            = mvn"org.eclipse.lsp4j:org.eclipse.lsp4j:1.0.0"
+  def lz4Java          = mvn"org.lz4:lz4-java:1.8.0"
+  def munit            = mvn"org.scalameta::munit:1.1.0"
+  def osLib            = mvn"com.lihaoyi::os-lib:0.10.7"
+  def pprint           = mvn"com.lihaoyi::pprint:0.8.1"
   def semanticdbJavac  = mvn"com.sourcegraph:semanticdb-javac:0.11.1"
   def semanticDbScalac = mvn"org.scalameta:::semanticdb-scalac:4.13.3"
   def svm              = mvn"org.graalvm.nativeimage:svm:24.0.2"
+}
+
+object submodules extends Module {
+
+  private def excludeScalaCompiler(dep: Dep): Dep =
+    dep
+      .exclude(("org.scala-lang", "scala-reflect"))
+      .exclude(("org.scala-lang", "scala-compiler"))
+      .exclude(("org.scala-lang", "scala-library"))
+
+  object metals extends Module {
+
+    trait MetalsPublishModule extends PlasmonPublishModule {
+      def plasmonOrg = "io.github.alexarchambault.plasmon.metals"
+    }
+
+    object `mtags-interfaces` extends JavaModule with MetalsPublishModule {
+      def sources = Task.Sources("src/main/java")
+      def mvnDeps = Seq(Deps.lsp4j)
+    }
+
+    trait MtagsScalaModule extends ScalaModule with MetalsPublishModule {
+      def scalaVersion  = Versions.scala2
+      def scalacOptions = super.scalacOptions() ++ Seq("-Yrangepos")
+    }
+
+    object `mtags-shared` extends MtagsScalaModule {
+      def sources = Task.Sources(
+        "src/main/scala",
+        "src/main/scala-2.13"
+      )
+      def moduleDeps = Seq(`mtags-interfaces`)
+      def mvnDeps = Seq(
+        mvn"org.lz4:lz4-java:1.8.1",
+        mvn"com.google.protobuf:protobuf-java:4.34.0",
+        mvn"com.google.guava:guava:33.5.0-jre",
+        mvn"io.get-coursier:interface:1.0.29-M2",
+        excludeScalaCompiler(mvn"com.outr::scribe:3.18.0"),
+        excludeScalaCompiler(mvn"com.lihaoyi::pprint:0.8.1")
+      )
+    }
+
+    object mtags extends MtagsScalaModule {
+      def sources = Task.Sources(
+        "src/main/scala",
+        "src/main/scala-2",
+        "src/main/scala-2.13"
+      )
+      def resources =
+        Task.Sources(BuildCtx.workspaceRoot / "submodules/metals/mtags/src/main/resources")
+      def generatedSources = super.generatedSources() ++ Seq(buildInfo())
+      def buildInfo = Task {
+        val dir  = Task.dest / "buildinfo"
+        val dest = dir / "scala/meta/internal/mtags/BuildInfo.scala"
+        val code =
+          s"""package scala.meta.internal.mtags
+             |
+             |object BuildInfo {
+             |  def scalaCompilerVersion = "${Versions.scala2}"
+             |  def deprecatedScalaVersions = Seq.empty[String]
+             |  def supportedScalaVersions = Seq("${Versions.scala2}", "2.13.16", "2.13.17")
+             |  def supportedScalaBinaryVersions = Seq("3", "2.13")
+             |  def scala212 = "2.12.21"
+             |  def scala213 = "${Versions.scala2}"
+             |  def scala3 = "3.3.7"
+             |}
+             |""".stripMargin
+        os.write.over(dest, code, createFolders = true)
+        PathRef(dir)
+      }
+      def moduleDeps = Seq(`mtags-shared`)
+      def mvnDeps = Seq(
+        excludeScalaCompiler(mvn"com.lihaoyi::geny:1.0.0"),
+        mvn"com.thoughtworks.qdox:qdox:2.2.0",
+        mvn"org.scala-lang.modules::scala-java8-compat:1.0.2",
+        mvn"org.jsoup:jsoup:1.22.1",
+        mvn"io.get-coursier:interface:1.0.29-M2",
+        mvn"org.lz4:lz4-java:1.8.1",
+        excludeScalaCompiler(mvn"com.outr::scribe:3.18.0"),
+        mvn"com.googlecode.java-diff-utils:diffutils:1.3.0",
+        mvn"org.scalameta:semanticdb-scalac-core_${Versions.scala2}:4.15.2",
+        mvn"org.scala-lang:scala-compiler:${Versions.scala2}"
+      )
+    }
+
+    object `mtags-java` extends MtagsScalaModule {
+      def sources    = Task.Sources("src/main/scala")
+      def moduleDeps = Seq(`mtags-interfaces`, `mtags-shared`)
+      def mvnDeps = Seq(
+        mvn"org.scala-lang.modules::scala-java8-compat:1.0.2"
+      )
+    }
+  }
+
+  object scala3 extends Module {
+    object `presentation-compiler` extends ScalaModule with PlasmonPublishModule {
+      def plasmonOrg   = "io.github.alexarchambault.plasmon.scala3"
+      def scalaVersion = Versions.scala
+      def sources      = Task.Sources("src/main")
+      def moduleDeps   = Seq(metals.`mtags-interfaces`, metals.`mtags-shared`, metals.mtags)
+      def mvnDeps = Seq(
+        mvn"org.scala-lang:scala3-compiler_3:${Versions.scala}",
+        mvn"org.lz4:lz4-java:1.8.0",
+        mvn"io.get-coursier:interface:1.0.18",
+        mvn"com.google.guava:guava:33.2.1-jre"
+      )
+    }
+  }
 }
 
 object shared extends Module {
@@ -94,9 +199,11 @@ trait PlasmonPublishModule extends PublishModule {
     PathRef(jar)
   }
 
+  def plasmonOrg = "io.github.alexarchambault.plasmon"
+
   def pomSettings = PomSettings(
     description = artifactName(),
-    organization = "io.github.alexarchambault.plasmon",
+    organization = plasmonOrg,
     url = "https://github.com/alexarchambault/plasmon",
     licenses = Seq(License.`Apache-2.0`),
     versionControl = VersionControl.github("alexarchambault", "plasmon"),
@@ -153,6 +260,11 @@ def enableTestParallelism =
 
 object server extends ScalaModule with PlasmonPublishModule {
   def scalaVersion = Versions.scala
+  def moduleDeps = Seq(
+    submodules.metals.mtags,
+    submodules.metals.`mtags-java`,
+    submodules.scala3.`presentation-compiler`
+  )
   def compileMvnDeps = Seq(
     Deps.jsoniterMacros,
     Deps.svm
@@ -171,13 +283,6 @@ object server extends ScalaModule with PlasmonPublishModule {
     Deps.lsp4j,
     Deps.lz4Java,
     Deps.bsp4j,
-    Deps.mtagsScala2,
-    Deps.mtagsJava,
-    Deps.mtags
-      // don't let mtags-scala-3 bump mtags Scala 2 dependencies
-      .exclude(("io.github.plasmon-scala", s"mtags_${Versions.scala213}"))
-      .exclude(("io.github.plasmon-scala", s"mtags-shared_${Versions.scala213}"))
-      .exclude(("io.github.plasmon-scala", "mtags-interfaces")),
     Deps.osLib,
     mvn"io.github.alexarchambault::test-util:0.1.7",
     mvn"org.wildfly.common:wildfly-common:1.7.0.Final", // bump this one (pulled by Metals, GraalVM issues with 1.5.4.Final and 1.6.0.Final)
@@ -316,7 +421,6 @@ object server extends ScalaModule with PlasmonPublishModule {
     )
     def mvnDeps = Seq(
       Deps.coursierInterfaceNoShading,
-      Deps.mtags,
       Deps.semanticdbJavac
     )
 
