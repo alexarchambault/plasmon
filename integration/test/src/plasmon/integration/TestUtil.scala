@@ -256,15 +256,6 @@ object TestUtil {
   private val baseCommand: os.Shellable =
     if (launcherKind == "native") Seq[os.Shellable](launcher, serverExtraJavaOpts)
     else Seq[os.Shellable]("java", serverExtraJavaOpts, "-jar", launcher)
-  def runServerCommand(
-    workspace: os.Path,
-    err: Option[OutputStream]
-  )(command: os.Shellable*): Unit = {
-    val output = FixedReadBytes.pipeTo(err)
-    os.proc(baseCommand, "command", "-v", command)
-      .call(cwd = workspace, stdin = os.Inherit, stdout = output, mergeErrIntoOut = err.nonEmpty)
-  }
-
   def runCommand(
     workspace: os.Path,
     err: Option[OutputStream]

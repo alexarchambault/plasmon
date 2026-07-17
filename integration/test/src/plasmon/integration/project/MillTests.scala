@@ -1,10 +1,9 @@
 package plasmon.integration.project
 
 import org.eclipse.lsp4j as l
+import org.eclipse.lsp4j.services.LanguageServer
 import plasmon.integration.PlasmonSuite
 import plasmon.integration.TestUtil.*
-
-import java.io.OutputStream
 
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 
@@ -18,14 +17,11 @@ class MillTests extends PlasmonSuite {
     else
       10.minutes
 
-  private def init(workingDir: os.Path, errOpt: Option[OutputStream]): Unit = {
-    runServerCommand(workingDir, errOpt)("build-tool", "add", "--mill-via-bloop")
-    runServerCommand(workingDir, errOpt)(
-      "import",
-      "--target",
-      s"${workingDir.toIO.toURI.toASCIIString.stripSuffix("/")}/runner/?id=runner"
-    )
-    runServerCommand(workingDir, errOpt)("bsp", "compile")
+  private def init(server: LanguageServer): Unit = {
+    val source = millSources / "runner/src/mill/runner/CliImports.scala"
+    loadBuildToolViaLsp(server, "mill-via-bloop", "mill-via-bloop", source)
+    loadModuleOfViaLsp(server, source)
+    compileViaLsp(server, source)
   }
 
   override def test(options: munit.TestOptions)(body: => Any)(implicit loc: munit.Location): Unit =
@@ -57,8 +53,8 @@ class MillTests extends PlasmonSuite {
       workspaceOpt = Some(millSources),
       extraServerOpts = if (disableScala2Pc) compatServerOpt else Nil
     )() {
-      (workingDir, server, _, osOpt, _) =>
-        init(workingDir, osOpt)
+      (_, server, _, osOpt, _) =>
+        init(server)
 
         val hover0 = hoverMarkdown(
           server,
