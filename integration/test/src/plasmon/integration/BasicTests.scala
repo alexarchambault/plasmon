@@ -224,7 +224,7 @@ class BasicTests extends PlasmonSuite {
       (workspace, server, positions, osOpt, runCount) =>
         languageClient.withOsOpt(osOpt)
 
-        buildTool.setup(workspace, osOpt, readOnlyToplevelSymbolsCache = runCount > 0)
+        buildTool.setup(workspace, server, osOpt, readOnlyToplevelSymbolsCache = runCount > 0)
 
         val mainSourceFile = actualPath(os.sub / "Foo.scala")
 
@@ -361,10 +361,9 @@ class BasicTests extends PlasmonSuite {
             val content = os.read(workspace / newSourceFile)
             expect(content.startsWith("package foo.bar"))
 
-            buildTool.compile(workspace, osOpt)
-            TestUtil.runServerCommand(workspace, osOpt)("index")
-            TestUtil.runServerCommand(workspace, osOpt)("index", "--await")
-            buildTool.compile(workspace, osOpt)
+            buildTool.compile(workspace, server, osOpt)
+            TestUtil.executeCommand(server, "plasmon/index")
+            buildTool.compile(workspace, server, osOpt)
           }
         }
 

@@ -13,8 +13,7 @@ import scala.util.Properties
 
 class CoursierTests extends PlasmonSuite {
 
-  val coursierSources      = projectsDir / "coursier"
-  def coursierScalaVersion = "2.13.12"
+  val coursierSources = projectsDir / "coursier"
 
   override def munitTimeout: FiniteDuration = 5.minutes
 
@@ -47,40 +46,25 @@ class CoursierTests extends PlasmonSuite {
       (workingDir, server, _, osOpt, _) =>
         bspInit(osOpt)
 
-        runServerCommand(workingDir, osOpt)(
-          "bsp",
-          "add",
-          coursierSources
-        )
+        val dependencySource =
+          coursierSources / "modules/core/shared/src/main/scala/coursier/core/Dependency.scala"
+        val testHelpersSource =
+          coursierSources / "modules/coursier/shared/src/test/scala/coursier/tests/TestHelpers.scala"
 
-        runServerCommand(workingDir, osOpt)(
-          "import",
-          coursierSources,
-          "--ignore-toplevel-symbols-errors=false",
-          "--target",
-          s"coursier/jvm/$coursierScalaVersion/test",
-          "--target",
-          s"core/jvm/$coursierScalaVersion/test"
-        )
+        loadBuildToolViaLsp(server, "bloop", "bloop", dependencySource)
+        loadModuleOfViaLsp(server, dependencySource)
+        loadModuleOfViaLsp(server, testHelpersSource)
 
         // issues with the bsp clean command in mill for now…
         os.remove.all(coursierSources / "out/core")
 
-        runServerCommand(workingDir, osOpt)(
-          "bsp",
-          "compile",
-          "--workspace",
-          coursierSources,
-          "--target",
-          s"coursier/jvm/$coursierScalaVersion/test",
-          "--target",
-          s"core/jvm/$coursierScalaVersion/test"
-        )
+        compileViaLsp(server, dependencySource)
+        compileViaLsp(server, testHelpersSource)
 
         val jsonDiag = serverCommandOutput(workingDir, osOpt)(
           "diagnostics",
           "--json",
-          coursierSources / "modules/core/shared/src/main/scala/coursier/core/Dependency.scala"
+          dependencySource
         )
 
         val diagnostics = new Gson().fromJson(jsonDiag, classOf[Array[l.Diagnostic]])
@@ -94,7 +78,7 @@ class CoursierTests extends PlasmonSuite {
 
         val hover0 = hoverMarkdown(
           server,
-          coursierSources / "modules/coursier/shared/src/test/scala/coursier/tests/TestHelpers.scala",
+          testHelpersSource,
           new l.Position(145, 30)
         )
         checkTextFixture(
@@ -114,16 +98,15 @@ class CoursierTests extends PlasmonSuite {
           osOpt
         )
 
-        runServerCommand(workingDir, osOpt)(
-          "check",
-          coursierSources / "modules/coursier/shared/src/test/scala/coursier/tests/ResolveTests.scala",
-          "--require",
-          "scala-2.13"
+        compileViaLsp(
+          server,
+          coursierSources / "modules/coursier/shared/src/test/scala/coursier/tests/ResolveTests.scala"
         )
 
         val consoleDimPath =
           coursierSources / "modules/cache/jvm/src/main/scala/coursier/cache/internal/ConsoleDim.scala"
-        runServerCommand(workingDir, osOpt)("check", consoleDimPath, "--require", "scala-2.13")
+        loadModuleOfViaLsp(server, consoleDimPath)
+        compileViaLsp(server, consoleDimPath)
 
         val consoleDimHover = hoverMarkdown(server, consoleDimPath, new l.Position(13, 16))
 

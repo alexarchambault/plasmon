@@ -52,16 +52,16 @@ class PcTweaksTests extends PlasmonSuite {
       extraServerOpts = Seq("--jvm", jvm.value) ++ serverOpt,
       timeout = Some(buildTool.defaultTimeout)
     )(files*) {
-      (workspace, server, positions, osOpt) =>
+      (workspace, remoteServer, positions, osOpt) =>
 
-        buildTool.setup(workspace, osOpt, compiles = false)
+        buildTool.setup(workspace, remoteServer, osOpt, compiles = false)
 
         def hoverAt(pos: Int): Unit =
           checkTextFixture(
             fixtureDir / "plasmon/integration/pc-tweaks-tests/untupling/hover" /
               s"scala-${scalaVersion.label}" / s"jvm-${jvm.label}" / s"pos-$pos.txt",
             hoverMarkdown(
-              server,
+              remoteServer,
               workspace / sourceFile,
               positions.lspPos(sourceFile, pos)
             ),
@@ -73,7 +73,7 @@ class PcTweaksTests extends PlasmonSuite {
             fixtureDir / "plasmon/integration/pc-tweaks-tests/untupling/definition" / buildTool.id /
               s"scala-${scalaVersion.label}" / s"jvm-${jvm.label}" / s"definition-$pos.txt",
             goToDef(
-              server,
+              remoteServer,
               workspace,
               workspace / sourceFile,
               positions.lspPos(sourceFile, pos)
@@ -119,16 +119,16 @@ class PcTweaksTests extends PlasmonSuite {
       extraServerOpts = Seq("--jvm", jvm.value) ++ serverOpt,
       timeout = Some(buildTool.defaultTimeout)
     )(files*) {
-      (workspace, server, positions, osOpt) =>
+      (workspace, remoteServer, positions, osOpt) =>
 
-        buildTool.setup(workspace, osOpt, compiles = false)
+        buildTool.setup(workspace, remoteServer, osOpt, compiles = false)
 
         def hoverAt(pos: Int): Unit =
           checkTextFixture(
             fixtureDir / "plasmon/integration/pc-tweaks-tests/weird-method-call/hover" /
               s"scala-${scalaVersion.label}" / s"jvm-${jvm.label}" / s"pos-$pos.txt",
             hoverMarkdown(
-              server,
+              remoteServer,
               workspace / sourceFile,
               positions.lspPos(sourceFile, pos)
             ),
@@ -140,7 +140,7 @@ class PcTweaksTests extends PlasmonSuite {
             fixtureDir / "plasmon/integration/pc-tweaks-tests/weird-method-call/definition" / buildTool.id /
               s"scala-${scalaVersion.label}" / s"jvm-${jvm.label}" / s"definition-$pos.txt",
             goToDef(
-              server,
+              remoteServer,
               workspace,
               workspace / sourceFile,
               positions.lspPos(sourceFile, pos)

@@ -256,15 +256,6 @@ object TestUtil {
   private val baseCommand: os.Shellable =
     if (launcherKind == "native") Seq[os.Shellable](launcher, serverExtraJavaOpts)
     else Seq[os.Shellable]("java", serverExtraJavaOpts, "-jar", launcher)
-  def runServerCommand(
-    workspace: os.Path,
-    err: Option[OutputStream]
-  )(command: os.Shellable*): Unit = {
-    val output = FixedReadBytes.pipeTo(err)
-    os.proc(baseCommand, "command", "-v", command)
-      .call(cwd = workspace, stdin = os.Inherit, stdout = output, mergeErrIntoOut = err.nonEmpty)
-  }
-
   def runCommand(
     workspace: os.Path,
     err: Option[OutputStream]
@@ -283,6 +274,88 @@ object TestUtil {
       .call(cwd = workspace, stderr = output)
     proc.out.text()
   }
+
+  def executeCommand(
+    remoteServer: LanguageServer,
+    command: String,
+    arguments: Object*
+  ): Object = {
+    val params = new l.ExecuteCommandParams
+    params.setCommand(command)
+    params.setArguments(arguments.toList.asJava)
+    remoteServer.getWorkspaceService.executeCommand(params).get()
+  }
+
+  def loadBuildToolViaLsp(
+    remoteServer: LanguageServer,
+    discoverId: String,
+    toolId: String,
+    currentFile: os.Path
+  ): Unit = {
+    val res = executeCommand(
+      remoteServer,
+      "plasmon/loadBuildTool",
+      discoverId,
+      toolId,
+      currentFile.toNIO.toUri.toASCIIString
+    )
+    val obj     = new Gson().toJsonTree(res).getAsJsonObject
+    val success = obj.get("success").getAsBoolean
+    if (!success) {
+      val error = Option(obj.get("error")).filter(!_.isJsonNull).map(_.getAsString)
+      sys.error(s"Error loading build tool $toolId / $discoverId: ${error.getOrElse("")}")
+    }
+  }
+
+  def importViaLsp(
+    remoteServer: LanguageServer,
+    toplevelCacheOnly: Boolean
+  ): Unit = {
+    executeCommand(remoteServer, "plasmon/loadAllModules", Boolean.box(toplevelCacheOnly))
+  }
+
+  def loadModuleOfViaLsp(
+    remoteServer: LanguageServer,
+    currentFile: os.Path
+  ): Unit = {
+    val currentFileUri = currentFile.toNIO.toUri.toASCIIString
+    val res            = executeCommand(remoteServer, "plasmon/listModulesOf", currentFileUri)
+    val modules = new Gson()
+      .toJsonTree(res)
+      .getAsJsonArray
+      .asScala
+      .map(_.getAsJsonObject)
+      .filter(_.has("uri"))
+      .toVector
+    val module = modules
+      .find(obj => !obj.get("alreadyLoaded").getAsBoolean)
+      .orElse(modules.headOption)
+      .getOrElse(sys.error(s"No module found for $currentFile"))
+
+    val loadRes = executeCommand(
+      remoteServer,
+      "plasmon/loadModule",
+      module.get("workspace").getAsString,
+      module.get("server").getAsString,
+      module.get("uri").getAsString
+    )
+    val loadObj = new Gson().toJsonTree(loadRes).getAsJsonObject
+    if (loadObj.has("error") && !loadObj.get("error").getAsString.isEmpty)
+      sys.error(
+        s"Error loading module ${module.get("label").getAsString}: " +
+          loadObj.get("error").getAsString
+      )
+  }
+
+  def compileViaLsp(
+    remoteServer: LanguageServer,
+    currentFile: os.Path
+  ): Unit =
+    executeCommand(
+      remoteServer,
+      "plasmon/compile",
+      currentFile.toNIO.toUri.toASCIIString
+    )
 
   def identifier(path: os.Path): l.TextDocumentIdentifier =
     new l.TextDocumentIdentifier(path.toNIO.toUri.toASCIIString)

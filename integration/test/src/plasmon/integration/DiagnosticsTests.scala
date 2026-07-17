@@ -57,11 +57,11 @@ class DiagnosticsTests extends PlasmonSuite {
       extraServerOpts = Seq("--jvm", jvm.value),
       timeout = Some(buildTool.defaultTimeout)
     )(files*) {
-      (workspace, _, _, osOpt) =>
+      (workspace, remoteServer, _, osOpt) =>
 
         client.setWorkspace(workspace)
 
-        buildTool.setup(workspace, osOpt, compiles = false)
+        buildTool.setup(workspace, remoteServer, osOpt, compiles = false)
 
         val diagParams = Await.result(futureDiag, 20.seconds)
 

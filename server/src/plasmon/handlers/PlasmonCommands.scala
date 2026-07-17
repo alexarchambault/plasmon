@@ -828,12 +828,24 @@ object PlasmonCommands {
               scribe.warn(s"No build target found for $file, nothing to compile")
               Future.successful[Object](null)
             case Some(f) =>
-              f.onComplete {
+              val recovered = f.recover {
+                case ex
+                    if Iterator
+                      .iterate(Option(ex))(_.flatMap(e => Option(e.getCause)))
+                      .takeWhile(_.nonEmpty)
+                      .flatten
+                      .exists(e =>
+                        e.isInstanceOf[ResponseErrorException] &&
+                        Option(e.getMessage).exists(_.contains("Compilation failed"))
+                      ) =>
+                  new b.CompileResult(b.StatusCode.ERROR)
+              }(using server.pools.compilationEc)
+              recovered.onComplete {
                 case Success(_) =>
                 case Failure(ex) =>
                   scribe.error(s"Compiling $file failed", ex)
               }(using server.pools.compilationEc)
-              f.map[Object](_ => null)(using server.pools.dummyEc)
+              recovered.map[Object](_ => null)(using server.pools.dummyEc)
           }
         }(using server.pools.requestsEces)
 
@@ -1104,32 +1116,59 @@ object PlasmonCommands {
     CommandHandler.of("plasmon/loadModule", refreshStatus = true) { (params, _) =>
       params.asValues[String, String, String]("plasmon/loadModule") {
         (workspaceUri, name, moduleUri) =>
-          Future {
+          val f = Future {
             val workspace = workspaceUri.osPathFromUri
             val infoOpt   = server.bspServers.get(workspace, name)
-            val resp = infoOpt match {
+            infoOpt match {
               case Some(conn) =>
                 val targetId = new b.BuildTargetIdentifier(moduleUri)
                 val loaded   = indexer.addTarget(conn.info, targetId)
                 if (loaded) {
                   indexer.persist()
-                  indexer.reIndex().onComplete {
-                    case Success(()) =>
-                    case Failure(ex) =>
-                      scribe.error("Error re-indexing", ex)
-                  }(using pools.dummyEc)
+                  indexer.reIndex().map(_ => LoadModuleResponse(loaded))(using pools.dummyEc)
                 }
-                else
+                else {
                   scribe.info(s"Module already added: $targetId")
-                LoadModuleResponse(loaded)
+                  Future.successful(LoadModuleResponse(loaded))
+                }
               case None =>
-                LoadModuleResponse(
+                Future.successful(LoadModuleResponse(
                   loaded = false,
                   error = s"No BSP server '$name' found under $workspace"
-                )
+                ))
             }
-            writeToGson(resp)
-          }(using server.pools.requestsEces).asJava
+          }(using server.pools.requestsEces)
+
+          f.flatten.map[Object](resp => writeToGson(resp))(using pools.dummyEc).asJava
+      }
+    },
+    CommandHandler.of("plasmon/loadAllModules", refreshStatus = true) { (params, _) =>
+      params.asOpt[Boolean]("plasmon/loadAllModules") { toplevelCacheOnlyOpt =>
+        val f = Future {
+          val allTargetsByBuildServer =
+            server.bspServers.list.flatMap(_._2).map { buildServer =>
+              buildServer -> buildServer
+                .conn
+                .workspaceBuildTargets
+                .get()
+                .getTargets
+                .asScala
+                .toList
+            }
+          if (allTargetsByBuildServer.isEmpty)
+            scribe.warn("No build servers found while loading all modules")
+          indexer.targets = Map.empty
+          for ((server, targets) <- allTargetsByBuildServer)
+            indexer.addTargets(server.info, targets.map(_.getId))
+          indexer.persist()
+          indexer.index(
+            toplevelCacheOnly = toplevelCacheOnlyOpt.getOrElse(false),
+            ignoreToplevelSymbolsErrors = false,
+            mayReadFromBspCache = false
+          )
+        }(using server.pools.requestsEces)
+
+        f.flatten.map[Object](_ => null)(using pools.dummyEc).asJava
       }
     },
     CommandHandler.of("plasmon/unloadModule", refreshStatus = true) { (params, _) =>
@@ -1202,12 +1241,13 @@ object PlasmonCommands {
         }
       },
       CommandHandler.of("plasmon/index", refreshStatus = true) { (_, _) =>
-        indexer.reIndex().onComplete {
+        val f = indexer.reIndex()
+        f.onComplete {
           case Success(()) =>
           case Failure(ex) =>
             scribe.error("Error re-indexing", ex)
         }(using pools.dummyEc)
-        CompletableFuture.completedFuture(null)
+        f.map[Object](_ => null)(using pools.dummyEc).asJava
       }
     )
 
