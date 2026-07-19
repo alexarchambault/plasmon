@@ -8,6 +8,7 @@ object Plasmon extends CommandsEntryPoint {
 
   lazy val commands: Seq[caseapp.Command[?]] = {
     val all = Seq(
+      Browse,
       Code,
       Command,
       Nvim,
