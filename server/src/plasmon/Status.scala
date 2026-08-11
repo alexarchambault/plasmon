@@ -616,14 +616,26 @@ object Status {
       healthCheckScheduler: ScheduledExecutorService,
       onNewStatus: () => Unit
     ): Option[BuildToolStatus] =
-      if (onGoingScheduleCheck.forall(f => f.isCancelled() || f.isDone())) {
+      // Nothing to ping for a connection with no JSON-RPC endpoint behind it (a replayed one):
+      // there is no process that could stop answering.
+      if (conn.remoteEndpoint.isEmpty) {
+        val previous = status.getAndSet(BuildServerState.Running)
+        if (previous != BuildServerState.Running) {
+          onNewStatus()
+          Some(this)
+        }
+        else
+          None
+      }
+      else if (onGoingScheduleCheck.forall(f => f.isCancelled() || f.isDone())) {
         if (!onGoingScheduleCheck.forall(f => f.isCancelled() || f.isDone()))
           for (f <- onGoingCheck) {
             val cancelled = f.cancel(true) || f.isCancelled()
             if (!cancelled)
               scribe.warn(s"Could not cancel build tool on going health request for ${conn.name}")
           }
-        val future = conn.remoteEndpoint.request("plasmon/doesnt-exist", null)
+        // Safe: the branch above handles the endpoint-less case
+        val future = conn.remoteEndpoint.get.request("plasmon/doesnt-exist", null)
         val futureCheck = healthCheckScheduler.schedule(
           new Runnable {
             def run(): Unit = {

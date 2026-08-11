@@ -83,6 +83,11 @@ object BuildServerProcess {
       t
     }
   }
+  /** No process at all - used by the replay build server, which answers from recorded data. */
+  case object NoProcess extends BuildServerProcess {
+    def managedProcess = false
+    def close(): Unit  = ()
+  }
   final case class BloopConnection(conn: BspConnection) extends BuildServerProcess {
     def managedProcess = false
     def close(): Unit =

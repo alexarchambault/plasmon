@@ -13,11 +13,18 @@ class ComplexTests extends PlasmonSuite {
     }
 
   def complexTest(
-    buildTool: SingleModuleBuildTool,
+    buildTool0: SingleModuleBuildTool,
     scalaVersionOpt: Option[Labelled[String]],
     jvm: Labelled[String],
     serverOpt: Seq[String]
   ): Unit = {
+    // Completions only - replayed rather than imported for real
+    val buildTool = SingleModuleBuildTool.Replayed(
+      buildTool0,
+      os.sub / "complex-tests/completions" / buildTool0.id /
+        s"scala-${scalaVersionOpt.map(_.label).getOrElse("default")}" / s"jvm-${jvm.label}"
+    )
+
     val header = scalaVersionOpt match {
       case Some(scalaVersion) =>
         s"""//> using scala ${scalaVersion.value}
@@ -155,10 +162,18 @@ class ComplexTests extends PlasmonSuite {
       timeout = Some(SingleModuleBuildTool.Mill.defaultTimeout)
     )(files*) {
       (workspace, server, positions, osOpt) =>
-        SingleModuleBuildTool.Mill.millSetup(
+        // Cross-module: hovers here resolve symbols defined in the other module, so the recording
+        // is compiled at replay time to give them real class files to resolve against
+        SingleModuleBuildTool.Replayed(
+          SingleModuleBuildTool.Mill,
+          os.sub / "complex-tests/adt-in-other-module" /
+            s"scala-${scalaVersion.label}" / s"jvm-${jvm.label}"
+        ).setup(
           workspace,
           server,
-          readOnlyToplevelSymbolsCache = false
+          osOpt,
+          readOnlyToplevelSymbolsCache = false,
+          compiles = true
         )
 
         for (i <- (1 to 4).iterator ++ (11 to 14).iterator) {

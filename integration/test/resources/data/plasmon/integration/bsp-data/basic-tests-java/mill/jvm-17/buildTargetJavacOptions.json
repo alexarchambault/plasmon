@@ -1,0 +1,85 @@
+{
+  "items": [
+    {
+      "target": {
+        "uri": "file:///$WORKSPACE$/mill-build"
+      },
+      "options": [],
+      "classpath": [
+        "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/com/lihaoyi/sourcecode_3/0.4.4/sourcecode_3-0.4.4.jar",
+        "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/com/lihaoyi/mill-libs_3/1.1.7/mill-libs_3-1.1.7.jar",
+        "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/com/lihaoyi/mill-runner-autooverride-api_3/1.1.7/mill-runner-autooverride-api_3-1.1.7.jar",
+        "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/org/scala-lang/scala-library/3.8.2/scala-library-3.8.2.jar",
+        "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/com/lihaoyi/mill-moduledefs_3/0.13.1/mill-moduledefs_3-0.13.1.jar",
+        "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/com/lihaoyi/unroll-annotation_3/0.2.0/unroll-annotation_3-0.2.0.jar",
+        "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/com/lihaoyi/mill-libs-kotlinlib_3/1.1.7/mill-libs-kotlinlib_3-1.1.7.jar",
+        "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/com/lihaoyi/mill-libs-groovylib_3/1.1.7/mill-libs-groovylib_3-1.1.7.jar",
+        "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/com/lihaoyi/mill-libs-androidlib_3/1.1.7/mill-libs-androidlib_3-1.1.7.jar",
+        "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/com/lihaoyi/mill-libs-scalajslib_3/1.1.7/mill-libs-scalajslib_3-1.1.7.jar",
+        "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/com/lihaoyi/mill-libs-scalanativelib_3/1.1.7/mill-libs-scalanativelib_3-1.1.7.jar",
+        "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/com/lihaoyi/mill-libs-javascriptlib_3/1.1.7/mill-libs-javascriptlib_3-1.1.7.jar",
+        "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/com/lihaoyi/mill-libs-pythonlib_3/1.1.7/mill-libs-pythonlib_3-1.1.7.jar",
+        "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/com/lihaoyi/mill-libs-util_3/1.1.7/mill-libs-util_3-1.1.7.jar",
+        "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/com/lihaoyi/mill-libs-script_3/1.1.7/mill-libs-script_3-1.1.7.jar",
+        "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/com/lihaoyi/mill-libs-javalib_3/1.1.7/mill-libs-javalib_3-1.1.7.jar",
+        "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/com/lihaoyi/mill-libs-javalib-testrunner_3/1.1.7/mill-libs-javalib-testrunner_3-1.1.7.jar",
+        "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/com/lihaoyi/mill-libs-kotlinlib-api_3/1.1.7/mill-libs-kotlinlib-api_3-1.1.7.jar",
+        "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/com/lihaoyi/mill-libs-kotlinlib-ksp2-api_3/1.1.7/mill-libs-kotlinlib-ksp2-api_3-1.1.7.jar",
+        "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/com/lihaoyi/mill-libs-groovylib-api_3/1.1.7/mill-libs-groovylib-api_3-1.1.7.jar",
+        "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/com/lihaoyi/mill-libs-scalalib_3/1.1.7/mill-libs-scalalib_3-1.1.7.jar",
+        "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/com/lihaoyi/mill-libs-androidlib-databinding_3/1.1.7/mill-libs-androidlib-databinding_3-1.1.7.jar",
+        "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/com/lihaoyi/mill-libs-scalajslib-api_3/1.1.7/mill-libs-scalajslib-api_3-1.1.7.jar",
+        "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/com/lihaoyi/mill-libs-scalanativelib-api_3/1.1.7/mill-libs-scalanativelib-api_3-1.1.7.jar",
+        "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/io/get-coursier/coursier_2.13/2.1.25-M26/coursier_2.13-2.1.25-M26.jar",
+        "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/io/get-coursier/coursier-archive-cache_2.13/2.1.25-M26/coursier-archive-cache_2.13-2.1.25-M26.jar",
+        "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/io/get-coursier/coursier-core_2.13/2.1.25-M26/coursier-core_2.13-2.1.25-M26.jar",
+        "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/io/get-coursier/coursier-cache_2.13/2.1.25-M26/coursier-cache_2.13-2.1.25-M26.jar",
+        "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/io/get-coursier/coursier-paths/2.1.25-M26/coursier-paths-2.1.25-M26.jar",
+        "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/io/get-coursier/coursier-util_2.13/2.1.25-M26/coursier-util_2.13-2.1.25-M26.jar",
+        "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/io/get-coursier/versions_2.13/0.5.1/versions_2.13-0.5.1.jar",
+        "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/io/get-coursier/coursier-jvm_2.13/2.1.25-M26/coursier-jvm_2.13-2.1.25-M26.jar",
+        "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/org/jline/jline/3.30.13/jline-3.30.13.jar",
+        "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/com/lihaoyi/fastparse_3/3.1.1/fastparse_3-3.1.1.jar",
+        "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/com/lihaoyi/mainargs_3/0.7.8/mainargs_3-0.7.8.jar",
+        "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/com/lihaoyi/requests_3/0.9.3/requests_3-0.9.3.jar",
+        "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/com/lihaoyi/mill-core-api_3/1.1.7/mill-core-api_3-1.1.7.jar",
+        "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/org/scala-lang/modules/scala-xml_3/2.4.0/scala-xml_3-2.4.0.jar",
+        "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/org/scala-lang/scala-reflect/2.13.18/scala-reflect-2.13.18.jar",
+        "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/com/lihaoyi/mill-libs-rpc_3/1.1.7/mill-libs-rpc_3-1.1.7.jar",
+        "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/com/lihaoyi/mill-libs-javalib-api_3/1.1.7/mill-libs-javalib-api_3-1.1.7.jar",
+        "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/com/lihaoyi/mill-libs-javalib-testrunner-entrypoint/1.1.7/mill-libs-javalib-testrunner-entrypoint-1.1.7.jar",
+        "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/com/lihaoyi/mill-libs-util-java11_3/1.1.7/mill-libs-util-java11_3-1.1.7.jar",
+        "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/com/lihaoyi/mill-core-api-java11_3/1.1.7/mill-core-api-java11_3-1.1.7.jar",
+        "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/org/scala-sbt/test-interface/1.0/test-interface-1.0.jar",
+        "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/com/lihaoyi/geny_3/1.1.1/geny_3-1.1.1.jar",
+        "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/org/scala-lang/modules/scala-collection-compat_3/2.12.0/scala-collection-compat_3-2.12.0.jar",
+        "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/com/lihaoyi/os-lib_3/0.11.8/os-lib_3-0.11.8.jar",
+        "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/com/lihaoyi/upickle_3/4.4.3/upickle_3-4.4.3.jar",
+        "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/com/lihaoyi/upickle-implicits-named-tuples_3/4.4.3/upickle-implicits-named-tuples_3-4.4.3.jar",
+        "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/com/lihaoyi/pprint_3/0.9.6/pprint_3-0.9.6.jar",
+        "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/com/lihaoyi/fansi_3/0.5.1/fansi_3-0.5.1.jar",
+        "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/com/lihaoyi/mill-core-api-daemon_3/1.1.7/mill-core-api-daemon_3-1.1.7.jar",
+        "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/com/lihaoyi/mill-libs-daemon-server_3/1.1.7/mill-libs-daemon-server_3-1.1.7.jar",
+        "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/com/lihaoyi/os-zip/0.11.8/os-zip-0.11.8.jar",
+        "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/com/lihaoyi/ujson_3/4.4.3/ujson_3-4.4.3.jar",
+        "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/com/lihaoyi/upack_3/4.4.3/upack_3-4.4.3.jar",
+        "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/com/lihaoyi/upickle-implicits_3/4.4.3/upickle-implicits_3-4.4.3.jar",
+        "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/com/lihaoyi/mill-core-constants/1.1.7/mill-core-constants-1.1.7.jar",
+        "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/com/lihaoyi/mill-libs-daemon-client_3/1.1.7/mill-libs-daemon-client_3-1.1.7.jar",
+        "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/com/lihaoyi/upickle-core_3/4.4.3/upickle-core_3-4.4.3.jar",
+        "file:///$WORKSPACE$/mill-build/compile-resources"
+      ],
+      "classDirectory": "file:///$WORKSPACE$/.bsp/out/mill-build/compile.dest/classes"
+    },
+    {
+      "target": {
+        "uri": "file:///$WORKSPACE$/test-mod"
+      },
+      "options": [],
+      "classpath": [
+        "file:///$WORKSPACE$/test-mod/compile-resources"
+      ],
+      "classDirectory": "file:///$WORKSPACE$/.bsp/out/test-mod/compile.dest/classes"
+    }
+  ]
+}

@@ -21,6 +21,16 @@ object TestParams {
   def updateSnapshotsFast = updateSnapshots
   def updateSnapshots     = isCI
 
+  /** Whether to run the real build tools and refresh the recorded BSP data from them.
+    *
+    * Deliberately *not* tied to [[updateSnapshots]]: the point of recording is that CI doesn't have
+    * to pay for a Mill / sbt / Scala CLI import on every run, so this is opt-in only. Set
+    * `PLASMON_RECORD_BSP_DATA=true` after changing a test project, a build tool version, or
+    * anything else that shifts what the build tools report.
+    */
+  def recordBspData =
+    Option(System.getenv("PLASMON_RECORD_BSP_DATA")).exists(_.toBoolean)
+
   def cleanUpAfterTests = true
 
 }

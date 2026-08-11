@@ -1,0 +1,84 @@
+{
+  "targets": [
+    {
+      "id": {
+        "uri": "file:/$WORKSPACE$/.scala-build/?id\u003dtest-project_d5c0a6989e"
+      },
+      "displayName": "test-project_d5c0a6989e",
+      "baseDirectory": "file:///$WORKSPACE$/.scala-build/",
+      "tags": [
+        "library"
+      ],
+      "languageIds": [
+        "scala",
+        "java"
+      ],
+      "dependencies": [],
+      "capabilities": {
+        "canCompile": true,
+        "canTest": true,
+        "canRun": true,
+        "canDebug": true
+      },
+      "dataKind": "scala",
+      "data": {
+        "scalaOrganization": "org.scala-lang",
+        "scalaVersion": "2.13.18",
+        "scalaBinaryVersion": "2.13",
+        "platform": 1,
+        "jars": [
+          "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/org/scala-lang/scala-compiler/2.13.18/scala-compiler-2.13.18.jar",
+          "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/org/scala-lang/scala-library/2.13.18/scala-library-2.13.18.jar",
+          "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/org/scala-lang/scala-reflect/2.13.18/scala-reflect-2.13.18.jar",
+          "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/io/github/java-diff-utils/java-diff-utils/4.16/java-diff-utils-4.16.jar",
+          "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/org/jline/jline/3.29.0/jline-3.29.0-jdk8.jar"
+        ],
+        "jvmBuildTarget": {
+          "javaHome": "$JAVA_HOME_URI:17$"
+        }
+      }
+    },
+    {
+      "id": {
+        "uri": "file:/$WORKSPACE$/.scala-build/?id\u003dtest-project_d5c0a6989e-test"
+      },
+      "displayName": "test-project_d5c0a6989e-test",
+      "baseDirectory": "file:///$WORKSPACE$/.scala-build/",
+      "tags": [
+        "test"
+      ],
+      "languageIds": [
+        "scala",
+        "java"
+      ],
+      "dependencies": [
+        {
+          "uri": "file:/$WORKSPACE$/.scala-build/?id\u003dtest-project_d5c0a6989e"
+        }
+      ],
+      "capabilities": {
+        "canCompile": true,
+        "canTest": true,
+        "canRun": true,
+        "canDebug": true
+      },
+      "dataKind": "scala",
+      "data": {
+        "scalaOrganization": "org.scala-lang",
+        "scalaVersion": "2.13.18",
+        "scalaBinaryVersion": "2.13",
+        "platform": 1,
+        "jars": [
+          "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/org/scala-lang/scala-compiler/2.13.18/scala-compiler-2.13.18.jar",
+          "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/org/scala-lang/scala-library/2.13.18/scala-library-2.13.18.jar",
+          "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/org/scala-lang/scala-reflect/2.13.18/scala-reflect-2.13.18.jar",
+          "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/io/github/java-diff-utils/java-diff-utils/4.16/java-diff-utils-4.16.jar",
+          "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/org/jline/jline/3.29.0/jline-3.29.0-jdk8.jar"
+        ],
+        "jvmBuildTarget": {
+          "javaHome": "$JAVA_HOME_URI:17$"
+        }
+      }
+    }
+  ]
+}

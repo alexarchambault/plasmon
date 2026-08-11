@@ -39,9 +39,14 @@ class BasicTestsJava extends PlasmonSuite {
     }
 
   private def mainTest(
-    buildTool: SingleModuleBuildTool,
+    buildTool0: SingleModuleBuildTool,
     jvm: Labelled[String]
   ): Unit = {
+    val buildTool = SingleModuleBuildTool.Replayed(
+      buildTool0,
+      os.sub / "basic-tests-java" / buildTool0.id / s"jvm-${jvm.label}"
+    )
+
     val (actualPath, files) = buildTool.singleModule(
       "test-mod",
       Map(

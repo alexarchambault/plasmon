@@ -19,6 +19,7 @@ import plasmon.Logger
 import plasmon.PlasmonEnrichments.*
 import plasmon.bsp.{
   BspConnection,
+  BspDataPortability,
   BuildServerInfo,
   BuildServerLauncher,
   BuildServerProcess,
@@ -26,7 +27,11 @@ import plasmon.bsp.{
   LoggingPlasmonBuildServer,
   PlasmonBuildClient,
   PlasmonBuildClientImpl,
-  PlasmonBuildServer
+  PlasmonBuildServer,
+  ReplayArtifacts,
+  ReplayBuildServer,
+  ReplayCompiler,
+  SbtDist
 }
 import plasmon.index.{BspData, TargetData}
 import plasmon.internal.{Constants, DebugInput, Directories}
@@ -250,7 +255,15 @@ object BspUtil {
           logJsonrpcInput
         )
 
-        BspConnection(initRes, launcher, buildServer, proc0, remoteEndpoint, buildClient0, logger)
+        BspConnection(
+          initRes,
+          launcher,
+          buildServer,
+          proc0,
+          Some(remoteEndpoint),
+          buildClient0,
+          logger
+        )
 
       case b: BuildServerInfo.Bloop =>
         val config       = bloopConfig(bloopJavaHome)
@@ -286,7 +299,7 @@ object BspUtil {
           launcher,
           server,
           BuildServerProcess.BloopConnection(conn),
-          remoteEndpoint,
+          Some(remoteEndpoint),
           buildClient0,
           logger
         )
@@ -312,7 +325,15 @@ object BspUtil {
           logJsonrpcInput
         )
 
-        BspConnection(initRes, launcher, buildServer, proc0, remoteEndpoint, buildClient0, logger)
+        BspConnection(
+          initRes,
+          launcher,
+          buildServer,
+          proc0,
+          Some(remoteEndpoint),
+          buildClient0,
+          logger
+        )
 
       case m: BuildServerInfo.Sbt =>
         val bspFile = m.workspace / ".bsp/sbt.json"
@@ -323,7 +344,16 @@ object BspUtil {
               throw new Exception(e)
           }
 
-        val command = content.argv
+        // sbt.json embeds the java that generated it (whatever was first on PATH on Linux,
+        // JAVA_HOME on Windows). Use the server's javaHome so a recording does not depend on that.
+        val command = {
+          val argv    = content.argv
+          val javaBin = javaHome / "bin" / (if (scala.util.Properties.isWin) "java.exe" else "java")
+          if (os.isFile(javaBin) && argv.headOption.exists(isJavaExecutable))
+            javaBin.toString +: argv.drop(1)
+          else
+            argv
+        }
 
         scribe.info("javaHome=" + pprint.apply(javaHome))
         val (proc0, buildServer, initRes, remoteEndpoint, buildClient0) = bspServerFromCommand(
@@ -335,15 +365,23 @@ object BspUtil {
           buildToolId,
           buildToolName,
           bspPool,
-          extraEnv = Map(
-            "JAVA_HOME" -> javaHome.toString
-          ),
+          // Running this command on the right JDK is only half of it: sbt's BSP entry point is a
+          // thin client that forks the actual server through the sbt script (see SbtDist.env).
+          extraEnv = SbtDist.env(javaHome),
           logger,
           outputLogger,
           logJsonrpcInput
         )
 
-        BspConnection(initRes, launcher, buildServer, proc0, remoteEndpoint, buildClient0, logger)
+        BspConnection(
+          initRes,
+          launcher,
+          buildServer,
+          proc0,
+          Some(remoteEndpoint),
+          buildClient0,
+          logger
+        )
 
       case s: BuildServerInfo.ScalaCli =>
         // Fetch scala-cli ourselves if it's missing?
@@ -367,7 +405,39 @@ object BspUtil {
           logJsonrpcInput
         )
 
-        BspConnection(initRes, launcher, buildServer, proc0, remoteEndpoint, buildClient0, logger)
+        BspConnection(
+          initRes,
+          launcher,
+          buildServer,
+          proc0,
+          Some(remoteEndpoint),
+          buildClient0,
+          logger
+        )
+
+      case r: BuildServerInfo.Replay =>
+        // No process, no handshake, no JSON-RPC - everything comes off the recording on disk.
+        val replayRoots = BspDataPortability.Roots.default(r.workspace)
+        // The machine that made the recording had a build tool populate its coursier cache; this
+        // one may not have, so pull down anything the recording names and we don't have
+        ReplayArtifacts.fetchMissing(r.dataDir, replayRoots, logger)
+        val replayServer = new ReplayBuildServer(
+          r.dataDir,
+          replayRoots,
+          new ReplayCompiler(javaHome, logger)
+        )
+        val buildClient0 = buildClient()
+        buildClient0.setLogger(logger)
+        logger.log(s"Replaying recorded BSP data from ${r.dataDir}")
+        BspConnection(
+          replayServer.initializeBuildResult,
+          launcher,
+          replayServer,
+          BuildServerProcess.NoProcess,
+          None,
+          buildClient0,
+          logger
+        )
     }
   }
 
@@ -646,6 +716,11 @@ object BspUtil {
     // FIXME Sort that somehow
   }
 
+  private def isJavaExecutable(path: String): Boolean = {
+    val last = path.replace('\\', '/').split('/').lastOption.getOrElse(path).toLowerCase
+    last == "java" || last == "java.exe"
+  }
+
   final case class BspFile(
     name: String,
     argv: Seq[String]
@@ -696,7 +771,8 @@ object BspUtil {
       Mill,
       Sbt,
       Bloop,
-      ScalaCli
+      ScalaCli,
+      Replay
     )
 
     lazy val map: Map[String, BuildToolDiscover] =
@@ -779,6 +855,25 @@ object BspUtil {
             DiscoveredBuildTool(BuildTool.Sbt.id, BuildTool.Sbt(workspace), None),
             DiscoveredBuildTool(BuildTool.SbtViaBloop.id, BuildTool.SbtViaBloop(workspace), None)
           )
+        else
+          Nil
+      }
+    }
+
+    case object Replay extends BuildToolDiscover {
+      def ids = Seq(BuildTool.Replay.id)
+      def check(
+        workspace: os.Path,
+        currentFile: Option[os.Path],
+        alreadyAdded: Set[plasmon.bsp.BuildTool]
+      ): Seq[DiscoveredBuildTool] = {
+        val dataDir = workspace / BuildTool.Replay.dirName
+        if (os.isDir(dataDir))
+          Seq(DiscoveredBuildTool(
+            BuildTool.Replay.id,
+            BuildTool.Replay(workspace, dataDir),
+            None
+          ))
         else
           Nil
       }

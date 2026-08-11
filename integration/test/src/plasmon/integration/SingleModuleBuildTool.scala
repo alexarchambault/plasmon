@@ -42,6 +42,75 @@ abstract class SingleModuleBuildTool extends Product with Serializable {
 
 object SingleModuleBuildTool {
 
+  /** Runs a test off recorded BSP data instead of the build tool that produced it.
+    *
+    * The project on disk is laid out exactly as `underlying` would lay it out, so the recording's
+    * source and class path entries line up - only the import itself is short-circuited. That takes
+    * a Mill or sbt JVM, plus a full build tool import, out of every presentation compiler test,
+    * while leaving those tests running against genuinely Mill- and sbt-derived class paths.
+    *
+    * With `PLASMON_RECORD_BSP_DATA=true` this does the opposite: it runs the real build tool and
+    * refreshes the recording from it. See [[BspDataFixture]].
+    *
+    * @param key
+    *   identifies the recording; must cover everything that changes what the build tool reports -
+    *   the project shape, the build tool, the Scala version and the JVM
+    */
+  final case class Replayed(underlying: SingleModuleBuildTool, key: os.SubPath)
+      extends SingleModuleBuildTool {
+    def id                               = underlying.id
+    def displayName                      = underlying.displayName
+    override def scriptBased             = underlying.scriptBased
+    override def needsStandaloneCompiler = underlying.needsStandaloneCompiler
+
+    // Import itself is cheap, but compiling a Mill or sbt recording (the meta-build, the
+    // project definitions) still takes a while under load - enough to blow a one-minute
+    // timeout on CI when other suites are running real build tools next door.
+    override def isSlow = underlying.isSlow
+
+    def singleFile(path: os.SubPath, source: String) = underlying.singleFile(path, source)
+    def singleModule(moduleName: String, files: Map[os.SubPath, String]) =
+      underlying.singleModule(moduleName, files)
+
+    def setup(
+      workspace: os.Path,
+      remoteServer: LanguageServer,
+      osOpt: Option[OutputStream],
+      readOnlyToplevelSymbolsCache: Boolean,
+      compiles: Boolean
+    ): Unit =
+      if (TestParams.recordBspData) {
+        underlying.setup(workspace, remoteServer, osOpt, readOnlyToplevelSymbolsCache, compiles)
+        BspDataFixture.record(workspace, key, osOpt)
+      }
+      else {
+        BspDataFixture.install(workspace, key)
+        val file = sourceFile(workspace)
+        TestUtil.loadBuildToolViaLsp(
+          remoteServer,
+          BspDataFixture.replayBuildToolId,
+          BspDataFixture.replayBuildToolId,
+          file
+        )
+        TestUtil.importViaLsp(remoteServer, readOnlyToplevelSymbolsCache)
+        // Builds the class directories the recording refers to, from source. Only worth its cost
+        // for tests that need built output - anything resolving against dependencies and the
+        // workspace source index alone passes compiles = false and skips this.
+        if (compiles)
+          TestUtil.compileViaLsp(remoteServer, file)
+      }
+
+    def compile(
+      workspace: os.Path,
+      remoteServer: LanguageServer,
+      osOpt: Option[OutputStream]
+    ): Unit =
+      if (TestParams.recordBspData)
+        underlying.compile(workspace, remoteServer, osOpt)
+      else
+        TestUtil.compileViaLsp(remoteServer, sourceFile(workspace))
+  }
+
   private def sourceFile(workspace: os.Path): os.Path =
     os.walk(workspace)
       .filter(os.isFile)

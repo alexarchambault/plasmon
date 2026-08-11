@@ -44,11 +44,18 @@ class CompletionTests extends PlasmonSuite {
 
   private def classPathSearchCompletionTest(
     scalaVersionOpt: Option[Labelled[String]],
-    buildTool: SingleModuleBuildTool,
+    buildTool0: SingleModuleBuildTool,
     jvm: Labelled[String],
     serverOpt: Seq[String],
     testInputs: Seq[CompletionTest]
   ): Unit = {
+    // Class path search only - replayed rather than imported for real
+    val buildTool = SingleModuleBuildTool.Replayed(
+      buildTool0,
+      os.sub / "completion-tests/import" / buildTool0.id /
+        s"scala-${scalaVersionOpt.map(_.label).getOrElse("default")}" / s"jvm-${jvm.label}"
+    )
+
     val header = (
       scalaVersionOpt.map(_.value).map(sv => s"""//> using scala "$sv"""") ++
         Seq(s"""//> using jvm "${jvm.value}"""")
@@ -101,11 +108,20 @@ class CompletionTests extends PlasmonSuite {
 
   private def completionChainTest(
     inputs: Seq[Seq[String]],
-    buildTool: SingleModuleBuildTool,
+    buildTool0: SingleModuleBuildTool,
     scalaVersionOpt: Option[Labelled[String]],
     jvm: Labelled[String],
     serverOpt: Seq[String]
   ): Unit = {
+
+    // Nothing here exercises the build tool itself, only the completions the presentation
+    // compiler offers given what the build tool reported, so we replay that rather than
+    // importing for real.
+    val buildTool = SingleModuleBuildTool.Replayed(
+      buildTool0,
+      os.sub / "completion-tests/chains" / buildTool0.id /
+        s"scala-${scalaVersionOpt.map(_.label).getOrElse("default")}" / s"jvm-${jvm.label}"
+    )
 
     val header = scalaVersionOpt match {
       case Some(scalaVersion) =>

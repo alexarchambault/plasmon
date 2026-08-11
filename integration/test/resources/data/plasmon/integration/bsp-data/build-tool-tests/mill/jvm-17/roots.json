@@ -1,0 +1,17 @@
+[
+  {
+    "uri": "file:///$WORKSPACE$/app"
+  },
+  {
+    "uri": "file:///$WORKSPACE$/app/test"
+  },
+  {
+    "uri": "file:///$WORKSPACE$/core"
+  },
+  {
+    "uri": "file:///$WORKSPACE$/mill-build"
+  },
+  {
+    "uri": "file:///$WORKSPACE$/mill-synthetic-root-target"
+  }
+]

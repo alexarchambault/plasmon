@@ -1,0 +1,28 @@
+{
+  "displayName": "sbt",
+  "version": "1.12.4",
+  "bspVersion": "2.1.0-M1",
+  "capabilities": {
+    "compileProvider": {
+      "languageIds": [
+        "scala"
+      ]
+    },
+    "testProvider": {
+      "languageIds": [
+        "scala"
+      ]
+    },
+    "runProvider": {
+      "languageIds": [
+        "scala"
+      ]
+    },
+    "dependencySourcesProvider": true,
+    "resourcesProvider": true,
+    "outputPathsProvider": true,
+    "jvmRunEnvironmentProvider": true,
+    "jvmTestEnvironmentProvider": true,
+    "canReload": true
+  }
+}

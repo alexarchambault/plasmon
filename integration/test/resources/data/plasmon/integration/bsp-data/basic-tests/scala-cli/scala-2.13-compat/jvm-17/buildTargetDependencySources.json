@@ -1,0 +1,24 @@
+{
+  "items": [
+    {
+      "target": {
+        "uri": "file:/$WORKSPACE$/.scala-build/?id\u003dtest-project_d5c0a6989e"
+      },
+      "sources": [
+        "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/org/scala-lang/scala-library/2.13.18/scala-library-2.13.18-sources.jar",
+        "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/com/lihaoyi/os-lib_2.13/0.9.1/os-lib_2.13-0.9.1-sources.jar",
+        "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/com/lihaoyi/geny_2.13/1.0.0/geny_2.13-1.0.0-sources.jar"
+      ]
+    },
+    {
+      "target": {
+        "uri": "file:/$WORKSPACE$/.scala-build/?id\u003dtest-project_d5c0a6989e-test"
+      },
+      "sources": [
+        "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/org/scala-lang/scala-library/2.13.18/scala-library-2.13.18-sources.jar",
+        "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/com/lihaoyi/os-lib_2.13/0.9.1/os-lib_2.13-0.9.1-sources.jar",
+        "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/com/lihaoyi/geny_2.13/1.0.0/geny_2.13-1.0.0-sources.jar"
+      ]
+    }
+  ]
+}

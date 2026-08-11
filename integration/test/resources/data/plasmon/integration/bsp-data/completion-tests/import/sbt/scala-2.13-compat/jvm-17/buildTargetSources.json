@@ -1,0 +1,174 @@
+{
+  "items": [
+    {
+      "target": {
+        "uri": "file:/$WORKSPACE$/#test-mod/Compile"
+      },
+      "sources": [
+        {
+          "uri": "file:/$WORKSPACE$/test-mod/src/main/java",
+          "kind": 2,
+          "generated": false
+        },
+        {
+          "uri": "file:/$WORKSPACE$/test-mod/src/main/scala-2",
+          "kind": 2,
+          "generated": false
+        },
+        {
+          "uri": "file:/$WORKSPACE$/test-mod/src/main/scala-2.13",
+          "kind": 2,
+          "generated": false
+        },
+        {
+          "uri": "file:/$WORKSPACE$/test-mod/src/main/scala/",
+          "kind": 2,
+          "generated": false
+        },
+        {
+          "uri": "file:/$WORKSPACE$/test-mod/target/scala-2.13/src_managed/main",
+          "kind": 2,
+          "generated": true
+        }
+      ]
+    },
+    {
+      "target": {
+        "uri": "file:/$WORKSPACE$/#test-mod/Test"
+      },
+      "sources": [
+        {
+          "uri": "file:/$WORKSPACE$/test-mod/src/test/java",
+          "kind": 2,
+          "generated": false
+        },
+        {
+          "uri": "file:/$WORKSPACE$/test-mod/src/test/scala",
+          "kind": 2,
+          "generated": false
+        },
+        {
+          "uri": "file:/$WORKSPACE$/test-mod/src/test/scala-2",
+          "kind": 2,
+          "generated": false
+        },
+        {
+          "uri": "file:/$WORKSPACE$/test-mod/src/test/scala-2.13",
+          "kind": 2,
+          "generated": false
+        },
+        {
+          "uri": "file:/$WORKSPACE$/test-mod/target/scala-2.13/src_managed/test",
+          "kind": 2,
+          "generated": true
+        }
+      ]
+    },
+    {
+      "target": {
+        "uri": "file:/$WORKSPACE$/#test-project-build"
+      },
+      "sources": [
+        {
+          "uri": "file:/$WORKSPACE$/build.sbt",
+          "kind": 1,
+          "generated": false
+        },
+        {
+          "uri": "file:/$WORKSPACE$/project/src/main/java",
+          "kind": 2,
+          "generated": false
+        },
+        {
+          "uri": "file:/$WORKSPACE$/project/src/main/scala",
+          "kind": 2,
+          "generated": false
+        },
+        {
+          "uri": "file:/$WORKSPACE$/project/src/main/scala-2",
+          "kind": 2,
+          "generated": false
+        },
+        {
+          "uri": "file:/$WORKSPACE$/project/src/main/scala-2.12",
+          "kind": 2,
+          "generated": false
+        },
+        {
+          "uri": "file:/$WORKSPACE$/project/src/main/scala-sbt-1.0",
+          "kind": 2,
+          "generated": false
+        },
+        {
+          "uri": "file:/$WORKSPACE$/project/target/scala-2.12/sbt-1.0/src_managed/main",
+          "kind": 2,
+          "generated": true
+        }
+      ]
+    },
+    {
+      "target": {
+        "uri": "file:/$WORKSPACE$/#test-project/Compile"
+      },
+      "sources": [
+        {
+          "uri": "file:/$WORKSPACE$/src/main/java",
+          "kind": 2,
+          "generated": false
+        },
+        {
+          "uri": "file:/$WORKSPACE$/src/main/scala",
+          "kind": 2,
+          "generated": false
+        },
+        {
+          "uri": "file:/$WORKSPACE$/src/main/scala-2",
+          "kind": 2,
+          "generated": false
+        },
+        {
+          "uri": "file:/$WORKSPACE$/src/main/scala-2.12",
+          "kind": 2,
+          "generated": false
+        },
+        {
+          "uri": "file:/$WORKSPACE$/target/scala-2.12/src_managed/main",
+          "kind": 2,
+          "generated": true
+        }
+      ]
+    },
+    {
+      "target": {
+        "uri": "file:/$WORKSPACE$/#test-project/Test"
+      },
+      "sources": [
+        {
+          "uri": "file:/$WORKSPACE$/src/test/java",
+          "kind": 2,
+          "generated": false
+        },
+        {
+          "uri": "file:/$WORKSPACE$/src/test/scala",
+          "kind": 2,
+          "generated": false
+        },
+        {
+          "uri": "file:/$WORKSPACE$/src/test/scala-2",
+          "kind": 2,
+          "generated": false
+        },
+        {
+          "uri": "file:/$WORKSPACE$/src/test/scala-2.12",
+          "kind": 2,
+          "generated": false
+        },
+        {
+          "uri": "file:/$WORKSPACE$/target/scala-2.12/src_managed/test",
+          "kind": 2,
+          "generated": true
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,45 @@
+{
+  "items": [
+    {
+      "target": {
+        "uri": "file:/$WORKSPACE$/.scala-build/?id\u003dtest-project_d5c0a6989e"
+      },
+      "options": [
+        "-Xplugin:$COURSIER_CACHE$/https/repo1.maven.org/maven2/org/scalameta/semanticdb-scalac_2.13.18/4.17.3/semanticdb-scalac_2.13.18-4.17.3.jar",
+        "-Yrangepos",
+        "-P:semanticdb:failures:warning",
+        "-P:semanticdb:synthetics:on",
+        "-P:semanticdb:sourceroot:$WORKSPACE$"
+      ],
+      "classpath": [
+        "file:///$WORKSPACE$/.scala-build/test-project_d5c0a6989e/classes/main/",
+        "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/org/scala-lang/scala-library/2.13.18/scala-library-2.13.18.jar",
+        "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/com/lihaoyi/os-lib_2.13/0.9.1/os-lib_2.13-0.9.1.jar",
+        "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/com/lihaoyi/geny_2.13/1.0.0/geny_2.13-1.0.0.jar",
+        "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/com/sourcegraph/semanticdb-javac/0.10.0/semanticdb-javac-0.10.0.jar"
+      ],
+      "classDirectory": "file:///$WORKSPACE$/.scala-build/test-project_d5c0a6989e/classes/main/"
+    },
+    {
+      "target": {
+        "uri": "file:/$WORKSPACE$/.scala-build/?id\u003dtest-project_d5c0a6989e-test"
+      },
+      "options": [
+        "-Xplugin:$COURSIER_CACHE$/https/repo1.maven.org/maven2/org/scalameta/semanticdb-scalac_2.13.18/4.17.3/semanticdb-scalac_2.13.18-4.17.3.jar",
+        "-Yrangepos",
+        "-P:semanticdb:failures:warning",
+        "-P:semanticdb:synthetics:on",
+        "-P:semanticdb:sourceroot:$WORKSPACE$"
+      ],
+      "classpath": [
+        "file:///$WORKSPACE$/.scala-build/test-project_d5c0a6989e/classes/test/",
+        "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/org/scala-lang/scala-library/2.13.18/scala-library-2.13.18.jar",
+        "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/com/lihaoyi/os-lib_2.13/0.9.1/os-lib_2.13-0.9.1.jar",
+        "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/com/lihaoyi/geny_2.13/1.0.0/geny_2.13-1.0.0.jar",
+        "file:///$WORKSPACE$/.scala-build/test-project_d5c0a6989e/classes/main/",
+        "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/com/sourcegraph/semanticdb-javac/0.10.0/semanticdb-javac-0.10.0.jar"
+      ],
+      "classDirectory": "file:///$WORKSPACE$/.scala-build/test-project_d5c0a6989e/classes/test/"
+    }
+  ]
+}

@@ -130,7 +130,13 @@ object TestUtil {
 
   def serverExtraJavaOpts = Seq("-Duser.country=US", "-Duser.language=en")
   def serverEnv = Map(
-    "PLASMON_JAVAC_EXTRA_OPTIONS" -> "-verbose"
+    "PLASMON_JAVAC_EXTRA_OPTIONS" -> "-verbose",
+    // Don't let a Mill output directory override from whoever runs the tests reach the Mill the
+    // server spawns - it ends up in the paths Mill reports, and so in the recorded BSP data
+    "MILL_OUTPUT_DIR" -> null,
+    // Lets the server sort sbt's meta-build class path when writing recordings - see
+    // BspDataPortability.sortSbtBootClasspath. Production never sets this.
+    "PLASMON_SORT_SBT_BOOT_CLASSPATH" -> "true"
   )
   def withWorkspaceAndServer[T](
     projectName: String = "test-project",
