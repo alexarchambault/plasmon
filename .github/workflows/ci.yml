@@ -29,9 +29,15 @@ jobs:
     - name: Test
       run: ./mill -i integration.test.testForked
     - name: Diff
+      shell: bash
       run: |
-        git diff
-        git diff-index HEAD --quiet || ( echo "Some test data differ"; exit 1 )
+        # -N so that a recording written for the first time shows up as a diff too
+        git add -N -- integration/test/resources/data
+        # --exit-code fails on exactly what it prints, so a failure here always comes with the
+        # diff that explains it. `git diff-index --quiet` answers from the stat cache instead:
+        # on Windows, where the checkout is CRLF and the tests rewrite the files with LF, it
+        # failed while `git diff` printed nothing at all.
+        git diff --exit-code || ( echo "Some test data differ"; exit 1 )
     - name: Print failing test logs
       if: failure()
       run: scala-cli --server=false integration/print-failing-test-logs.scala
@@ -124,9 +130,10 @@ jobs:
     - name: Diff
       shell: bash
       run: |
+        # -N so that a recording written for the first time shows up as a diff too
         git add -N -- integration/test/resources/data
-        git diff
-        git diff-index HEAD --quiet || ( echo "Some test data differ"; exit 1 )
+        # See the note on the same step in the `test` job.
+        git diff --exit-code || ( echo "Some test data differ"; exit 1 )
     - name: Print failing test logs
       if: failure()
       run: scala-cli --server=false integration/print-failing-test-logs.scala
@@ -175,9 +182,10 @@ jobs:
     - name: Diff
       shell: bash
       run: |
+        # -N so that a recording written for the first time shows up as a diff too
         git add -N -- integration/test/resources/data
-        git diff
-        git diff-index HEAD --quiet || ( echo "Some test data differ"; exit 1 )
+        # See the note on the same step in the `test` job.
+        git diff --exit-code || ( echo "Some test data differ"; exit 1 )
     - name: Print failing test logs
       if: failure()
       run: scala-cli --server=false integration/print-failing-test-logs.scala
