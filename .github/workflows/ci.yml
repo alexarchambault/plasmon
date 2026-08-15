@@ -19,6 +19,9 @@ jobs:
       with:
         fetch-depth: 0
         submodules: true
+    - uses: coursier/cache-action@v8
+      with:
+        disableFallback: true
     - uses: coursier/setup-action@v3
       with:
         apps: sbt scala-cli
@@ -73,6 +76,9 @@ jobs:
       with:
         fetch-depth: 0
         submodules: true
+    - uses: coursier/cache-action@v8
+      with:
+        disableFallback: true
     - uses: coursier/setup-action@v3
       with:
         apps: sbt scala-cli
@@ -130,6 +136,9 @@ jobs:
       with:
         fetch-depth: 0
         submodules: true
+    - uses: coursier/cache-action@v8
+      with:
+        disableFallback: true
     - uses: coursier/setup-action@v3
       with:
         apps: sbt scala-cli
