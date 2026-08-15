@@ -10,7 +10,8 @@ object TestParams {
     Option(System.getenv("PLASMON_SILENT_OVERRIDE"))
       .map(_.toBoolean)
       .getOrElse(true)
-  // Also disabled on CI for now, as that can be *very* verbose
+  // Server output is captured to per-test log files (see TestLogs). Dumping it
+  // here would interleave huge logs when tests run in parallel.
   def printOutputOnError = !enableSilentOutput
   val enableOutputFrame =
     // On Windows, OutputFrame stuff crashes if we don't have an actual terminal

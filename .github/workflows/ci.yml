@@ -32,6 +32,9 @@ jobs:
       run: |
         git diff
         git diff-index HEAD --quiet || ( echo "Some test data differ"; exit 1 )
+    - name: Print failing test logs
+      if: failure()
+      run: scala-cli --server=false integration/print-failing-test-logs.scala
 
   format:
     timeout-minutes: 15
@@ -124,6 +127,9 @@ jobs:
         git add -N -- integration/test/resources/data
         git diff
         git diff-index HEAD --quiet || ( echo "Some test data differ"; exit 1 )
+    - name: Print failing test logs
+      if: failure()
+      run: scala-cli --server=false integration/print-failing-test-logs.scala
 
   # Separate job so the expensive macos-15-xlarge runner is only used for
   # actual releases (tags starting with v). The main native-test job above
@@ -172,6 +178,9 @@ jobs:
         git add -N -- integration/test/resources/data
         git diff
         git diff-index HEAD --quiet || ( echo "Some test data differ"; exit 1 )
+    - name: Print failing test logs
+      if: failure()
+      run: scala-cli --server=false integration/print-failing-test-logs.scala
 
   publish:
     if: github.event_name == 'push'

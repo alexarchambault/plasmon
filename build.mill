@@ -850,12 +850,15 @@ object integration extends ScalaModule {
     "-Wunused:all"
   )
 
+  def testLogsDir = BuildCtx.workspaceRoot / "out/integration-test-logs"
+
   def sharedForkArgs = Task {
     Seq(
       s"-Dplasmon.integration.projects=${BuildCtx.workspaceRoot / "integration/projects"}",
       s"-Dplasmon.integration.fixture-dir=${BuildCtx.workspaceRoot / "integration/test/resources/data"}",
       s"-Dplasmon.integration.generated-resources-dir=${BuildCtx.workspaceRoot / "integration/test/resources/generated"}",
-      s"-Dplasmon.integration.disableScala2Pc=$disableScala2Pc"
+      s"-Dplasmon.integration.disableScala2Pc=$disableScala2Pc",
+      s"-Dplasmon.integration.test-logs-dir=$testLogsDir"
     )
   }
 
@@ -1385,5 +1388,21 @@ object ci extends Module {
   def uploadLaunchers(directory: String = "artifacts") = Task.Command {
     val version = PlasmonPublishModule.buildVersion
     GitHubReleaseAssets.uploadLaunchers(version, os.Path(directory, BuildCtx.workspaceRoot))
+  }
+
+  /** Print the first few failing integration-test log files. CI calls the script directly. */
+  def printFailingTestLogs(maxFiles: Int = 5) = Task.Command {
+    val script = BuildCtx.workspaceRoot / "integration/print-failing-test-logs.scala"
+    os.proc(
+      "scala-cli",
+      "--server=false",
+      script,
+      "--",
+      "--max",
+      maxFiles.toString,
+      "--dir",
+      integration.testLogsDir.toString
+    ).call(cwd = BuildCtx.workspaceRoot, stdin = os.Inherit, stdout = os.Inherit)
+    ()
   }
 }

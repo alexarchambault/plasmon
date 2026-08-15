@@ -5,7 +5,7 @@ import com.github.plokhotnyuk.jsoniter_scala.core.*
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import com.google.gson.{Gson, GsonBuilder, JsonSyntaxException}
 import coursier.cache.FileCache
-import io.github.alexarchambault.testutil.{OutputFrame, ProcessTest}
+import io.github.alexarchambault.testutil.OutputFrame
 import io.github.alexarchambault.testutil.TestOutput.FixedReadBytes
 import io.github.alexarchambault.testutil.TestUtil.*
 import org.eclipse.lsp4j as l
@@ -160,7 +160,7 @@ object TestUtil {
           "-jar",
           launcher
         )
-    ProcessTest(
+    PlasmonProcessTest(
       os.proc(
         baseCommand,
         "server",
@@ -186,9 +186,11 @@ object TestUtil {
       content.map { case (p, s) => (workingDir / p, s) }*
     ) {
       (tmpDir, subProc, ignoreSubProcExit, output, runCount) =>
-        val workspace = workspaceOpt.getOrElse(tmpDir / workingDir)
+        val workspace   = workspaceOpt.getOrElse(tmpDir / workingDir)
+        val printStream = TestLogs.printStream(output.printStream)
+        val osOpt       = TestLogs.outputStream(output.outputStreamOpt)
 
-        for (outputStream <- output.outputStreamOpt)
+        for (outputStream <- osOpt)
           client match {
             case client0: MockLanguageClient =>
               client0.setOutputStream(outputStream)
@@ -202,9 +204,9 @@ object TestUtil {
           .setRemoteInterface(classOf[LanguageServer])
           .setLocalService(client)
           .setExceptionHandler { t =>
-            output.printStream.println(s"Error during LSP processing: $t")
-            t.printStackTrace(output.printStream)
-            output.printStream.flush()
+            printStream.println(s"Error during LSP processing: $t")
+            t.printStackTrace(printStream)
+            printStream.flush()
             l.jsonrpc.RemoteEndpoint.DEFAULT_EXCEPTION_HANDLER.apply(t)
           }
           .create()
@@ -237,17 +239,17 @@ object TestUtil {
         }.get()
 
         try
-          f(workspace, remoteServer, listeningFuture, output.outputStreamOpt, runCount)
+          f(workspace, remoteServer, listeningFuture, osOpt, runCount)
         finally
           if (shutdownServer) {
-            output.printStream.println("Trying to ignore sub-process exit")
-            output.printStream.flush()
+            printStream.println("Trying to ignore sub-process exit")
+            printStream.flush()
             ignoreSubProcExit()
-            output.printStream.println("Shutting down server")
-            output.printStream.flush()
+            printStream.println("Shutting down server")
+            printStream.flush()
             remoteServer.shutdown().get(10L, TimeUnit.SECONDS)
-            output.printStream.println("Exiting server")
-            output.printStream.flush()
+            printStream.println("Exiting server")
+            printStream.flush()
             remoteServer.exit()
           }
     }
