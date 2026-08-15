@@ -68,14 +68,18 @@ jobs:
       with:
         apps: sbt scala-cli
         jvm: 17
+    # On Linux, server.native.nativeImage is server.native.linux-docker-image,
+    # built from within Mill by the "Copy artifacts" step below. Generating
+    # server.native.base-image here too would build a second native image that
+    # nothing ever uses, so we only do it where base-image is the one we ship.
     - name: Prepare for native image
-      if: runner.os != 'Windows'
+      if: runner.os == 'macOS'
       run: ./mill -i server.native.base-image.writeNativeImageScript --scriptDest generate-native-image.sh --imageDest=
     - name: Prepare for native image (Windows)
       if: runner.os == 'Windows'
       run: ./mill -i server.native.base-image.writeNativeImageScript --scriptDest generate-native-image.bat --imageDest=
     - name: Generate native image
-      if: runner.os != 'Windows'
+      if: runner.os == 'macOS'
       run: jps -ml; ./generate-native-image.sh
     - name: Generate native image (Windows)
       if: runner.os == 'Windows'
