@@ -51,13 +51,22 @@ jobs:
       matrix:
         OS: ["ubuntu-latest"]
         OS_SHORT: ["linux"]
+        # Extra ./mill args for the test steps. Mill forks one test JVM per job
+        # slot (capped by the test class count), and each of those spawns a
+        # server plus an sbt / Mill / Bloop JVM, so this is really a memory
+        # knob. Empty means "one per core".
+        TEST_JOBS: [""]
         include:
           - OS: "windows-latest"
             OS_SHORT: "windows"
+            TEST_JOBS: ""
+          # 4 cores but only 14 GB, the tightest of the runners we use
           - OS: "macos-15-intel"
             OS_SHORT: "mac"
+            TEST_JOBS: "-j 3"
           - OS: "ubuntu-24.04-arm"
             OS_SHORT: "linux-arm"
+            TEST_JOBS: ""
     runs-on: ${{ matrix.OS }}
     steps:
     - uses: actions/checkout@v7
@@ -97,12 +106,12 @@ jobs:
         if-no-files-found: error
         retention-days: 2
     - name: Warm-up
-      run: ./mill -i integration.native.testForked "plasmon.integration.BasicTests.test Scala CLI Scala 3 Java 17"
+      run: ./mill -i ${{ matrix.TEST_JOBS }} integration.native.testForked "plasmon.integration.BasicTests.test Scala CLI Scala 3 Java 17"
       env:
         PLASMON_TIMEOUT_OVERRIDE: "5 minutes"
         PLASMON_SILENT_OVERRIDE: false
     - name: Test
-      run: ./mill -i integration.native.testForked
+      run: ./mill -i ${{ matrix.TEST_JOBS }} integration.native.testForked
     - name: Diff
       shell: bash
       run: |

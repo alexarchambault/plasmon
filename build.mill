@@ -251,12 +251,7 @@ object PlasmonPublishModule {
 def disableScala2Pc = true
 
 def enableTestParallelism =
-  System.getenv("CI") != null /* messes with the output frame locally */ && {
-    sys.props("os.arch").toLowerCase(java.util.Locale.ROOT) match {
-      case "arm64" | "aarch64" => true
-      case _                   => false
-    }
-  }
+  System.getenv("CI") != null // messes with the output frame locally
 
 object server extends ScalaModule with PlasmonPublishModule {
   def scalaVersion = Versions.scala
