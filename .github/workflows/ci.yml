@@ -28,6 +28,12 @@ jobs:
         jvm: 17
     - name: Test
       run: ./mill -i integration.test.testForked
+      env:
+        # The per-test budget is a hang detector, not a performance target. CI runners fork one
+        # test JVM per core, each with a server plus a build tool of its own, so the default
+        # minute is easily overrun by a test that is merely slow - a Java `textDocument/definition`
+        # into `src.zip` compiles a JDK source file, and has timed out here at a minute.
+        PLASMON_TIMEOUT_OVERRIDE: "3 minutes"
     - name: Diff
       shell: bash
       run: |
@@ -127,6 +133,8 @@ jobs:
         PLASMON_SILENT_OVERRIDE: false
     - name: Test
       run: ./mill -i ${{ matrix.TEST_JOBS }} integration.native.testForked
+      env:
+        PLASMON_TIMEOUT_OVERRIDE: "3 minutes"
     - name: Diff
       shell: bash
       run: |
@@ -179,6 +187,8 @@ jobs:
         PLASMON_SILENT_OVERRIDE: false
     - name: Test
       run: ./mill -i integration.native.testForked
+      env:
+        PLASMON_TIMEOUT_OVERRIDE: "3 minutes"
     - name: Diff
       shell: bash
       run: |
