@@ -5,8 +5,8 @@ import caseapp.core.help.Help
 import caseapp.core.parser.Parser
 
 // format: off
-@HelpMessage("Go to definition at a position in a source file")
-final case class LspDefinitionOptions(
+@HelpMessage("Get signature help at a position in a source file")
+final case class LspSignatureHelpOptions(
   @HelpMessage("URI of the file to look at, instead of passing it as an argument")
     uri: Option[String] = None,
   @HelpMessage("Line to look at, zero-based")
@@ -18,7 +18,7 @@ final case class LspDefinitionOptions(
 )
 // format: on
 
-object LspDefinitionOptions {
-  implicit lazy val parser: Parser[LspDefinitionOptions] = Parser.derive
-  implicit lazy val help: Help[LspDefinitionOptions]     = Help.derive
+object LspSignatureHelpOptions {
+  implicit lazy val parser: Parser[LspSignatureHelpOptions] = Parser.derive
+  implicit lazy val help: Help[LspSignatureHelpOptions]     = Help.derive
 }

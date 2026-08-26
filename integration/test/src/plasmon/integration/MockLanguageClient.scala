@@ -6,10 +6,13 @@ import org.eclipse.lsp4j.jsonrpc.services.JsonNotification
 import org.eclipse.lsp4j.services.LanguageClient
 
 import java.io.OutputStream
+import java.net.URI
+import java.nio.file.Paths
 import java.util.List as JList
 import java.util.concurrent.CompletableFuture
 
 import scala.collection.mutable
+import scala.concurrent.duration.FiniteDuration
 
 // This needs to be a trait. The lsp4j reflection stuff is unhappy if it's a class
 // (it finds duplicated methods…)
@@ -39,7 +42,32 @@ trait MockLanguageClient extends LanguageClient with MockLanguageClient.Stuff
     lock.synchronized {
       outputStream.pprint(params)
       publishDiagnostics0 += params
+      lock.notifyAll()
     }
+
+  /** Waits for the server to publish diagnostics for `path`, and returns the first non-empty
+    * publication for it.
+    */
+  def awaitDiagnostics(
+    path: os.Path,
+    timeout: FiniteDuration
+  ): Option[l.PublishDiagnosticsParams] = {
+    val deadline = System.currentTimeMillis() + timeout.toMillis
+    lock.synchronized {
+      def found = publishDiagnostics0.find { params =>
+        !params.getDiagnostics.isEmpty &&
+        os.Path(Paths.get(new URI(params.getUri))) == path
+      }
+      var res       = found
+      var remaining = deadline - System.currentTimeMillis()
+      while (res.isEmpty && remaining > 0L) {
+        lock.wait(remaining)
+        res = found
+        remaining = deadline - System.currentTimeMillis()
+      }
+      res
+    }
+  }
   override def showMessage(params: l.MessageParams): Unit =
     lock.synchronized {
       outputStream.pprint(params)

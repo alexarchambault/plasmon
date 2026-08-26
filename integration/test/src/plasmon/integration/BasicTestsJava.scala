@@ -31,14 +31,16 @@ class BasicTestsJava extends PlasmonSuite {
        |}
        |""".stripMargin
 
-  for (
+  for {
     (buildTool, jvm, testNameSuffix) <- buildToolJvmValues if buildTool != SingleModuleBuildTool.Sbt
-  )
-    test("test" + testNameSuffix) {
-      mainTest(buildTool, jvm)
+    mode                             <- modes
+  }
+    test("test" + testNameSuffix + mode.testNameSuffix) {
+      mainTest(mode, buildTool, jvm)
     }
 
   private def mainTest(
+    mode: TestMode,
     buildTool0: SingleModuleBuildTool,
     jvm: Labelled[String]
   ): Unit = {
@@ -55,12 +57,13 @@ class BasicTestsJava extends PlasmonSuite {
     )
 
     withWorkspaceServerPositions(
+      mode = mode,
       extraServerOpts = Seq("--jvm", jvm.value),
       timeout = Some(2 * buildTool.defaultTimeout)
     )(files*) {
-      (workspace, server, positions, osOpt) =>
+      (workspace, driver, positions, osOpt) =>
 
-        buildTool.setup(workspace, server, osOpt)
+        buildTool.setup(workspace, driver, osOpt)
 
         val mainSourceFile = actualPath(os.sub / "Foo.java")
 
@@ -69,7 +72,7 @@ class BasicTestsJava extends PlasmonSuite {
             fixtureDir / "plasmon/integration/single-file-tests-java/hover" / buildTool.id /
               s"jvm-${jvm.label}" / s"pos-$pos.txt",
             hoverMarkdown(
-              server,
+              driver,
               workspace / mainSourceFile,
               positions.lspPos(mainSourceFile, pos)
             ),
@@ -86,7 +89,7 @@ class BasicTestsJava extends PlasmonSuite {
             fixtureDir / "plasmon/integration/single-file-tests-java/definition" / buildTool.id /
               s"jvm-${jvm.label}" / s"definition-$pos.txt",
             goToDef(
-              server,
+              driver,
               workspace,
               workspace / mainSourceFile,
               positions.lspPos(mainSourceFile, pos)
@@ -108,7 +111,7 @@ class BasicTestsJava extends PlasmonSuite {
           actualSourceFile: os.SubPath = mainSourceFile
         ): DefinitionResult = {
           val res = goToDef(
-            server,
+            driver,
             workspace,
             workspace / actualSourceFile,
             pos match {

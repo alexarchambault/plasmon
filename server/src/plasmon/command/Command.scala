@@ -7,8 +7,10 @@ import plasmon.internal.{DebugInput, Directories}
 import plasmon.protocol.{Command as ProtocolCommand, *}
 import plasmon.util.ThreadUtil
 
+import java.io.{FileDescriptor, FileOutputStream, PrintStream}
 import java.net.{StandardProtocolFamily, UnixDomainSocketAddress}
 import java.nio.channels.SocketChannel
+import java.nio.charset.StandardCharsets
 import java.util.concurrent.{LinkedBlockingQueue, TimeUnit}
 
 import scala.concurrent.Promise
@@ -37,6 +39,16 @@ object Command extends caseapp.Command[CommandOptions] {
       os.Path(os.read(basePath))
 
   override def stopAtFirstUnrecognized = true
+
+  /** What the server sends us, written out as UTF-8 rather than in the platform default encoding.
+    *
+    * `System.out` picks up the console encoding, which on a machine with no UTF-8 locale (a CI
+    * container, say) turns anything outside ASCII into `?`. That is lossy for any output, and it
+    * makes the JSON the `--json` flags print unparseable for whoever asked for it.
+    */
+  private def utf8(fd: FileDescriptor): PrintStream =
+    new PrintStream(new FileOutputStream(fd), true, StandardCharsets.UTF_8)
+
   def run(options: CommandOptions, remainingArgs: RemainingArgs): Unit = {
 
     val workingDir = options.workingDir
@@ -69,6 +81,9 @@ object Command extends caseapp.Command[CommandOptions] {
     val queue = new LinkedBlockingQueue[(String, Boolean, Promise[Unit])]
     val poisonPill: (String, Boolean, Promise[Unit]) = (null, false, null)
 
+    val stdout = utf8(FileDescriptor.out)
+    val stderr = utf8(FileDescriptor.err)
+
     val outputThread: Thread =
       new Thread("output-thread") {
         setDaemon(true)
@@ -84,16 +99,19 @@ object Command extends caseapp.Command[CommandOptions] {
               else if (elemOrNull != null) {
                 val (line, isStderr, promise) = elemOrNull
                 if (isStderr)
-                  System.err.println(line)
+                  stderr.println(line)
                 else
-                  println(line)
+                  stdout.println(line)
                 promise.tryComplete(Success(()))
               }
             }
           }
-          finally
+          finally {
+            stdout.flush()
+            stderr.flush()
             if (options.verbosity >= 2)
               System.err.println("Output thread exiting")
+          }
       }
 
     outputThread.start()

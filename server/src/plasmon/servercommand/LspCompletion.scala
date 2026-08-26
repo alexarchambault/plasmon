@@ -15,26 +15,28 @@ final case class LspCompletion(
   server: Server,
   client: CommandClient
 ) extends ServerCommandInstance[LspCompletionOptions](client) {
+  override def names = LspCompletion.names
   def run(options: LspCompletionOptions, args: RemainingArgs): Unit = {
-    val path = args.all match {
-      case Seq()    => sys.error("No argument provided")
-      case Seq(arg) => os.Path(arg, server.workingDir)
-      case _        => sys.error("Too many arguments provided")
-    }
+
+    val (path, uri) = FileArg.single(args.all, options.uri, server.workingDir)
 
     val col = options.col.filter(_ >= 0).getOrElse {
       os.read.lines(path).apply(options.line).length
     }
 
     val params = new l.CompletionParams(
-      new l.TextDocumentIdentifier(path.toNIO.toUri.toASCIIString),
-      new l.Position(options.line, col)
+      new l.TextDocumentIdentifier(uri),
+      new l.Position(options.line, col),
+      new l.CompletionContext(l.CompletionTriggerKind.Invoked)
     )
     val f   = Completion.completions(server, params)
     val res = Await.result(f, Duration.Inf)
 
-    for (item <- res.getItems.asScala)
-      printLine(item.toString)
+    if (options.json)
+      printJson(res)
+    else
+      for (item <- res.getItems.asScala)
+        printLine(item.toString)
   }
 }
 

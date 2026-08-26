@@ -58,27 +58,33 @@ class MillTests extends PlasmonSuite {
          |""".stripMargin
   )
 
-  test("build files") {
+  for (mode <- modes)
+    test("build files" + mode.testNameSuffix) {
+      buildFilesTest(mode)
+    }
+
+  private def buildFilesTest(mode: TestMode): Unit = {
 
     withWorkspaceServerPositions(
+      mode = mode,
       extraServerOpts = Seq("--jvm", "17"),
       timeout = Some(timeout)
     )(files*) {
-      (workspace, server, positions, osOpt) =>
+      (workspace, driver, positions, osOpt) =>
 
         os.copy(SingleModuleBuildTool.Mill.millwPath, workspace / "mill")
         os.copy(SingleModuleBuildTool.Mill.millwBatPath, workspace / "mill.bat")
         (workspace / "mill").toIO.setExecutable(true)
         val buildFile = workspace / "build.mill"
-        TestUtil.loadBuildToolViaLsp(server, "mill", "mill", buildFile)
-        TestUtil.importViaLsp(server, toplevelCacheOnly = false)
-        TestUtil.compileViaLsp(server, buildFile)
+        driver.loadBuildTool("mill", "mill", buildFile)
+        driver.loadAllModules(toplevelCacheOnly = false)
+        driver.compile(buildFile)
 
         def hoverAt(source: os.SubPath, pos: Int): Unit =
           checkTextFixture(
             fixtureDir / "plasmon/integration/mill-tests" / source / s"hover-$pos.txt",
             hoverMarkdown(
-              server,
+              driver,
               workspace / source,
               positions.lspPos(source, pos)
             ),
@@ -97,7 +103,7 @@ class MillTests extends PlasmonSuite {
           checkJsoniterFixture(
             fixtureDir / "plasmon/integration/mill-tests" / source / s"definition-$pos.txt",
             goToDefs(
-              server,
+              driver,
               workspace,
               workspace / source,
               positions.lspPos(source, pos)

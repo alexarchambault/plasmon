@@ -77,6 +77,7 @@ object TestUtil {
     .getOrElse(1.minute)
 
   def withWorkspaceServerPositionsCount[T](
+    mode: TestMode = TestMode.Lsp,
     projectName: String = "test-project",
     client: l.services.LanguageClient = new MockLanguageClient {},
     clientCapabilities: l.ClientCapabilities = new l.ClientCapabilities,
@@ -85,7 +86,7 @@ object TestUtil {
     count: Int = 1
   )(
     content: (os.SubPath, String)*
-  )(f: (os.Path, LanguageServer, Positions, Option[OutputStream], Int) => T): T = {
+  )(f: (os.Path, ServerDriver, Positions, Option[OutputStream], Int) => T): T = {
 
     val pos = Positions.of(content*)
     val updatedContent = content.map {
@@ -94,6 +95,7 @@ object TestUtil {
     }
 
     withWorkspaceAndServer(
+      mode,
       projectName,
       client,
       clientCapabilities,
@@ -101,12 +103,13 @@ object TestUtil {
       extraServerOpts = extraServerOpts,
       count = count
     )(updatedContent*) {
-      (workspace, remoteServer, _, osOpt, runCount) =>
-        f(workspace, remoteServer, pos, osOpt, runCount)
+      (workspace, driver, _, osOpt, runCount) =>
+        f(workspace, driver, pos, osOpt, runCount)
     }
   }
 
   def withWorkspaceServerPositions[T](
+    mode: TestMode = TestMode.Lsp,
     projectName: String = "test-project",
     client: l.services.LanguageClient = new MockLanguageClient {},
     clientCapabilities: l.ClientCapabilities = new l.ClientCapabilities,
@@ -115,8 +118,9 @@ object TestUtil {
     count: Int = 1
   )(
     content: (os.SubPath, String)*
-  )(f: (os.Path, LanguageServer, Positions, Option[OutputStream]) => T): T =
+  )(f: (os.Path, ServerDriver, Positions, Option[OutputStream]) => T): T =
     withWorkspaceServerPositionsCount(
+      mode,
       projectName,
       client,
       clientCapabilities,
@@ -124,8 +128,8 @@ object TestUtil {
       extraServerOpts,
       count
     )(content*) {
-      (workspace, remoteServer, pos, osOpt, _) =>
-        f(workspace, remoteServer, pos, osOpt)
+      (workspace, driver, pos, osOpt, _) =>
+        f(workspace, driver, pos, osOpt)
     }
 
   def serverExtraJavaOpts = Seq("-Duser.country=US", "-Duser.language=en")
@@ -139,6 +143,7 @@ object TestUtil {
     "PLASMON_SORT_SBT_BOOT_CLASSPATH" -> "true"
   )
   def withWorkspaceAndServer[T](
+    mode: TestMode = TestMode.Lsp,
     projectName: String = "test-project",
     client: l.services.LanguageClient = new MockLanguageClient {},
     clientCapabilities: l.ClientCapabilities = new l.ClientCapabilities,
@@ -149,7 +154,7 @@ object TestUtil {
     count: Int = 1
   )(
     content: (os.SubPath, os.Source)*
-  )(f: (os.Path, LanguageServer, JFuture[Void], Option[OutputStream], Int) => T): T = {
+  )(f: (os.Path, ServerDriver, JFuture[Void], Option[OutputStream], Int) => T): T = {
 
     val workingDir = os.sub / projectName
 
@@ -175,7 +180,7 @@ object TestUtil {
         scalaCli,
         extraServerOpts
       ),
-      timeout = timeout,
+      timeout = timeout.map(_ * mode.timeoutFactor),
       count = count,
       env = serverEnv,
       runProcIn = tmpDir => {
@@ -244,8 +249,10 @@ object TestUtil {
           params
         }.get()
 
+        val driver = ServerDriver(mode, remoteServer, workspace, client, osOpt)
+
         try
-          f(workspace, remoteServer, listeningFuture, osOpt, runCount)
+          f(workspace, driver, listeningFuture, osOpt, runCount)
         finally
           if (shutdownServer) {
             printStream.println("Trying to ignore sub-process exit")
@@ -261,9 +268,40 @@ object TestUtil {
     }
   }
 
+  /** The ways tests drive the server, from `PLASMON_TEST_MODES` (comma-separated ids).
+    *
+    * Both by default: every scenario is run once over LSP and once through the CLI. Narrow it down
+    * with e.g. `PLASMON_TEST_MODES=lsp` when only one of the two entry points is of interest.
+    */
+  lazy val modes: Seq[TestMode] =
+    Option(System.getenv("PLASMON_TEST_MODES"))
+      .map(_.split(',').toSeq.map(_.trim).filter(_.nonEmpty))
+      .map { ids =>
+        ids.map { id =>
+          TestMode.parse(id).getOrElse {
+            sys.error(
+              s"Unrecognized test mode '$id' in PLASMON_TEST_MODES " +
+                s"(expected one of ${TestMode.all.map(_.id).mkString(", ")})"
+            )
+          }
+        }
+      }
+      .getOrElse(TestMode.all)
+
   private val baseCommand: os.Shellable =
     if (launcherKind == "native") Seq[os.Shellable](launcher, serverExtraJavaOpts)
     else Seq[os.Shellable]("java", serverExtraJavaOpts, "-jar", launcher)
+
+  /** Runs a `plasmon` command against the server running in `workspace`. */
+  def runServerCommand(
+    workspace: os.Path,
+    err: Option[OutputStream]
+  )(command: os.Shellable*): Unit = {
+    val output = FixedReadBytes.pipeTo(err)
+    os.proc(baseCommand, "command", "-v", command)
+      .call(cwd = workspace, stdin = os.Inherit, stdout = output, mergeErrIntoOut = err.nonEmpty)
+  }
+
   def runCommand(
     workspace: os.Path,
     err: Option[OutputStream]
@@ -283,101 +321,13 @@ object TestUtil {
     proc.out.text()
   }
 
-  def executeCommand(
-    remoteServer: LanguageServer,
-    command: String,
-    arguments: Object*
-  ): Object = {
-    val params = new l.ExecuteCommandParams
-    params.setCommand(command)
-    params.setArguments(arguments.toList.asJava)
-    remoteServer.getWorkspaceService.executeCommand(params).get()
-  }
-
-  def loadBuildToolViaLsp(
-    remoteServer: LanguageServer,
-    discoverId: String,
-    toolId: String,
-    currentFile: os.Path
-  ): Unit = {
-    val res = executeCommand(
-      remoteServer,
-      "plasmon/loadBuildTool",
-      discoverId,
-      toolId,
-      currentFile.toNIO.toUri.toASCIIString
-    )
-    val obj     = new Gson().toJsonTree(res).getAsJsonObject
-    val success = obj.get("success").getAsBoolean
-    if (!success) {
-      val error = Option(obj.get("error")).filter(!_.isJsonNull).map(_.getAsString)
-      sys.error(s"Error loading build tool $toolId / $discoverId: ${error.getOrElse("")}")
-    }
-  }
-
-  def importViaLsp(
-    remoteServer: LanguageServer,
-    toplevelCacheOnly: Boolean
-  ): Unit = {
-    executeCommand(remoteServer, "plasmon/loadAllModules", Boolean.box(toplevelCacheOnly))
-  }
-
-  def loadModuleOfViaLsp(
-    remoteServer: LanguageServer,
-    currentFile: os.Path
-  ): Unit = {
-    val currentFileUri = currentFile.toNIO.toUri.toASCIIString
-    val res            = executeCommand(remoteServer, "plasmon/listModulesOf", currentFileUri)
-    val modules = new Gson()
-      .toJsonTree(res)
-      .getAsJsonArray
-      .asScala
-      .map(_.getAsJsonObject)
-      .filter(_.has("uri"))
-      .toVector
-    val module = modules
-      .find(obj => !obj.get("alreadyLoaded").getAsBoolean)
-      .orElse(modules.headOption)
-      .getOrElse(sys.error(s"No module found for $currentFile"))
-
-    val loadRes = executeCommand(
-      remoteServer,
-      "plasmon/loadModule",
-      module.get("workspace").getAsString,
-      module.get("server").getAsString,
-      module.get("uri").getAsString
-    )
-    val loadObj = new Gson().toJsonTree(loadRes).getAsJsonObject
-    if (loadObj.has("error") && !loadObj.get("error").getAsString.isEmpty)
-      sys.error(
-        s"Error loading module ${module.get("label").getAsString}: " +
-          loadObj.get("error").getAsString
-      )
-  }
-
-  def compileViaLsp(
-    remoteServer: LanguageServer,
-    currentFile: os.Path
-  ): Unit =
-    executeCommand(
-      remoteServer,
-      "plasmon/compile",
-      currentFile.toNIO.toUri.toASCIIString
-    )
-
-  def identifier(path: os.Path): l.TextDocumentIdentifier =
-    new l.TextDocumentIdentifier(path.toNIO.toUri.toASCIIString)
-
   def hoverMarkdown(
-    remoteServer: LanguageServer,
+    driver: ServerDriver,
     path: os.Path,
     pos: l.Position
   ): String = {
 
-    val hoverResp = remoteServer
-      .getTextDocumentService
-      .hover(new l.HoverParams(identifier(path), pos))
-      .get()
+    val hoverResp = driver.hover(path, pos)
 
     if (hoverResp == null) ""
     else {
@@ -407,23 +357,7 @@ object TestUtil {
     content: String
   )
 
-  def goToDef(
-    remoteServer: LanguageServer,
-    workspace: os.Path,
-    path: os.Path,
-    pos: l.Position
-  ): DefinitionResult = {
-
-    val defResp = remoteServer
-      .getTextDocumentService
-      .definition(new l.DefinitionParams(identifier(path), pos))
-      .get()
-    expect(defResp != null)
-    expect(defResp.isLeft())
-    val locations = defResp.getLeft.asScala.toList
-    expect(locations.length >= 1)
-    val location = locations.head
-
+  private def definitionResultOf(workspace: os.Path, location: l.Location): DefinitionResult = {
     val defPath = os.Path(Paths.get(new URI(location.getUri)))
 
     val startPos = (location.getRange.getStart.getLine, location.getRange.getStart.getCharacter)
@@ -450,47 +384,24 @@ object TestUtil {
     DefinitionResult(GoToDefResult(defPath0, startPos, endPos, content))
   }
 
-  def goToDefs(
-    remoteServer: LanguageServer,
+  def goToDef(
+    driver: ServerDriver,
     workspace: os.Path,
     path: os.Path,
     pos: l.Position
-  ): Seq[DefinitionResult] = {
-
-    val defResp = remoteServer
-      .getTextDocumentService
-      .definition(new l.DefinitionParams(identifier(path), pos))
-      .get()
-    expect(defResp != null)
-    expect(defResp.isLeft())
-
-    defResp.getLeft.asScala.toSeq.map { location =>
-      val defPath = os.Path(Paths.get(new URI(location.getUri)))
-
-      val startPos = (location.getRange.getStart.getLine, location.getRange.getStart.getCharacter)
-      val endPos   = (location.getRange.getEnd.getLine, location.getRange.getEnd.getCharacter)
-
-      val content = os.read(defPath)
-        .linesWithSeparators
-        .zipWithIndex
-        .map {
-          case (line, idx) =>
-            val line0 =
-              if (idx == endPos._1) line.take(endPos._2)
-              else line
-            if (idx == startPos._1) line0.drop(startPos._2)
-            else line0
-        }
-        .drop(startPos._1)
-        .take(endPos._1 - startPos._1 + 1)
-        .mkString
-
-      val defPath0 =
-        if (defPath.startsWith(workspace)) Right(defPath.relativeTo(workspace).asSubPath)
-        else Left(defPath)
-      DefinitionResult(GoToDefResult(defPath0, startPos, endPos, content))
-    }
+  ): DefinitionResult = {
+    val locations = driver.definition(path, pos)
+    expect(locations.length >= 1)
+    definitionResultOf(workspace, locations.head)
   }
+
+  def goToDefs(
+    driver: ServerDriver,
+    workspace: os.Path,
+    path: os.Path,
+    pos: l.Position
+  ): Seq[DefinitionResult] =
+    driver.definition(path, pos).map(definitionResultOf(workspace, _))
 
   final case class DefinitionResult(
     path: String,
@@ -541,26 +452,12 @@ object TestUtil {
   )
 
   def completions(
-    remoteServer: LanguageServer,
+    driver: ServerDriver,
     path: os.Path,
     pos: l.Position
   ): Seq[CompletionItem] = {
 
-    val completionResp = remoteServer
-      .getTextDocumentService
-      .completion(
-        new l.CompletionParams(
-          identifier(path),
-          pos,
-          new l.CompletionContext(l.CompletionTriggerKind.Invoked)
-        )
-      )
-      .get()
-
-    expect(completionResp != null)
-    expect(completionResp.isRight())
-
-    val itemsResp = completionResp.getRight
+    val itemsResp = driver.completion(path, pos)
     expect(itemsResp.getItemDefaults == null)
 
     itemsResp
@@ -591,21 +488,17 @@ object TestUtil {
       }
   }
 
+  /** The raw completion response, in the shape it has on the wire.
+    *
+    * The server always answers with a completion list rather than a bare list of items, so this
+    * wraps it back the way lsp4j does - what the fixtures were recorded from.
+    */
   def completions0(
-    remoteServer: LanguageServer,
+    driver: ServerDriver,
     path: os.Path,
     pos: l.Position
-  ) =
-    remoteServer
-      .getTextDocumentService
-      .completion(
-        new l.CompletionParams(
-          identifier(path),
-          pos,
-          new l.CompletionContext(l.CompletionTriggerKind.Invoked)
-        )
-      )
-      .get()
+  ): l.jsonrpc.messages.Either[java.util.List[l.CompletionItem], l.CompletionList] =
+    l.jsonrpc.messages.Either.forRight(driver.completion(path, pos))
 
   def scalaCliUrl(
     arch: String = sys.props.getOrElse("os.arch", "").toLowerCase(Locale.ROOT),

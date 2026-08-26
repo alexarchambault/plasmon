@@ -4,7 +4,6 @@ import com.virtuslab.using_directives.UsingDirectivesProcessor
 import com.virtuslab.using_directives.custom.model.{Path, StringValue}
 import dependency.*
 import dependency.parser.DependencyParser
-import org.eclipse.lsp4j.services.LanguageServer
 
 import java.io.OutputStream
 
@@ -22,14 +21,14 @@ abstract class SingleModuleBuildTool extends Product with Serializable {
   ): (Map[os.SubPath, os.SubPath], Seq[(os.SubPath, String)])
   def setup(
     workspace: os.Path,
-    remoteServer: LanguageServer,
+    driver: ServerDriver,
     osOpt: Option[OutputStream],
     readOnlyToplevelSymbolsCache: Boolean = false,
     compiles: Boolean = true
   ): Unit
   def compile(
     workspace: os.Path,
-    remoteServer: LanguageServer,
+    driver: ServerDriver,
     osOpt: Option[OutputStream]
   ): Unit
 
@@ -74,41 +73,40 @@ object SingleModuleBuildTool {
 
     def setup(
       workspace: os.Path,
-      remoteServer: LanguageServer,
+      driver: ServerDriver,
       osOpt: Option[OutputStream],
       readOnlyToplevelSymbolsCache: Boolean,
       compiles: Boolean
     ): Unit =
       if (TestParams.recordBspData) {
-        underlying.setup(workspace, remoteServer, osOpt, readOnlyToplevelSymbolsCache, compiles)
+        underlying.setup(workspace, driver, osOpt, readOnlyToplevelSymbolsCache, compiles)
         BspDataFixture.record(workspace, key, osOpt)
       }
       else {
         BspDataFixture.install(workspace, key)
         val file = sourceFile(workspace)
-        TestUtil.loadBuildToolViaLsp(
-          remoteServer,
+        driver.loadBuildTool(
           BspDataFixture.replayBuildToolId,
           BspDataFixture.replayBuildToolId,
           file
         )
-        TestUtil.importViaLsp(remoteServer, readOnlyToplevelSymbolsCache)
+        driver.loadAllModules(readOnlyToplevelSymbolsCache)
         // Builds the class directories the recording refers to, from source. Only worth its cost
         // for tests that need built output - anything resolving against dependencies and the
         // workspace source index alone passes compiles = false and skips this.
         if (compiles)
-          TestUtil.compileViaLsp(remoteServer, file)
+          driver.compile(file)
       }
 
     def compile(
       workspace: os.Path,
-      remoteServer: LanguageServer,
+      driver: ServerDriver,
       osOpt: Option[OutputStream]
     ): Unit =
       if (TestParams.recordBspData)
-        underlying.compile(workspace, remoteServer, osOpt)
+        underlying.compile(workspace, driver, osOpt)
       else
-        TestUtil.compileViaLsp(remoteServer, sourceFile(workspace))
+        driver.compile(sourceFile(workspace))
   }
 
   private def sourceFile(workspace: os.Path): os.Path =
@@ -211,7 +209,7 @@ object SingleModuleBuildTool {
     }
     def setup(
       workspace: os.Path,
-      remoteServer: LanguageServer,
+      driver: ServerDriver,
       osOpt: Option[OutputStream],
       readOnlyToplevelSymbolsCache: Boolean,
       compiles: Boolean
@@ -221,17 +219,17 @@ object SingleModuleBuildTool {
       else
         TestUtil.runCommand(workspace, osOpt)(TestUtil.scalaCli, "setup-ide", ".")
       val file = sourceFile(workspace)
-      TestUtil.loadBuildToolViaLsp(remoteServer, "scala-cli", "scala-cli", file)
-      TestUtil.importViaLsp(remoteServer, readOnlyToplevelSymbolsCache)
+      driver.loadBuildTool("scala-cli", "scala-cli", file)
+      driver.loadAllModules(readOnlyToplevelSymbolsCache)
       if (compiles)
-        TestUtil.compileViaLsp(remoteServer, file)
+        driver.compile(file)
     }
     def compile(
       workspace: os.Path,
-      remoteServer: LanguageServer,
+      driver: ServerDriver,
       osOpt: Option[OutputStream]
     ): Unit =
-      TestUtil.compileViaLsp(remoteServer, sourceFile(workspace))
+      driver.compile(sourceFile(workspace))
   }
 
   case object Mill extends SingleModuleBuildTool {
@@ -331,19 +329,19 @@ object SingleModuleBuildTool {
     }
     def setup(
       workspace: os.Path,
-      remoteServer: LanguageServer,
+      driver: ServerDriver,
       osOpt: Option[OutputStream],
       readOnlyToplevelSymbolsCache: Boolean,
       compiles: Boolean
     ): Unit =
       millSetup(
         workspace,
-        remoteServer,
+        driver,
         readOnlyToplevelSymbolsCache
       )
     def millSetup(
       workspace: os.Path,
-      remoteServer: LanguageServer,
+      driver: ServerDriver,
       readOnlyToplevelSymbolsCache: Boolean
     ): Unit = {
       os.copy(millwPath, workspace / "mill")
@@ -351,16 +349,16 @@ object SingleModuleBuildTool {
       os.write(workspace / ".mill-version", IntegrationConstants.millVersion)
       (workspace / "mill").toIO.setExecutable(true)
       val file = sourceFile(workspace)
-      TestUtil.loadBuildToolViaLsp(remoteServer, id, id, file)
-      TestUtil.importViaLsp(remoteServer, readOnlyToplevelSymbolsCache)
-      TestUtil.compileViaLsp(remoteServer, file)
+      driver.loadBuildTool(id, id, file)
+      driver.loadAllModules(readOnlyToplevelSymbolsCache)
+      driver.compile(file)
     }
     def compile(
       workspace: os.Path,
-      remoteServer: LanguageServer,
+      driver: ServerDriver,
       osOpt: Option[OutputStream]
     ): Unit =
-      TestUtil.compileViaLsp(remoteServer, sourceFile(workspace))
+      driver.compile(sourceFile(workspace))
     override def isSlow: Boolean = true
   }
 
@@ -471,7 +469,7 @@ object SingleModuleBuildTool {
     }
     def setup(
       workspace: os.Path,
-      remoteServer: LanguageServer,
+      driver: ServerDriver,
       osOpt: Option[OutputStream],
       readOnlyToplevelSymbolsCache: Boolean,
       compiles: Boolean
@@ -484,16 +482,16 @@ object SingleModuleBuildTool {
       )
       (workspace / "sbt").toIO.setExecutable(true)
       val file = sourceFile(workspace)
-      TestUtil.loadBuildToolViaLsp(remoteServer, id, id, file)
-      TestUtil.importViaLsp(remoteServer, readOnlyToplevelSymbolsCache)
-      TestUtil.compileViaLsp(remoteServer, file)
+      driver.loadBuildTool(id, id, file)
+      driver.loadAllModules(readOnlyToplevelSymbolsCache)
+      driver.compile(file)
     }
     def compile(
       workspace: os.Path,
-      remoteServer: LanguageServer,
+      driver: ServerDriver,
       osOpt: Option[OutputStream]
     ): Unit =
-      TestUtil.compileViaLsp(remoteServer, sourceFile(workspace))
+      driver.compile(sourceFile(workspace))
     override def isSlow: Boolean = true
   }
 

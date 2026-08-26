@@ -9,9 +9,11 @@ import scala.jdk.CollectionConverters.*
 
 class Tests extends PlasmonSuite {
 
+  // Nothing to run through the CLI here: this is about the LSP connection itself
   test("exit") {
     withWorkspaceAndServer(shutdownServer = false)() {
-      (_, remoteServer, listeningFuture, _, _) =>
+      (_, driver, listeningFuture, _, _) =>
+        val remoteServer = driver.lsp
         def shouldTimeout(): Unit =
           try {
             listeningFuture.get(100L, TimeUnit.MILLISECONDS)
@@ -29,14 +31,16 @@ class Tests extends PlasmonSuite {
     }
   }
 
-  for (
+  for {
     (scalaVersionOpt, serverOpt, buildTool, jvm, testNameSuffix) <- scalaVersionBuildToolJvmValues
-  )
-    test("simple" + testNameSuffix) {
-      simpleTest(buildTool, scalaVersionOpt, jvm, serverOpt)
+    mode                                                         <- modes
+  }
+    test("simple" + testNameSuffix + mode.testNameSuffix) {
+      simpleTest(mode, buildTool, scalaVersionOpt, jvm, serverOpt)
     }
 
   private def simpleTest(
+    mode: TestMode,
     buildTool0: SingleModuleBuildTool,
     scalaVersionOpt: Option[Labelled[String]],
     jvm: Labelled[String],
@@ -77,16 +81,17 @@ class Tests extends PlasmonSuite {
     )
 
     withWorkspaceServerPositions(
+      mode = mode,
       extraServerOpts = Seq("--jvm", jvm.value, "--suspend-watcher=false") ++ serverOpt,
       timeout = Some(buildTool.defaultTimeout)
     )(files*) {
-      (workspace, remoteServer, positions, osOpt) =>
+      (workspace, driver, positions, osOpt) =>
 
-        buildTool.setup(workspace, remoteServer, osOpt)
+        buildTool.setup(workspace, driver, osOpt)
 
         val hoverSourceFile = actualPath(os.sub / "Hover.scala")
         val markdown = hoverMarkdown(
-          remoteServer,
+          driver,
           workspace / hoverSourceFile,
           positions.lspPos(hoverSourceFile, 1)
         )
@@ -99,7 +104,7 @@ class Tests extends PlasmonSuite {
 
         val goToDefSourceFile = actualPath(os.sub / "GoToDef.scala")
         val goToDefRes = goToDef(
-          remoteServer,
+          driver,
           workspace,
           workspace / goToDefSourceFile,
           positions.lspPos(goToDefSourceFile, 1)
@@ -122,7 +127,7 @@ class Tests extends PlasmonSuite {
              |}
              |""".stripMargin
         )
-        remoteServer.getTextDocumentService.didChange(
+        driver.lsp.getTextDocumentService.didChange(
           new l.DidChangeTextDocumentParams(
             new l.VersionedTextDocumentIdentifier(
               (workspace / completionSourceFile).toNIO.toUri.toASCIIString,
@@ -134,7 +139,7 @@ class Tests extends PlasmonSuite {
           )
         )
         val completions = completions0(
-          remoteServer,
+          driver,
           workspace / completionSourceFile,
           positions0.lspPos(completionSourceFile, 1)
         )

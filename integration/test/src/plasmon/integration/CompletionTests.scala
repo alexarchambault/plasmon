@@ -9,11 +9,13 @@ import scala.jdk.CollectionConverters.*
 class CompletionTests extends PlasmonSuite {
   import CompletionTests.*
 
-  for (
+  for {
     (scalaVersionOpt, serverOpt, buildTool, jvm, testNameSuffix) <- scalaVersionBuildToolJvmValues
-  )
-    test("chains" + testNameSuffix) {
+    mode                                                         <- modes
+  }
+    test("chains" + testNameSuffix + mode.testNameSuffix) {
       completionChainTest(
+        mode,
         Seq(
           Seq("sc", "ala.", "co", "llection.", "mu", "table.", "Li", "stBuffer"),
           Seq("Sy", "stem.", "e", "rr.", "pr", "intln($0)"),
@@ -26,11 +28,13 @@ class CompletionTests extends PlasmonSuite {
       )
     }
 
-  for (
+  for {
     (scalaVersionOpt, serverOpt, buildTool, jvm, testNameSuffix) <- scalaVersionBuildToolJvmValues
-  )
-    test(s"import" + testNameSuffix) {
+    mode                                                         <- modes
+  }
+    test(s"import" + testNameSuffix + mode.testNameSuffix) {
       classPathSearchCompletionTest(
+        mode,
         scalaVersionOpt,
         buildTool,
         jvm,
@@ -43,6 +47,7 @@ class CompletionTests extends PlasmonSuite {
     }
 
   private def classPathSearchCompletionTest(
+    mode: TestMode,
     scalaVersionOpt: Option[Labelled[String]],
     buildTool0: SingleModuleBuildTool,
     jvm: Labelled[String],
@@ -77,18 +82,19 @@ class CompletionTests extends PlasmonSuite {
     )
 
     withWorkspaceServerPositions(
+      mode = mode,
       extraServerOpts = Seq("--jvm", jvm.value) ++ serverOpt,
       timeout = Some(buildTool.defaultTimeout)
     )(files*) {
-      (workspace, remoteServer, positions, osOpt) =>
+      (workspace, driver, positions, osOpt) =>
 
-        buildTool.setup(workspace, remoteServer, osOpt, compiles = false)
+        buildTool.setup(workspace, driver, osOpt, compiles = false)
 
         for ((testInput, idx) <- testInputs.zipWithIndex) {
           val sourceFile = actualPath(os.sub / s"Foo$idx.scala")
 
           val completions = completions0(
-            remoteServer,
+            driver,
             workspace / sourceFile,
             positions.lspPos(sourceFile, 1)
           )
@@ -107,6 +113,7 @@ class CompletionTests extends PlasmonSuite {
   }
 
   private def completionChainTest(
+    mode: TestMode,
     inputs: Seq[Seq[String]],
     buildTool0: SingleModuleBuildTool,
     scalaVersionOpt: Option[Labelled[String]],
@@ -151,12 +158,13 @@ class CompletionTests extends PlasmonSuite {
     )
 
     withWorkspaceServerPositions(
+      mode = mode,
       extraServerOpts = Seq("--jvm", jvm.value, "--suspend-watcher=false") ++ serverOpt,
       timeout = Some(buildTool.defaultTimeout)
     )(files*) {
-      (workspace, remoteServer, positions0, osOpt) =>
+      (workspace, driver, positions0, osOpt) =>
 
-        buildTool.setup(workspace, remoteServer, osOpt, compiles = false)
+        buildTool.setup(workspace, driver, osOpt, compiles = false)
 
         var positions = positions0
 
@@ -167,7 +175,7 @@ class CompletionTests extends PlasmonSuite {
         ): Unit = {
           for ((updatedContent, version) <- updatedContentOpt) {
             positions = positions.update(sourceFile, updatedContent)
-            remoteServer.getTextDocumentService.didChange(
+            driver.lsp.getTextDocumentService.didChange(
               new l.DidChangeTextDocumentParams(
                 new l.VersionedTextDocumentIdentifier(
                   (workspace / sourceFile).toNIO.toUri.toASCIIString,
@@ -179,7 +187,7 @@ class CompletionTests extends PlasmonSuite {
           }
 
           val completions0 = completions(
-            remoteServer,
+            driver,
             workspace / sourceFile,
             positions.lspPos(sourceFile, endPosIdx)
           )

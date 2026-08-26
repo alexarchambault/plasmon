@@ -3,7 +3,6 @@ package plasmon.servercommand
 import caseapp.core.RemainingArgs
 import org.eclipse.lsp4j as l
 import plasmon.{Logger, Server}
-import plasmon.PlasmonEnrichments.StringThingExtensions
 import plasmon.handlers.Hover
 import plasmon.ide.HoverExtParams
 import plasmon.index.Indexer
@@ -16,26 +15,10 @@ final case class LspHover(
   client: CommandClient,
   pools: plasmon.command.ServerCommandThreadPools
 ) extends ServerCommandInstance[LspHoverOptions](client) {
-  override def names = List(
-    List("lsp", "hover"),
-    List("lsp-hover")
-  )
+  override def names = LspHover.names
   def run(options: LspHoverOptions, args: RemainingArgs): Unit = {
 
-    val (path, uri) = (args.all, options.uri) match {
-      case (Seq(), None) =>
-        sys.error("No file specified")
-      case (Seq(strPath), None) =>
-        val path0 = os.Path(strPath, os.pwd)
-        (path0, path0.toNIO.toUri.toASCIIString)
-      case (Seq(), Some(uri)) =>
-        (uri.osPathFromUri, uri)
-      case (Seq(_), Some(_)) =>
-        sys.error("Cannot specify both a file and a URI")
-      case (other, _) =>
-        assert(other.length > 1)
-        sys.error("Too many files specified (only one file accepted)")
-    }
+    val (path, uri) = FileArg.single(args.all, options.uri, server.workingDir)
 
     val handler = Hover.handler(
       server,
@@ -48,16 +31,19 @@ final case class LspHover(
       position = new l.Position(options.line, options.col)
     )
 
+    // Out of the way of the JSON on stdout, but not lost
     val loggerManager = Logger.Manager.create {
       channel => msg =>
-        printLine(s"[${channel.label}] $msg")
+        printLine(s"[${channel.label}] $msg", toStderr = options.json)
     }
 
     val logger = loggerManager.create("request", "Request")
 
     val res = handler.call(params, logger).get()
 
-    if (res != null) {
+    if (options.json)
+      printJson(res)
+    else if (res != null) {
       for (range <- Option(res.getRange)) {
         val lineCount = range.getEnd.getLine - range.getStart.getLine + 1
         val content = os.read.lines.stream(path)

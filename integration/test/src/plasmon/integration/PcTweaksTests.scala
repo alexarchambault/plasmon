@@ -9,9 +9,10 @@ class PcTweaksTests extends PlasmonSuite {
       scalaVersionBuildToolJvmValues ++ olderScalaVersionBuildToolJvmValues
     if buildTool == SingleModuleBuildTool.ScalaCli()
     scalaVersion <- scalaVersionOpt
+    mode         <- modes
   }
-    test("Untupling" + testNameSuffix) {
-      untuplingTest(scalaVersion, jvm, serverOpt)
+    test("Untupling" + testNameSuffix + mode.testNameSuffix) {
+      untuplingTest(mode, scalaVersion, jvm, serverOpt)
     }
 
   for {
@@ -19,12 +20,14 @@ class PcTweaksTests extends PlasmonSuite {
       scalaVersionBuildToolJvmValues ++ olderScalaVersionBuildToolJvmValues
     if buildTool == SingleModuleBuildTool.ScalaCli()
     scalaVersion <- scalaVersionOpt
+    mode         <- modes
   }
-    test("Weird method call" + testNameSuffix) {
-      weirdMethodCallTest(scalaVersion, jvm, serverOpt)
+    test("Weird method call" + testNameSuffix + mode.testNameSuffix) {
+      weirdMethodCallTest(mode, scalaVersion, jvm, serverOpt)
     }
 
   def untuplingTest(
+    mode: TestMode,
     scalaVersion: Labelled[String],
     jvm: Labelled[String],
     serverOpt: Seq[String]
@@ -54,19 +57,20 @@ class PcTweaksTests extends PlasmonSuite {
     val (sourceFile, files) = buildTool.singleFile(os.sub / "Foo.scala", source)
 
     withWorkspaceServerPositions(
+      mode = mode,
       extraServerOpts = Seq("--jvm", jvm.value) ++ serverOpt,
       timeout = Some(buildTool.defaultTimeout)
     )(files*) {
-      (workspace, remoteServer, positions, osOpt) =>
+      (workspace, driver, positions, osOpt) =>
 
-        buildTool.setup(workspace, remoteServer, osOpt, compiles = false)
+        buildTool.setup(workspace, driver, osOpt, compiles = false)
 
         def hoverAt(pos: Int): Unit =
           checkTextFixture(
             fixtureDir / "plasmon/integration/pc-tweaks-tests/untupling/hover" /
               s"scala-${scalaVersion.label}" / s"jvm-${jvm.label}" / s"pos-$pos.txt",
             hoverMarkdown(
-              remoteServer,
+              driver,
               workspace / sourceFile,
               positions.lspPos(sourceFile, pos)
             ),
@@ -78,7 +82,7 @@ class PcTweaksTests extends PlasmonSuite {
             fixtureDir / "plasmon/integration/pc-tweaks-tests/untupling/definition" / buildTool.id /
               s"scala-${scalaVersion.label}" / s"jvm-${jvm.label}" / s"definition-$pos.txt",
             goToDef(
-              remoteServer,
+              driver,
               workspace,
               workspace / sourceFile,
               positions.lspPos(sourceFile, pos)
@@ -95,6 +99,7 @@ class PcTweaksTests extends PlasmonSuite {
   }
 
   def weirdMethodCallTest(
+    mode: TestMode,
     scalaVersion: Labelled[String],
     jvm: Labelled[String],
     serverOpt: Seq[String]
@@ -126,19 +131,20 @@ class PcTweaksTests extends PlasmonSuite {
     val (sourceFile, files) = buildTool.singleFile(os.sub / "Foo.scala", source)
 
     withWorkspaceServerPositions(
+      mode = mode,
       extraServerOpts = Seq("--jvm", jvm.value) ++ serverOpt,
       timeout = Some(buildTool.defaultTimeout)
     )(files*) {
-      (workspace, remoteServer, positions, osOpt) =>
+      (workspace, driver, positions, osOpt) =>
 
-        buildTool.setup(workspace, remoteServer, osOpt, compiles = false)
+        buildTool.setup(workspace, driver, osOpt, compiles = false)
 
         def hoverAt(pos: Int): Unit =
           checkTextFixture(
             fixtureDir / "plasmon/integration/pc-tweaks-tests/weird-method-call/hover" /
               s"scala-${scalaVersion.label}" / s"jvm-${jvm.label}" / s"pos-$pos.txt",
             hoverMarkdown(
-              remoteServer,
+              driver,
               workspace / sourceFile,
               positions.lspPos(sourceFile, pos)
             ),
@@ -150,7 +156,7 @@ class PcTweaksTests extends PlasmonSuite {
             fixtureDir / "plasmon/integration/pc-tweaks-tests/weird-method-call/definition" / buildTool.id /
               s"scala-${scalaVersion.label}" / s"jvm-${jvm.label}" / s"definition-$pos.txt",
             goToDef(
-              remoteServer,
+              driver,
               workspace,
               workspace / sourceFile,
               positions.lspPos(sourceFile, pos)

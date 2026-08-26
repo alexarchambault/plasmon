@@ -91,22 +91,30 @@ class BasicTests extends PlasmonSuite {
          |""".stripMargin
   }
 
-  for (
+  for {
     (
       scalaVersionOpt,
       serverOpt,
       buildTool,
       jvm,
       testNameSuffix
-    ) <- scalaVersionBuildToolJvmValues0(scripting = true)
-  )
-    test("test" + testNameSuffix) {
-      mainTest(scalaVersionOpt, buildTool, jvm, serverOpt)
+    )    <- scalaVersionBuildToolJvmValues0(scripting = true)
+    mode <- modes
+  }
+    test("test" + testNameSuffix + mode.testNameSuffix) {
+      mainTest(mode, scalaVersionOpt, buildTool, jvm, serverOpt)
     }
 
-  for ((scalaVersion, serverOpt) <- scalaVersions)
-    test(s"test Scala CLI Scala ${scalaVersion.label} Java ${jvmValues.head.label} twice") {
+  for {
+    (scalaVersion, serverOpt) <- scalaVersions
+    mode                      <- modes
+  }
+    test(
+      s"test Scala CLI Scala ${scalaVersion.label} Java ${jvmValues.head.label} twice" +
+        mode.testNameSuffix
+    ) {
       mainTest(
+        mode,
         Some(scalaVersion),
         SingleModuleBuildTool.ScalaCli(),
         jvmValues.head,
@@ -116,6 +124,7 @@ class BasicTests extends PlasmonSuite {
     }
 
   private def mainTest(
+    mode: TestMode,
     scalaVersionOpt: Option[Labelled[String]],
     buildTool0: SingleModuleBuildTool,
     jvm: Labelled[String],
@@ -231,16 +240,17 @@ class BasicTests extends PlasmonSuite {
       cap
     }
     withWorkspaceServerPositionsCount(
+      mode = mode,
       client = languageClient,
       clientCapabilities = clientCapabilities,
       extraServerOpts = Seq("--jvm", jvm.value, "--import-persisted-targets=false") ++ serverOpt,
       count = count,
       timeout = Some(buildTool.defaultTimeout)
     )(files*) {
-      (workspace, server, positions, osOpt, runCount) =>
+      (workspace, driver, positions, osOpt, runCount) =>
         languageClient.withOsOpt(osOpt)
 
-        buildTool.setup(workspace, server, osOpt, readOnlyToplevelSymbolsCache = runCount > 0)
+        buildTool.setup(workspace, driver, osOpt, readOnlyToplevelSymbolsCache = runCount > 0)
 
         val mainSourceFile = actualPath(os.sub / "Foo.scala")
 
@@ -249,7 +259,7 @@ class BasicTests extends PlasmonSuite {
             fixtureDir / "plasmon/integration/single-file-tests/hover" / buildTool.id /
               s"scala-${scalaVersionOpt.map(_.label).getOrElse("default")}" / s"jvm-${jvm.label}" / s"pos-$pos.txt",
             hoverMarkdown(
-              server,
+              driver,
               workspace / mainSourceFile,
               positions.lspPos(mainSourceFile, pos)
             ),
@@ -266,7 +276,7 @@ class BasicTests extends PlasmonSuite {
             fixtureDir / "plasmon/integration/single-file-tests/definition" / buildTool.id /
               s"scala-${scalaVersionOpt.map(_.label).getOrElse("default")}" / s"jvm-${jvm.label}" / s"definition-$pos.txt",
             goToDef(
-              server,
+              driver,
               workspace,
               workspace / mainSourceFile,
               positions.lspPos(mainSourceFile, pos)
@@ -288,7 +298,7 @@ class BasicTests extends PlasmonSuite {
           actualSourceFile: os.SubPath = mainSourceFile
         ): DefinitionResult = {
           val res = goToDef(
-            server,
+            driver,
             workspace,
             workspace / actualSourceFile,
             pos match {
@@ -317,17 +327,10 @@ class BasicTests extends PlasmonSuite {
         )
 
         val signatureHelpSourceFile = actualPath(os.sub / "SigHelp.scala")
-        val signatureHelp = server
-          .getTextDocumentService
-          .signatureHelp(
-            new l.SignatureHelpParams(
-              new l.TextDocumentIdentifier(
-                (workspace / signatureHelpSourceFile).toNIO.toUri.toASCIIString
-              ),
-              positions.lspPos(signatureHelpSourceFile, 1)
-            )
-          )
-          .get()
+        val signatureHelp = driver.signatureHelp(
+          workspace / signatureHelpSourceFile,
+          positions.lspPos(signatureHelpSourceFile, 1)
+        )
 
         checkGsonFixture(
           fixtureDir / "plasmon/integration/single-file-tests/signature-help" / buildTool.id /
@@ -338,16 +341,7 @@ class BasicTests extends PlasmonSuite {
 
         for (scalaVersion <- scalaVersionOpt) {
           val lensesSourceFile = actualPath(os.sub / "CodeLensStuff.scala")
-          val lenses = server
-            .getTextDocumentService
-            .codeLens(
-              new l.CodeLensParams(
-                new l.TextDocumentIdentifier(
-                  (workspace / lensesSourceFile).toNIO.toUri.toASCIIString
-                )
-              )
-            )
-            .get()
+          val lenses           = driver.codeLens(workspace / lensesSourceFile).asJava
 
           checkGsonFixture(
             fixtureDir / "plasmon/integration/single-file-tests/code-lens-go-to-parent" / buildTool.id /
@@ -362,7 +356,7 @@ class BasicTests extends PlasmonSuite {
             val packageInNewFileSourceFile = actualPath(os.sub / "foo/Foo.scala")
             val newSourceFile              = packageInNewFileSourceFile / os.up / "bar/Bar.scala"
             os.write(workspace / newSourceFile, Array.emptyByteArray, createFolders = true)
-            server.getTextDocumentService.didOpen(
+            driver.lsp.getTextDocumentService.didOpen(
               new l.DidOpenTextDocumentParams(
                 new l.TextDocumentItem(
                   (workspace / newSourceFile).toNIO.toUri.toASCIIString,
@@ -380,9 +374,9 @@ class BasicTests extends PlasmonSuite {
             val content = os.read(workspace / newSourceFile)
             expect(content.startsWith("package foo.bar"))
 
-            buildTool.compile(workspace, server, osOpt)
-            TestUtil.executeCommand(server, "plasmon/index")
-            buildTool.compile(workspace, server, osOpt)
+            buildTool.compile(workspace, driver, osOpt)
+            driver.index()
+            buildTool.compile(workspace, driver, osOpt)
           }
         }
 
@@ -395,7 +389,7 @@ class BasicTests extends PlasmonSuite {
           checkJsoniterFixture(
             sameModuleGoToDefDir / "obj-definition.json",
             goToDef(
-              server,
+              driver,
               workspace,
               workspace / sameModuleGoToDefPath,
               positions.lspPos(sameModuleGoToDefPath, 1)
@@ -405,7 +399,7 @@ class BasicTests extends PlasmonSuite {
         checkJsoniterFixture(
           sameModuleGoToDefDir / "method-definition.json",
           goToDef(
-            server,
+            driver,
             workspace,
             workspace / sameModuleGoToDefPath,
             positions.lspPos(sameModuleGoToDefPath, 2)
