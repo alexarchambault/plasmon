@@ -36,6 +36,10 @@ object ConnectionInfoJson {
         tools.tools.getOrElse("scala-cli", sys.error("scala-cli not found in tools"))
       )
   }
+  final case class Replay(workspace: String, dataDir: String) extends ConnectionInfoJson {
+    def toConnectionInfo(tools: BuildTool.Tools): BuildServerInfo.Replay =
+      BuildServerInfo.Replay(os.Path(workspace), os.Path(dataDir))
+  }
   implicit lazy val codec: JsonValueCodec[ConnectionInfoJson] = JsonCodecMaker.make
   lazy val seqCodec: JsonValueCodec[Seq[ConnectionInfoJson]]  = JsonCodecMaker.make
   def apply(info: BuildServerInfo): ConnectionInfoJson =
@@ -53,5 +57,7 @@ object ConnectionInfoJson {
         Sbt(m.workspace.toString)
       case s: BuildServerInfo.ScalaCli =>
         ScalaCli(s.workspace.toString, s.paths.map(_.toString))
+      case r: BuildServerInfo.Replay =>
+        Replay(r.workspace.toString, r.dataDir.toString)
     }
 }

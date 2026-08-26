@@ -24,43 +24,51 @@ trait PlasmonSuite extends munit.FunSuite {
             s"${Console.BOLD}$classNameLast${Console.RESET}${Console.BLUE}" + "." +
             s"${Console.BOLD}${options.name}${Console.RESET}"
         )
-        def handleError(ex: Throwable, willRetry: Boolean): Unit = {
-          val color = if (willRetry) Console.YELLOW else Console.RED
-          val msg   = if (willRetry) "Attempt failed" else "Failed"
-          System.err.println(
-            s"$color$msg: ${classNameInit.mkString(".")}" + "." +
-              s"${Console.BOLD}$classNameLast${Console.RESET}$color" + "." +
-              s"${Console.BOLD}${options.name}${Console.RESET}"
-          )
-          ex.printStackTrace(System.err)
-        }
-        val res = {
-          def attempt(): Try[Any] =
-            Try(body).flatMap {
-              case f: Future[?] =>
-                // shouldn't be a problem to await that, given that munit doesn't run tests concurrently
-                Try(Await.result(f, munitTimeout))
-              case other =>
-                Success(other)
-            }
+        TestLogs.capturing(className, options.name) {
+          def handleError(ex: Throwable, willRetry: Boolean): Unit = {
+            val color = if (willRetry) Console.YELLOW else Console.RED
+            val msg   = if (willRetry) "Attempt failed" else "Failed"
+            System.err.println(
+              s"$color$msg: ${classNameInit.mkString(".")}" + "." +
+                s"${Console.BOLD}$classNameLast${Console.RESET}$color" + "." +
+                s"${Console.BOLD}${options.name}${Console.RESET}"
+            )
+            ex.printStackTrace(System.err)
+            // When the console is redirected, System.err already is the log file.
+            if (!TestLogs.quietConsole)
+              TestLogs.current.foreach { log =>
+                log.println(s"$msg: $className.${options.name}")
+                ex.printStackTrace(log.stream)
+              }
+          }
+          val res = {
+            def attempt(): Try[Any] =
+              Try(body).flatMap {
+                case f: Future[?] =>
+                  // shouldn't be a problem to await that, given that munit doesn't run tests concurrently
+                  Try(Await.result(f, munitTimeout))
+                case other =>
+                  Success(other)
+              }
 
-          def helper(remaining: Int): Any =
-            attempt() match {
-              case Success(any) =>
-                any
-              case Failure(ex) =>
-                val retry = remaining > 0
-                handleError(ex, retry)
-                if (retry)
-                  helper(remaining - 1)
-                else
-                  throw ex
-            }
+            def helper(remaining: Int): Any =
+              attempt() match {
+                case Success(any) =>
+                  any
+                case Failure(ex) =>
+                  val retry = remaining > 0
+                  handleError(ex, retry)
+                  if (retry)
+                    helper(remaining - 1)
+                  else
+                    throw ex
+              }
 
-          helper(retryCount)
+            helper(retryCount)
+          }
+          System.err.flush()
+          res
         }
-        System.err.flush()
-        res
       }
     }
   }

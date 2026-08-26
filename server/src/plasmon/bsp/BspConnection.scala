@@ -12,7 +12,8 @@ final case class BspConnection(
   launcher: BuildServerLauncher,
   conn: PlasmonBuildServer,
   proc: BuildServerProcess,
-  remoteEndpoint: RemoteEndpoint,
+  // Empty for connections that aren't backed by JSON-RPC, i.e. replayed ones
+  remoteEndpoint: Option[RemoteEndpoint],
   client: PlasmonBuildClientImpl,
   logger: Logger
 ) {
@@ -29,7 +30,7 @@ final case class BspConnection(
       launcher = launcher.asJson,
       conn = conn.toString,
       proc = proc,
-      remoteEndpoint = remoteEndpoint.toString,
+      remoteEndpoint = remoteEndpoint.fold("(none)")(_.toString),
       client = client.asJson,
       logger = logger.toString
     )

@@ -1,13 +1,18 @@
 package plasmon.index
 
 import ch.epfl.scala.bsp4j as b
-import com.google.gson.GsonBuilder
+import com.google.gson.{GsonBuilder, JsonElement}
 import org.eclipse.lsp4j as l
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseErrorCode
 import plasmon.{HasState, Logger}
 import plasmon.PlasmonEnrichments.*
-import plasmon.bsp.{BspConnection, BuildServerInfo, PlasmonBuildServer}
+import plasmon.bsp.{
+  BspConnection,
+  BspDataPortability,
+  BuildServerInfo,
+  PlasmonBuildServer
+}
 import plasmon.ide.{AdjustLspData, AdjustedLspData}
 import plasmon.index.TargetData
 import plasmon.pc.NopReportContext
@@ -332,16 +337,32 @@ class IndexerActor(
 
     val isMill = conn.params.getDisplayName == "mill-bsp"
 
-    val cacheDirOpt = conn.launcher.info match {
-      case m: BuildServerInfo.Mill =>
-        if (m.workspace.startsWith(server.workingDir))
-          Some((
-            bspDataCache / "mill" / m.workspace.subRelativeTo(server.workingDir),
-            mayReadFromCache
-          ))
-        else
-          None
-      case _ => None
+    // Recorded responses are keyed by build tool and workspace, so a workspace with several
+    // build tools loaded keeps them apart. Paths in them are placeholder-ised on the way out
+    // and restored on the way in, which is what lets a recording be committed and replayed
+    // elsewhere (see BuildServerInfo.Replay).
+    val cacheDirOpt =
+      if (info.workspace.startsWith(server.workingDir))
+        Some((
+          bspDataCache / info.cacheKey / info.workspace.subRelativeTo(server.workingDir),
+          mayReadFromCache
+        ))
+      else
+        None
+    val portabilityRoots = BspDataPortability.Roots.default(info.workspace)
+
+    // Recorded so that a replay can answer the handshake the same way the real build tool did.
+    // The display name matters beyond cosmetics: "mill-bsp" turns on millHack below.
+    for ((cacheDir, _) <- cacheDirOpt) {
+      val gson = new GsonBuilder().setPrettyPrinting().create()
+      val content = gson.toJson(
+        BspDataPortability.mapStrings(
+          BspDataPortability.replaceJavaHomes(gson.toJsonTree(conn.params))
+        )(portabilityRoots.normalize)
+      )
+      val f = cacheDir / "initializeBuildResult.json"
+      if (!os.exists(f) || os.read(f) != content)
+        os.write.over(f, content, createFolders = true)
     }
 
     val (targets, sourcesRes, depSourcesRes, wrappedSourcesRes) =
@@ -361,7 +382,8 @@ class IndexerActor(
             targetData,
             server.jdkCp.map(_.toNIO.toUri.toASCIIString).toList,
             millHack = isMill,
-            cacheDirOpt = cacheDirOpt
+            cacheDirOpt = cacheDirOpt,
+            portabilityRoots = portabilityRoots
           )
           targetData.resetConnections(
             targets0
@@ -596,7 +618,8 @@ class IndexerActor(
     targetData: TargetData,
     jdkCp: List[String],
     millHack: Boolean,
-    cacheDirOpt: Option[(os.Path, Boolean)]
+    cacheDirOpt: Option[(os.Path, Boolean)],
+    portabilityRoots: BspDataPortability.Roots
   ): (
     b.WorkspaceBuildTargetsResult,
     Seq[b.BuildTarget],
@@ -605,7 +628,7 @@ class IndexerActor(
     WrappedSourcesResult
   ) = {
 
-    lazy val gson = new GsonBuilder().create()
+    lazy val gson = new GsonBuilder().setPrettyPrinting().create()
     def maybeCached[T: ClassTag](name: String)(get: => T): T =
       cacheDirOpt match {
         case None => get
@@ -613,14 +636,22 @@ class IndexerActor(
           val f = cacheDir / s"$name.json"
           if (mayRead && os.exists(f)) {
             logger.log(s"BSP cache: reading $f")
-            val content = os.read(f)
-            gson.fromJson(content, implicitly[ClassTag[T]].runtimeClass.asInstanceOf[Class[T]])
+            val elem =
+              BspDataPortability.mapStrings(gson.fromJson(os.read(f), classOf[JsonElement]))(
+                portabilityRoots.denormalize
+              )
+            gson.fromJson(elem, implicitly[ClassTag[T]].runtimeClass.asInstanceOf[Class[T]])
           }
           else {
-            val res     = get
-            val jsonStr = gson.toJson(res)
+            val res = get
+            val elem = BspDataPortability.canonicalize(
+              BspDataPortability.mapStrings(
+                BspDataPortability.replaceJavaHomes(gson.toJsonTree(res))
+              )(portabilityRoots.normalize),
+              sortSbtBootClasspath = BspDataPortability.sortSbtBootClasspath
+            )
             logger.log(s"BSP cache: writing $f")
-            os.write.over(f, jsonStr, createFolders = true)
+            os.write.over(f, gson.toJson(elem), createFolders = true)
             res
           }
       }
@@ -631,8 +662,13 @@ class IndexerActor(
     val roots = message.targets.getOrElse(info, Nil)
 
     for ((cacheDir, _) <- cacheDirOpt) {
-      val content = gson.toJson(roots.asJava)
-      val f       = cacheDir / "roots.json"
+      val content = gson.toJson(
+        BspDataPortability.canonicalize(
+          BspDataPortability.mapStrings(gson.toJsonTree(roots.asJava))(portabilityRoots.normalize),
+          sortSbtBootClasspath = BspDataPortability.sortSbtBootClasspath
+        )
+      )
+      val f = cacheDir / "roots.json"
       val currentContentOpt =
         if (os.exists(f)) Some(os.read(f))
         else None

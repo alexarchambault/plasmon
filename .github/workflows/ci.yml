@@ -19,16 +19,34 @@ jobs:
       with:
         fetch-depth: 0
         submodules: true
+    - uses: coursier/cache-action@v8
+      with:
+        disableFallback: true
     - uses: coursier/setup-action@v3
       with:
         apps: sbt scala-cli
         jvm: 17
     - name: Test
       run: ./mill -i integration.test.testForked
+      env:
+        # The per-test budget is a hang detector, not a performance target. CI runners fork one
+        # test JVM per core, each with a server plus a build tool of its own, so the default
+        # minute is easily overrun by a test that is merely slow - a Java `textDocument/definition`
+        # into `src.zip` compiles a JDK source file, and has timed out here at a minute.
+        PLASMON_TIMEOUT_OVERRIDE: "3 minutes"
     - name: Diff
+      shell: bash
       run: |
-        git diff
-        git diff-index HEAD --quiet || ( echo "Some test data differ"; exit 1 )
+        # -N so that a recording written for the first time shows up as a diff too
+        git add -N -- integration/test/resources/data
+        # --exit-code fails on exactly what it prints, so a failure here always comes with the
+        # diff that explains it. `git diff-index --quiet` answers from the stat cache instead:
+        # on Windows, where the checkout is CRLF and the tests rewrite the files with LF, it
+        # failed while `git diff` printed nothing at all.
+        git diff --exit-code || ( echo "Some test data differ"; exit 1 )
+    - name: Print failing test logs
+      if: failure()
+      run: scala-cli --server=false integration/print-failing-test-logs.scala
 
   format:
     timeout-minutes: 15
@@ -51,31 +69,47 @@ jobs:
       matrix:
         OS: ["ubuntu-latest"]
         OS_SHORT: ["linux"]
+        # Extra ./mill args for the test steps. Mill forks one test JVM per job
+        # slot (capped by the test class count), and each of those spawns a
+        # server plus an sbt / Mill / Bloop JVM, so this is really a memory
+        # knob. Empty means "one per core".
+        TEST_JOBS: [""]
         include:
           - OS: "windows-latest"
             OS_SHORT: "windows"
+            TEST_JOBS: ""
+          # 4 cores but only 14 GB, the tightest of the runners we use
           - OS: "macos-15-intel"
             OS_SHORT: "mac"
+            TEST_JOBS: "-j 3"
           - OS: "ubuntu-24.04-arm"
             OS_SHORT: "linux-arm"
+            TEST_JOBS: ""
     runs-on: ${{ matrix.OS }}
     steps:
     - uses: actions/checkout@v7
       with:
         fetch-depth: 0
         submodules: true
+    - uses: coursier/cache-action@v8
+      with:
+        disableFallback: true
     - uses: coursier/setup-action@v3
       with:
         apps: sbt scala-cli
         jvm: 17
+    # On Linux, server.native.nativeImage is server.native.linux-docker-image,
+    # built from within Mill by the "Copy artifacts" step below. Generating
+    # server.native.base-image here too would build a second native image that
+    # nothing ever uses, so we only do it where base-image is the one we ship.
     - name: Prepare for native image
-      if: runner.os != 'Windows'
+      if: runner.os == 'macOS'
       run: ./mill -i server.native.base-image.writeNativeImageScript --scriptDest generate-native-image.sh --imageDest=
     - name: Prepare for native image (Windows)
       if: runner.os == 'Windows'
       run: ./mill -i server.native.base-image.writeNativeImageScript --scriptDest generate-native-image.bat --imageDest=
     - name: Generate native image
-      if: runner.os != 'Windows'
+      if: runner.os == 'macOS'
       run: jps -ml; ./generate-native-image.sh
     - name: Generate native image (Windows)
       if: runner.os == 'Windows'
@@ -93,18 +127,24 @@ jobs:
         if-no-files-found: error
         retention-days: 2
     - name: Warm-up
-      run: ./mill -i integration.native.testForked "plasmon.integration.BasicTests.test Scala CLI Scala 3 Java 17"
+      run: ./mill -i ${{ matrix.TEST_JOBS }} integration.native.testForked "plasmon.integration.BasicTests.test Scala CLI Scala 3 Java 17"
       env:
         PLASMON_TIMEOUT_OVERRIDE: "5 minutes"
         PLASMON_SILENT_OVERRIDE: false
     - name: Test
-      run: ./mill -i integration.native.testForked
+      run: ./mill -i ${{ matrix.TEST_JOBS }} integration.native.testForked
+      env:
+        PLASMON_TIMEOUT_OVERRIDE: "3 minutes"
     - name: Diff
       shell: bash
       run: |
+        # -N so that a recording written for the first time shows up as a diff too
         git add -N -- integration/test/resources/data
-        git diff
-        git diff-index HEAD --quiet || ( echo "Some test data differ"; exit 1 )
+        # See the note on the same step in the `test` job.
+        git diff --exit-code || ( echo "Some test data differ"; exit 1 )
+    - name: Print failing test logs
+      if: failure()
+      run: scala-cli --server=false integration/print-failing-test-logs.scala
 
   # Separate job so the expensive macos-15-xlarge runner is only used for
   # actual releases (tags starting with v). The main native-test job above
@@ -117,6 +157,9 @@ jobs:
       with:
         fetch-depth: 0
         submodules: true
+    - uses: coursier/cache-action@v8
+      with:
+        disableFallback: true
     - uses: coursier/setup-action@v3
       with:
         apps: sbt scala-cli
@@ -144,12 +187,18 @@ jobs:
         PLASMON_SILENT_OVERRIDE: false
     - name: Test
       run: ./mill -i integration.native.testForked
+      env:
+        PLASMON_TIMEOUT_OVERRIDE: "3 minutes"
     - name: Diff
       shell: bash
       run: |
+        # -N so that a recording written for the first time shows up as a diff too
         git add -N -- integration/test/resources/data
-        git diff
-        git diff-index HEAD --quiet || ( echo "Some test data differ"; exit 1 )
+        # See the note on the same step in the `test` job.
+        git diff --exit-code || ( echo "Some test data differ"; exit 1 )
+    - name: Print failing test logs
+      if: failure()
+      run: scala-cli --server=false integration/print-failing-test-logs.scala
 
   publish:
     if: github.event_name == 'push'

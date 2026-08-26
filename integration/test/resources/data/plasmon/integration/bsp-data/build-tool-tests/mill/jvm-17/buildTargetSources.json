@@ -1,0 +1,94 @@
+{
+  "items": [
+    {
+      "target": {
+        "uri": "file:///$WORKSPACE$/app"
+      },
+      "sources": [
+        {
+          "uri": "file:///$WORKSPACE$/.bsp/out/app/compileGeneratedSources.dest",
+          "kind": 2,
+          "generated": true
+        },
+        {
+          "uri": "file:///$WORKSPACE$/app/src",
+          "kind": 2,
+          "generated": false
+        }
+      ]
+    },
+    {
+      "target": {
+        "uri": "file:///$WORKSPACE$/app/test"
+      },
+      "sources": [
+        {
+          "uri": "file:///$WORKSPACE$/.bsp/out/app/test/compileGeneratedSources.dest",
+          "kind": 2,
+          "generated": true
+        },
+        {
+          "uri": "file:///$WORKSPACE$/app/test/src",
+          "kind": 2,
+          "generated": false
+        }
+      ]
+    },
+    {
+      "target": {
+        "uri": "file:///$WORKSPACE$/core"
+      },
+      "sources": [
+        {
+          "uri": "file:///$WORKSPACE$/.bsp/out/core/compileGeneratedSources.dest",
+          "kind": 2,
+          "generated": true
+        },
+        {
+          "uri": "file:///$WORKSPACE$/core/src",
+          "kind": 2,
+          "generated": false
+        }
+      ]
+    },
+    {
+      "target": {
+        "uri": "file:///$WORKSPACE$/mill-build"
+      },
+      "sources": [
+        {
+          "uri": "file:///$WORKSPACE$/.bsp/out/mill-build/compileGeneratedSources.dest",
+          "kind": 2,
+          "generated": true
+        },
+        {
+          "uri": "file:///$WORKSPACE$/.bsp/out/mill-build/generatedScriptSources.dest/support",
+          "kind": 2,
+          "generated": true
+        },
+        {
+          "uri": "file:///$WORKSPACE$/build.mill",
+          "kind": 1,
+          "generated": false
+        },
+        {
+          "uri": "file:///$WORKSPACE$/mill-build/src",
+          "kind": 2,
+          "generated": false
+        }
+      ]
+    },
+    {
+      "target": {
+        "uri": "file:///$WORKSPACE$/mill-synthetic-root-target"
+      },
+      "sources": [
+        {
+          "uri": "file:///$WORKSPACE$/src",
+          "kind": 2,
+          "generated": false
+        }
+      ]
+    }
+  ]
+}

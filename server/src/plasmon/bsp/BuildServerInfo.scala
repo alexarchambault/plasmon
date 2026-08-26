@@ -5,6 +5,10 @@ import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import plasmon.Logger
 import plasmon.render.JsonCodecs.given
 
+import java.math.BigInteger
+import java.nio.charset.StandardCharsets
+import java.security.MessageDigest
+
 import scala.util.Properties
 
 sealed abstract class BuildServerInfo extends Product with Serializable {
@@ -14,6 +18,13 @@ sealed abstract class BuildServerInfo extends Product with Serializable {
   // for logging purposes
   def id: String
   def label: String
+
+  /** Directory name this build server's recorded BSP responses live under.
+    *
+    * Defaults to [[id]]. Must be unique among the build servers loaded for a given workspace, so
+    * infos that can legitimately appear more than once there override it.
+    */
+  def cacheKey: String = id
 
   def prepare: Option[(Logger, Boolean) => Unit] = None
 }
@@ -105,5 +116,36 @@ object BuildServerInfo {
     def `type`                           = "Scala CLI"
     def id                               = "scala-cli"
     def label                            = "Scala CLI"
+
+    // Several Scala CLI build servers can be loaded in one workspace, one per source set
+    override def cacheKey =
+      if (paths.isEmpty) id
+      else {
+        val pathList = paths
+          .map(p => if (p.startsWith(workspace)) p.relativeTo(workspace).toString else p.toString)
+          .mkString(System.lineSeparator())
+        val md = MessageDigest.getInstance("SHA-1")
+        md.update(pathList.getBytes(StandardCharsets.UTF_8))
+        s"$id-${new BigInteger(1, md.digest()).toString(16)}"
+      }
+  }
+
+  /** Replays BSP responses recorded from a real build tool, without running one.
+    *
+    * Lets the presentation compiler be brought into the state a given build would put it in, at a
+    * fraction of the cost - no build tool JVM, no compilation, no BSP handshake. Dependencies still
+    * get fetched through the coursier cache when the recording refers to them.
+    *
+    * @param dataDir
+    *   directory holding the recorded responses, in the layout [[plasmon.index.IndexerActor]]
+    *   writes
+    */
+  final case class Replay(
+    workspace: os.Path,
+    dataDir: os.Path
+  ) extends BuildServerInfo {
+    def `type` = "Replay"
+    def id     = "replay"
+    def label  = "Replay"
   }
 }

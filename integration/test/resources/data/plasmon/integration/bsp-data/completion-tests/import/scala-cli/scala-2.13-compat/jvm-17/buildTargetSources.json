@@ -1,0 +1,27 @@
+{
+  "items": [
+    {
+      "target": {
+        "uri": "file:/$WORKSPACE$/.scala-build/?id\u003dtest-project_d5c0a6989e"
+      },
+      "sources": [
+        {
+          "uri": "file:///$WORKSPACE$/Foo0.scala",
+          "kind": 1,
+          "generated": false
+        },
+        {
+          "uri": "file:///$WORKSPACE$/Foo1.scala",
+          "kind": 1,
+          "generated": false
+        }
+      ]
+    },
+    {
+      "target": {
+        "uri": "file:/$WORKSPACE$/.scala-build/?id\u003dtest-project_d5c0a6989e-test"
+      },
+      "sources": []
+    }
+  ]
+}

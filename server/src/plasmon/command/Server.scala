@@ -212,20 +212,23 @@ object Server extends caseapp.Command[ServerOptions] {
         else
           System.setProperty("java.home", formerJavaHome)
 
-      val tools = BuildTool.Tools(Map(
-        "scala-cli" -> {
-          options.scalaCli match {
-            case None =>
-              if (Properties.isWin) Seq("scala-cli.exe")
-              else Seq("scala-cli")
-            case Some(value) if value.startsWith("[") =>
-              // TODO Parse as JSON array
-              ???
-            case Some(value) =>
-              Seq(value)
+      val tools = BuildTool.Tools(
+        javaHome = javaHome,
+        tools = Map(
+          "scala-cli" -> {
+            options.scalaCli match {
+              case None =>
+                if (Properties.isWin) Seq("scala-cli.exe")
+                else Seq("scala-cli")
+              case Some(value) if value.startsWith("[") =>
+                // TODO Parse as JSON array
+                ???
+              case Some(value) =>
+                Seq(value)
+            }
           }
-        }
-      ))
+        )
+      )
 
       val scala2Compat =
         if (!Constants.disableScala2Pc || new Scala2PresentationCompilerHandler().available()) {

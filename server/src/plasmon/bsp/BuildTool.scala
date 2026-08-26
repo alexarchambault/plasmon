@@ -152,7 +152,8 @@ object BuildTool {
             os.proc(commandName, "-Dbloop.export-jar-classifiers=sources", "bloopInstall"),
             workspace,
             logger,
-            force = force
+            force = force,
+            extraEnv = SbtDist.env(tools.javaHome)
           )
         }
       )
@@ -200,6 +201,7 @@ object BuildTool {
               .call(
                 stdout = logger.processOutput,
                 cwd = workspace,
+                env = SbtDist.env(tools.javaHome),
                 mergeErrIntoOut = true
               )
           }
@@ -233,7 +235,8 @@ object BuildTool {
       runBeforeIfNoDotBloop: os.proc,
       workspace: os.Path,
       logger: Logger,
-      force: Boolean
+      force: Boolean,
+      extraEnv: Map[String, String] = Map.empty
     ): Unit = {
       val bloopDir = workspace / ".bloop"
       val proceed =
@@ -260,6 +263,7 @@ object BuildTool {
       if (proceed)
         logger.logCommand(runBeforeIfNoDotBloop).call(
           cwd = workspace,
+          env = extraEnv,
           mergeErrIntoOut = true,
           stdout = logger.processOutput
         )
@@ -321,6 +325,32 @@ object BuildTool {
     def id = "scala-cli"
   }
 
+  /** Replays BSP data recorded from a real build tool, running none itself.
+    *
+    * Discovered when the workspace holds a [[Replay.dirName]] directory - which is how tests hand a
+    * committed recording to the server.
+    */
+  final case class Replay(workspace: os.Path, dataDir: os.Path) extends BuildTool {
+    def id = Replay.id
+    def description(serverWorkspace: os.Path) = {
+      val relPath = workspace.relativeTo(serverWorkspace)
+      if (relPath == os.rel) "Recorded build data in this workspace"
+      else s"Recorded build data in $relPath"
+    }
+
+    def launcher(tools: Tools) =
+      BuildServerLauncher(
+        BuildServerInfo.Replay(workspace, dataDir),
+        "Replay",
+        None
+      )
+  }
+
+  object Replay {
+    def id      = "replay"
+    def dirName = ".plasmon-replay"
+  }
+
   final case class Bsp(info: BuildServerInfo) extends BuildTool {
     lazy val id = {
       val sum = {
@@ -369,6 +399,10 @@ object BuildTool {
       def toBuildTool(tools: BuildTool.Tools): BuildTool =
         BuildTool.ScalaCli(os.Path(workspace), sources.map(os.Path(_)))
     }
+    final case class Replay(workspace: String, dataDir: String) extends BuildToolJson {
+      def toBuildTool(tools: BuildTool.Tools): BuildTool =
+        BuildTool.Replay(os.Path(workspace), os.Path(dataDir))
+    }
     final case class Bsp(info: ConnectionInfoJson) extends BuildToolJson {
       def toBuildTool(tools: BuildTool.Tools): BuildTool =
         BuildTool.Bsp(info.toConnectionInfo(tools))
@@ -385,9 +419,18 @@ object BuildTool {
         case t: BuildTool.SbtViaBloop  => SbtViaBloop(t.workspace.toString)
         case t: BuildTool.Bloop        => Bloop(t.workspace.toString)
         case t: BuildTool.ScalaCli     => ScalaCli(t.workspace.toString, t.sources.map(_.toString))
+        case t: BuildTool.Replay       => Replay(t.workspace.toString, t.dataDir.toString)
         case t: BuildTool.Bsp          => Bsp(ConnectionInfoJson(t.info))
       }
   }
 
-  final case class Tools(tools: Map[String, Seq[String]])
+  /** @param javaHome
+    *   the JDK the server was told to build with (`--jvm` / `--java-home`). Build tools that don't
+    *   pick their own JDK are started on it, so that what they report doesn't depend on whichever
+    *   `java` happens to be first on `PATH`.
+    */
+  final case class Tools(
+    javaHome: os.Path,
+    tools: Map[String, Seq[String]]
+  )
 }

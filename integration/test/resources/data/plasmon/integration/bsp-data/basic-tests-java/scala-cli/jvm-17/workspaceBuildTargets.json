@@ -1,0 +1,73 @@
+{
+  "targets": [
+    {
+      "id": {
+        "uri": "file:/$WORKSPACE$/.scala-build/?id\u003dtest-project_d5c0a6989e"
+      },
+      "displayName": "test-project_d5c0a6989e",
+      "baseDirectory": "file:///$WORKSPACE$/.scala-build/",
+      "tags": [
+        "library"
+      ],
+      "languageIds": [
+        "java"
+      ],
+      "dependencies": [],
+      "capabilities": {
+        "canCompile": true,
+        "canTest": true,
+        "canRun": true,
+        "canDebug": true
+      }
+    },
+    {
+      "id": {
+        "uri": "file:/$WORKSPACE$/.scala-build/?id\u003dtest-project_d5c0a6989e-test"
+      },
+      "displayName": "test-project_d5c0a6989e-test",
+      "baseDirectory": "file:///$WORKSPACE$/.scala-build/",
+      "tags": [
+        "test"
+      ],
+      "languageIds": [
+        "scala",
+        "java"
+      ],
+      "dependencies": [
+        {
+          "uri": "file:/$WORKSPACE$/.scala-build/?id\u003dtest-project_d5c0a6989e"
+        }
+      ],
+      "capabilities": {
+        "canCompile": true,
+        "canTest": true,
+        "canRun": true,
+        "canDebug": true
+      },
+      "dataKind": "scala",
+      "data": {
+        "scalaOrganization": "org.scala-lang",
+        "scalaVersion": "3.7.4",
+        "scalaBinaryVersion": "3.7",
+        "platform": 1,
+        "jars": [
+          "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/org/scala-lang/scala3-compiler_3/3.7.4/scala3-compiler_3-3.7.4.jar",
+          "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/org/scala-lang/scala3-interfaces/3.7.4/scala3-interfaces-3.7.4.jar",
+          "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/org/scala-lang/scala3-library_3/3.7.4/scala3-library_3-3.7.4.jar",
+          "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/org/scala-lang/tasty-core_3/3.7.4/tasty-core_3-3.7.4.jar",
+          "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/org/scala-lang/modules/scala-asm/9.8.0-scala-1/scala-asm-9.8.0-scala-1.jar",
+          "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/org/scala-sbt/compiler-interface/1.10.7/compiler-interface-1.10.7.jar",
+          "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/org/jline/jline-reader/3.29.0/jline-reader-3.29.0.jar",
+          "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/org/jline/jline-terminal/3.29.0/jline-terminal-3.29.0.jar",
+          "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/org/jline/jline-terminal-jni/3.29.0/jline-terminal-jni-3.29.0.jar",
+          "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/org/scala-lang/scala-library/2.13.16/scala-library-2.13.16.jar",
+          "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/org/scala-sbt/util-interface/1.10.7/util-interface-1.10.7.jar",
+          "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/org/jline/jline-native/3.29.0/jline-native-3.29.0.jar"
+        ],
+        "jvmBuildTarget": {
+          "javaHome": "$JAVA_HOME_URI:17$"
+        }
+      }
+    }
+  ]
+}

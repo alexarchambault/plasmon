@@ -1,0 +1,23 @@
+[
+  {
+    "uri": "file:/$WORKSPACE$/#app/Compile"
+  },
+  {
+    "uri": "file:/$WORKSPACE$/#app/Test"
+  },
+  {
+    "uri": "file:/$WORKSPACE$/#core/Compile"
+  },
+  {
+    "uri": "file:/$WORKSPACE$/#core/Test"
+  },
+  {
+    "uri": "file:/$WORKSPACE$/#test-project-build"
+  },
+  {
+    "uri": "file:/$WORKSPACE$/#test-project/Compile"
+  },
+  {
+    "uri": "file:/$WORKSPACE$/#test-project/Test"
+  }
+]

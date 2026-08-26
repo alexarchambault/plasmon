@@ -1,0 +1,224 @@
+{
+  "targets": [
+    {
+      "id": {
+        "uri": "file:/$WORKSPACE$/#foo/Compile"
+      },
+      "displayName": "foo",
+      "baseDirectory": "file:/$WORKSPACE$/foo/",
+      "tags": [
+        "library"
+      ],
+      "languageIds": [
+        "scala"
+      ],
+      "dependencies": [],
+      "capabilities": {
+        "canCompile": true,
+        "canTest": true,
+        "canRun": true
+      },
+      "dataKind": "scala",
+      "data": {
+        "scalaOrganization": "org.scala-lang",
+        "scalaVersion": "3.8.4",
+        "scalaBinaryVersion": "3",
+        "platform": 1,
+        "jars": [
+          "file:/$COURSIER_CACHE$/https/repo1.maven.org/maven2/org/scala-lang/scala3-library_3/3.8.4/scala3-library_3-3.8.4.jar",
+          "file:/$COURSIER_CACHE$/https/repo1.maven.org/maven2/org/scala-lang/scala-library/3.8.4/scala-library-3.8.4.jar",
+          "file:/$COURSIER_CACHE$/https/repo1.maven.org/maven2/org/scala-lang/scala3-compiler_3/3.8.4/scala3-compiler_3-3.8.4.jar",
+          "file:/$COURSIER_CACHE$/https/repo1.maven.org/maven2/org/scala-lang/scala3-interfaces/3.8.4/scala3-interfaces-3.8.4.jar",
+          "file:/$COURSIER_CACHE$/https/repo1.maven.org/maven2/org/scala-lang/tasty-core_3/3.8.4/tasty-core_3-3.8.4.jar",
+          "file:/$COURSIER_CACHE$/https/repo1.maven.org/maven2/org/scala-lang/modules/scala-asm/9.9.0-scala-1/scala-asm-9.9.0-scala-1.jar",
+          "file:/$COURSIER_CACHE$/https/repo1.maven.org/maven2/org/scala-sbt/compiler-interface/1.10.7/compiler-interface-1.10.7.jar",
+          "file:/$COURSIER_CACHE$/https/repo1.maven.org/maven2/org/scala-sbt/util-interface/1.10.7/util-interface-1.10.7.jar"
+        ],
+        "jvmBuildTarget": {
+          "javaHome": "$JAVA_HOME_URI:17$",
+          "javaVersion": "$JAVA_VERSION:17$"
+        }
+      }
+    },
+    {
+      "id": {
+        "uri": "file:/$WORKSPACE$/#foo/Test"
+      },
+      "displayName": "foo-test",
+      "baseDirectory": "file:/$WORKSPACE$/foo/",
+      "tags": [
+        "test"
+      ],
+      "languageIds": [
+        "scala"
+      ],
+      "dependencies": [
+        {
+          "uri": "file:/$WORKSPACE$/#foo/Compile"
+        }
+      ],
+      "capabilities": {
+        "canCompile": true,
+        "canTest": true,
+        "canRun": true
+      },
+      "dataKind": "scala",
+      "data": {
+        "scalaOrganization": "org.scala-lang",
+        "scalaVersion": "3.8.4",
+        "scalaBinaryVersion": "3",
+        "platform": 1,
+        "jars": [
+          "file:/$COURSIER_CACHE$/https/repo1.maven.org/maven2/org/scala-lang/scala3-library_3/3.8.4/scala3-library_3-3.8.4.jar",
+          "file:/$COURSIER_CACHE$/https/repo1.maven.org/maven2/org/scala-lang/scala-library/3.8.4/scala-library-3.8.4.jar",
+          "file:/$COURSIER_CACHE$/https/repo1.maven.org/maven2/org/scala-lang/scala3-compiler_3/3.8.4/scala3-compiler_3-3.8.4.jar",
+          "file:/$COURSIER_CACHE$/https/repo1.maven.org/maven2/org/scala-lang/scala3-interfaces/3.8.4/scala3-interfaces-3.8.4.jar",
+          "file:/$COURSIER_CACHE$/https/repo1.maven.org/maven2/org/scala-lang/tasty-core_3/3.8.4/tasty-core_3-3.8.4.jar",
+          "file:/$COURSIER_CACHE$/https/repo1.maven.org/maven2/org/scala-lang/modules/scala-asm/9.9.0-scala-1/scala-asm-9.9.0-scala-1.jar",
+          "file:/$COURSIER_CACHE$/https/repo1.maven.org/maven2/org/scala-sbt/compiler-interface/1.10.7/compiler-interface-1.10.7.jar",
+          "file:/$COURSIER_CACHE$/https/repo1.maven.org/maven2/org/scala-sbt/util-interface/1.10.7/util-interface-1.10.7.jar"
+        ],
+        "jvmBuildTarget": {
+          "javaHome": "$JAVA_HOME_URI:17$",
+          "javaVersion": "$JAVA_VERSION:17$"
+        }
+      }
+    },
+    {
+      "id": {
+        "uri": "file:/$WORKSPACE$/#test-project-build"
+      },
+      "displayName": "test-project-build",
+      "baseDirectory": "file:/$WORKSPACE$/project/",
+      "tags": [],
+      "languageIds": [
+        "scala"
+      ],
+      "dependencies": [],
+      "capabilities": {
+        "canCompile": false,
+        "canTest": false,
+        "canRun": false
+      },
+      "dataKind": "sbt",
+      "data": {
+        "sbtVersion": "1.12.4",
+        "autoImports": [
+          "import _root_.scala.xml.{TopScope\u003d\u003e$scope}",
+          "import _root_.sbt._",
+          "import _root_.sbt.Keys._",
+          "import _root_.sbt.nio.Keys._",
+          "import _root_.sbt.ScriptedPlugin.autoImport._, _root_.sbt.plugins.JUnitXmlReportPlugin.autoImport._, _root_.sbt.plugins.MiniDependencyTreePlugin.autoImport._",
+          "import _root_.sbt.plugins.IvyPlugin, _root_.sbt.plugins.JvmPlugin, _root_.sbt.plugins.CorePlugin, _root_.sbt.ScriptedPlugin, _root_.sbt.plugins.SbtPlugin, _root_.sbt.plugins.SemanticdbPlugin, _root_.sbt.plugins.JUnitXmlReportPlugin, _root_.sbt.plugins.Giter8TemplatePlugin, _root_.sbt.plugins.MiniDependencyTreePlugin",
+          "import $2e70dbb0433d61544148.`foo`"
+        ],
+        "scalaBuildTarget": {
+          "scalaOrganization": "org.scala-lang",
+          "scalaVersion": "2.12.21",
+          "scalaBinaryVersion": "2.12",
+          "platform": 1,
+          "jars": [
+            "file:/$HOME$/.sbt/boot/scala-2.12.21/lib/scala-compiler.jar",
+            "file:/$HOME$/.sbt/boot/scala-2.12.21/lib/scala-library.jar",
+            "file:/$HOME$/.sbt/boot/scala-2.12.21/lib/scala-reflect.jar",
+            "file:/$HOME$/.sbt/boot/scala-2.12.21/lib/scala-xml_2.12-2.3.0.jar"
+          ],
+          "jvmBuildTarget": {
+            "javaHome": "$JAVA_HOME_URI:17$",
+            "javaVersion": "$JAVA_VERSION:17$"
+          }
+        },
+        "children": [
+          {
+            "uri": "file:/$WORKSPACE$/#foo/Compile"
+          },
+          {
+            "uri": "file:/$WORKSPACE$/#foo/Test"
+          },
+          {
+            "uri": "file:/$WORKSPACE$/#test-project/Compile"
+          },
+          {
+            "uri": "file:/$WORKSPACE$/#test-project/Test"
+          }
+        ]
+      }
+    },
+    {
+      "id": {
+        "uri": "file:/$WORKSPACE$/#test-project/Compile"
+      },
+      "displayName": "test-project",
+      "baseDirectory": "file:/$WORKSPACE$/",
+      "tags": [
+        "library"
+      ],
+      "languageIds": [
+        "scala"
+      ],
+      "dependencies": [],
+      "capabilities": {
+        "canCompile": true,
+        "canTest": true,
+        "canRun": true
+      },
+      "dataKind": "scala",
+      "data": {
+        "scalaOrganization": "org.scala-lang",
+        "scalaVersion": "2.12.21",
+        "scalaBinaryVersion": "2.12",
+        "platform": 1,
+        "jars": [
+          "file:/$HOME$/.sbt/boot/scala-2.12.21/lib/scala-compiler.jar",
+          "file:/$HOME$/.sbt/boot/scala-2.12.21/lib/scala-library.jar",
+          "file:/$HOME$/.sbt/boot/scala-2.12.21/lib/scala-reflect.jar",
+          "file:/$HOME$/.sbt/boot/scala-2.12.21/lib/scala-xml_2.12-2.3.0.jar"
+        ],
+        "jvmBuildTarget": {
+          "javaHome": "$JAVA_HOME_URI:17$",
+          "javaVersion": "$JAVA_VERSION:17$"
+        }
+      }
+    },
+    {
+      "id": {
+        "uri": "file:/$WORKSPACE$/#test-project/Test"
+      },
+      "displayName": "test-project-test",
+      "baseDirectory": "file:/$WORKSPACE$/",
+      "tags": [
+        "test"
+      ],
+      "languageIds": [
+        "scala"
+      ],
+      "dependencies": [
+        {
+          "uri": "file:/$WORKSPACE$/#test-project/Compile"
+        }
+      ],
+      "capabilities": {
+        "canCompile": true,
+        "canTest": true,
+        "canRun": true
+      },
+      "dataKind": "scala",
+      "data": {
+        "scalaOrganization": "org.scala-lang",
+        "scalaVersion": "2.12.21",
+        "scalaBinaryVersion": "2.12",
+        "platform": 1,
+        "jars": [
+          "file:/$HOME$/.sbt/boot/scala-2.12.21/lib/scala-compiler.jar",
+          "file:/$HOME$/.sbt/boot/scala-2.12.21/lib/scala-library.jar",
+          "file:/$HOME$/.sbt/boot/scala-2.12.21/lib/scala-reflect.jar",
+          "file:/$HOME$/.sbt/boot/scala-2.12.21/lib/scala-xml_2.12-2.3.0.jar"
+        ],
+        "jvmBuildTarget": {
+          "javaHome": "$JAVA_HOME_URI:17$",
+          "javaVersion": "$JAVA_VERSION:17$"
+        }
+      }
+    }
+  ]
+}

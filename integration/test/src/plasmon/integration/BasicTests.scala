@@ -117,11 +117,27 @@ class BasicTests extends PlasmonSuite {
 
   private def mainTest(
     scalaVersionOpt: Option[Labelled[String]],
-    buildTool: SingleModuleBuildTool,
+    buildTool0: SingleModuleBuildTool,
     jvm: Labelled[String],
     serverOpt: Seq[String],
     count: Int = 1
   ): Unit = {
+    // Needs built output - it recompiles mid-test after moving a source into a package - so the
+    // recording is compiled at replay time rather than a build tool being run.
+    //
+    // Script mode still runs for real. Its generated wrappers are recorded like any others, but a
+    // compile request on a .sc file never reaches the build server, so nothing rebuilds the module
+    // and scripts can't see each other's wrapper objects (`Not found: Foo_sc`). Worth revisiting -
+    // the recording holds everything needed, it's the compile trigger that's missing.
+    val buildTool =
+      if (buildTool0.scriptBased) buildTool0
+      else
+        SingleModuleBuildTool.Replayed(
+          buildTool0,
+          os.sub / "basic-tests" / buildTool0.id /
+            s"scala-${scalaVersionOpt.map(_.label).getOrElse("default")}" / s"jvm-${jvm.label}"
+        )
+
     val header = (
       scalaVersionOpt.map(_.value).map(sv => s"""//> using scala "$sv"""") ++
         Seq(s"""//> using jvm "${jvm.value}"""")
@@ -356,7 +372,10 @@ class BasicTests extends PlasmonSuite {
                 )
               )
             )
-            val appliedEdit = updated.await(5L, TimeUnit.SECONDS)
+            // Scaled rather than a fixed 5s: on a loaded runner (the mac job runs three test JVMs,
+            // each with a server and a compiler behind it) the edit can take longer to come back,
+            // and every other wait in these tests already scales with PLASMON_TIMEOUT_OVERRIDE
+            val appliedEdit = updated.await(TestUtil.baseTimeout.toMillis, TimeUnit.MILLISECONDS)
             expect(appliedEdit)
             val content = os.read(workspace / newSourceFile)
             expect(content.startsWith("package foo.bar"))

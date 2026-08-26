@@ -1,0 +1,60 @@
+{
+  "items": [
+    {
+      "target": {
+        "uri": "file:///$WORKSPACE$/foo"
+      },
+      "sources": [
+        {
+          "uri": "file:///$WORKSPACE$/.bsp/out/foo/compileGeneratedSources.dest",
+          "kind": 2,
+          "generated": true
+        },
+        {
+          "uri": "file:///$WORKSPACE$/foo/src",
+          "kind": 2,
+          "generated": false
+        }
+      ]
+    },
+    {
+      "target": {
+        "uri": "file:///$WORKSPACE$/mill-build"
+      },
+      "sources": [
+        {
+          "uri": "file:///$WORKSPACE$/.bsp/out/mill-build/compileGeneratedSources.dest",
+          "kind": 2,
+          "generated": true
+        },
+        {
+          "uri": "file:///$WORKSPACE$/.bsp/out/mill-build/generatedScriptSources.dest/support",
+          "kind": 2,
+          "generated": true
+        },
+        {
+          "uri": "file:///$WORKSPACE$/build.mill",
+          "kind": 1,
+          "generated": false
+        },
+        {
+          "uri": "file:///$WORKSPACE$/mill-build/src",
+          "kind": 2,
+          "generated": false
+        }
+      ]
+    },
+    {
+      "target": {
+        "uri": "file:///$WORKSPACE$/mill-synthetic-root-target"
+      },
+      "sources": [
+        {
+          "uri": "file:///$WORKSPACE$/src",
+          "kind": 2,
+          "generated": false
+        }
+      ]
+    }
+  ]
+}

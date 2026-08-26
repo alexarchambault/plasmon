@@ -81,10 +81,18 @@ final case class BspRequest(
       requestArgs.map(targetIdFromArg).toList.asJava
 
     val res: CompletableFuture[?] = requestName match {
+      // Sent raw when we can, so that the reply is shown exactly as the build tool worded it.
+      // Replayed connections have no endpoint, so they go through the typed calls instead.
       case "workspace/buildTargets" | "buildTargets" =>
-        buildServer.remoteEndpoint.request("workspace/buildTargets", null)
+        buildServer.remoteEndpoint match {
+          case Some(endpoint) => endpoint.request("workspace/buildTargets", null)
+          case None           => buildServer.conn.workspaceBuildTargets
+        }
       case "workspace/reload" | "reload" =>
-        buildServer.remoteEndpoint.request("workspace/reload", null)
+        buildServer.remoteEndpoint match {
+          case Some(endpoint) => endpoint.request("workspace/reload", null)
+          case None           => buildServer.conn.workspaceReload()
+        }
       case "buildTarget/sources" | "sources" =>
         val params = new b.SourcesParams(targetIds)
         buildServer.conn.buildTargetSources(params)

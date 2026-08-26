@@ -37,11 +37,19 @@ class Tests extends PlasmonSuite {
     }
 
   private def simpleTest(
-    buildTool: SingleModuleBuildTool,
+    buildTool0: SingleModuleBuildTool,
     scalaVersionOpt: Option[Labelled[String]],
     jvm: Labelled[String],
     serverOpt: Seq[String]
   ): Unit = {
+
+    // Hover, go-to-definition and completions all resolve against the class path and the
+    // workspace source index, neither of which needs a build to have run - replayed.
+    val buildTool = SingleModuleBuildTool.Replayed(
+      buildTool0,
+      os.sub / "tests/simple" / buildTool0.id /
+        s"scala-${scalaVersionOpt.map(_.label).getOrElse("default")}" / s"jvm-${jvm.label}"
+    )
 
     val header = scalaVersionOpt.fold("") { scalaVersion =>
       s"""//> using scala "${scalaVersion.value}"
