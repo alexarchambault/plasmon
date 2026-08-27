@@ -17,6 +17,8 @@ final case class ServerOptions(
     lsp: Boolean = true,
   @HelpMessage("Initialize on the working directory at start-up, rather than waiting for an LSP client to say what to work on (default: true when --lsp=false)")
     autoInit: Option[Boolean] = None,
+  @HelpMessage("Stop when the process that started this one does. Useful with --lsp=false, where no client going away can be noticed")
+    exitWithParentProc: Boolean = false,
   @Name("heartbeat")
     heartBeat: Option[String] = None,
   workingDir: Option[String] = None,

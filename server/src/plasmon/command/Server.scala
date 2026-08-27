@@ -646,6 +646,27 @@ object Server extends caseapp.Command[ServerOptions] {
           done.countDown()
       }
 
+      if (options.exitWithParentProc) {
+        // Read now rather than when it matters: once the parent is gone this process is
+        // reparented, and what we would find then is whatever adopted it
+        val parentOpt = ProcessHandle.current().parent()
+        if (parentOpt.isPresent) {
+          val parent = parentOpt.get()
+          scribe.info(s"Stopping when parent process ${parent.pid()} does")
+          parent.onExit().thenAccept { _ =>
+            scribe.warn(s"Parent process ${parent.pid()} exited, stopping server")
+            try server.shutdown().get()
+            catch {
+              case t: Throwable =>
+                scribe.error("Error shutting the server down, exiting anyway", t)
+            }
+            server.exit()
+          }
+        }
+        else
+          scribe.warn("--exit-with-parent-proc passed, but this process has no parent to watch")
+      }
+
       val currentOut = System.out
 
       /** Serves commands alone, with nobody on the other end of stdin / stdout.
