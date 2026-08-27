@@ -3,12 +3,18 @@ package plasmon.integration
 import com.eed3si9n.expecty.Expecty.expect
 import plasmon.integration.TestUtil.*
 
+/** What the presentation compiler offers to complete with.
+  *
+  * LSP only: this is about the completions themselves, not about how the server is asked for them,
+  * and the chain test asks a lot - a dozen edits and a dozen completions per case, each of which
+  * would be a `plasmon` process of its own.
+  */
 class CompletionTests extends PlasmonSuite {
   import CompletionTests.*
 
   for {
     (scalaVersionOpt, serverOpt, buildTool, jvm, testNameSuffix) <- scalaVersionBuildToolJvmValues
-    mode                                                         <- modes
+    mode                                                         <- lspOnlyModes
   }
     test("chains" + testNameSuffix + mode.testNameSuffix) {
       completionChainTest(
@@ -27,7 +33,7 @@ class CompletionTests extends PlasmonSuite {
 
   for {
     (scalaVersionOpt, serverOpt, buildTool, jvm, testNameSuffix) <- scalaVersionBuildToolJvmValues
-    mode                                                         <- modes
+    mode                                                         <- lspOnlyModes
   }
     test(s"import" + testNameSuffix + mode.testNameSuffix) {
       classPathSearchCompletionTest(

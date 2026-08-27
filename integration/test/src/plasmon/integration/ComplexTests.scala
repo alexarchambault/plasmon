@@ -5,9 +5,11 @@ import plasmon.integration.TestUtil.*
 
 class ComplexTests extends PlasmonSuite {
 
+  // LSP only, like the rest of the completion checks: what is under test is what the presentation
+  // compiler offers, not how it was asked - see CompletionTests
   for {
     (scalaVersionOpt, serverOpt, buildTool, jvm, testNameSuffix) <- scalaVersionBuildToolJvmValues
-    mode                                                         <- modes
+    mode                                                         <- lspOnlyModes
   }
     test(testNameSuffix.dropWhile(_.isSpaceChar) + mode.testNameSuffix) {
       complexTest(mode, buildTool, scalaVersionOpt, jvm, serverOpt)

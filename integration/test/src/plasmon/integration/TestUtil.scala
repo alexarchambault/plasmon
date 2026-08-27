@@ -288,6 +288,14 @@ object TestUtil {
       }
       .getOrElse(TestMode.all)
 
+  /** The modes a suite runs in when only the LSP entry point is worth exercising.
+    *
+    * [[modes]] minus the CLI: for a suite whose subject is server behaviour rather than how the
+    * server is driven, a second run through the CLI costs more than it tells us.
+    */
+  lazy val lspOnlyModes: Seq[TestMode] =
+    modes.filter(_ == TestMode.Lsp)
+
   private val baseCommand: os.Shellable =
     if (launcherKind == "native") Seq[os.Shellable](launcher, serverExtraJavaOpts)
     else Seq[os.Shellable]("java", serverExtraJavaOpts, "-jar", launcher)
