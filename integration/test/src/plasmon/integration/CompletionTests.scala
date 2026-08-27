@@ -1,10 +1,7 @@
 package plasmon.integration
 
 import com.eed3si9n.expecty.Expecty.expect
-import org.eclipse.lsp4j as l
 import plasmon.integration.TestUtil.*
-
-import scala.jdk.CollectionConverters.*
 
 class CompletionTests extends PlasmonSuite {
   import CompletionTests.*
@@ -175,15 +172,7 @@ class CompletionTests extends PlasmonSuite {
         ): Unit = {
           for ((updatedContent, version) <- updatedContentOpt) {
             positions = positions.update(sourceFile, updatedContent)
-            driver.lsp.getTextDocumentService.didChange(
-              new l.DidChangeTextDocumentParams(
-                new l.VersionedTextDocumentIdentifier(
-                  (workspace / sourceFile).toNIO.toUri.toASCIIString,
-                  version
-                ),
-                List(new l.TextDocumentContentChangeEvent(positions.content(sourceFile))).asJava
-              )
-            )
+            driver.didChange(workspace / sourceFile, version, positions.content(sourceFile))
           }
 
           val completions0 = completions(

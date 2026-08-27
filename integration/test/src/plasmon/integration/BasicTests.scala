@@ -1,17 +1,10 @@
 package plasmon.integration
 
 import com.eed3si9n.expecty.Expecty.expect
-import io.github.alexarchambault.testutil.TestUtil.*
 import org.eclipse.lsp4j as l
 import plasmon.integration.TestUtil.*
 
-import java.io.OutputStream
-import java.net.URI
-import java.nio.file.Paths
-import java.util.concurrent.{CompletableFuture, CountDownLatch, TimeUnit}
-
 import scala.jdk.CollectionConverters.*
-import scala.reflect.Selectable.reflectiveSelectable
 
 class BasicTests extends PlasmonSuite {
 
@@ -189,50 +182,6 @@ class BasicTests extends PlasmonSuite {
              |""".stripMargin
       )
     )
-    val updated = new CountDownLatch(1)
-    val languageClient: MockLanguageClient {
-      def osOpt: Option[OutputStream]; def withOsOpt(osOpt0: Option[OutputStream]): Unit
-    } = new MockLanguageClient {
-      var osOpt = Option.empty[OutputStream]
-      def withOsOpt(osOpt0: Option[OutputStream]): Unit = {
-        osOpt = osOpt0
-      }
-      override def applyEdit(applyEditParams: l.ApplyWorkspaceEditParams)
-        : CompletableFuture[l.ApplyWorkspaceEditResponse] = {
-        osOpt.getOrElse(System.err).pprint(applyEditParams)
-        val fromChanges = applyEditParams.getEdit.getChanges.asScala.map {
-          case (k, v) => (k, v.asScala)
-        }
-        val fromDocumentChanges = applyEditParams
-          .getEdit
-          .getDocumentChanges
-          .asScala
-          .filter(_.isLeft)
-          .map(_.getLeft)
-          .map(e => (e.getTextDocument.getUri, e.getEdits.asScala.filter(_.isLeft).map(_.getLeft)))
-        for ((uri, edits) <- fromChanges ++ fromDocumentChanges) {
-          val path           = os.Path(Paths.get(new URI(uri)))
-          val currentContent = os.read(path)
-          var updatedContent = currentContent
-          for (
-            edit <- edits.toVector.sortBy(e =>
-              (e.getRange.getStart.getLine, e.getRange.getStart.getCharacter)
-            ).reverse
-          ) {
-            // we only support edits with a very specific shape here
-            assert(updatedContent.isEmpty)
-            assert(edit.getRange.getStart.getLine == 0)
-            assert(edit.getRange.getStart.getCharacter == 0)
-            assert(edit.getRange.getEnd.getLine == 0)
-            assert(edit.getRange.getEnd.getCharacter == 0)
-            updatedContent = edit.getNewText
-          }
-          os.write.over(path, updatedContent)
-          updated.countDown()
-        }
-        CompletableFuture.completedFuture(new l.ApplyWorkspaceEditResponse(true))
-      }
-    }
     val clientCapabilities = new l.ClientCapabilities
     clientCapabilities.setWorkspace {
       val cap = new l.WorkspaceClientCapabilities
@@ -241,14 +190,12 @@ class BasicTests extends PlasmonSuite {
     }
     withWorkspaceServerPositionsCount(
       mode = mode,
-      client = languageClient,
       clientCapabilities = clientCapabilities,
       extraServerOpts = Seq("--jvm", jvm.value, "--import-persisted-targets=false") ++ serverOpt,
       count = count,
       timeout = Some(buildTool.defaultTimeout)
     )(files*) {
       (workspace, driver, positions, osOpt, runCount) =>
-        languageClient.withOsOpt(osOpt)
 
         buildTool.setup(workspace, driver, osOpt, readOnlyToplevelSymbolsCache = runCount > 0)
 
@@ -356,21 +303,18 @@ class BasicTests extends PlasmonSuite {
             val packageInNewFileSourceFile = actualPath(os.sub / "foo/Foo.scala")
             val newSourceFile              = packageInNewFileSourceFile / os.up / "bar/Bar.scala"
             os.write(workspace / newSourceFile, Array.emptyByteArray, createFolders = true)
-            driver.lsp.getTextDocumentService.didOpen(
-              new l.DidOpenTextDocumentParams(
-                new l.TextDocumentItem(
-                  (workspace / newSourceFile).toNIO.toUri.toASCIIString,
-                  "scala",
-                  0,
-                  ""
-                )
-              )
+            // Opening an empty file in a package directory has the server ask for a package
+            // clause to be written into it. The wait for that scales rather than being a fixed
+            // 5s: on a loaded runner (the mac job runs three test JVMs, each with a server and a
+            // compiler behind it) it can take a while to come back, and every other wait in these
+            // tests already scales with PLASMON_TIMEOUT_OVERRIDE.
+            val edits = driver.didOpen(
+              workspace / newSourceFile,
+              version = 0,
+              content = "",
+              expectedEdits = 1
             )
-            // Scaled rather than a fixed 5s: on a loaded runner (the mac job runs three test JVMs,
-            // each with a server and a compiler behind it) the edit can take longer to come back,
-            // and every other wait in these tests already scales with PLASMON_TIMEOUT_OVERRIDE
-            val appliedEdit = updated.await(TestUtil.baseTimeout.toMillis, TimeUnit.MILLISECONDS)
-            expect(appliedEdit)
+            expect(edits.length == 1)
             val content = os.read(workspace / newSourceFile)
             expect(content.startsWith("package foo.bar"))
 

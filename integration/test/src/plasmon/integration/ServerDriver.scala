@@ -16,16 +16,21 @@ import scala.jdk.CollectionConverters.*
   * the way a terminal does. Tests are written against this interface alone, so the same test body -
   * checked against the same fixtures - covers both entry points.
   *
-  * Editor-side notifications are the exception and stay on [[lsp]] in both modes: `didOpen` /
-  * `didChange` carry unsaved buffer state and a request the server sends *back* to the client
-  * (`workspace/applyEdit`) answers them, none of which a one-shot CLI command has a counterpart
-  * for.
+  * That includes telling the server about the editor's copy of a file: `did-open` and `did-change`
+  * exist as commands too, and hand back the edits the server asks for in reaction rather than
+  * sending them off to a client that isn't there.
   */
 trait ServerDriver {
   def mode: TestMode
   def workspace: os.Path
 
-  /** The LSP connection to the server, for editor-side notifications - see the note above. */
+  /** The LSP connection the harness holds open.
+    *
+    * The server under test is an LSP server whatever the mode - it needs an `initialize` to know
+    * its workspace at all - so the connection is always there. Only the tests that are about the
+    * protocol itself (shutting the server down) should reach for it; everything else goes through
+    * the methods below, so that it runs both ways.
+    */
   def lsp: LanguageServer
 
   /** Starts the build tool `toolId`, discovered under `discoverId` from `currentFile`. */
@@ -42,6 +47,24 @@ trait ServerDriver {
 
   /** Re-indexes the loaded modules. */
   def index(): Unit
+
+  /** Tells the server a file was opened in the editor, holding `content`.
+    *
+    * Returns the workspace edits the server asks for in reaction - a package clause for a new,
+    * empty file, typically - once they have been applied to disk. `expectedEdits` is how many to
+    * wait for: over LSP they come back on their own as `workspace/applyEdit` requests, so with 0
+    * there is nothing to wait for.
+    */
+  def didOpen(
+    path: os.Path,
+    version: Int,
+    content: String,
+    expectedEdits: Int = 0,
+    timeout: FiniteDuration = TestUtil.baseTimeout
+  ): Seq[l.WorkspaceEdit]
+
+  /** Tells the server the editor's copy of a file now holds `content`. */
+  def didChange(path: os.Path, version: Int, content: String): Unit
 
   /** `null` when there is nothing to show. */
   def hover(path: os.Path, pos: l.Position): l.Hover
@@ -70,6 +93,9 @@ object ServerDriver {
 
   private def identifier(path: os.Path): l.TextDocumentIdentifier =
     new l.TextDocumentIdentifier(path.toNIO.toUri.toASCIIString)
+
+  private def languageIdOf(path: os.Path): String =
+    if (path.last.endsWith(".java")) "java" else "scala"
 
   final case class Lsp(
     lsp: LanguageServer,
@@ -142,6 +168,54 @@ object ServerDriver {
       executeCommand("plasmon/index")
     }
 
+    def didOpen(
+      path: os.Path,
+      version: Int,
+      content: String,
+      expectedEdits: Int,
+      timeout: FiniteDuration
+    ): Seq[l.WorkspaceEdit] = {
+      val mockClientOpt = client match {
+        case client0: MockLanguageClient => Some(client0)
+        case _ =>
+          if (expectedEdits > 0)
+            sys.error(s"Cannot wait for workspace edits with language client $client")
+          None
+      }
+      // Marked before the notification goes out: the edits come back on their own, and could
+      // already have landed by the time we look
+      val seenBefore = mockClientOpt.fold(0)(_.appliedEditCount)
+
+      lsp.getTextDocumentService.didOpen(
+        new l.DidOpenTextDocumentParams(
+          new l.TextDocumentItem(
+            path.toNIO.toUri.toASCIIString,
+            languageIdOf(path),
+            version,
+            content
+          )
+        )
+      )
+
+      if (expectedEdits <= 0) Nil
+      else {
+        val edits = mockClientOpt.get.awaitAppliedEdits(seenBefore, expectedEdits, timeout)
+        if (edits.length < expectedEdits)
+          sys.error(
+            s"Expected $expectedEdits workspace edit(s) after opening $path, got ${edits.length}"
+          )
+        edits
+      }
+    }
+
+    def didChange(path: os.Path, version: Int, content: String): Unit =
+      lsp.getTextDocumentService.didChange(
+        new l.DidChangeTextDocumentParams(
+          new l.VersionedTextDocumentIdentifier(path.toNIO.toUri.toASCIIString, version),
+          List(new l.TextDocumentContentChangeEvent(content)).asJava
+        )
+      )
+
     def hover(path: os.Path, pos: l.Position): l.Hover =
       lsp.getTextDocumentService
         .hover(new l.HoverParams(identifier(path), pos))
@@ -197,6 +271,7 @@ object ServerDriver {
   }
 
   final case class Cli(
+    // Carried for the harness, never used here: everything below goes through `plasmon <command>`
     lsp: LanguageServer,
     workspace: os.Path,
     errOpt: Option[OutputStream]
@@ -255,6 +330,45 @@ object ServerDriver {
 
     def index(): Unit =
       run("index")
+
+    // The server reads the editor's copy off a file rather than being handed it as an argument,
+    // which is also how a terminal would pass an unsaved draft around
+    private def withContentFile[T](path: os.Path, content: String)(f: os.Path => T): T = {
+      val contentFile = os.temp(content, suffix = "-" + path.last)
+      try f(contentFile)
+      finally os.remove(contentFile)
+    }
+
+    def didOpen(
+      path: os.Path,
+      version: Int,
+      content: String,
+      expectedEdits: Int,
+      timeout: FiniteDuration
+    ): Seq[l.WorkspaceEdit] = {
+      val edits = withContentFile(path, content) { contentFile =>
+        json(classOf[Array[l.WorkspaceEdit]])(
+          "lsp",
+          "did-open",
+          "--json",
+          "--content-file",
+          contentFile,
+          "--version",
+          version.toString,
+          path
+        ).toSeq
+      }
+      if (edits.length < expectedEdits)
+        sys.error(
+          s"Expected $expectedEdits workspace edit(s) after opening $path, got ${edits.length}"
+        )
+      edits
+    }
+
+    def didChange(path: os.Path, version: Int, content: String): Unit =
+      withContentFile(path, content) { contentFile =>
+        run("lsp", "did-change", "--content-file", contentFile, path)
+      }
 
     def hover(path: os.Path, pos: l.Position): l.Hover =
       json(classOf[l.Hover])(Seq[os.Shellable]("lsp", "hover", "--json") ++ position(pos) :+ path*)

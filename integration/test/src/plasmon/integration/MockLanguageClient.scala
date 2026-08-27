@@ -32,6 +32,7 @@ trait MockLanguageClient extends LanguageClient with MockLanguageClient.Stuff
   private val showMessage0        = new mutable.ListBuffer[l.MessageParams]
   private val showMessageRequest0 = new mutable.ListBuffer[l.ShowMessageRequestParams]
   private val telemetryEvent0     = new mutable.ListBuffer[Object]
+  private val appliedEdits0       = new mutable.ListBuffer[l.WorkspaceEdit]
 
   override def logMessage(params: l.MessageParams): Unit =
     lock.synchronized {
@@ -85,6 +86,43 @@ trait MockLanguageClient extends LanguageClient with MockLanguageClient.Stuff
       outputStream.pprint(event)
       telemetryEvent0 += event
     }
+
+  /** Carries out what the server asks for, the way an editor would.
+    *
+    * The `plasmon lsp did-open` / `did-change` commands do the same thing on the other side of the
+    * fence (see `plasmon.servercommand.WorkspaceEdits`), which is what lets a test drive the server
+    * either way and end up looking at the same files.
+    */
+  override def applyEdit(params: l.ApplyWorkspaceEditParams)
+    : CompletableFuture[l.ApplyWorkspaceEditResponse] =
+    lock.synchronized {
+      outputStream.pprint(params)
+      WorkspaceEdits.applyToDisk(params.getEdit)
+      appliedEdits0 += params.getEdit
+      lock.notifyAll()
+      CompletableFuture.completedFuture(new l.ApplyWorkspaceEditResponse(true))
+    }
+
+  /** How many workspace edits the server has asked for so far. */
+  def appliedEditCount: Int =
+    lock.synchronized(appliedEdits0.length)
+
+  /** Waits for `count` workspace edits beyond the `since` already seen, and returns those.
+    *
+    * Counting from a mark rather than from zero keeps two document events in the same test from
+    * being told apart only by luck.
+    */
+  def awaitAppliedEdits(since: Int, count: Int, timeout: FiniteDuration): Seq[l.WorkspaceEdit] = {
+    val deadline = System.currentTimeMillis() + timeout.toMillis
+    lock.synchronized {
+      var remaining = deadline - System.currentTimeMillis()
+      while (appliedEdits0.length - since < count && remaining > 0L) {
+        lock.wait(remaining)
+        remaining = deadline - System.currentTimeMillis()
+      }
+      appliedEdits0.drop(since).toList
+    }
+  }
 
   def plasmonLog(message: Object): Unit = ()
 

@@ -74,6 +74,8 @@ object Server extends caseapp.Command[ServerOptions] {
     LspCodeLens,
     LspCompletion,
     LspDefinition,
+    LspDidChange,
+    LspDidOpen,
     LspHover,
     LspSignatureHelp,
     ModuleList,

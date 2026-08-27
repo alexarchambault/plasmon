@@ -1,11 +1,8 @@
 package plasmon.integration
 
-import org.eclipse.lsp4j as l
 import plasmon.integration.TestUtil.*
 
 import java.util.concurrent.{TimeUnit, TimeoutException}
-
-import scala.jdk.CollectionConverters.*
 
 class Tests extends PlasmonSuite {
 
@@ -127,16 +124,10 @@ class Tests extends PlasmonSuite {
              |}
              |""".stripMargin
         )
-        driver.lsp.getTextDocumentService.didChange(
-          new l.DidChangeTextDocumentParams(
-            new l.VersionedTextDocumentIdentifier(
-              (workspace / completionSourceFile).toNIO.toUri.toASCIIString,
-              2
-            ),
-            List(
-              new l.TextDocumentContentChangeEvent(positions0.content(completionSourceFile))
-            ).asJava
-          )
+        driver.didChange(
+          workspace / completionSourceFile,
+          version = 2,
+          positions0.content(completionSourceFile)
         )
         val completions = completions0(
           driver,
