@@ -8,12 +8,11 @@ class Tests extends PlasmonSuite {
 
   // Nothing to run through the CLI here: this is about the LSP connection itself
   test("exit") {
-    withWorkspaceAndServer(shutdownServer = false)() {
-      (_, driver, listeningFuture, _, _) =>
-        val remoteServer = driver.lsp
+    withLspServer(shutdownServer = false)() {
+      (_, driver, _) =>
         def shouldTimeout(): Unit =
           try {
-            listeningFuture.get(100L, TimeUnit.MILLISECONDS)
+            driver.listening.get(100L, TimeUnit.MILLISECONDS)
             throw new Exception("Should have timed out")
           }
           catch {
@@ -21,10 +20,10 @@ class Tests extends PlasmonSuite {
           }
 
         shouldTimeout()
-        remoteServer.shutdown().get()
+        driver.lsp.shutdown().get()
         shouldTimeout()
-        remoteServer.exit()
-        listeningFuture.get(10L, TimeUnit.SECONDS)
+        driver.lsp.exit()
+        driver.listening.get(10L, TimeUnit.SECONDS)
     }
   }
 

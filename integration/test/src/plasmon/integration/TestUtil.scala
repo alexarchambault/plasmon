@@ -17,7 +17,7 @@ import java.net.URI
 import java.nio.charset.StandardCharsets
 import java.nio.file.Paths
 import java.util.{Arrays, Locale}
-import java.util.concurrent.{Future as JFuture, *}
+import java.util.concurrent.*
 
 import scala.annotation.nowarn
 import scala.concurrent.duration.{Duration, DurationInt, FiniteDuration}
@@ -103,7 +103,7 @@ object TestUtil {
       extraServerOpts = extraServerOpts,
       count = count
     )(updatedContent*) {
-      (workspace, driver, _, osOpt, runCount) =>
+      (workspace, driver, osOpt, runCount) =>
         f(workspace, driver, pos, osOpt, runCount)
     }
   }
@@ -154,7 +154,7 @@ object TestUtil {
     count: Int = 1
   )(
     content: (os.SubPath, os.Source)*
-  )(f: (os.Path, ServerDriver, JFuture[Void], Option[OutputStream], Int) => T): T = {
+  )(f: (os.Path, ServerDriver, Option[OutputStream], Int) => T): T = {
 
     val workingDir = os.sub / projectName
 
@@ -178,6 +178,9 @@ object TestUtil {
         "--log-to-stderr",
         "--scala-cli",
         scalaCli,
+        // Nothing will connect to it over LSP: it initializes itself on its working directory,
+        // which is the workspace, and answers on its command socket alone
+        if (mode == TestMode.Cli) Seq("--lsp=false") else Nil,
         extraServerOpts
       ),
       timeout = timeout.map(_ * mode.timeoutFactor),
@@ -208,65 +211,98 @@ object TestUtil {
             case _ =>
           }
 
-        val jsonrpcLauncher = new Launcher.Builder[LanguageServer]()
-          .setExecutorService(pool)
-          .setInput(subProc.stdout.wrapped)
-          .setOutput(subProc.stdin.wrapped)
-          .setRemoteInterface(classOf[LanguageServer])
-          .setLocalService(client)
-          .setExceptionHandler { t =>
-            printStream.println(s"Error during LSP processing: $t")
-            t.printStackTrace(printStream)
-            printStream.flush()
-            l.jsonrpc.RemoteEndpoint.DEFAULT_EXCEPTION_HANDLER.apply(t)
+        def lspDriver(): ServerDriver.Lsp = {
+          val jsonrpcLauncher = new Launcher.Builder[LanguageServer]()
+            .setExecutorService(pool)
+            .setInput(subProc.stdout.wrapped)
+            .setOutput(subProc.stdin.wrapped)
+            .setRemoteInterface(classOf[LanguageServer])
+            .setLocalService(client)
+            .setExceptionHandler { t =>
+              printStream.println(s"Error during LSP processing: $t")
+              t.printStackTrace(printStream)
+              printStream.flush()
+              l.jsonrpc.RemoteEndpoint.DEFAULT_EXCEPTION_HANDLER.apply(t)
+            }
+            .create()
+
+          val remoteServer = jsonrpcLauncher.getRemoteProxy
+
+          val listeningFuture = jsonrpcLauncher.startListening()
+
+          remoteServer.initialize {
+            val params = new l.InitializeParams
+            params.setProcessId(subProc.wrapped.pid().toInt)
+            @nowarn
+            def deprecatedStuff(): Unit = {
+              params.setRootPath(workspace.toNIO.toString)
+              params.setRootUri(workspace.toNIO.toUri.toASCIIString)
+            }
+            deprecatedStuff()
+            // params.setInitializationOptions(???)
+            params.setCapabilities(clientCapabilities)
+            params.setClientInfo(
+              new l.ClientInfo("Plasmon integration", "0.1.0-SNAPSHOT")
+            )
+            params.setLocale("en")
+            params.setTrace("off")
+            params.setWorkspaceFolders(
+              List(new l.WorkspaceFolder(workspace.toNIO.toUri.toASCIIString, workspace.last))
+                .asJava
+            )
+            params
+          }.get()
+
+          ServerDriver.Lsp(remoteServer, workspace, client, listeningFuture)
+        }
+
+        def cliDriver(): ServerDriver.Cli = {
+          val driver0 = ServerDriver.Cli(workspace, osOpt)
+          // Nothing has waited for the server so far - no `initialize` was sent, and none is
+          // coming
+          driver0.awaitReady(baseTimeout)
+          driver0
+        }
+
+        val driver: ServerDriver =
+          mode match {
+            case TestMode.Lsp => lspDriver()
+            case TestMode.Cli => cliDriver()
           }
-          .create()
-
-        val remoteServer = jsonrpcLauncher.getRemoteProxy
-
-        val listeningFuture = jsonrpcLauncher.startListening()
-
-        remoteServer.initialize {
-          val params = new l.InitializeParams
-          params.setProcessId(subProc.wrapped.pid().toInt)
-          @nowarn
-          def deprecatedStuff(): Unit = {
-            params.setRootPath(workspace.toNIO.toString)
-            params.setRootUri(workspace.toNIO.toUri.toASCIIString)
-          }
-          deprecatedStuff()
-          // params.setInitializationOptions(???)
-          params.setCapabilities(clientCapabilities)
-          params.setClientInfo(
-            new l.ClientInfo("Plasmon integration", "0.1.0-SNAPSHOT")
-          )
-          params.setLocale("en")
-          params.setTrace("off")
-          params.setWorkspaceFolders(
-            List(new l.WorkspaceFolder(workspace.toNIO.toUri.toASCIIString, workspace.last))
-              .asJava
-          )
-          params
-        }.get()
-
-        val driver = ServerDriver(mode, remoteServer, workspace, client, osOpt)
 
         try
-          f(workspace, driver, listeningFuture, osOpt, runCount)
+          f(workspace, driver, osOpt, runCount)
         finally
           if (shutdownServer) {
             printStream.println("Trying to ignore sub-process exit")
             printStream.flush()
             ignoreSubProcExit()
-            printStream.println("Shutting down server")
+            printStream.println("Stopping server")
             printStream.flush()
-            remoteServer.shutdown().get(10L, TimeUnit.SECONDS)
-            printStream.println("Exiting server")
-            printStream.flush()
-            remoteServer.exit()
+            driver.stopServer()
           }
     }
   }
+
+  /** For the tests that are about the LSP connection itself rather than about what the server does.
+    */
+  def withLspServer[T](
+    shutdownServer: Boolean = true,
+    timeout: Option[FiniteDuration] = Some(baseTimeout)
+  )(
+    content: (os.SubPath, os.Source)*
+  )(f: (os.Path, ServerDriver.Lsp, Option[OutputStream]) => T): T =
+    withWorkspaceAndServer(
+      TestMode.Lsp,
+      shutdownServer = shutdownServer,
+      timeout = timeout
+    )(content*) {
+      (workspace, driver, osOpt, _) =>
+        driver match {
+          case lsp: ServerDriver.Lsp => f(workspace, lsp, osOpt)
+          case other                 => sys.error(s"Expected an LSP driver, got $other")
+        }
+    }
 
   /** The ways tests drive the server, from `PLASMON_TEST_MODES` (comma-separated ids).
     *

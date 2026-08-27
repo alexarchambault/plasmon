@@ -38,7 +38,7 @@ class BuildToolTests extends PlasmonSuite {
       extraServerOpts = Seq("--jvm", jvm.value),
       timeout = Some(buildTool.defaultTimeout * 2)
     )(files.map { case (path, content) => (path, content: os.Source) }*) {
-      (workspace, driver, _, osOpt, _) =>
+      (workspace, driver, osOpt, _) =>
 
         buildTool.setup(workspace, driver, osOpt, compiles = false)
 

@@ -5,6 +5,7 @@ import org.eclipse.lsp4j as l
 import org.eclipse.lsp4j.services.LanguageServer
 
 import java.io.OutputStream
+import java.util.concurrent.{Future as JFuture, TimeUnit}
 
 import scala.concurrent.duration.FiniteDuration
 import scala.jdk.CollectionConverters.*
@@ -16,22 +17,17 @@ import scala.jdk.CollectionConverters.*
   * the way a terminal does. Tests are written against this interface alone, so the same test body -
   * checked against the same fixtures - covers both entry points.
   *
-  * That includes telling the server about the editor's copy of a file: `did-open` and `did-change`
-  * exist as commands too, and hand back the edits the server asks for in reaction rather than
-  * sending them off to a client that isn't there.
+  * The two are genuinely separate ways in, down to the connection: a server for
+  * [[ServerDriver.Cli]] is started with `--lsp=false`, so it has no client at all - it works out
+  * its workspace from where it was started, and every last thing a test does to it, from opening a
+  * document to shutting it down, goes over the command socket.
   */
 trait ServerDriver {
   def mode: TestMode
   def workspace: os.Path
 
-  /** The LSP connection the harness holds open.
-    *
-    * The server under test is an LSP server whatever the mode - it needs an `initialize` to know
-    * its workspace at all - so the connection is always there. Only the tests that are about the
-    * protocol itself (shutting the server down) should reach for it; everything else goes through
-    * the methods below, so that it runs both ways.
-    */
-  def lsp: LanguageServer
+  /** Stops the server, and lets it get on with shutting down. */
+  def stopServer(): Unit
 
   /** Starts the build tool `toolId`, discovered under `discoverId` from `currentFile`. */
   def loadBuildTool(discoverId: String, toolId: String, currentFile: os.Path): Unit
@@ -79,18 +75,6 @@ trait ServerDriver {
 
 object ServerDriver {
 
-  def apply(
-    mode: TestMode,
-    lsp: LanguageServer,
-    workspace: os.Path,
-    client: l.services.LanguageClient,
-    errOpt: Option[OutputStream]
-  ): ServerDriver =
-    mode match {
-      case TestMode.Lsp => Lsp(lsp, workspace, client)
-      case TestMode.Cli => Cli(lsp, workspace, errOpt)
-    }
-
   private def identifier(path: os.Path): l.TextDocumentIdentifier =
     new l.TextDocumentIdentifier(path.toNIO.toUri.toASCIIString)
 
@@ -100,10 +84,17 @@ object ServerDriver {
   final case class Lsp(
     lsp: LanguageServer,
     workspace: os.Path,
-    client: l.services.LanguageClient
+    client: l.services.LanguageClient,
+    /** Completes when the connection ends, one way or another. */
+    listening: JFuture[Void]
   ) extends ServerDriver {
 
     def mode = TestMode.Lsp
+
+    def stopServer(): Unit = {
+      lsp.shutdown().get(10L, TimeUnit.SECONDS)
+      lsp.exit()
+    }
 
     private def executeCommand(command: String, arguments: Object*): Object = {
       val params = new l.ExecuteCommandParams
@@ -271,13 +262,34 @@ object ServerDriver {
   }
 
   final case class Cli(
-    // Carried for the harness, never used here: everything below goes through `plasmon <command>`
-    lsp: LanguageServer,
     workspace: os.Path,
     errOpt: Option[OutputStream]
   ) extends ServerDriver {
 
     def mode = TestMode.Cli
+
+    def stopServer(): Unit =
+      run("exit")
+
+    /** Waits for the server to be listening on its command socket.
+      *
+      * Stands in for the `initialize` round trip an LSP client would have made: the server was
+      * started with `--lsp=false`, so nothing so far has waited for it to be up, and its socket
+      * appears a moment before it is ready to answer on it.
+      */
+    def awaitReady(timeout: FiniteDuration): Unit = {
+      val deadline = System.currentTimeMillis() + timeout.toMillis
+      def helper(): Unit =
+        try TestUtil.serverCommandOutput(workspace, errOpt)("about")
+        catch {
+          case e: os.SubprocessException =>
+            if (System.currentTimeMillis() >= deadline)
+              throw new Exception(s"Server in $workspace not answering after $timeout", e)
+            Thread.sleep(100L)
+            helper()
+        }
+      helper()
+    }
 
     private def commandLine(command: Seq[os.Shellable]): String =
       "plasmon " + command.flatMap(_.value).mkString(" ")

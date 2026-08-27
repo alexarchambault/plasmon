@@ -48,7 +48,7 @@ class CoursierTests extends PlasmonSuite {
       timeout = Some(munitTimeout),
       workspaceOpt = Some(coursierSources)
     )() {
-      (workingDir, driver, _, osOpt, _) =>
+      (workingDir, driver, osOpt, _) =>
         bspInit(osOpt)
 
         val dependencySource =

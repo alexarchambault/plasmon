@@ -54,7 +54,7 @@ class MillTests extends PlasmonSuite {
       workspaceOpt = Some(millSources),
       extraServerOpts = if (disableScala2Pc) compatServerOpt else Nil
     )() {
-      (_, driver, _, osOpt, _) =>
+      (_, driver, osOpt, _) =>
         init(driver)
 
         val hover0 = hoverMarkdown(

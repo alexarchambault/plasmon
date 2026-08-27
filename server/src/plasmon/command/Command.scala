@@ -59,7 +59,16 @@ object Command extends caseapp.Command[CommandOptions] {
     val socketPath0 =
       options.socket.filter(_.trim.nonEmpty)
         .map(os.Path(_, os.pwd))
-        .getOrElse(actualSocket(workingDir / socketPath))
+        .getOrElse {
+          val basePath = workingDir / socketPath
+          // Checked rather than left to `actualSocket` to read: "no server here" is the answer
+          // whenever someone runs a command before starting one, and a stack trace hides it
+          if (!os.exists(basePath)) {
+            System.err.println(s"$basePath not found, is a plasmon server running in $workingDir?")
+            sys.exit(1)
+          }
+          actualSocket(basePath)
+        }
 
     if (options.verbosity >= 1)
       System.err.println(s"Connecting to plasmon server via socket $socketPath0")
