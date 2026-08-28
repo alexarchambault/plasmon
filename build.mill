@@ -570,6 +570,42 @@ object server extends ScalaModule with PlasmonPublishModule {
         .map(p => PathRef(os.Path(p)))
     }
 
+    /** Reflection entries for the lsp4j / bsp4j classes that Gson maps.
+      *
+      * Gson only ever reflects over the declared fields (to read and write them) and the declared
+      * constructors (to instantiate), so that is all a data class needs. Methods are only needed on
+      * the service interfaces, whose declared methods lsp4j scans for `@JsonRequest` /
+      * `@JsonNotification` when it builds an endpoint or a proxy for them. Registering
+      * `allDeclaredMethods` on the other 624 data classes as well made an analysis root out of each
+      * of their accessors, 4196 of them in all.
+      *
+      * A class we cannot load is assumed to be an interface, so that a class path problem here can
+      * only ever register too much.
+      */
+    private def gsonReflectConfig(
+      classPath: Seq[java.io.File],
+      names: Seq[String]
+    ): ujson.Arr = {
+      val loader = new java.net.URLClassLoader(classPath.map(_.toURI.toURL).toArray, null)
+      val entries =
+        try
+          names.map { name =>
+            val isInterface =
+              try java.lang.Class.forName(name, false, loader).isInterface
+              catch { case _: Throwable => true }
+            val entry = ujson.Obj(
+              "name"                    -> name,
+              "allDeclaredConstructors" -> ujson.Bool(true),
+              "allDeclaredFields"       -> ujson.Bool(true)
+            )
+            if (isInterface)
+              entry("allDeclaredMethods") = ujson.Bool(true)
+            entry
+          }
+        finally loader.close()
+      ujson.Arr(entries*)
+    }
+
     def lsp4jGraalvmStuff = Task(persistent = true) {
       val ver         = Deps.lsp4j.dep.versionConstraint.asString
       val resourceDir = Task.dest / ver
@@ -585,11 +621,12 @@ object server extends ScalaModule with PlasmonPublishModule {
             ver
           )
         )
-        val files = fetch.fetchResult()
+        val artifacts = fetch.fetchResult()
           .getArtifacts
           .asScala
           .toVector
           .map(e => (e.getKey, e.getValue))
+        val files = artifacts
           .collect {
             case (a, f) if a.getUrl.contains("/org/eclipse/lsp4j/") =>
               f
@@ -627,16 +664,7 @@ object server extends ScalaModule with PlasmonPublishModule {
             }
           }
           .sorted
-        val entries = names.map { name =>
-          ujson.Obj(
-            "name"                    -> name,
-            "allDeclaredConstructors" -> ujson.Bool(true),
-            "allDeclaredFields"       -> ujson.Bool(true),
-            "allDeclaredMethods"      -> ujson.Bool(true),
-            "allDeclaredClasses"      -> ujson.Bool(true)
-          )
-        }
-        val json = ujson.Arr(entries*)
+        val json = gsonReflectConfig(artifacts.map(_._2), names)
         (json.render(indent = 2) + "\n").getBytes(StandardCharsets.UTF_8)
       }
       lazy val currentContent = os.read.bytes(resourceConfPath)
@@ -656,9 +684,8 @@ object server extends ScalaModule with PlasmonPublishModule {
       val content = {
         import java.io._
         import java.util.zip._
-        val files = server.compileClasspath()
-          .toSeq
-          .map(_.path)
+        val classPath = server.compileClasspath().toSeq.map(_.path).filter(os.exists(_))
+        val files = classPath
           .filter(_.last.startsWith("bsp4j"))
           .filter(_.last.endsWith(".jar"))
         val names = files
@@ -687,16 +714,7 @@ object server extends ScalaModule with PlasmonPublishModule {
             }
           }
           .sorted
-        val entries = names.map { name =>
-          ujson.Obj(
-            "name"                    -> name,
-            "allDeclaredConstructors" -> ujson.Bool(true),
-            "allDeclaredFields"       -> ujson.Bool(true),
-            "allDeclaredMethods"      -> ujson.Bool(true),
-            "allDeclaredClasses"      -> ujson.Bool(true)
-          )
-        }
-        val json = ujson.Arr(entries*)
+        val json = gsonReflectConfig(classPath.map(_.toIO), names)
         (json.render(indent = 2) + "\n").getBytes(StandardCharsets.UTF_8)
       }
       lazy val currentContent = os.read.bytes(resourceConfPath)
@@ -739,10 +757,38 @@ object server extends ScalaModule with PlasmonPublishModule {
       nativeImageClassPathAsJars().map(_.path).mkString(File.pathSeparator)
     }
 
+    /** Whether to build the image in GraalVM's quick build mode (`-Ob`), off by default.
+      *
+      * Worth it when you are waiting on the image rather than running it: "Compiling methods" drops
+      * by 22-34%, and locally that is most of what you feel.
+      *
+      * It is off on CI because it loses there. Compiling is only about a quarter of the build, and
+      * `-Ob` leaves the analysis alone - same universe, same points-to run - so the whole build
+      * only came down 0-38s across ubuntu-latest, ubuntu-24.04-arm and windows-latest, while the
+      * slower binary added 60-145s to the integration tests, which run it hundreds of times. Peak
+      * RSS is untouched either way, so this is no help towards a free Mac ARM runner.
+      *
+      * Set `PLASMON_NATIVE_IMAGE_QUICK_BUILD` to `true` to opt in, or `false` to be explicit.
+      */
+    def nativeImageQuickBuild = Task.Input {
+      Task.env
+        .get("PLASMON_NATIVE_IMAGE_QUICK_BUILD")
+        .map(_.trim)
+        .filter(_.nonEmpty) match {
+        case Some("true")         => true
+        case Some("false") | None => false
+        case Some(other) =>
+          sys.error(s"Malformed PLASMON_NATIVE_IMAGE_QUICK_BUILD value: '$other'")
+      }
+    }
+
     def nativeImageOptions = Task {
       val ciOptions =
         if (System.getenv("CI") == null) Nil
         else Seq("-H:DeadlockWatchdogInterval=25")
+      val quickBuildOptions =
+        if (nativeImageQuickBuild()) Seq("-Ob")
+        else Nil
       super.nativeImageOptions() ++ Seq(
         "--no-fallback",
         "-Duser.country=US",
@@ -756,7 +802,7 @@ object server extends ScalaModule with PlasmonPublishModule {
         "--add-opens=org.graalvm.nativeimage.builder/com.oracle.svm.core.posix.headers=ALL-UNNAMED", // needed for Signal stuff used by libdaemon-jvm
         s"-Dplasmon.disableScala2Pc=$disableScala2Pc",
         "--enable-native-access=ALL-UNNAMED"
-      ) ++ ciOptions
+      ) ++ ciOptions ++ quickBuildOptions
     }
 
     def nativeImagePersist      = System.getenv("CI") != null
