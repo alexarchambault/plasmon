@@ -1,8 +1,7 @@
 package plasmon.integration.project
 
 import org.eclipse.lsp4j as l
-import org.eclipse.lsp4j.services.LanguageServer
-import plasmon.integration.PlasmonSuite
+import plasmon.integration.{PlasmonSuite, ServerDriver, TestMode}
 import plasmon.integration.TestUtil.*
 
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
@@ -17,11 +16,11 @@ class MillTests extends PlasmonSuite {
     else
       10.minutes
 
-  private def init(server: LanguageServer): Unit = {
+  private def init(driver: ServerDriver): Unit = {
     val source = millSources / "runner/src/mill/runner/CliImports.scala"
-    loadBuildToolViaLsp(server, "mill-via-bloop", "mill-via-bloop", source)
-    loadModuleOfViaLsp(server, source)
-    compileViaLsp(server, source)
+    driver.loadBuildTool("mill-via-bloop", "mill-via-bloop", source)
+    driver.loadModuleOf(source)
+    driver.compile(source)
   }
 
   override def test(options: munit.TestOptions)(body: => Any)(implicit loc: munit.Location): Unit =
@@ -43,21 +42,23 @@ class MillTests extends PlasmonSuite {
   private val isCi = System.getenv("CI") != null
 
   if (!isCi)
-    test("hover") {
-      hoverTest()
-    }
+    for (mode <- modes)
+      test("hover" + mode.testNameSuffix) {
+        hoverTest(mode)
+      }
 
-  private def hoverTest(): Unit =
+  private def hoverTest(mode: TestMode): Unit =
     withWorkspaceAndServer(
+      mode = mode,
       timeout = Some(munitTimeout),
       workspaceOpt = Some(millSources),
       extraServerOpts = if (disableScala2Pc) compatServerOpt else Nil
     )() {
-      (_, server, _, osOpt, _) =>
-        init(server)
+      (_, driver, osOpt, _) =>
+        init(driver)
 
         val hover0 = hoverMarkdown(
-          server,
+          driver,
           millSources / "runner/src/mill/runner/CliImports.scala",
           new l.Position(7, 49)
         )
@@ -82,7 +83,7 @@ class MillTests extends PlasmonSuite {
         // )
 
         val hover2 = hoverMarkdown(
-          server,
+          driver,
           millSources / "runner/src/mill/runner/CliImports.scala",
           new l.Position(7, 78)
         )
@@ -93,7 +94,7 @@ class MillTests extends PlasmonSuite {
         )
 
         val hover3 = hoverMarkdown(
-          server,
+          driver,
           millSources / "runner/src/mill/runner/CliImports.scala",
           new l.Position(7, 26)
         )
@@ -104,7 +105,7 @@ class MillTests extends PlasmonSuite {
         )
 
         val hover4 = hoverMarkdown(
-          server,
+          driver,
           millSources / "runner/src/mill/runner/MillBuild.scala",
           new l.Position(12, 41)
         )
@@ -115,7 +116,7 @@ class MillTests extends PlasmonSuite {
         )
 
         val hover5 = hoverMarkdown(
-          server,
+          driver,
           millSources / "main/client/src/mill/main/client/MillClientMain.java",
           new l.Position(51, 19)
         )
@@ -126,7 +127,7 @@ class MillTests extends PlasmonSuite {
         )
 
         val hover6 = hoverMarkdown(
-          server,
+          driver,
           source6,
           pos6
         )
@@ -137,7 +138,7 @@ class MillTests extends PlasmonSuite {
         )
 
         val hover6_1 = hoverMarkdown(
-          server,
+          driver,
           source6,
           pos6_1
         )
@@ -160,7 +161,7 @@ class MillTests extends PlasmonSuite {
         // )
 
         val hover7_1 = hoverMarkdown(
-          server,
+          driver,
           source7,
           pos7_1
         )
@@ -171,7 +172,7 @@ class MillTests extends PlasmonSuite {
         )
 
         val hover7_2 = hoverMarkdown(
-          server,
+          driver,
           source7,
           pos7_2
         )
@@ -182,7 +183,7 @@ class MillTests extends PlasmonSuite {
         )
 
         val hover7_3 = hoverMarkdown(
-          server,
+          driver,
           source7,
           pos7_3
         )

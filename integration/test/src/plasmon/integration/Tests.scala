@@ -1,20 +1,18 @@
 package plasmon.integration
 
-import org.eclipse.lsp4j as l
 import plasmon.integration.TestUtil.*
 
 import java.util.concurrent.{TimeUnit, TimeoutException}
 
-import scala.jdk.CollectionConverters.*
-
 class Tests extends PlasmonSuite {
 
+  // Nothing to run through the CLI here: this is about the LSP connection itself
   test("exit") {
-    withWorkspaceAndServer(shutdownServer = false)() {
-      (_, remoteServer, listeningFuture, _, _) =>
+    withLspServer(shutdownServer = false)() {
+      (_, driver, _) =>
         def shouldTimeout(): Unit =
           try {
-            listeningFuture.get(100L, TimeUnit.MILLISECONDS)
+            driver.listening.get(100L, TimeUnit.MILLISECONDS)
             throw new Exception("Should have timed out")
           }
           catch {
@@ -22,21 +20,23 @@ class Tests extends PlasmonSuite {
           }
 
         shouldTimeout()
-        remoteServer.shutdown().get()
+        driver.lsp.shutdown().get()
         shouldTimeout()
-        remoteServer.exit()
-        listeningFuture.get(10L, TimeUnit.SECONDS)
+        driver.lsp.exit()
+        driver.listening.get(10L, TimeUnit.SECONDS)
     }
   }
 
-  for (
+  for {
     (scalaVersionOpt, serverOpt, buildTool, jvm, testNameSuffix) <- scalaVersionBuildToolJvmValues
-  )
-    test("simple" + testNameSuffix) {
-      simpleTest(buildTool, scalaVersionOpt, jvm, serverOpt)
+    mode                                                         <- modes
+  }
+    test("simple" + testNameSuffix + mode.testNameSuffix) {
+      simpleTest(mode, buildTool, scalaVersionOpt, jvm, serverOpt)
     }
 
   private def simpleTest(
+    mode: TestMode,
     buildTool0: SingleModuleBuildTool,
     scalaVersionOpt: Option[Labelled[String]],
     jvm: Labelled[String],
@@ -77,16 +77,17 @@ class Tests extends PlasmonSuite {
     )
 
     withWorkspaceServerPositions(
+      mode = mode,
       extraServerOpts = Seq("--jvm", jvm.value, "--suspend-watcher=false") ++ serverOpt,
       timeout = Some(buildTool.defaultTimeout)
     )(files*) {
-      (workspace, remoteServer, positions, osOpt) =>
+      (workspace, driver, positions, osOpt) =>
 
-        buildTool.setup(workspace, remoteServer, osOpt)
+        buildTool.setup(workspace, driver, osOpt)
 
         val hoverSourceFile = actualPath(os.sub / "Hover.scala")
         val markdown = hoverMarkdown(
-          remoteServer,
+          driver,
           workspace / hoverSourceFile,
           positions.lspPos(hoverSourceFile, 1)
         )
@@ -99,7 +100,7 @@ class Tests extends PlasmonSuite {
 
         val goToDefSourceFile = actualPath(os.sub / "GoToDef.scala")
         val goToDefRes = goToDef(
-          remoteServer,
+          driver,
           workspace,
           workspace / goToDefSourceFile,
           positions.lspPos(goToDefSourceFile, 1)
@@ -122,19 +123,13 @@ class Tests extends PlasmonSuite {
              |}
              |""".stripMargin
         )
-        remoteServer.getTextDocumentService.didChange(
-          new l.DidChangeTextDocumentParams(
-            new l.VersionedTextDocumentIdentifier(
-              (workspace / completionSourceFile).toNIO.toUri.toASCIIString,
-              2
-            ),
-            List(
-              new l.TextDocumentContentChangeEvent(positions0.content(completionSourceFile))
-            ).asJava
-          )
+        driver.didChange(
+          workspace / completionSourceFile,
+          version = 2,
+          positions0.content(completionSourceFile)
         )
         val completions = completions0(
-          remoteServer,
+          driver,
           workspace / completionSourceFile,
           positions0.lspPos(completionSourceFile, 1)
         )

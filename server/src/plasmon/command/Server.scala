@@ -52,6 +52,7 @@ object Server extends caseapp.Command[ServerOptions] {
   def remoteCommands = Seq[ServerCommand[?]](
     About,
     Check,
+    Compile,
     Import,
     Index,
     Inspect,
@@ -66,12 +67,20 @@ object Server extends caseapp.Command[ServerOptions] {
     BspRemove,
     BspRequest,
     BuildToolAdd,
+    BuildToolLoad,
     Diagnostics,
     Exit,
     InteractiveUnload,
+    LspCodeLens,
     LspCompletion,
     LspDefinition,
+    LspDidChange,
+    LspDidOpen,
     LspHover,
+    LspSignatureHelp,
+    ModuleList,
+    ModuleLoad,
+    ModuleLoadAll,
     RefreshStatus,
     Reload,
     ShowIndex,
@@ -128,7 +137,8 @@ object Server extends caseapp.Command[ServerOptions] {
       sys.exit(1)
     }
 
-    val autoInit = options.autoInit.getOrElse(false)
+    // Without LSP there is no client to tell us what to work on, so the working directory it is
+    val autoInit = options.autoInit.getOrElse(!options.lsp)
 
     val heartBeatPeriodOpt =
       options.heartBeat.map(_.trim).filter(_.nonEmpty).map(Duration(_)).collect {
@@ -383,10 +393,16 @@ object Server extends caseapp.Command[ServerOptions] {
           }(using pools.dummyEc)
         }
 
-        if (Option(params.getCapabilities.getWorkspace).forall(_.getDidChangeWatchedFiles == null))
+        val watchedFilesSupport = for {
+          capabilities <- Option(params.getCapabilities)
+          workspace    <- Option(capabilities.getWorkspace)
+        } yield workspace.getDidChangeWatchedFiles
+        if (watchedFilesSupport.forall(_ == null))
           scribe.info("Client doesn't support file watching")
 
-        for (heartBeatPeriod <- heartBeatPeriodOpt) {
+        if (heartBeatPeriodOpt.nonEmpty && !options.lsp)
+          scribe.warn("Ignoring --heartbeat: there is no LSP client to check on")
+        for (heartBeatPeriod <- heartBeatPeriodOpt if options.lsp) {
           var f: ScheduledFuture[?] = null
           val runnable = heartBeatRunnable(
             heartBeatPeriod,
@@ -510,13 +526,16 @@ object Server extends caseapp.Command[ServerOptions] {
       val commandNames = handlers.commandHandlers.map(_.commandName)
 
       if (autoInit) {
-        scribe.info("Auto-initializing server")
+        scribe.info(s"Auto-initializing server on $workingDir")
         val params = new l.InitializeParams
+        params.setProcessId(ProcessHandle.current().pid().toInt)
+        params.setCapabilities(new l.ClientCapabilities)
+        params.setClientInfo(new l.ClientInfo("plasmon", Constants.version))
         params.setWorkspaceFolders(
           List(
             new l.WorkspaceFolder(
-              os.pwd.toNIO.toUri.toASCIIString,
-              os.pwd.lastOpt.getOrElse("root")
+              workingDir.toNIO.toUri.toASCIIString,
+              workingDir.lastOpt.getOrElse("root")
             )
           ).asJava
         )
@@ -627,91 +646,129 @@ object Server extends caseapp.Command[ServerOptions] {
           done.countDown()
       }
 
+      if (options.exitWithParentProc) {
+        // Read now rather than when it matters: once the parent is gone this process is
+        // reparented, and what we would find then is whatever adopted it
+        val parentOpt = ProcessHandle.current().parent()
+        if (parentOpt.isPresent) {
+          val parent = parentOpt.get()
+          scribe.info(s"Stopping when parent process ${parent.pid()} does")
+          parent.onExit().thenAccept { _ =>
+            scribe.warn(s"Parent process ${parent.pid()} exited, stopping server")
+            try server.shutdown().get()
+            catch {
+              case t: Throwable =>
+                scribe.error("Error shutting the server down, exiting anyway", t)
+            }
+            server.exit()
+          }
+        }
+        else
+          scribe.warn("--exit-with-parent-proc passed, but this process has no parent to watch")
+      }
+
       val currentOut = System.out
+
+      /** Serves commands alone, with nobody on the other end of stdin / stdout.
+        *
+        * The command socket is already up by now, so there is nothing left to start: what remains
+        * is to stay alive until `plasmon exit` says otherwise.
+        */
+      def serveCommandsOnly(): Unit = {
+        scribe.info("Serving commands only, LSP disabled")
+        done.await()
+        scribe.info("Exited because of exit")
+        server.close()
+      }
+
+      def serveLsp(): Unit =
+        ThreadUtil.withFixedThreadPool("plasmon-jsonrpc", 4) { pool =>
+
+          val (serverInput, serverOutput) =
+            if (options.logJsonrpcInput.getOrElse(false))
+              DebugInput.debug(
+                System.in,
+                currentOut,
+                (line, isOut) => scribe.info(s"LSP ${if (isOut) ">" else "<"} $line")
+              )
+            else
+              (System.in, currentOut)
+
+          val builder: Launcher.Builder[PlasmonLanguageClient] =
+            new Launcher.Builder[PlasmonLanguageClient] {
+              def endpointOpt(): Option[l.jsonrpc.Endpoint] =
+                localServices.asScala.toVector match {
+                  case Seq(e: l.jsonrpc.Endpoint) => Some(e)
+                  case _                          => None
+                }
+              override def createRemoteEndpoint(jsonHandler: l.jsonrpc.json.MessageJsonHandler)
+                : l.jsonrpc.RemoteEndpoint =
+                endpointOpt() match {
+                  case Some(localEndpoint) =>
+                    // same as https://github.com/eclipse-lsp4j/lsp4j/blob/v0.20.1/org.eclipse.lsp4j.jsonrpc/src/main/java/org/eclipse/lsp4j/jsonrpc/Launcher.java#L345-L356,
+                    // but for the local endpoint creation
+                    val remoteEndpoint = new l.jsonrpc.RemoteEndpoint(
+                      wrapMessageConsumer(
+                        new l.jsonrpc.json.StreamMessageConsumer(output, jsonHandler)
+                      ),
+                      localEndpoint,
+                      Option(exceptionHandler)
+                        .getOrElse(l.jsonrpc.RemoteEndpoint.DEFAULT_EXCEPTION_HANDLER)
+                    )
+                    jsonHandler.setMethodProvider(remoteEndpoint)
+                    remoteEndpoint
+                  case None =>
+                    super.createRemoteEndpoint(jsonHandler)
+                }
+              override def getSupportedMethods: JMap[String, l.jsonrpc.json.JsonRpcMethod] =
+                if (endpointOpt().isDefined)
+                  lspServer.supportedMethods.asJava
+                else
+                  super.getSupportedMethods
+            }
+          val launcher = builder
+            .setExecutorService(pool)
+            .setInput(serverInput)
+            .setOutput(serverOutput)
+            .setRemoteInterface(classOf[PlasmonLanguageClient])
+            .setLocalService(lspServer)
+            .configureGson { gsonBuilder =>
+              val d: JsonDeserializer[Void] = (_, _, _) => null
+              gsonBuilder.registerTypeAdapter(classOf[Void], d)
+              gsonBuilder.registerTypeAdapter(Void.TYPE, d)
+            }
+            .setExceptionHandler { t =>
+              scribe.info("Error during LSP processing", t)
+              l.jsonrpc.RemoteEndpoint.DEFAULT_EXCEPTION_HANDLER.apply(t)
+            }
+            .create()
+
+          val remoteClient = launcher.getRemoteProxy
+          server.setClient(remoteClient)
+
+          ThreadUtil.withCachedThreadPool("plasmon-server-exit-watcher") { exitPool =>
+            implicit val ec = ExecutionContext.fromExecutorService(exitPool)
+            val stdinFuture = Future {
+              launcher.startListening().get()
+              "stdin"
+            }
+            val exitFuture = Future {
+              done.await()
+              "exit"
+            }
+            val first = Future.firstCompletedOf(Seq(stdinFuture, exitFuture))
+            val res   = Await.result(first, Duration.Inf)
+            scribe.info(s"Exited because of $res")
+          }
+
+          server.close()
+        }
+
       Console.withOut(System.err) {
         try {
           System.setOut(System.err)
-          ThreadUtil.withFixedThreadPool("plasmon-jsonrpc", 4) { pool =>
-
-            val (serverInput, serverOutput) =
-              if (options.logJsonrpcInput.getOrElse(false))
-                DebugInput.debug(
-                  System.in,
-                  currentOut,
-                  (line, isOut) => scribe.info(s"LSP ${if (isOut) ">" else "<"} $line")
-                )
-              else
-                (System.in, currentOut)
-
-            val builder: Launcher.Builder[PlasmonLanguageClient] =
-              new Launcher.Builder[PlasmonLanguageClient] {
-                def endpointOpt(): Option[l.jsonrpc.Endpoint] =
-                  localServices.asScala.toVector match {
-                    case Seq(e: l.jsonrpc.Endpoint) => Some(e)
-                    case _                          => None
-                  }
-                override def createRemoteEndpoint(jsonHandler: l.jsonrpc.json.MessageJsonHandler)
-                  : l.jsonrpc.RemoteEndpoint =
-                  endpointOpt() match {
-                    case Some(localEndpoint) =>
-                      // same as https://github.com/eclipse-lsp4j/lsp4j/blob/v0.20.1/org.eclipse.lsp4j.jsonrpc/src/main/java/org/eclipse/lsp4j/jsonrpc/Launcher.java#L345-L356,
-                      // but for the local endpoint creation
-                      val remoteEndpoint = new l.jsonrpc.RemoteEndpoint(
-                        wrapMessageConsumer(
-                          new l.jsonrpc.json.StreamMessageConsumer(output, jsonHandler)
-                        ),
-                        localEndpoint,
-                        Option(exceptionHandler)
-                          .getOrElse(l.jsonrpc.RemoteEndpoint.DEFAULT_EXCEPTION_HANDLER)
-                      )
-                      jsonHandler.setMethodProvider(remoteEndpoint)
-                      remoteEndpoint
-                    case None =>
-                      super.createRemoteEndpoint(jsonHandler)
-                  }
-                override def getSupportedMethods: JMap[String, l.jsonrpc.json.JsonRpcMethod] =
-                  if (endpointOpt().isDefined)
-                    lspServer.supportedMethods.asJava
-                  else
-                    super.getSupportedMethods
-              }
-            val launcher = builder
-              .setExecutorService(pool)
-              .setInput(serverInput)
-              .setOutput(serverOutput)
-              .setRemoteInterface(classOf[PlasmonLanguageClient])
-              .setLocalService(lspServer)
-              .configureGson { gsonBuilder =>
-                val d: JsonDeserializer[Void] = (_, _, _) => null
-                gsonBuilder.registerTypeAdapter(classOf[Void], d)
-                gsonBuilder.registerTypeAdapter(Void.TYPE, d)
-              }
-              .setExceptionHandler { t =>
-                scribe.info("Error during LSP processing", t)
-                l.jsonrpc.RemoteEndpoint.DEFAULT_EXCEPTION_HANDLER.apply(t)
-              }
-              .create()
-
-            val remoteClient = launcher.getRemoteProxy
-            server.setClient(remoteClient)
-
-            ThreadUtil.withCachedThreadPool("plasmon-server-exit-watcher") { exitPool =>
-              implicit val ec = ExecutionContext.fromExecutorService(exitPool)
-              val stdinFuture = Future {
-                launcher.startListening().get()
-                "stdin"
-              }
-              val exitFuture = Future {
-                done.await()
-                "exit"
-              }
-              val first = Future.firstCompletedOf(Seq(stdinFuture, exitFuture))
-              val res   = Await.result(first, Duration.Inf)
-              scribe.info(s"Exited because of $res")
-            }
-
-            server.close()
-          }
+          if (options.lsp) serveLsp()
+          else serveCommandsOnly()
         }
         finally
           System.setOut(currentOut)

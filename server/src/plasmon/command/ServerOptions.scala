@@ -13,7 +13,12 @@ final case class ServerOptions(
   bloopJavaHome: Option[String] = None,
   jvm: Option[String] = None,
   bloopJvm: Option[String] = None,
-  autoInit: Option[Boolean] = None,
+  @HelpMessage("Speak LSP over stdin / stdout (default: true). With --lsp=false the server is driven by `plasmon` commands alone: it initializes itself on the working directory and stays up until `plasmon exit`")
+    lsp: Boolean = true,
+  @HelpMessage("Initialize on the working directory at start-up, rather than waiting for an LSP client to say what to work on (default: true when --lsp=false)")
+    autoInit: Option[Boolean] = None,
+  @HelpMessage("Stop when the process that started this one does. Useful with --lsp=false, where no client going away can be noticed")
+    exitWithParentProc: Boolean = false,
   @Name("heartbeat")
     heartBeat: Option[String] = None,
   workingDir: Option[String] = None,

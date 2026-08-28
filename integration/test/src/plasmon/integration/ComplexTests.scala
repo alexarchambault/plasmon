@@ -5,14 +5,18 @@ import plasmon.integration.TestUtil.*
 
 class ComplexTests extends PlasmonSuite {
 
-  for (
+  // LSP only, like the rest of the completion checks: what is under test is what the presentation
+  // compiler offers, not how it was asked - see CompletionTests
+  for {
     (scalaVersionOpt, serverOpt, buildTool, jvm, testNameSuffix) <- scalaVersionBuildToolJvmValues
-  )
-    test(testNameSuffix.dropWhile(_.isSpaceChar)) {
-      complexTest(buildTool, scalaVersionOpt, jvm, serverOpt)
+    mode                                                         <- lspOnlyModes
+  }
+    test(testNameSuffix.dropWhile(_.isSpaceChar) + mode.testNameSuffix) {
+      complexTest(mode, buildTool, scalaVersionOpt, jvm, serverOpt)
     }
 
   def complexTest(
+    mode: TestMode,
     buildTool0: SingleModuleBuildTool,
     scalaVersionOpt: Option[Labelled[String]],
     jvm: Labelled[String],
@@ -51,17 +55,18 @@ class ComplexTests extends PlasmonSuite {
     val (sourceFile, files) = buildTool.singleFile(os.sub / "Foo.scala", source)
 
     withWorkspaceServerPositions(
+      mode = mode,
       extraServerOpts = Seq("--jvm", jvm.value) ++ serverOpt,
       timeout = Some(buildTool.defaultTimeout)
     )(files*) {
-      (workspace, remoteServer, positions, osOpt) =>
+      (workspace, driver, positions, osOpt) =>
 
-        buildTool.setup(workspace, remoteServer, osOpt, compiles = false)
+        buildTool.setup(workspace, driver, osOpt, compiles = false)
 
         def completionAtPos(pos: Int): Unit = {
 
           val completions = completions0(
-            remoteServer,
+            driver,
             workspace / sourceFile,
             positions.lspPos(sourceFile, pos)
           )
@@ -99,12 +104,16 @@ class ComplexTests extends PlasmonSuite {
     (scalaVersionOpt, serverOpt, buildTool, jvm, testNameSuffix) <- scalaVersionBuildToolJvmValues
     if buildTool.id == "mill"
     scalaVersion <- scalaVersionOpt
+    mode         <- modes
   }
-    test("ADT in other module " + testNameSuffix.dropWhile(_.isSpaceChar)) {
-      adtInOtherModuleTest(scalaVersion, jvm, serverOpt)
+    test(
+      "ADT in other module " + testNameSuffix.dropWhile(_.isSpaceChar) + mode.testNameSuffix
+    ) {
+      adtInOtherModuleTest(mode, scalaVersion, jvm, serverOpt)
     }
 
   def adtInOtherModuleTest(
+    mode: TestMode,
     scalaVersion: Labelled[String],
     jvm: Labelled[String],
     serverOpt: Seq[String]
@@ -158,10 +167,11 @@ class ComplexTests extends PlasmonSuite {
         s"jvm-${jvm.label}" /
         s"scala-${scalaVersion.label}"
     withWorkspaceServerPositions(
+      mode = mode,
       extraServerOpts = Seq("--jvm", jvm.value) ++ serverOpt,
       timeout = Some(SingleModuleBuildTool.Mill.defaultTimeout)
     )(files*) {
-      (workspace, server, positions, osOpt) =>
+      (workspace, driver, positions, osOpt) =>
         // Cross-module: hovers here resolve symbols defined in the other module, so the recording
         // is compiled at replay time to give them real class files to resolve against
         SingleModuleBuildTool.Replayed(
@@ -170,7 +180,7 @@ class ComplexTests extends PlasmonSuite {
             s"scala-${scalaVersion.label}" / s"jvm-${jvm.label}"
         ).setup(
           workspace,
-          server,
+          driver,
           osOpt,
           readOnlyToplevelSymbolsCache = false,
           compiles = true
@@ -178,7 +188,7 @@ class ComplexTests extends PlasmonSuite {
 
         for (i <- (1 to 4).iterator ++ (11 to 14).iterator) {
           val hover = hoverMarkdown(
-            server,
+            driver,
             workspace / mainFile,
             positions.lspPos(mainFile, i)
           )

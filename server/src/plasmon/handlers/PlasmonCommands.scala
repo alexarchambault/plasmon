@@ -8,11 +8,8 @@ import com.github.plokhotnyuk.jsoniter_scala.core.{
 }
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import com.google.gson.{Gson, JsonElement}
-import coursier.version.Version
 import dotty.tools.pc.ScalaPresentationCompiler as Scala3PresentationCompiler
 import org.eclipse.lsp4j as l
-import org.eclipse.lsp4j.jsonrpc.ResponseErrorException
-import org.eclipse.lsp4j.jsonrpc.messages.ResponseErrorCode
 import plasmon.Server
 import plasmon.PlasmonEnrichments.*
 import plasmon.bsp.{
@@ -25,18 +22,16 @@ import plasmon.bsp.{
 import plasmon.command.ServerCommandThreadPools
 import plasmon.index.Indexer
 import plasmon.index.IndexerActor.Message
-import plasmon.internal.Constants
 import plasmon.jsonrpc.{CommandHandler, Handlers}
 import plasmon.jsonrpc.CommandHandler.ParamsHelpers.*
 import plasmon.pc.PresentationCompilers
-import plasmon.servercommand.BspUtil
+import plasmon.servercommand.{BspUtil, ProjectOps}
 
 import java.io.{ByteArrayOutputStream, File, PrintStream, PrintWriter}
 import java.nio.charset.StandardCharsets
-import java.util.concurrent.{CompletableFuture, ExecutionException}
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.atomic.AtomicInteger
 
-import scala.build.bsp.{WrappedSourcesParams, WrappedSourcesResult}
 import scala.concurrent.Future
 import scala.jdk.CollectionConverters.*
 import scala.meta.cli.Reporter
@@ -49,12 +44,6 @@ import scala.meta.pc.PresentationCompiler
 import scala.util.{Failure, Success, Using}
 
 object PlasmonCommands {
-
-  private final case class OppositeOrdering[T <: Ordered[T]](value: T)
-      extends Ordered[OppositeOrdering[T]] {
-    def compare(that: OppositeOrdering[T]): Int =
-      -value.compare(that.value)
-  }
 
   private sealed abstract class BuildToolOrModule extends Product with Serializable
 
@@ -201,18 +190,14 @@ object PlasmonCommands {
   }
 
   private def discoverBuildTools(
-    workspace: os.Path,
-    fileOpt: Option[os.Path],
-    alreadyAdded: Set[plasmon.bsp.BuildTool],
-    tools: BuildTool.Tools
+    server: Server,
+    fileOpt: Option[os.Path]
   ): Seq[BuildToolOrModule.BuildTool] = {
-    val discovered   = BspUtil.discoverBuildTools(workspace, fileOpt, alreadyAdded)
-    val (_, mayLoad) = discovered.partition(tool => alreadyAdded.contains(tool.buildTool))
-
-    mayLoad.map { tool =>
+    val workspace = server.workspace()
+    ProjectOps.discoverBuildTools(server, fileOpt).map { tool =>
       val infos =
         ConnectionInfoJson(
-          tool.buildTool.launcher(tools).info
+          tool.buildTool.launcher(server.tools).info
         ) +: tool.buildTool.extraLaunchers.map(t =>
           ConnectionInfoJson(t.info)
         )
@@ -230,183 +215,18 @@ object PlasmonCommands {
   private def listModules(
     file: os.Path,
     server: Server
-  ): Seq[BuildToolOrModule.Module] = {
-    val loadedTargetIds = server.bspData.allTargetData
-      .flatMap { targetData =>
-        scribe.info(s"targetData.sourceBuildTargets($file)=" + pprint.apply(
-          targetData.sourceBuildTargets(file)
-        ))
-        targetData.sourceBuildTargets(file)
-          .toSeq
-          .flatMap(_.toVector.sortBy(_.getUri))
-      }
-      .toSet
-    server.bspServers.list.flatMap(_._2).flatMap { server0 =>
-      scribe.info(s"server0.name=" + pprint.apply(server0.name))
-      val workspaceBuildTargetsRes = server0.conn.workspaceBuildTargets().get()
-      val targetMap = workspaceBuildTargetsRes.getTargets.asScala.map(t => t.getId -> t).toMap
-      val targets =
-        if (server0.name == "sbt") {
-          // No inverseSources support? sbt sucks, as usual
-          val sourcesRes = server0.conn
-            .buildTargetSources(
-              new b.SourcesParams(workspaceBuildTargetsRes.getTargets.asScala.map(_.getId).asJava)
-            )
-            .get()
-          scribe.info("sourcesRes=" + pprint.apply(sourcesRes))
-          sourcesRes
-            .getItems
-            .asScala
-            .flatMap { item =>
-              val matches = item.getSources.asScala.exists { item0 =>
-                val path = item0.getUri.osPathFromUri
-                file.startsWith(path)
-              }
-              if (matches) Seq(item.getTarget)
-              else Nil
-            }
-        }
-        else {
-          val res = server0.conn
-            .buildTargetInverseSources(
-              new b.InverseSourcesParams(
-                new b.TextDocumentIdentifier(file.toNIO.toUri.toASCIIString)
-              )
-            )
-            .get()
-          if (
-            server0.name == "mill-bsp" &&
-            res.getTargets.asScala.isEmpty && file.startsWith(server0.info.workspace) &&
-            (
-              file.last.endsWith(".sc") ||
-              file.last.endsWith(".mill") ||
-              file.last.endsWith(".mill.scala")
-            )
-          ) {
-            // working around a buildTargetInverseSources bug in Mill with its mill-build target
-            // fixed in Mill 1.0.4 by com-lihaoyi/mill#5698
-            val targetId = new b.BuildTargetIdentifier(
-              server0.info.workspace.toNIO.toUri.toASCIIString + "mill-build"
-            )
-            val sourcesResp =
-              server0.conn.buildTargetSources(new b.SourcesParams(List(targetId).asJava)).get()
-            val isMillBuildSource = sourcesResp.getItems.asScala.iterator
-              .filter(_.getTarget == targetId)
-              .flatMap(_.getSources.asScala.iterator)
-              .map(_.getUri.osPathFromUri)
-              .exists(_ == file)
-            if (isMillBuildSource) Seq(targetId) else Nil
-          }
-          else
-            res.getTargets.asScala.toVector
-        }
-      val targets0 =
-        if (targets.isEmpty && (file.last.endsWith(".sc") || file.last.endsWith(".mill"))) {
-
-          val targetList = server.bspData.allWritableData.iterator
-            .filter(_.buildServerOpt.contains(server0.conn))
-            .flatMap(_.targetToWorkspace.keys)
-            .toList
-            .asJava
-
-          val wrappedSourcesRes =
-            try
-              server0.conn
-                .buildTargetWrappedSources(new WrappedSourcesParams(targetList))
-                .get()
-            catch {
-              case e: ExecutionException =>
-                e.getCause match {
-                  case ex: ResponseErrorException
-                      if ex.getResponseError.getCode == ResponseErrorCode.MethodNotFound.getValue =>
-                    scribe.warn(
-                      s"wrappedSources method not supported by ${server0.info}, ignoring it"
-                    )
-                    new WrappedSourcesResult(Nil.asJava)
-                  case _ =>
-                    throw e
-                }
-            }
-
-          scribe.info(s"Looking for ${file.toNIO.toUri.toASCIIString} in $wrappedSourcesRes")
-
-          wrappedSourcesRes.getItems.asScala.iterator
-            .filter(_.getSources.asScala.exists(_.getUri == file.toNIO.toUri.toASCIIString))
-            .map(_.getTarget)
-            .toVector
-        }
-        else targets
-      val retainedTargets = {
-        val l = targets0
-          .collect {
-            case id if !loadedTargetIds.contains(id) =>
-              id
-          }
-          .toVector
-        val l0 = l.sortBy { id =>
-          val scalaTargetOpt = targetMap.get(id)
-            .orElse {
-              server.bspData.targetData(server0.info).flatMap(_.buildTargetInfo.get(id))
-            }
-            .flatMap(_.asScalaBuildTarget)
-          val scalaVer =
-            scalaTargetOpt.map(_.getScalaVersion).map(Version(_)).getOrElse(Version("0"))
-          val platformIdx = scalaTargetOpt.map(_.getPlatform.getValue).getOrElse(0)
-          (OppositeOrdering(scalaVer), platformIdx, id.getUri)
-        }
-        l0.zipWithIndex.map {
-          case (id, idx) =>
-            val recommended = idx == 0 && {
-              val scalaTargetOpt = targetMap.get(id)
-                .orElse {
-                  server.bspData.targetData(server0.info).flatMap(_.buildTargetInfo.get(id))
-                }
-                .flatMap(_.asScalaBuildTarget)
-              val scalaVerOpt = scalaTargetOpt.map(_.getScalaVersion)
-              scalaVerOpt.forall { sv =>
-                sv.startsWith("2.13.") && Version(sv) <= Version(Constants.scala2Version) ||
-                sv.startsWith("3.") && Version(sv) <= Version(Constants.scalaVersion)
-              }
-            }
-            (targetId = id, recommended = recommended)
-        }
-      }
-      retainedTargets.map {
-        case (id, recommended) =>
-          val targetOpt = targetMap.get(id).orElse {
-            server.bspData.targetData(server0.info).flatMap(_.buildTargetInfo.get(id))
-          }
-          val name = targetOpt.map(_.getDisplayName).getOrElse {
-            BspUtil.targetShortId(server.bspData, id)
-          }
-
-          val commentOpt = targetOpt.flatMap(_.asScalaBuildTarget).map { scalaTarget =>
-            val sv = scalaTarget.getScalaVersion
-            val platform = scalaTarget.getPlatform match {
-              case b.ScalaPlatform.JVM    => "JVM"
-              case b.ScalaPlatform.JS     => "Scala.js"
-              case b.ScalaPlatform.NATIVE => "Scala Native"
-            }
-            // TODO Factor that somewhere
-            val supported =
-              sv.startsWith("2.13.") && Version(sv) <= Version(Constants.scala2Version) ||
-              sv.startsWith("3.") && Version(sv) <= Version(Constants.scalaVersion)
-            (supported, s"Scala $sv, $platform")
-          }
-
-          val supported = commentOpt.map(_._1).getOrElse(true)
-          BuildToolOrModule.Module(
-            workspace = server0.info.workspace.toNIO.toUri.toASCIIString,
-            server = server0.name,
-            uri = id.getUri,
-            label = (if (supported) if (recommended) "$(tag) " else "" else "$(warning) ") + name,
-            detail = if (supported) "Load module" else "Unsupported Scala version",
-            description = (Seq(server0.enhancedName) ++ commentOpt.map(_._2)).mkString(", "),
-            alreadyLoaded = false
-          )
-      }
+  ): Seq[BuildToolOrModule.Module] =
+    ProjectOps.listModules(file, server).map { module =>
+      BuildToolOrModule.Module(
+        workspace = module.workspace,
+        server = module.server,
+        uri = module.uri,
+        label = module.label,
+        detail = module.detail,
+        description = module.description,
+        alreadyLoaded = module.alreadyLoaded
+      )
     }
-  }
 
   def restartBuildTool(
     server: Server,
@@ -530,15 +350,8 @@ object PlasmonCommands {
     CommandHandler.of("plasmon/listBuildTools") { (params, _) =>
       params.asOpt[String]("plasmon/listBuildTools") { fileOpt0 =>
         Future {
-          val workspace = server.workspace()
-          val fileOpt   = fileOpt0.map(_.osPathFromUri)
-          val buildTools: Seq[BuildToolOrModule] =
-            discoverBuildTools(
-              workspace,
-              fileOpt,
-              server.bspServers.list.map(_._1).toSet,
-              server.tools
-            )
+          val fileOpt                            = fileOpt0.map(_.osPathFromUri)
+          val buildTools: Seq[BuildToolOrModule] = discoverBuildTools(server, fileOpt)
           writeToGson(buildTools)(using BuildToolOrModule.seqCodec)
         }(using server.pools.requestsEces).asJava
       }
@@ -546,16 +359,9 @@ object PlasmonCommands {
     CommandHandler.of("plasmon/listBuildToolsOrModules") { (params, _) =>
       params.asOpt[String]("plasmon/listBuildToolsOrModules") { fileOpt0 =>
         Future {
-          val workspace = os.Path(server.workspace().toNIO)
-          val fileOpt   = fileOpt0.map(_.osPathFromUri)
-          val buildTools =
-            discoverBuildTools(
-              workspace,
-              fileOpt,
-              server.bspServers.list.map(_._1).toSet,
-              server.tools
-            )
-          val modules = fileOpt.toSeq.flatMap(listModules(_, server))
+          val fileOpt    = fileOpt0.map(_.osPathFromUri)
+          val buildTools = discoverBuildTools(server, fileOpt)
+          val modules    = fileOpt.toSeq.flatMap(listModules(_, server))
           writeToGson(buildTools ++ modules)(using BuildToolOrModule.seqCodec)
         }(using server.pools.requestsEces).asJava
       }
@@ -563,16 +369,9 @@ object PlasmonCommands {
     CommandHandler.of("plasmon/listModulesOf") { (params, _) =>
       params.asOpt[String]("plasmon/listModulesOf") { fileOpt0 =>
         Future {
-          val workspace = os.Path(server.workspace().toNIO)
-          val fileOpt   = fileOpt0.map(_.osPathFromUri)
-          val buildTools =
-            discoverBuildTools(
-              workspace,
-              fileOpt,
-              server.bspServers.list.map(_._1).toSet,
-              server.tools
-            )
-          val modules = fileOpt.toSeq.flatMap(listModules(_, server))
+          val fileOpt    = fileOpt0.map(_.osPathFromUri)
+          val buildTools = discoverBuildTools(server, fileOpt)
+          val modules    = fileOpt.toSeq.flatMap(listModules(_, server))
           writeToGson(buildTools ++ modules)(using BuildToolOrModule.seqCodec)
         }(using server.pools.requestsEces).asJava
       }
@@ -583,62 +382,14 @@ object PlasmonCommands {
         discoverId: String,
         toolId: String,
         currentFileOpt: Option[os.Path]
-      ): CompletableFuture[Object] = {
-        val f = Future {
-          BspUtil.BuildToolDiscover.map.get(discoverId) match {
-            case Some(discover) =>
-              val tools = discover.check(
-                server.workspace(),
-                currentFileOpt,
-                server.bspServers.list.map(_._1).toSet
-              )
-              tools.find(_.buildTool.id == toolId) match {
-                case Some(tool) =>
-                  val f = server.bspServers.tryAdd(
-                    tool.buildTool,
-                    tool.buildTool.launcher(server.tools) +: tool.buildTool.extraLaunchers,
-                    line => scribe.info("BSP: " + line),
-                    pools.bspEces,
-                    () => pools.bloopThreads
-                  )
-
-                  implicit val ec = server.pools.requestsEces
-                  f.flatMap {
-                    case Left(err) =>
-                      Future.successful(LoadBuildToolResult(success = false, Some(err)))
-                    case Right(()) =>
-                      Future {
-                        server.bspServers.persist()
-                        LoadBuildToolResult(success = true, None)
-                      }(using server.pools.requestsEces)
-                  }
-                case None =>
-                  val found = tools.map(tool => (tool.buildTool.id, tool.discoverId))
-                  scribe.error(
-                    s"Build tool $toolId / $discoverId not found, available tools: $found"
-                  )
-                  scribe.error(s"currentFileOpt=$currentFileOpt")
-                  Future.successful {
-                    LoadBuildToolResult(
-                      success = false,
-                      Some(s"Build tool $toolId / $discoverId not found (internal error)")
-                    )
-                  }
-              }
-            case None =>
-              Future.successful(LoadBuildToolResult(
-                success = false,
-                Some(s"Build tool $discoverId not found")
-              ))
-          }
-        }(using server.pools.requestsEces)
-
-        val f0 = {
-          implicit val ec = server.pools.requestsEces
-          f.flatten.map(writeToGson(_))
-        }
-        f0.asJava
-      }
+      ): CompletableFuture[Object] =
+        ProjectOps
+          .loadBuildTool(server, pools, discoverId, toolId, currentFileOpt)
+          .map[Object] {
+            case Left(err) => writeToGson(LoadBuildToolResult(success = false, Some(err)))
+            case Right(()) => writeToGson(LoadBuildToolResult(success = true, None))
+          }(using server.pools.requestsEces)
+          .asJava
 
       if (params.arguments.length == 2)
         params.asValues[String, String]("plasmon/loadBuildTool") { (discoverId, toolId) =>
@@ -822,34 +573,9 @@ object PlasmonCommands {
     },
     CommandHandler.of("plasmon/compile", refreshStatus = true) { (params, _) =>
       params.asFileUri("plasmon/compile") { file =>
-        val f = Future {
-          server.compilations.compileFile(file) match {
-            case None =>
-              scribe.warn(s"No build target found for $file, nothing to compile")
-              Future.successful[Object](null)
-            case Some(f) =>
-              val recovered = f.recover {
-                case ex
-                    if Iterator
-                      .iterate(Option(ex))(_.flatMap(e => Option(e.getCause)))
-                      .takeWhile(_.nonEmpty)
-                      .flatten
-                      .exists(e =>
-                        e.isInstanceOf[ResponseErrorException] &&
-                        Option(e.getMessage).exists(_.contains("Compilation failed"))
-                      ) =>
-                  new b.CompileResult(b.StatusCode.ERROR)
-              }(using server.pools.compilationEc)
-              recovered.onComplete {
-                case Success(_) =>
-                case Failure(ex) =>
-                  scribe.error(s"Compiling $file failed", ex)
-              }(using server.pools.compilationEc)
-              recovered.map[Object](_ => null)(using server.pools.dummyEc)
-          }
-        }(using server.pools.requestsEces)
-
-        f.flatten.asJava
+        ProjectOps.compile(server, file)
+          .map[Object](_ => null)(using server.pools.dummyEc)
+          .asJava
       }
     },
     CommandHandler.of("plasmon/clean", refreshStatus = true) { (params, _) =>
@@ -1116,59 +842,21 @@ object PlasmonCommands {
     CommandHandler.of("plasmon/loadModule", refreshStatus = true) { (params, _) =>
       params.asValues[String, String, String]("plasmon/loadModule") {
         (workspaceUri, name, moduleUri) =>
-          val f = Future {
-            val workspace = workspaceUri.osPathFromUri
-            val infoOpt   = server.bspServers.get(workspace, name)
-            infoOpt match {
-              case Some(conn) =>
-                val targetId = new b.BuildTargetIdentifier(moduleUri)
-                val loaded   = indexer.addTarget(conn.info, targetId)
-                if (loaded) {
-                  indexer.persist()
-                  indexer.reIndex().map(_ => LoadModuleResponse(loaded))(using pools.dummyEc)
-                }
-                else {
-                  scribe.info(s"Module already added: $targetId")
-                  Future.successful(LoadModuleResponse(loaded))
-                }
-              case None =>
-                Future.successful(LoadModuleResponse(
-                  loaded = false,
-                  error = s"No BSP server '$name' found under $workspace"
-                ))
-            }
-          }(using server.pools.requestsEces)
-
-          f.flatten.map[Object](resp => writeToGson(resp))(using pools.dummyEc).asJava
+          ProjectOps
+            .loadModule(server, indexer, pools, workspaceUri.osPathFromUri, name, moduleUri)
+            .map[Object] {
+              case Left(err)     => writeToGson(LoadModuleResponse(loaded = false, error = err))
+              case Right(loaded) => writeToGson(LoadModuleResponse(loaded))
+            }(using pools.dummyEc)
+            .asJava
       }
     },
     CommandHandler.of("plasmon/loadAllModules", refreshStatus = true) { (params, _) =>
       params.asOpt[Boolean]("plasmon/loadAllModules") { toplevelCacheOnlyOpt =>
-        val f = Future {
-          val allTargetsByBuildServer =
-            server.bspServers.list.flatMap(_._2).map { buildServer =>
-              buildServer -> buildServer
-                .conn
-                .workspaceBuildTargets
-                .get()
-                .getTargets
-                .asScala
-                .toList
-            }
-          if (allTargetsByBuildServer.isEmpty)
-            scribe.warn("No build servers found while loading all modules")
-          indexer.targets = Map.empty
-          for ((server, targets) <- allTargetsByBuildServer)
-            indexer.addTargets(server.info, targets.map(_.getId))
-          indexer.persist()
-          indexer.index(
-            toplevelCacheOnly = toplevelCacheOnlyOpt.getOrElse(false),
-            ignoreToplevelSymbolsErrors = false,
-            mayReadFromBspCache = false
-          )
-        }(using server.pools.requestsEces)
-
-        f.flatten.map[Object](_ => null)(using pools.dummyEc).asJava
+        ProjectOps
+          .loadAllModules(server, indexer, toplevelCacheOnlyOpt.getOrElse(false))
+          .map[Object](_ => null)(using pools.dummyEc)
+          .asJava
       }
     },
     CommandHandler.of("plasmon/unloadModule", refreshStatus = true) { (params, _) =>

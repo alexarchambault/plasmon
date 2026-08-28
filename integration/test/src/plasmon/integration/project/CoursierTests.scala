@@ -3,7 +3,7 @@ package plasmon.integration.project
 import com.google.gson.Gson
 import io.github.alexarchambault.testutil.TestOutput.FixedReadBytes
 import org.eclipse.lsp4j as l
-import plasmon.integration.PlasmonSuite
+import plasmon.integration.{PlasmonSuite, TestMode}
 import plasmon.integration.TestUtil.*
 
 import java.io.OutputStream
@@ -37,13 +37,18 @@ class CoursierTests extends PlasmonSuite {
   private val isCi = System.getenv("CI") != null
 
   if (!isCi)
-    test("main") {
-      mainTest()
-    }
+    for (mode <- modes)
+      test("main" + mode.testNameSuffix) {
+        mainTest(mode)
+      }
 
-  private def mainTest(): Unit =
-    withWorkspaceAndServer(timeout = Some(munitTimeout), workspaceOpt = Some(coursierSources))() {
-      (workingDir, server, _, osOpt, _) =>
+  private def mainTest(mode: TestMode): Unit =
+    withWorkspaceAndServer(
+      mode = mode,
+      timeout = Some(munitTimeout),
+      workspaceOpt = Some(coursierSources)
+    )() {
+      (workingDir, driver, osOpt, _) =>
         bspInit(osOpt)
 
         val dependencySource =
@@ -51,15 +56,15 @@ class CoursierTests extends PlasmonSuite {
         val testHelpersSource =
           coursierSources / "modules/coursier/shared/src/test/scala/coursier/tests/TestHelpers.scala"
 
-        loadBuildToolViaLsp(server, "bloop", "bloop", dependencySource)
-        loadModuleOfViaLsp(server, dependencySource)
-        loadModuleOfViaLsp(server, testHelpersSource)
+        driver.loadBuildTool("bloop", "bloop", dependencySource)
+        driver.loadModuleOf(dependencySource)
+        driver.loadModuleOf(testHelpersSource)
 
         // issues with the bsp clean command in mill for now…
         os.remove.all(coursierSources / "out/core")
 
-        compileViaLsp(server, dependencySource)
-        compileViaLsp(server, testHelpersSource)
+        driver.compile(dependencySource)
+        driver.compile(testHelpersSource)
 
         val jsonDiag = serverCommandOutput(workingDir, osOpt)(
           "diagnostics",
@@ -77,7 +82,7 @@ class CoursierTests extends PlasmonSuite {
         )
 
         val hover0 = hoverMarkdown(
-          server,
+          driver,
           testHelpersSource,
           new l.Position(145, 30)
         )
@@ -88,7 +93,7 @@ class CoursierTests extends PlasmonSuite {
         )
 
         val hover1 = hoverMarkdown(
-          server,
+          driver,
           coursierSources / "modules/coursier/shared/src/test/scala/coursier/tests/ResolveTests.scala",
           new l.Position(148, 18)
         )
@@ -98,17 +103,16 @@ class CoursierTests extends PlasmonSuite {
           osOpt
         )
 
-        compileViaLsp(
-          server,
+        driver.compile(
           coursierSources / "modules/coursier/shared/src/test/scala/coursier/tests/ResolveTests.scala"
         )
 
         val consoleDimPath =
           coursierSources / "modules/cache/jvm/src/main/scala/coursier/cache/internal/ConsoleDim.scala"
-        loadModuleOfViaLsp(server, consoleDimPath)
-        compileViaLsp(server, consoleDimPath)
+        driver.loadModuleOf(consoleDimPath)
+        driver.compile(consoleDimPath)
 
-        val consoleDimHover = hoverMarkdown(server, consoleDimPath, new l.Position(13, 16))
+        val consoleDimHover = hoverMarkdown(driver, consoleDimPath, new l.Position(13, 16))
 
         checkTextFixture(
           fixtureDir / "plasmon/integration/project/coursier-tests/load-hover.txt",

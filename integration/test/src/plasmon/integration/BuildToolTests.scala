@@ -12,6 +12,11 @@ import plasmon.integration.TestUtil.*
   * These are the slow tests. They are the only ones that run Mill, sbt and Scala CLI for real, and
   * they are what stands behind the recordings the presentation compiler tests are fed - if a build
   * tool starts reporting something different, it shows up here.
+  *
+  * They run over LSP only. Nothing here is about how the server is driven - the CLI equivalents of
+  * these steps are covered by every replayed test, which loads a build tool and imports it through
+  * whichever [[TestMode]] it runs under - and running the real build tools twice is the one cost
+  * worth not paying twice.
   */
 class BuildToolTests extends PlasmonSuite {
 
@@ -33,9 +38,9 @@ class BuildToolTests extends PlasmonSuite {
       extraServerOpts = Seq("--jvm", jvm.value),
       timeout = Some(buildTool.defaultTimeout * 2)
     )(files.map { case (path, content) => (path, content: os.Source) }*) {
-      (workspace, remoteServer, _, osOpt, _) =>
+      (workspace, driver, osOpt, _) =>
 
-        buildTool.setup(workspace, remoteServer, osOpt, compiles = false)
+        buildTool.setup(workspace, driver, osOpt, compiles = false)
 
         BspDataFixture.check(
           workspace,

@@ -1,24 +1,24 @@
 package plasmon.integration
 
-import io.github.alexarchambault.testutil.TestUtil.*
-import org.eclipse.lsp4j as l
 import plasmon.integration.TestUtil.*
-
-import java.net.URI
-import java.nio.file.Paths
-
-import scala.concurrent.{Await, Promise}
-import scala.concurrent.duration.DurationInt
-import scala.reflect.Selectable.reflectiveSelectable
 
 class DiagnosticsTests extends PlasmonSuite {
 
-  for (jvm <- jvmValues)
-    test(s"simple Java ${jvm.label}") {
-      simpleTest(SingleModuleBuildTool.ScalaCli(), (IntegrationConstants.scala213, "2.13"), jvm)
+  for {
+    jvm  <- jvmValues
+    mode <- modes
+  }
+    test(s"simple Java ${jvm.label}" + mode.testNameSuffix) {
+      simpleTest(
+        mode,
+        SingleModuleBuildTool.ScalaCli(),
+        (IntegrationConstants.scala213, "2.13"),
+        jvm
+      )
     }
 
   private def simpleTest(
+    mode: TestMode,
     buildTool: SingleModuleBuildTool,
     scalaVersion: (String, String),
     jvm: Labelled[String]
@@ -34,36 +34,24 @@ class DiagnosticsTests extends PlasmonSuite {
          |}
          |""".stripMargin
     )
-    val diagPromise = Promise[l.PublishDiagnosticsParams]()
-    val futureDiag  = diagPromise.future
-    val client
-      : MockLanguageClient { def setWorkspace(workspace: os.Path): Unit; def workspace: os.Path } =
-      new MockLanguageClient {
-        private var workspaceOpt = Option.empty[os.Path]
-        def setWorkspace(workspace: os.Path): Unit = {
-          workspaceOpt = Some(workspace)
-        }
-        def workspace = workspaceOpt.getOrElse(sys.error("workspace not set"))
-        override def publishDiagnostics(params: l.PublishDiagnosticsParams): Unit = {
-          outputStream.pprint(params)
-          val path = os.Path(Paths.get(new URI(params.getUri)))
-          if (path == workspace / sourceFile && !params.getDiagnostics.isEmpty)
-            diagPromise.trySuccess(params)
-          super.publishDiagnostics(params)
-        }
-      }
     withWorkspaceServerPositions(
-      client = client,
+      mode = mode,
       extraServerOpts = Seq("--jvm", jvm.value),
       timeout = Some(buildTool.defaultTimeout)
     )(files*) {
-      (workspace, remoteServer, _, osOpt) =>
+      (workspace, driver, _, osOpt) =>
 
-        client.setWorkspace(workspace)
+        buildTool.setup(workspace, driver, osOpt, compiles = false)
 
-        buildTool.setup(workspace, remoteServer, osOpt, compiles = false)
+        // Asking for a build rather than relying on the one the import happens to trigger: those
+        // diagnostics are cleared again when indexing resets its caches, so what is left to be
+        // read back afterwards - which is all a CLI can do - is nothing at all.
+        driver.compile(workspace / sourceFile)
 
-        val diagParams = Await.result(futureDiag, 20.seconds)
+        // Scaled rather than a fixed wait: the CLI mode reads the diagnostics back from the
+        // server rather than being pushed them, and everything else here already scales with
+        // PLASMON_TIMEOUT_OVERRIDE
+        val diagParams = driver.awaitDiagnostics(workspace / sourceFile, baseTimeout)
 
         checkGsonFixture(
           fixtureDir / "plasmon/integration/diagnostics-tests/simple" / buildTool.id / s"scala-${scalaVersion._2}" / s"jvm-${jvm.label}" / "publish-diagnostics-params.json",

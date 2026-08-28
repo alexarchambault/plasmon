@@ -34,6 +34,18 @@ abstract class PlasmonNoopLanguageClient extends PlasmonLanguageClient {
   override def progress(details: PlasmonLanguageClient.ProgressDetails): Unit = ()
 
   override def buildChangeDetected(details: PlasmonLanguageClient.BuildChangeDetails): Unit = ()
+
+  /** There is no editor to hand the edit to.
+    *
+    * A server running without an LSP client at all (`plasmon server --lsp=false`) ends up here;
+    * `plasmon lsp did-open` and friends carry out the edits they cause themselves rather than going
+    * through a client, so this is the incidental caller rather than the usual one.
+    */
+  override def applyEdit(params: l.ApplyWorkspaceEditParams)
+    : CompletableFuture[l.ApplyWorkspaceEditResponse] = {
+    scribe.warn(s"No client to apply an edit, ignoring it: $params")
+    CompletableFuture.completedFuture(new l.ApplyWorkspaceEditResponse(false))
+  }
 }
 
 object PlasmonNoopLanguageClient extends PlasmonNoopLanguageClient
