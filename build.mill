@@ -757,10 +757,38 @@ object server extends ScalaModule with PlasmonPublishModule {
       nativeImageClassPathAsJars().map(_.path).mkString(File.pathSeparator)
     }
 
+    /** Whether to build the image in GraalVM's quick build mode (`-Ob`), off by default.
+      *
+      * Worth it when you are waiting on the image rather than running it: "Compiling methods" drops
+      * by 22-34%, and locally that is most of what you feel.
+      *
+      * It is off on CI because it loses there. Compiling is only about a quarter of the build, and
+      * `-Ob` leaves the analysis alone - same universe, same points-to run - so the whole build
+      * only came down 0-38s across ubuntu-latest, ubuntu-24.04-arm and windows-latest, while the
+      * slower binary added 60-145s to the integration tests, which run it hundreds of times. Peak
+      * RSS is untouched either way, so this is no help towards a free Mac ARM runner.
+      *
+      * Set `PLASMON_NATIVE_IMAGE_QUICK_BUILD` to `true` to opt in, or `false` to be explicit.
+      */
+    def nativeImageQuickBuild = Task.Input {
+      Task.env
+        .get("PLASMON_NATIVE_IMAGE_QUICK_BUILD")
+        .map(_.trim)
+        .filter(_.nonEmpty) match {
+        case Some("true")         => true
+        case Some("false") | None => false
+        case Some(other) =>
+          sys.error(s"Malformed PLASMON_NATIVE_IMAGE_QUICK_BUILD value: '$other'")
+      }
+    }
+
     def nativeImageOptions = Task {
       val ciOptions =
         if (System.getenv("CI") == null) Nil
         else Seq("-H:DeadlockWatchdogInterval=25")
+      val quickBuildOptions =
+        if (nativeImageQuickBuild()) Seq("-Ob")
+        else Nil
       super.nativeImageOptions() ++ Seq(
         "--no-fallback",
         "-Duser.country=US",
@@ -774,7 +802,7 @@ object server extends ScalaModule with PlasmonPublishModule {
         "--add-opens=org.graalvm.nativeimage.builder/com.oracle.svm.core.posix.headers=ALL-UNNAMED", // needed for Signal stuff used by libdaemon-jvm
         s"-Dplasmon.disableScala2Pc=$disableScala2Pc",
         "--enable-native-access=ALL-UNNAMED"
-      ) ++ ciOptions
+      ) ++ ciOptions ++ quickBuildOptions
     }
 
     def nativeImagePersist      = System.getenv("CI") != null
