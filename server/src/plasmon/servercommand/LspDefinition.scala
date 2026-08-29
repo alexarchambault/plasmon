@@ -12,13 +12,17 @@ import scala.jdk.CollectionConverters.*
 
 final case class LspDefinition(
   server: Server,
+  indexer: Indexer,
   client: CommandClient,
   pools: plasmon.command.ServerCommandThreadPools
 ) extends ServerCommandInstance[LspDefinitionOptions](client) {
   override def names = LspDefinition.names
   def run(options: LspDefinitionOptions, args: RemainingArgs): Unit = {
 
-    val (_, uri) = FileArg.single(args.all, options.uri, server.workingDir)
+    val (path, uri) = FileArg.single(args.all, options.uri, server.workingDir)
+
+    if (options.auto)
+      AutoLoad(server, indexer, pools, path, printLine(_, toStderr = true))
 
     val handler = Definition.definitionHandler(
       server,
@@ -66,7 +70,7 @@ object LspDefinition extends ServerCommand[LspDefinitionOptions] {
     lspServer: plasmon.jsonrpc.JsonrpcServer,
     pool: plasmon.command.ServerCommandThreadPools
   ): ServerCommandInstance[LspDefinitionOptions] =
-    LspDefinition(server, client, pool)
+    LspDefinition(server, indexer, client, pool)
   override def names = List(
     List("lsp", "definition"),
     List("lsp-definition")

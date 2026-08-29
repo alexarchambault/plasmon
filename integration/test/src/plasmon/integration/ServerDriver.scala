@@ -390,6 +390,22 @@ object ServerDriver {
         Seq[os.Shellable]("lsp", "definition", "--json") ++ position(pos) :+ path*
       ).toSeq
 
+    /** `lsp hover --auto`: loads a build tool and a module for the file first, if it has none.
+      *
+      * No counterpart on [[ServerDriver]] - there is nothing over LSP that corresponds to it, an
+      * editor having loaded both long before it asks for a hover.
+      */
+    def hoverAuto(path: os.Path, pos: l.Position): l.Hover =
+      json(classOf[l.Hover])(
+        Seq[os.Shellable]("lsp", "hover", "--json", "--auto") ++ position(pos) :+ path*
+      )
+
+    /** `lsp definition --auto`, the counterpart of [[hoverAuto]]. */
+    def definitionAuto(path: os.Path, pos: l.Position): Seq[l.Location] =
+      json(classOf[Array[l.Location]])(
+        Seq[os.Shellable]("lsp", "definition", "--json", "--auto") ++ position(pos) :+ path*
+      ).toSeq
+
     def completion(path: os.Path, pos: l.Position): l.CompletionList =
       json(classOf[l.CompletionList])(
         Seq[os.Shellable]("lsp", "completion", "--json") ++ position(pos) :+ path*
