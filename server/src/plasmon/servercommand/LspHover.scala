@@ -12,6 +12,7 @@ import scala.jdk.CollectionConverters.*
 
 final case class LspHover(
   server: Server,
+  indexer: Indexer,
   client: CommandClient,
   pools: plasmon.command.ServerCommandThreadPools
 ) extends ServerCommandInstance[LspHoverOptions](client) {
@@ -19,6 +20,9 @@ final case class LspHover(
   def run(options: LspHoverOptions, args: RemainingArgs): Unit = {
 
     val (path, uri) = FileArg.single(args.all, options.uri, server.workingDir)
+
+    if (options.auto)
+      AutoLoad(server, indexer, pools, path, printLine(_, toStderr = true))
 
     val handler = Hover.handler(
       server,
@@ -93,7 +97,7 @@ object LspHover extends ServerCommand[LspHoverOptions] {
     lspServer: plasmon.jsonrpc.JsonrpcServer,
     pool: plasmon.command.ServerCommandThreadPools
   ): ServerCommandInstance[LspHoverOptions] =
-    LspHover(server, client, pool)
+    LspHover(server, indexer, client, pool)
   override def names = List(
     List("lsp", "hover"),
     List("lsp-hover")

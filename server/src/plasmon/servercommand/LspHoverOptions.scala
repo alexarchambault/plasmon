@@ -13,6 +13,8 @@ final case class LspHoverOptions(
     line: Int,
   @HelpMessage("Column to hover at, zero-based")
     col: Int,
+  @HelpMessage("Load a build tool and a module for the file first, if it has none")
+    auto: Boolean = false,
   @HelpMessage("Print the raw LSP response as JSON")
     json: Boolean = false
 )

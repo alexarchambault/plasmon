@@ -332,6 +332,14 @@ object TestUtil {
   lazy val lspOnlyModes: Seq[TestMode] =
     modes.filter(_ == TestMode.Lsp)
 
+  /** The modes a suite runs in when only the CLI entry point is worth exercising.
+    *
+    * [[modes]] minus the LSP one: for a suite about something only `plasmon <command>` offers -
+    * `--auto`, say - there is no LSP run to make.
+    */
+  lazy val cliOnlyModes: Seq[TestMode] =
+    modes.filter(_ == TestMode.Cli)
+
   private val baseCommand: os.Shellable =
     if (launcherKind == "native") Seq[os.Shellable](launcher, serverExtraJavaOpts)
     else Seq[os.Shellable]("java", serverExtraJavaOpts, "-jar", launcher)
