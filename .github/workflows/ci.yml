@@ -13,6 +13,8 @@ permissions:
 
 jobs:
   test:
+    # TEMPORARY (revert before merging): this PR only checks the macOS ARM job
+    if: false
     needs: tags
     runs-on: ubuntu-latest
     steps:
@@ -50,6 +52,8 @@ jobs:
       run: scala-cli --server=false integration/print-failing-test-logs.scala
 
   format:
+    # TEMPORARY (revert before merging): this PR only checks the macOS ARM job
+    if: false
     needs: tags
     timeout-minutes: 15
     runs-on: ubuntu-latest
@@ -70,31 +74,23 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        OS: ["ubuntu-latest"]
-        OS_SHORT: ["linux"]
-        # Extra ./mill args for the test steps. Mill forks one test JVM per job
-        # slot (capped by the test class count), and each of those spawns a
-        # server plus an sbt / Mill / Bloop JVM, so this is really a memory
-        # knob. Empty means "one per core".
-        TEST_JOBS: [""]
-        include:
-          - OS: "windows-latest"
-            OS_SHORT: "windows"
-            TEST_JOBS: ""
-          # 4 cores but only 14 GB
-          - OS: "macos-15-intel"
-            OS_SHORT: "mac"
-            TEST_JOBS: "-j 3"
-          # 3 cores and 7 GB, the tightest of the runners we use - one test JVM
-          # per core ran out of memory here, which is why this job used to run
-          # on the paid macos-15-xlarge runner, at release time only. Drop this
-          # to "-j 1" before giving up on the free runner again.
-          - OS: "macos-15"
-            OS_SHORT: "mac-arm"
-            TEST_JOBS: "-j 2"
-          - OS: "ubuntu-24.04-arm"
-            OS_SHORT: "linux-arm"
-            TEST_JOBS: ""
+        # TEMPORARY (revert before merging): the other entries - ubuntu-latest /
+        # linux, windows-latest / windows, macos-15-intel / mac -j 3 and
+        # ubuntu-24.04-arm / linux-arm - are left out, so that this PR only
+        # checks the macOS ARM runner.
+        #
+        # TEST_JOBS holds extra ./mill args for the test steps. Mill forks one
+        # test JVM per job slot (capped by the test class count), and each of
+        # those spawns a server plus an sbt / Mill / Bloop JVM, so this is
+        # really a memory knob. Empty means "one per core".
+        #
+        # macos-15 has 3 cores and 7 GB, the tightest of the runners we use -
+        # one test JVM per core ran out of memory here, which is why this job
+        # used to run on the paid macos-15-xlarge runner, at release time only.
+        # Drop this to "-j 1" before giving up on the free runner again.
+        OS: ["macos-15"]
+        OS_SHORT: ["mac-arm"]
+        TEST_JOBS: ["-j 2"]
     runs-on: ${{ matrix.OS }}
     steps:
     - uses: actions/checkout@v7
