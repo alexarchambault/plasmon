@@ -257,7 +257,7 @@ object GitHubReleaseAssets {
       sys.error("UPLOAD_GH_TOKEN not set")
     }
     val (tag, overwriteAssets) =
-      if (version.endsWith("-SNAPSHOT")) ("latest", true)
+      if (version.endsWith("-SNAPSHOT")) ("nightly", true)
       else ("v" + version, false)
     upload(ghOrg, ghName, ghToken, tag, dryRun = false, overwrite = overwriteAssets)(launchers*)
   }

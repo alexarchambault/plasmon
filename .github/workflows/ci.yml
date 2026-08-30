@@ -13,6 +13,7 @@ permissions:
 
 jobs:
   test:
+    needs: tags
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v7
@@ -49,6 +50,7 @@ jobs:
       run: scala-cli --server=false integration/print-failing-test-logs.scala
 
   format:
+    needs: tags
     timeout-minutes: 15
     runs-on: ubuntu-latest
     steps:
@@ -64,6 +66,7 @@ jobs:
       run: ./mill -i __.checkNativeImageConfFormat
 
   native-test:
+    needs: tags
     strategy:
       fail-fast: false
       matrix:
@@ -146,11 +149,13 @@ jobs:
       if: failure()
       run: scala-cli --server=false integration/print-failing-test-logs.scala
 
-  # Separate job so the expensive macos-15-xlarge runner is only used for
-  # actual releases (tags starting with v). The main native-test job above
-  # always runs the cheaper matrix entries on every CI trigger.
+  # Separate job so the expensive macos-15-xlarge runner is only used for the
+  # releases that ship launchers ("cli-*" tag) - the nightly launchers don't
+  # include the macOS ARM one. The main native-test job above always runs the
+  # cheaper matrix entries on every CI trigger.
   native-test-macos-arm:
-    if: startsWith(github.ref, 'refs/tags/v')
+    needs: tags
+    if: needs.tags.outputs.cli == 'true' && startsWith(github.ref, 'refs/tags/v')
     runs-on: macos-15-xlarge
     steps:
     - uses: actions/checkout@v7
@@ -200,8 +205,54 @@ jobs:
       if: failure()
       run: scala-cli --server=false integration/print-failing-test-logs.scala
 
+  # What this run should release. A "v*" tag on its own releases nothing, and
+  # is rejected here: publishing to Maven Central needs a "publish-<version>"
+  # tag alongside it, uploading the native launchers to the GitHub release
+  # needs a "cli-<version>" one, and the two are independent. Push those
+  # together with the "v*" tag (a single `git push`), as only the "v*" tag
+  # triggers this workflow, and the tags are read once, when it starts.
+  #
+  # The other jobs hang off this one, so that a "v*" tag with neither of those
+  # alongside it runs no CI at all.
+  tags:
+    runs-on: ubuntu-latest
+    outputs:
+      publish: ${{ steps.check.outputs.publish }}
+      cli: ${{ steps.check.outputs.cli }}
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        fetch-depth: 0
+    - id: check
+      shell: bash
+      run: |
+        publish=false
+        cli=false
+        if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+          version="${GITHUB_REF#refs/tags/v}"
+          tags="$(git tag --points-at HEAD)"
+          if grep -qx -e "publish-$version" <<< "$tags"; then
+            publish=true
+          fi
+          if grep -qx -e "cli-$version" <<< "$tags"; then
+            cli=true
+          fi
+          if [[ "$publish" != true && "$cli" != true ]]; then
+            echo "::error::v$version has neither publish-$version nor cli-$version alongside it, nothing to release"
+            exit 1
+          fi
+        elif [[ "$GITHUB_EVENT_NAME" == push ]]; then
+          # Pushes to the main branch publish a snapshot, and refresh the
+          # launchers of the nightly release
+          publish=true
+          cli=true
+        fi
+        echo "publish=$publish" >> "$GITHUB_OUTPUT"
+        echo "cli=$cli" >> "$GITHUB_OUTPUT"
+
   publish:
-    if: github.event_name == 'push'
+    needs: tags
+    if: needs.tags.outputs.publish == 'true'
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v7
@@ -209,18 +260,34 @@ jobs:
         fetch-depth: 0
         submodules: true
     - uses: coursier/setup-action@v3
+    - name: Ignore tags (non-tag push)
+      if: ${{ !startsWith(github.ref, 'refs/tags/') }}
+      shell: bash
+      run: |
+        # The version we publish and upload to comes from the tags at HEAD, and
+        # a non-tag push must get a snapshot version out of them
+        for tag in $(git tag --points-at HEAD); do
+          git tag -d "$tag"
+        done
     - name: Publish
-      run: ./mill -i mill.scalalib.SonatypeCentralPublishModule/
+      run: |
+        if [[ "$GITHUB_REF" == refs/tags/* ]]; then
+          ./mill -i mill.scalalib.SonatypeCentralPublishModule/ --bundleName "plasmon-${GITHUB_REF#refs/tags/v}"
+        else
+          ./mill -i mill.scalalib.SonatypeCentralPublishModule/
+        fi
       env:
         MILL_PGP_SECRET_BASE64: ${{ secrets.PUBLISH_SECRET_KEY_BASE64 }}
         MILL_PGP_PASSPHRASE: ${{ secrets.PUBLISH_SECRET_KEY_PASSWORD }}
         MILL_SONATYPE_USERNAME: ${{ secrets.PUBLISH_USER }}
         MILL_SONATYPE_PASSWORD: ${{ secrets.PUBLISH_PASSWORD }}
 
+  # Tied to publishing rather than to the CLI release: the JAR launchers just
+  # resolve the artifacts we've published, on the nightly release too
   generate-jar-launcher:
-    name: Upload JAR launcher
-    needs: publish
-    if: startsWith(github.ref, 'refs/tags/v')
+    name: Upload JAR launchers
+    needs: [tags, publish]
+    if: needs.tags.outputs.publish == 'true'
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v7
@@ -230,6 +297,15 @@ jobs:
     - uses: coursier/setup-action@v3
       with:
         jvm: 17
+    - name: Ignore tags (non-tag push)
+      if: ${{ !startsWith(github.ref, 'refs/tags/') }}
+      shell: bash
+      run: |
+        # The version we publish and upload to comes from the tags at HEAD, and
+        # a non-tag push must get a snapshot version out of them
+        for tag in $(git tag --points-at HEAD); do
+          git tag -d "$tag"
+        done
     - name: Wait for sync to Central
       run: ./mill -i ci.waitForSync
     - name: Copy artifacts
@@ -244,11 +320,22 @@ jobs:
         path: artifacts/
         if-no-files-found: error
         retention-days: 2
+    - name: Upload JAR launchers to GitHub release assets
+      run: ./mill -i ci.uploadLaunchers --directory artifacts/
+      env:
+        UPLOAD_GH_TOKEN: ${{ secrets.GH_TOKEN }}
 
   upload-launchers:
-    name: Upload launchers to GitHub release assets
-    needs: [test, native-test, native-test-macos-arm]
-    if: startsWith(github.ref, 'refs/tags/v')
+    name: Upload native launchers to GitHub release assets
+    needs: [tags, test, native-test, native-test-macos-arm]
+    # native-test-macos-arm is skipped for the nightly launchers, and a skipped
+    # dependency would skip this job too - hence the explicit result checks
+    if: >-
+      !cancelled()
+      && needs.tags.outputs.cli == 'true'
+      && needs.test.result == 'success'
+      && needs.native-test.result == 'success'
+      && (needs.native-test-macos-arm.result == 'success' || needs.native-test-macos-arm.result == 'skipped')
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v7
@@ -258,6 +345,15 @@ jobs:
     - uses: coursier/setup-action@v3
       with:
         jvm: 17
+    - name: Ignore tags (non-tag push)
+      if: ${{ !startsWith(github.ref, 'refs/tags/') }}
+      shell: bash
+      run: |
+        # The version we publish and upload to comes from the tags at HEAD, and
+        # a non-tag push must get a snapshot version out of them
+        for tag in $(git tag --points-at HEAD); do
+          git tag -d "$tag"
+        done
     - uses: actions/download-artifact@v8
       with:
         name: launchers-linux
@@ -275,12 +371,9 @@ jobs:
         name: launchers-mac
         path: artifacts/
     - uses: actions/download-artifact@v8
+      if: startsWith(github.ref, 'refs/tags/v')
       with:
         name: launchers-mac-arm
-        path: artifacts/
-    - uses: actions/download-artifact@v8
-      with:
-        name: launchers-jar
         path: artifacts/
     - run: ./mill -i ci.uploadLaunchers --directory artifacts/
       env:
