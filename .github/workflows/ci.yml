@@ -210,7 +210,16 @@ jobs:
         submodules: true
     - uses: coursier/setup-action@v3
     - name: Publish
-      run: ./mill -i mill.scalalib.SonatypeCentralPublishModule/
+      run: |
+        if [[ "$GITHUB_REF" == refs/tags/* ]]; then
+          ./mill -i mill.scalalib.SonatypeCentralPublishModule/ --bundleName "plasmon-${GITHUB_REF#refs/tags/v}"
+        else
+          # Ensure we don't publish a release version from a non-tag push
+          for tag in $(git tag --points-at HEAD); do
+            git tag -d "$tag"
+          done
+          ./mill -i mill.scalalib.SonatypeCentralPublishModule/
+        fi
       env:
         MILL_PGP_SECRET_BASE64: ${{ secrets.PUBLISH_SECRET_KEY_BASE64 }}
         MILL_PGP_PASSPHRASE: ${{ secrets.PUBLISH_SECRET_KEY_PASSWORD }}
