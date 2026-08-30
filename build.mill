@@ -183,6 +183,18 @@ object submodules extends Module {
 
 object shared extends Module {
   def publishVersion = Task.Input(PlasmonPublishModule.computeBuildVersion())
+
+  // Empty ZIP, used as doc JAR by all published modules (we don't generate
+  // actual doc JARs, but Maven Central requires those to be there)
+  def emptyZip = Task {
+    val zip  = Task.dest / "empty.zip"
+    val baos = new java.io.ByteArrayOutputStream
+    val zos  = new java.util.zip.ZipOutputStream(baos)
+    zos.finish()
+    zos.close()
+    os.write.over(zip, baos.toByteArray)
+    PathRef(zip)
+  }
 }
 
 trait PlasmonPublishModule extends PublishModule {
@@ -190,13 +202,7 @@ trait PlasmonPublishModule extends PublishModule {
   def jvmId = "17"
 
   def docJar = Task {
-    val jar  = Task.dest / "empty.jar"
-    val baos = new java.io.ByteArrayOutputStream
-    val zos  = new java.util.zip.ZipOutputStream(baos)
-    zos.finish()
-    zos.close()
-    os.write.over(jar, baos.toByteArray)
-    PathRef(jar)
+    shared.emptyZip()
   }
 
   def plasmonOrg = "io.github.alexarchambault.plasmon"
