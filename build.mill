@@ -234,7 +234,9 @@ object PlasmonPublishModule {
       .out.trim()
     val maybeExactTag = scala.util.Try {
       // FIXME Print stderr if command fails
-      os.proc("git", "describe", "--exact-match", "--tags", "--always", gitHead)
+      // --match so that the "publish-*" / "cli-*" tags that releases push
+      // alongside the "v*" one can't be picked up as the version here
+      os.proc("git", "describe", "--exact-match", "--tags", "--match", "v*", "--always", gitHead)
         .call(cwd = BuildCtx.workspaceRoot, stderr = os.Pipe).out
         .trim()
         .stripPrefix("v")
