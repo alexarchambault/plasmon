@@ -59,7 +59,7 @@ object Deps {
   def coursierInterfaceNoShading =
     mvn"io.get-coursier:interface-no-shading_2.13:${Versions.coursierInterface}"
   def expecty          = mvn"com.eed3si9n.expecty::expecty:0.16.0"
-  def jniUtils         = mvn"io.get-coursier.jniutils:windows-jni-utils:0.3.3"
+  def jniUtils         = mvn"io.get-coursier.jniutils:windows-jni-utils:0.3.4"
   def jsoniterCore     = mvn"com.github.plokhotnyuk.jsoniter-scala::jsoniter-scala-core:2.24.2"
   def jsoniterMacros   = mvn"com.github.plokhotnyuk.jsoniter-scala::jsoniter-scala-macros:2.24.2"
   def libdaemonjvm     = mvn"io.github.alexarchambault.libdaemon::libdaemon:0.0.11"
@@ -798,12 +798,15 @@ object server extends ScalaModule with PlasmonPublishModule {
         if (nativeImageQuickBuild()) Seq("-Ob")
         else Nil
       super.nativeImageOptions() ++ Seq(
+        // Left open on purpose: experimental options are unlocked left-to-right until the end of
+        // the argument list, and mill-native-image adds -H:Path / -H:Name (both experimental)
+        // after our options.
+        "-H:+UnlockExperimentalVMOptions",
         "--no-fallback",
         "-Duser.country=US",
         "-Duser.language=en",
         "-J-Duser.country=US",
         "-J-Duser.language=en",
-        "--report-unsupported-elements-at-runtime",
         "--initialize-at-build-time=com.google.common.base.Preconditions",
         "--enable-url-protocols=http,https",
         "--add-opens=java.base/java.util=ALL-UNNAMED", // needed for TimerThreadsHack

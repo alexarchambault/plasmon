@@ -32,6 +32,62 @@
     },
     {
       "type": "java.lang.AutoCloseable"
+    },
+    {
+      "type": {
+        "proxy": [
+          "plasmon.languageclient.PlasmonLanguageClient",
+          "org.eclipse.lsp4j.jsonrpc.Endpoint"
+        ]
+      }
+    },
+    {
+      "type": {
+        "proxy": [
+          "plasmon.bsp.PlasmonBuildServer",
+          "org.eclipse.lsp4j.jsonrpc.Endpoint"
+        ]
+      }
+    },
+    {
+      "type": {
+        "proxy": [
+          "scala.build.bsp.ScalaScriptBuildServer",
+          "org.eclipse.lsp4j.jsonrpc.Endpoint"
+        ]
+      }
+    },
+    {
+      "type": {
+        "proxy": [
+          "ch.epfl.scala.bsp4j.BuildClient",
+          "org.eclipse.lsp4j.jsonrpc.Endpoint"
+        ]
+      }
+    },
+    {
+      "type": {
+        "proxy": [
+          "plasmon.bsp.PlasmonBuildClient",
+          "org.eclipse.lsp4j.jsonrpc.Endpoint"
+        ]
+      }
+    },
+    {
+      "type": {
+        "proxy": [
+          "plasmon.protocol.CommandServer",
+          "org.eclipse.lsp4j.jsonrpc.Endpoint"
+        ]
+      }
+    },
+    {
+      "type": {
+        "proxy": [
+          "plasmon.protocol.CommandClient",
+          "org.eclipse.lsp4j.jsonrpc.Endpoint"
+        ]
+      }
     }
   ]
 }
