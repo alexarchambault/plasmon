@@ -697,14 +697,6 @@ object TestUtil {
         s" ${buildTool.displayName} Scala ${scalaVersion.label} Java ${jvm.label}"
     } yield (Some(scalaVersion), serverOpt, buildTool, jvm, testNameSuffix)
 
-  lazy val projectsDir = {
-    val path = sys.props.getOrElse(
-      "plasmon.integration.projects",
-      sys.error("plasmon.integration.projects not set")
-    )
-    os.Path(path, os.pwd)
-  }
-
   private def same[T](got: T, expected: T): Boolean =
     (got, expected) match {
       case (gotArr: Array[Object], expectedArr: Array[Object]) =>

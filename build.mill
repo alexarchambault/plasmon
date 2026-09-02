@@ -42,6 +42,13 @@ object Versions {
     def millwCommit     = "1.1.7"
     def sbt             = "1.12.4"
     def sbtExtrasCommit = "c28642dc97914b82f5e5a1cdfd39710c1c5e95ce"
+
+    // Projects some integration tests run on, checked out on-demand by
+    // plasmon.integration.TestProjects
+    def coursierProjectRepository = "https://github.com/coursier/coursier.git"
+    def coursierProjectCommit     = "3f4e0c7a4028b5492edc93a97a2eab470af8b8c8"
+    def millProjectRepository     = "https://github.com/alexarchambault/mill.git"
+    def millProjectCommit         = "7e409e401c266bc21d0d6ad24d242aa263e9ba0f"
   }
 
   def libericaNik = "25.0.1"
@@ -932,7 +939,7 @@ object integration extends ScalaModule {
 
   def sharedForkArgs = Task {
     Seq(
-      s"-Dplasmon.integration.projects=${BuildCtx.workspaceRoot / "integration/projects"}",
+      s"-Dplasmon.integration.projects=${BuildCtx.workspaceRoot / "out/test-projects"}",
       s"-Dplasmon.integration.fixture-dir=${BuildCtx.workspaceRoot / "integration/test/resources/data"}",
       s"-Dplasmon.integration.generated-resources-dir=${BuildCtx.workspaceRoot / "integration/test/resources/generated"}",
       s"-Dplasmon.integration.disableScala2Pc=$disableScala2Pc",
@@ -967,6 +974,11 @@ object integration extends ScalaModule {
            |  def millwCommit = "${Versions.Test.millwCommit}"
            |  def sbtVersion = "${Versions.Test.sbt}"
            |  def sbtExtrasCommit = s"${Versions.Test.sbtExtrasCommit}"
+           |
+           |  def coursierProjectRepository = "${Versions.Test.coursierProjectRepository}"
+           |  def coursierProjectCommit = "${Versions.Test.coursierProjectCommit}"
+           |  def millProjectRepository = "${Versions.Test.millProjectRepository}"
+           |  def millProjectCommit = "${Versions.Test.millProjectCommit}"
            |}
            |""".stripMargin
       if (!os.isFile(dest) || os.read(dest) != code) {
