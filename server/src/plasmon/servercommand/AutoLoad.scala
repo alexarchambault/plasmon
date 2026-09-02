@@ -10,11 +10,14 @@ import scala.concurrent.duration.Duration
 
 /** Bringing a file to the point where a language feature can answer for it.
   *
-  * This is what `--auto` does on the `lsp …` commands. In an editor, a build tool and a module are
-  * loaded long before anyone hovers - the extension asks for them, or the user picks them from a
-  * menu. From a terminal there is nobody to have done that, so a first `plasmon lsp hover` on a
-  * fresh workspace has nothing to answer with. `--auto` runs what the user would otherwise have had
-  * to type first: [[BuildToolLoad]], then [[ModuleLoad]].
+  * This is the server side of what `--auto` does on the `lsp …` commands. In an editor, a build
+  * tool and a module are loaded long before anyone hovers - the extension asks for them, or the
+  * user picks them from a menu. From a terminal there is nobody to have done that, so a first
+  * `plasmon lsp hover` on a fresh workspace has nothing to answer with. `--auto` runs what the user
+  * would otherwise have had to type first: [[BuildToolLoad]], then [[ModuleLoad]].
+  *
+  * The step before those two - having a server at all - is taken client-side, before this is ever
+  * reached, by [[plasmon.command.AutoServer]].
   *
   * Nothing is done that isn't needed: a file already covered by a loaded build tool, or already
   * part of a loaded module, is left alone.
@@ -33,8 +36,24 @@ object AutoLoad {
     file: os.Path,
     log: String => Unit
   ): Unit = {
+    awaitPersistedImport(server, log)
     ensureBuildTool(server, pools, file, log)
     ensureModule(server, indexer, pools, file, log)
+  }
+
+  /** Waits for whatever the server was already restoring when it started.
+    *
+    * A server imports what it persisted - build servers, then modules - in the background, and
+    * answers commands while that is in flight. With [[plasmon.command.AutoServer]] starting one,
+    * `--auto` is the very first thing a server ever sees, so without this it finds no build tool
+    * for the file while the one it had is being restored, and then fails loading a second one over
+    * it.
+    */
+  private def awaitPersistedImport(server: Server, log: String => Unit): Unit = {
+    val f = server.persistedImport
+    if (!f.isCompleted)
+      log("Waiting for the server to finish restoring what it had loaded before")
+    Await.ready(f, Duration.Inf)
   }
 
   /** Whether a loaded build tool covers `file`. */

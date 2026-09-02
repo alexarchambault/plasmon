@@ -3,6 +3,8 @@ package plasmon.servercommand
 import caseapp.HelpMessage
 import caseapp.core.help.Help
 import caseapp.core.parser.Parser
+import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
+import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 
 // format: off
 @HelpMessage("Hover at a position in a source file")
@@ -13,14 +15,15 @@ final case class LspHoverOptions(
     line: Int,
   @HelpMessage("Column to hover at, zero-based")
     col: Int,
-  @HelpMessage("Load a build tool and a module for the file first, if it has none")
+  @HelpMessage("Load whatever the file needs before answering: start a server if none is running, then load a build tool and a module for the file if it has none")
     auto: Boolean = false,
   @HelpMessage("Print the raw LSP response as JSON")
     json: Boolean = false
-)
+) extends HasAutoOption
 // format: on
 
 object LspHoverOptions {
-  implicit lazy val parser: Parser[LspHoverOptions] = Parser.derive
-  implicit lazy val help: Help[LspHoverOptions]     = Help.derive
+  implicit lazy val parser: Parser[LspHoverOptions]        = Parser.derive
+  implicit lazy val help: Help[LspHoverOptions]            = Help.derive
+  implicit lazy val codec: JsonValueCodec[LspHoverOptions] = JsonCodecMaker.make
 }

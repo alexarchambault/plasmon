@@ -3,6 +3,8 @@ package plasmon.servercommand
 import caseapp.Name
 import caseapp.core.help.Help
 import caseapp.core.parser.Parser
+import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
+import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 
 final case class InspectOptions(
   @Name("v")
@@ -17,6 +19,7 @@ final case class InspectOptions(
 )
 
 object InspectOptions {
-  implicit lazy val parser: Parser[InspectOptions] = Parser.derive
-  implicit lazy val help: Help[InspectOptions]     = Help.derive
+  implicit lazy val parser: Parser[InspectOptions]        = Parser.derive
+  implicit lazy val help: Help[InspectOptions]            = Help.derive
+  implicit lazy val codec: JsonValueCodec[InspectOptions] = JsonCodecMaker.make
 }

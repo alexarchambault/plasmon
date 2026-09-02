@@ -7,7 +7,7 @@ import plasmon.internal.{DebugInput, Directories}
 import plasmon.protocol.{Command as ProtocolCommand, *}
 import plasmon.util.ThreadUtil
 
-import java.io.{FileDescriptor, FileOutputStream, PrintStream}
+import java.io.{FileDescriptor, FileOutputStream, IOException, PrintStream}
 import java.net.{StandardProtocolFamily, UnixDomainSocketAddress}
 import java.nio.channels.SocketChannel
 import java.nio.charset.StandardCharsets
@@ -49,43 +49,95 @@ object Command extends caseapp.Command[CommandOptions] {
   private def utf8(fd: FileDescriptor): PrintStream =
     new PrintStream(new FileOutputStream(fd), true, StandardCharsets.UTF_8)
 
-  def run(options: CommandOptions, remainingArgs: RemainingArgs): Unit = {
+  /** `plasmon command <command> …`: the remote commands, with the connection options up front.
+    *
+    * The same commands the top-level entry point offers, parsed the same way and answering `--help`
+    * for themselves - what this adds is somewhere to pass `--socket` and friends.
+    */
+  def run(options: CommandOptions, remainingArgs: RemainingArgs): Unit =
+    RemoteCommands.entryPoint(options).main(remainingArgs.all.toArray)
+
+  /** Runs one already-parsed command in the server, printing what it sends back.
+    *
+    * `auto` is what the options of that command say about `--auto`: whether it was asked for, and
+    * whether the command takes it at all.
+    */
+  def send(
+    options: CommandOptions,
+    request: ProtocolCommand,
+    auto: AutoServer.Auto
+  ): Unit = {
 
     val workingDir = options.workingDir
       .filter(_.trim.nonEmpty)
       .map(os.Path(_, os.pwd))
       .getOrElse(os.pwd)
 
-    val socketPath0 =
-      options.socket.filter(_.trim.nonEmpty)
-        .map(os.Path(_, os.pwd))
-        .getOrElse {
-          val basePath = workingDir / socketPath
-          // Checked rather than left to `actualSocket` to read: "no server here" is the answer
-          // whenever someone runs a command before starting one, and a stack trace hides it
-          if (!os.exists(basePath)) {
-            System.err.println(s"$basePath not found, is a plasmon server running in $workingDir?")
-            sys.exit(1)
+    val explicitSocketOpt = options.socket.filter(_.trim.nonEmpty).map(os.Path(_, os.pwd))
+    val basePath          = workingDir / socketPath
+
+    // Where a server would be listening, if one is - `None` when nothing wrote it down, which is
+    // the answer whenever nobody started a server here
+    def currentSocketPathOpt(): Option[os.Path] =
+      explicitSocketOpt.orElse {
+        Option.when(os.exists(basePath))(actualSocket(basePath))
+      }
+
+    /** Connects to whatever server is listening, hands back the socket it was found on.
+      *
+      * `None` covers both "nothing to connect to" and "what was written down doesn't answer" - a
+      * server that died leaves its path behind either way, and both are equally a reason to start
+      * one when `--auto` says to.
+      */
+    def tryConnect(): Option[(os.Path, SocketChannel)] =
+      currentSocketPathOpt()
+        .filter(os.exists(_))
+        .flatMap { socketPath0 =>
+          if (options.verbosity >= 1)
+            System.err.println(s"Connecting to plasmon server via socket $socketPath0")
+          val socketChannel = SocketChannel.open(StandardProtocolFamily.UNIX)
+          try {
+            socketChannel.connect(UnixDomainSocketAddress.of(socketPath0.toNIO))
+            socketChannel.finishConnect()
+            if (options.verbosity >= 1)
+              System.err.println("Connected")
+            Some((socketPath0, socketChannel))
           }
-          actualSocket(basePath)
+          catch {
+            case e: IOException =>
+              if (options.verbosity >= 1)
+                System.err.println(s"Could not connect to $socketPath0: $e")
+              socketChannel.close()
+              None
+          }
         }
 
-    if (options.verbosity >= 1)
-      System.err.println(s"Connecting to plasmon server via socket $socketPath0")
-
-    if (!os.exists(socketPath0)) {
-      System.err.println(s"$socketPath0 not found")
-      sys.exit(1)
+    val socketChannel = tryConnect().map(_._2).getOrElse {
+      if (auto.requested)
+        AutoServer.startAndConnect(
+          workingDir,
+          explicitSocketOpt,
+          options.verbosity,
+          () => tryConnect()
+        )
+      else {
+        // "No server here" is what this is, whenever someone runs a command before starting one -
+        // an exception from `actualSocket` or from the connection itself would only hide it
+        val message = currentSocketPathOpt() match {
+          case None =>
+            s"$basePath not found, is a plasmon server running in $workingDir?"
+          case Some(socketPath0) if !os.exists(socketPath0) =>
+            s"$socketPath0 not found"
+          case Some(socketPath0) =>
+            s"Cannot connect to $socketPath0, is a plasmon server still running in $workingDir?"
+        }
+        // Where --auto would have started one - having no server is exactly the moment someone
+        // finds out they wanted it
+        val hint = if (auto.supported) " Pass --auto to start one." else ""
+        System.err.println(message + hint)
+        sys.exit(1)
+      }
     }
-
-    val addr          = UnixDomainSocketAddress.of(socketPath0.toNIO)
-    val socketChannel = SocketChannel.open(StandardProtocolFamily.UNIX)
-    if (options.verbosity >= 1)
-      System.err.println("Connecting...")
-    socketChannel.connect(addr)
-    socketChannel.finishConnect()
-    if (options.verbosity >= 1)
-      System.err.println("Connected")
 
     val queue = new LinkedBlockingQueue[(String, Boolean, Promise[Unit])]
     val poisonPill: (String, Boolean, Promise[Unit]) = (null, false, null)
@@ -162,12 +214,8 @@ object Command extends caseapp.Command[CommandOptions] {
         launcher.startListening()
 
         if (options.verbosity >= 1)
-          System.err.println(s"Running command ${remainingArgs.all.mkString(" ")} via JSON-RPC")
-        val res = remoteServer.runCommand {
-          val command = new ProtocolCommand
-          command.setArgs(remainingArgs.all.toArray)
-          command
-        }.get()
+          System.err.println(s"Running command ${request.getName.mkString(" ")} via JSON-RPC")
+        val res = remoteServer.runCommand(request).get()
 
         val exitCode = res.getExitCode
         if (options.verbosity >= 1)

@@ -12,7 +12,7 @@ import org.eclipse.lsp4j as l
 import org.eclipse.lsp4j.jsonrpc.Launcher
 import org.eclipse.lsp4j.services.LanguageServer
 
-import java.io.OutputStream
+import java.io.{OutputStream, PrintStream}
 import java.net.URI
 import java.nio.charset.StandardCharsets
 import java.nio.file.Paths
@@ -24,6 +24,7 @@ import scala.concurrent.duration.{Duration, DurationInt, FiniteDuration}
 import scala.jdk.CollectionConverters.*
 import scala.reflect.ClassTag
 import scala.util.Properties
+import scala.util.control.NonFatal
 
 object TestUtil {
 
@@ -284,6 +285,46 @@ object TestUtil {
     }
   }
 
+  /** A workspace with `content` in it, and no server running.
+    *
+    * [[withWorkspaceAndServer]] starts one before the test body runs, which is the one thing a test
+    * about a command starting a server of its own cannot have. Whatever server the body ends up
+    * starting is stopped on the way out, whether it passed or failed.
+    */
+  def withWorkspaceNoServer[T](
+    projectName: String = "test-project",
+    timeout: Option[FiniteDuration] = Some(baseTimeout)
+  )(
+    content: (os.SubPath, String)*
+  )(f: (os.Path, Positions) => T): T = {
+
+    val positions  = Positions.of(content*)
+    val workingDir = os.sub / projectName
+    val files = content.map {
+      case (path, _) => (workingDir / path, positions.content(path): os.Source)
+    }
+
+    val errorOutput = TestLogs.printStream(System.err)
+
+    os.temp.withContent(files, TestParams.cleanUpAfterTests, errorOutput) { tmpDir =>
+      val workspace = tmpDir / workingDir
+      os.makeDir.all(workspace)
+      try runWithTimeout(timeout)(f(workspace, positions))
+      finally stopServerIfAny(workspace, errorOutput)
+    }
+  }
+
+  /** Stops the server running in `workspace`, if one is - a test that leaves one behind leaves its
+    * file watches behind too.
+    */
+  private def stopServerIfAny(workspace: os.Path, errorOutput: PrintStream): Unit =
+    if (os.exists(workspace / ".plasmon/socket"))
+      try runServerCommand(workspace, TestLogs.currentStream)("exit")
+      catch {
+        case NonFatal(e) =>
+          errorOutput.println(s"Ignoring error stopping the server in $workspace: $e")
+      }
+
   /** For the tests that are about the LSP connection itself rather than about what the server does.
     */
   def withLspServer[T](
@@ -347,11 +388,18 @@ object TestUtil {
   /** Runs a `plasmon` command against the server running in `workspace`. */
   def runServerCommand(
     workspace: os.Path,
-    err: Option[OutputStream]
+    err: Option[OutputStream],
+    env: Map[String, String] = Map.empty
   )(command: os.Shellable*): Unit = {
     val output = FixedReadBytes.pipeTo(err)
     os.proc(baseCommand, "command", "-v", command)
-      .call(cwd = workspace, stdin = os.Inherit, stdout = output, mergeErrIntoOut = err.nonEmpty)
+      .call(
+        cwd = workspace,
+        env = env,
+        stdin = os.Inherit,
+        stdout = output,
+        mergeErrIntoOut = err.nonEmpty
+      )
   }
 
   def runCommand(
@@ -365,11 +413,12 @@ object TestUtil {
 
   def serverCommandOutput(
     workspace: os.Path,
-    err: Option[OutputStream]
+    err: Option[OutputStream],
+    env: Map[String, String] = Map.empty
   )(command: os.Shellable*): String = {
     val output = FixedReadBytes.pipeTo(err)
     val proc = os.proc(baseCommand, "command", "-v", command)
-      .call(cwd = workspace, stderr = output)
+      .call(cwd = workspace, env = env, stderr = output)
     proc.out.text()
   }
 

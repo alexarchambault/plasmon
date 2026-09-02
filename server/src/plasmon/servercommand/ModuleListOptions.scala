@@ -3,6 +3,8 @@ package plasmon.servercommand
 import caseapp.HelpMessage
 import caseapp.core.help.Help
 import caseapp.core.parser.Parser
+import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
+import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 
 // format: off
 @HelpMessage("List the modules a source file belongs to and could be loaded from")
@@ -15,6 +17,7 @@ final case class ModuleListOptions(
 // format: on
 
 object ModuleListOptions {
-  implicit lazy val parser: Parser[ModuleListOptions] = Parser.derive
-  implicit lazy val help: Help[ModuleListOptions]     = Help.derive
+  implicit lazy val parser: Parser[ModuleListOptions]        = Parser.derive
+  implicit lazy val help: Help[ModuleListOptions]            = Help.derive
+  implicit lazy val codec: JsonValueCodec[ModuleListOptions] = JsonCodecMaker.make
 }

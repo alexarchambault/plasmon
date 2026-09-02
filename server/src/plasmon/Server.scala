@@ -139,6 +139,20 @@ final class Server(
     (indexerState0, indexerLoggerOpt0)
 
   // STATE
+  /** What the server is restoring of what it had persisted - build servers, then modules.
+    *
+    * Started at initialization and left to run in the background, so that a client doesn't wait on
+    * it. Whoever needs the workspace to be in the state it was left in has to wait for this: until
+    * it completes, the server looks like one with nothing loaded (see
+    * [[plasmon.servercommand.AutoLoad]]).
+    */
+  @volatile private var persistedImport0: Future[Unit] = Future.unit
+  def persistedImport: Future[Unit]                    = persistedImport0
+  def setPersistedImport(f: Future[Unit]): Unit = {
+    persistedImport0 = f
+  }
+
+  // STATE
   lazy val bspServers: BspServers = {
     val instance = new BspServers(
       Some(workingDir / ".plasmon/build-servers.json"),

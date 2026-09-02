@@ -3,6 +3,8 @@ package plasmon.servercommand
 import caseapp.ValueDescription
 import caseapp.core.help.Help
 import caseapp.core.parser.Parser
+import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
+import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 
 final case class ClientStatusOptions(
   @ValueDescription("info|warn|error")
@@ -22,6 +24,7 @@ final case class ClientStatusOptions(
 )
 
 object ClientStatusOptions {
-  implicit lazy val parser: Parser[ClientStatusOptions] = Parser.derive
-  implicit lazy val help: Help[ClientStatusOptions]     = Help.derive
+  implicit lazy val parser: Parser[ClientStatusOptions]        = Parser.derive
+  implicit lazy val help: Help[ClientStatusOptions]            = Help.derive
+  implicit lazy val codec: JsonValueCodec[ClientStatusOptions] = JsonCodecMaker.make
 }

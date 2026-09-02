@@ -11,12 +11,17 @@ import scala.jdk.CollectionConverters.*
 
 final case class LspCodeLens(
   server: Server,
-  client: CommandClient
+  indexer: Indexer,
+  client: CommandClient,
+  pools: plasmon.command.ServerCommandThreadPools
 ) extends ServerCommandInstance[LspCodeLensOptions](client) {
   override def names = LspCodeLens.names
   def run(options: LspCodeLensOptions, args: RemainingArgs): Unit = {
 
-    val (_, uri) = FileArg.single(args.all, options.uri, server.workingDir)
+    val (path, uri) = FileArg.single(args.all, options.uri, server.workingDir)
+
+    if (options.auto)
+      AutoLoad(server, indexer, pools, path, printLine(_, toStderr = true))
 
     val handler = CodeLens.handler(server)
 
@@ -46,7 +51,7 @@ object LspCodeLens extends ServerCommand[LspCodeLensOptions] {
     lspServer: plasmon.jsonrpc.JsonrpcServer,
     pool: plasmon.command.ServerCommandThreadPools
   ): ServerCommandInstance[LspCodeLensOptions] =
-    LspCodeLens(server, client)
+    LspCodeLens(server, indexer, client, pool)
   override def names = List(
     List("lsp", "code-lens"),
     List("lsp-code-lens")
