@@ -26,6 +26,15 @@ sealed abstract class BuildTool extends Product with Serializable {
   def description(serverWorkspace: os.Path): String
   def extraLaunchers: Seq[BuildServerLauncher] = Nil
 
+  /** Whether what this build tool writes while it starts is worth showing to whoever asked for it.
+    *
+    * Mill compiles its own build and resolves what that needs before it answers anything, which
+    * from a terminal is minutes of silence after "Loading build tool mill" unless we pass its
+    * output on. Most build tools have nothing to say at that point, and a console that stays quiet
+    * is the better default for them.
+    */
+  def echoesOutput: Boolean = false
+
   def workspace: os.Path
 }
 
@@ -35,7 +44,8 @@ object BuildTool {
     JsonCodecMaker.make
 
   final case class Mill(workspace: os.Path) extends BuildTool {
-    def id = Mill.id
+    def id                    = Mill.id
+    override def echoesOutput = true
     def description(serverWorkspace: os.Path) = {
       val relPath = workspace.relativeTo(serverWorkspace)
       if (relPath == os.rel) "Mill in this workspace"

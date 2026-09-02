@@ -23,7 +23,7 @@ final case class LspCompletion(
     val (path, uri) = FileArg.single(args.all, options.uri, server.workingDir)
 
     if (options.auto)
-      AutoLoad(server, indexer, pools, path, printLine(_, toStderr = true))
+      AutoLoad(server, indexer, pools, path, printLine(_, toStderr = true), options.quiet)
 
     val col = options.col.filter(_ >= 0).getOrElse {
       os.read.lines(path).apply(options.line).length

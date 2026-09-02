@@ -30,12 +30,18 @@ class BspServers(
   def list: Seq[(BuildTool, Seq[BspConnection])] =
     actor.connections
 
+  /** `echo` is where the output of the build tool goes besides its logger, for the build tools that
+    * [[BuildTool.echoesOutput]] - the console of whoever asked for the load, typically. It lives as
+    * long as the connection does, so a caller that hands one over is expected to take it back with
+    * [[plasmon.Logger.Sink.detach]] once it is done.
+    */
   def tryAdd(
     buildTool: BuildTool,
     launchers: Seq[BuildServerLauncher],
     log: String => Unit,
     bspPool: ExecutorService,
-    bloopThreads: () => BloopThreads
+    bloopThreads: () => BloopThreads,
+    echo: Option[String => Unit] = None
   ): Future[Either[String, Unit]] = {
     val p = Promise[Either[String, Unit]]()
     actor.send(
@@ -45,6 +51,7 @@ class BspServers(
         log,
         bspPool,
         bloopThreads,
+        echo,
         onDone = res => p.complete(res)
       )
     )

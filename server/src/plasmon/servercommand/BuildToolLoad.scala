@@ -1,7 +1,7 @@
 package plasmon.servercommand
 
 import caseapp.core.RemainingArgs
-import plasmon.Server
+import plasmon.{Logger, Server}
 import plasmon.command.ServerCommandThreadPools
 import plasmon.index.Indexer
 import plasmon.protocol.CommandClient
@@ -49,10 +49,21 @@ final case class BuildToolLoad(
         }
     }
 
-    Await.result(
-      ProjectOps.loadBuildTool(server, pools, discoverId, toolId, fileOpt),
-      Duration.Inf
-    ) match {
+    // What the build tool has to say while it starts, for the ones that have something to say -
+    // this is otherwise a long silence with a Mill build compiling behind it. The sink outlives
+    // the command otherwise: it is teed into a logger the connection keeps
+    val echo = Option.when(!options.quiet) {
+      new Logger.Sink(printLine(_, toStderr = true))
+    }
+
+    val res =
+      try Await.result(
+          ProjectOps.loadBuildTool(server, pools, discoverId, toolId, fileOpt, echo),
+          Duration.Inf
+        )
+      finally echo.foreach(_.detach())
+
+    res match {
       case Left(err) =>
         printLine(s"Error loading build tool $toolId: $err", toStderr = true)
         exit(1)

@@ -411,6 +411,27 @@ object TestUtil {
       .call(cwd = workspace, stdin = os.Inherit, stdout = output, mergeErrIntoOut = err.nonEmpty)
   }
 
+  /** Both streams of a `plasmon` command, for the tests that care about what goes where.
+    *
+    * [[serverCommandOutput]] hands the error stream straight to the test log, which is what a test
+    * that only wants the answer needs; here it is captured, and copied there afterwards so that a
+    * failure still has it.
+    */
+  def serverCommandOutputs(
+    workspace: os.Path,
+    err: Option[OutputStream],
+    env: Map[String, String] = Map.empty
+  )(command: os.Shellable*): (String, String) = {
+    val proc = os.proc(baseCommand, "command", "-v", command)
+      .call(cwd = workspace, env = env, stderr = os.Pipe)
+    val errText = proc.err.text()
+    for (output <- err) {
+      output.write(errText.getBytes(StandardCharsets.UTF_8))
+      output.flush()
+    }
+    (proc.out.text(), errText)
+  }
+
   def serverCommandOutput(
     workspace: os.Path,
     err: Option[OutputStream],
