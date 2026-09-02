@@ -8,7 +8,7 @@ import plasmon.handlers as h
 import plasmon.PlasmonEnrichments.*
 import plasmon.bsp.BuildTool
 import plasmon.index.Indexer
-import plasmon.internal.{BinaryName, Constants, DebugInput, DisableScala2Pc}
+import plasmon.internal.{BinaryName, BuildVersion, Constants, DebugInput, DisableScala2Pc}
 import plasmon.jsonrpc.{
   CommandHandler,
   Handlers,
@@ -153,7 +153,7 @@ object Server extends caseapp.Command[ServerOptions] {
     withLockFile(workingDir / ".plasmon/lock") {
 
       // Sending something to stderr, so that an output channel for the server output gets created in vscode
-      System.err.println(s"Plasmon ${Constants.version} starting")
+      System.err.println(s"Plasmon ${BuildVersion.fullVersion} starting")
       val isNativeImage = sys.props.contains("org.graalvm.nativeimage.imagecode")
       System.err.println(
         if (isNativeImage)
@@ -530,7 +530,7 @@ object Server extends caseapp.Command[ServerOptions] {
         val params = new l.InitializeParams
         params.setProcessId(ProcessHandle.current().pid().toInt)
         params.setCapabilities(new l.ClientCapabilities)
-        params.setClientInfo(new l.ClientInfo("plasmon", Constants.version))
+        params.setClientInfo(new l.ClientInfo("plasmon", BuildVersion.version))
         params.setWorkspaceFolders(
           List(
             new l.WorkspaceFolder(

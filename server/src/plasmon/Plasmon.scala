@@ -46,7 +46,8 @@ object Plasmon extends CommandsEntryPoint {
       Server,
       Setup,
       UseBinary,
-      UseJvm
+      UseJvm,
+      Version
     ) ++
       remoteCommands
     all.sortBy(_.name)
