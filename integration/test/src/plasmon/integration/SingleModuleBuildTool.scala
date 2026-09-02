@@ -94,7 +94,7 @@ object SingleModuleBuildTool {
         // Builds the class directories the recording refers to, from source. Only worth its cost
         // for tests that need built output - anything resolving against dependencies and the
         // workspace source index alone passes compiles = false and skips this.
-        if (compiles)
+        if (compiles && !TestParams.sourcepath)
           driver.compile(file)
       }
 
@@ -105,7 +105,7 @@ object SingleModuleBuildTool {
     ): Unit =
       if (TestParams.recordBspData)
         underlying.compile(workspace, driver, osOpt)
-      else
+      else if (!TestParams.sourcepath)
         driver.compile(sourceFile(workspace))
   }
 
@@ -215,14 +215,17 @@ object SingleModuleBuildTool {
       readOnlyToplevelSymbolsCache: Boolean,
       compiles: Boolean
     ): Unit = {
-      if (compiles)
+      // With a source path, the server reads the project from its sources: Scala CLI only has to
+      // set the project up - resolve dependencies, write the BSP details - not build it
+      val compiles0 = compiles && !TestParams.sourcepath
+      if (compiles0)
         TestUtil.runCommand(workspace, osOpt)(TestUtil.scalaCli, "compile", ".")
       else
         TestUtil.runCommand(workspace, osOpt)(TestUtil.scalaCli, "setup-ide", ".")
       val file = sourceFile(workspace)
       driver.loadBuildTool("scala-cli", "scala-cli", file)
       driver.loadAllModules(readOnlyToplevelSymbolsCache)
-      if (compiles)
+      if (compiles0)
         driver.compile(file)
     }
     def compile(
@@ -230,7 +233,8 @@ object SingleModuleBuildTool {
       driver: ServerDriver,
       osOpt: Option[OutputStream]
     ): Unit =
-      driver.compile(sourceFile(workspace))
+      if (!TestParams.sourcepath)
+        driver.compile(sourceFile(workspace))
   }
 
   case object Mill extends SingleModuleBuildTool {

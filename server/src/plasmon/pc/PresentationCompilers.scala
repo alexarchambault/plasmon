@@ -111,6 +111,7 @@ class PresentationCompilers(
   refreshStatus: () => Unit,
   languageClient: PlasmonLanguageClient,
   scala2Compat: Boolean,
+  sourcepath: Option[SourcepathMode],
   emitDiagnostics: (
     Scala3PresentationCompiler,
     GlobalSymbolIndex.Module,
@@ -1228,7 +1229,8 @@ class PresentationCompilers(
           config0,
           plugins,
           bspData,
-          debug = debug
+          debug = debug,
+          sourcepath = sourcepath
         )
       }
       val key =
@@ -1788,7 +1790,8 @@ object PresentationCompilers {
     config0: PresentationCompilerConfig,
     plugins: CompilerPlugins,
     bspData: BspData,
-    debug: Boolean
+    debug: Boolean,
+    sourcepath: Option[SourcepathMode] = None
   ) extends LazyCompiler {
 
     def buildTargetId: b.BuildTargetIdentifier = scalaTarget.id
@@ -1823,10 +1826,29 @@ object PresentationCompilers {
         if (scalaTarget.isBestEffort) Seq(scalaTarget.bestEffortPath)
         else Seq.empty
 
+      val sourcepathOpt = sourcepath.map(Sourcepath(_, bspData, buildTargetId))
+      val fullClasspath = sourcepathOpt match {
+        case None =>
+          classpath.map(os.Path(_)) ++ additionalClasspath ++ bestEffortDirs ++ selfBestEffortDir
+        case Some(sp) =>
+          // The workspace's own modules are read from their sources: their class directories go,
+          // and so do the best-effort ones, which are built output too
+          val drop = sp.classDirectories.toSet
+          scribe.info(
+            s"Source path for ${scalaTarget.displayName} (${sp.mode.id}): " +
+              sp.sources.mkString(", ")
+          )
+          scribe.info(
+            s"Dropping class directories from ${scalaTarget.displayName} class path: " +
+              sp.classDirectories.mkString(", ")
+          )
+          classpath.map(os.Path(_)).filterNot(drop) ++ additionalClasspath
+      }
+
       fromMtags(
         makeCompiler,
         nonBestEffortOptions,
-        classpath.map(os.Path(_)) ++ additionalClasspath ++ bestEffortDirs ++ selfBestEffortDir,
+        fullClasspath,
         javaHome,
         buildTargetId.module,
         search,
@@ -1836,7 +1858,8 @@ object PresentationCompilers {
         sh,
         config0,
         plugins,
-        debug = debug
+        debug = debug,
+        sourcepath = sourcepathOpt
       )
         .withBuildTargetName(scalaTarget.displayName)
     }
@@ -1977,16 +2000,34 @@ object PresentationCompilers {
     sh: ScheduledExecutorService,
     config0: PresentationCompilerConfig,
     plugins: CompilerPlugins,
-    debug: Boolean
+    debug: Boolean,
+    sourcepath: Option[Sourcepath] = None
   ): PresentationCompiler = {
     val pc              = makeCompiler.createCompiler(javaHome)
     val filteredOptions = plugins.filterSupportedOptions(options)
-    configure(pc, symbolSearch, referenceCounter, workspace, ec, sh, config0)
-      .newInstance(
-        module.asString,
-        classpathSeq.map(_.toNIO).asJava,
-        ((if (debug) log(workspace) else Nil) ++ filteredOptions).asJava
-      )
+    val sourcepathOptions = sourcepath.toList.filter(_.sources.nonEmpty).flatMap { sp =>
+      List("-sourcepath", sp.sources.mkString(java.io.File.pathSeparator))
+    }
+    val allOptions =
+      ((if (debug) log(workspace) else Nil) ++ filteredOptions ++ sourcepathOptions).asJava
+    val configured = configure(pc, symbolSearch, referenceCounter, workspace, ec, sh, config0)
+    sourcepath match {
+      case Some(sp) if sp.mode == SourcepathMode.Logical =>
+        // The supplier is what gets the package structure of those sources pre-computed and
+        // handed to the compiler, alongside -Ylogical-package-loading
+        configured.newInstance(
+          module.asString,
+          classpathSeq.map(_.toNIO).asJava,
+          allOptions,
+          () => sp.sources.map(_.toNIO).asJava
+        )
+      case _ =>
+        configured.newInstance(
+          module.asString,
+          classpathSeq.map(_.toNIO).asJava,
+          allOptions
+        )
+    }
   }
 
   private def configure(

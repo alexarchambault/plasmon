@@ -103,6 +103,10 @@ final class BspData(
     }
       targetData.onCreate(source)
 
+  /** The source items - files or directories - the build tool reported for `id`. */
+  def sourceItemsOf(id: b.BuildTargetIdentifier): Seq[os.Path] =
+    data.fromIterators(_.sourceItemsOf(id)).toVector.distinct
+
   def buildTargetSources(
     id: b.BuildTargetIdentifier
   ): Iterable[os.Path] =

@@ -24,7 +24,7 @@ import plasmon.index.{
   SymbolSearchIndex
 }
 import plasmon.languageclient.*
-import plasmon.pc.{NopReportContext, PresentationCompilers}
+import plasmon.pc.{NopReportContext, PresentationCompilers, SourcepathMode}
 import plasmon.render.JsonCodecs.given
 import plasmon.semdb.{
   InteractiveSemanticdbs,
@@ -90,7 +90,8 @@ final class Server(
   val tools: BuildTool.Tools,
   val enableBestEffortMode: Boolean,
   val reindexSource: os.Path => Unit,
-  scala2Compat: Boolean
+  scala2Compat: Boolean,
+  val sourcepath: Option[SourcepathMode]
 ) extends IndexerServerLike with BspServersServerLike with AutoCloseable {
 
   private var initializeParamsOpt0 = Option.empty[l.InitializeParams]
@@ -322,6 +323,7 @@ final class Server(
     refreshStatus = refreshStatus,
     languageClient = languageClient,
     scala2Compat = scala2Compat,
+    sourcepath = sourcepath,
     emitDiagnostics = { (_, module, uri, diags, _) =>
       val path = uri.toOsPath
       bspData.inverseSources(path) match {
@@ -573,16 +575,20 @@ final class Server(
             for (buildClient <- bspServers.list.flatMap(_._2).map(_.client))
               buildClient.didDelete(event.path)
           case event: WatchEvent.Compile =>
-            compilations
-              .compileTarget(new b.BuildTargetIdentifier(event.targetId.targetId))
-              .onComplete {
-                case Success(_) =>
-                case Failure(ex) =>
-                  scribe.error(
-                    s"Error compiling target ${event.targetId.targetId} upon file watch event",
-                    ex
-                  )
-              }(using pools.dummyEc)
+            val targetId = new b.BuildTargetIdentifier(event.targetId.targetId)
+            if (sourcepath.nonEmpty)
+              resetSourcepathCompilers(targetId)
+            else
+              compilations
+                .compileTarget(targetId)
+                .onComplete {
+                  case Success(_) =>
+                  case Failure(ex) =>
+                    scribe.error(
+                      s"Error compiling target ${event.targetId.targetId} upon file watch event",
+                      ex
+                    )
+                }(using pools.dummyEc)
           case event: WatchEvent.ComputeInteractiveSemanticdb =>
             Future {
               interactiveSemanticdbs.textDocument(event.path, event.targetId)
@@ -656,6 +662,23 @@ final class Server(
   ) =
     semanticDBIndexer.onChange(module, path, semdb)
 
+  /** Whether modules get built on their own accord - upon a file being opened or saved, say.
+    *
+    * Not with a source path: presentation compilers read the workspace's modules from their sources
+    * then, and don't need built output. Explicit compile requests still go through.
+    */
+  def autoCompile: Boolean = sourcepath.isEmpty
+
+  /** With a source path, presentation compilers read `targetId` from its sources rather than from
+    * built output. Once one of those changed on disk, the compilers that read it - those of
+    * `targetId` and of the targets depending on it - are started over, so that they pick the change
+    * up.
+    */
+  def resetSourcepathCompilers(targetId: b.BuildTargetIdentifier): Unit =
+    if (sourcepath.nonEmpty)
+      for (id <- bspData.allInverseDependencies(targetId).toSet + targetId)
+        presentationCompilers.reset(id)
+
   private def postCompilation(targetIds: Seq[b.BuildTargetIdentifier]): Unit = {
     // FIXME Do more
     refreshStatus()
@@ -695,6 +718,7 @@ final class Server(
       tools = tools.tools,
       enableBestEffortMode = enableBestEffortMode,
       scala2Compat = scala2Compat,
+      sourcepath = sourcepath.map(_.id),
       initParams = initializeParamsOpt0,
       bspServers = bspServers.actor.asJson,
       bspData = bspData.asJson,
@@ -810,6 +834,7 @@ object Server {
     tools: Map[String, Seq[String]],
     enableBestEffortMode: Boolean,
     scala2Compat: Boolean,
+    sourcepath: Option[String],
     initParams: Option[l.InitializeParams],
     bspServers: BspServersActor.AsJson,
     bspData: BspData.AsJson,
