@@ -3,6 +3,8 @@ package plasmon.servercommand
 import caseapp.HelpMessage
 import caseapp.core.help.Help
 import caseapp.core.parser.Parser
+import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
+import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 
 // format: off
 @HelpMessage("List the code lenses of a source file")
@@ -13,10 +15,11 @@ final case class LspCodeLensOptions(
     auto: Boolean = false,
   @HelpMessage("Print the raw LSP response as JSON")
     json: Boolean = false
-)
+) extends HasAutoOption
 // format: on
 
 object LspCodeLensOptions {
-  implicit lazy val parser: Parser[LspCodeLensOptions] = Parser.derive
-  implicit lazy val help: Help[LspCodeLensOptions]     = Help.derive
+  implicit lazy val parser: Parser[LspCodeLensOptions]        = Parser.derive
+  implicit lazy val help: Help[LspCodeLensOptions]            = Help.derive
+  implicit lazy val codec: JsonValueCodec[LspCodeLensOptions] = JsonCodecMaker.make
 }

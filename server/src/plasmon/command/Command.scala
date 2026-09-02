@@ -49,7 +49,24 @@ object Command extends caseapp.Command[CommandOptions] {
   private def utf8(fd: FileDescriptor): PrintStream =
     new PrintStream(new FileOutputStream(fd), true, StandardCharsets.UTF_8)
 
-  def run(options: CommandOptions, remainingArgs: RemainingArgs): Unit = {
+  /** `plasmon command <command> …`: the remote commands, with the connection options up front.
+    *
+    * The same commands the top-level entry point offers, parsed the same way and answering `--help`
+    * for themselves - what this adds is somewhere to pass `--socket` and friends.
+    */
+  def run(options: CommandOptions, remainingArgs: RemainingArgs): Unit =
+    RemoteCommands.entryPoint(options).main(remainingArgs.all.toArray)
+
+  /** Runs one already-parsed command in the server, printing what it sends back.
+    *
+    * `auto` is what the options of that command say about `--auto`: whether it was asked for, and
+    * whether the command takes it at all.
+    */
+  def send(
+    options: CommandOptions,
+    request: ProtocolCommand,
+    auto: AutoServer.Auto
+  ): Unit = {
 
     val workingDir = options.workingDir
       .filter(_.trim.nonEmpty)
@@ -96,7 +113,7 @@ object Command extends caseapp.Command[CommandOptions] {
         }
 
     val socketChannel = tryConnect().map(_._2).getOrElse {
-      if (AutoServer.requested(remainingArgs.all))
+      if (auto.requested)
         AutoServer.startAndConnect(
           workingDir,
           explicitSocketOpt,
@@ -116,11 +133,7 @@ object Command extends caseapp.Command[CommandOptions] {
         }
         // Where --auto would have started one - having no server is exactly the moment someone
         // finds out they wanted it
-        val hint =
-          if (remainingArgs.all.headOption.exists(_.startsWith("lsp")))
-            " Pass --auto to start one."
-          else
-            ""
+        val hint = if (auto.supported) " Pass --auto to start one." else ""
         System.err.println(message + hint)
         sys.exit(1)
       }
@@ -201,12 +214,8 @@ object Command extends caseapp.Command[CommandOptions] {
         launcher.startListening()
 
         if (options.verbosity >= 1)
-          System.err.println(s"Running command ${remainingArgs.all.mkString(" ")} via JSON-RPC")
-        val res = remoteServer.runCommand {
-          val command = new ProtocolCommand
-          command.setArgs(remainingArgs.all.toArray)
-          command
-        }.get()
+          System.err.println(s"Running command ${request.getName.mkString(" ")} via JSON-RPC")
+        val res = remoteServer.runCommand(request).get()
 
         val exitCode = res.getExitCode
         if (options.verbosity >= 1)

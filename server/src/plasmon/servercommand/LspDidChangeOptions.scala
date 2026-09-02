@@ -3,6 +3,8 @@ package plasmon.servercommand
 import caseapp.HelpMessage
 import caseapp.core.help.Help
 import caseapp.core.parser.Parser
+import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
+import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 
 // format: off
 @HelpMessage("Tell the server the editor's copy of a source file changed")
@@ -19,6 +21,7 @@ final case class LspDidChangeOptions(
 // format: on
 
 object LspDidChangeOptions {
-  implicit lazy val parser: Parser[LspDidChangeOptions] = Parser.derive
-  implicit lazy val help: Help[LspDidChangeOptions]     = Help.derive
+  implicit lazy val parser: Parser[LspDidChangeOptions]        = Parser.derive
+  implicit lazy val help: Help[LspDidChangeOptions]            = Help.derive
+  implicit lazy val codec: JsonValueCodec[LspDidChangeOptions] = JsonCodecMaker.make
 }

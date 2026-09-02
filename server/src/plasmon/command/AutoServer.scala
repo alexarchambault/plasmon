@@ -1,6 +1,7 @@
 package plasmon.command
 
 import plasmon.internal.BinaryName
+import plasmon.servercommand.HasAutoOption
 
 import java.io.File
 import java.nio.channels.SocketChannel
@@ -36,17 +37,20 @@ object AutoServer {
   def outputFile(workingDir: os.Path): os.Path =
     workingDir / ".plasmon/server-output"
 
-  private def isAutoFlag(arg: String): Boolean =
-    arg == "--auto" || arg == "--auto=true"
-
-  /** Whether the arguments of a command ask for `--auto`.
+  /** What the options of a command say about `--auto`.
     *
-    * Client-side sniffing rather than parsing: the options of the `lsp …` commands are the
-    * server's, and are only ever parsed there. Anything after a `--` is an argument rather than an
-    * option, hence the [[Seq.takeWhile]].
+    * `supported` is what tells "no server, and none asked for" from "no server, and this command
+    * has no way to ask for one" - only the first of the two is worth suggesting `--auto` for.
     */
-  def requested(args: Seq[String]): Boolean =
-    args.iterator.takeWhile(_ != "--").exists(isAutoFlag)
+  final case class Auto(requested: Boolean, supported: Boolean)
+
+  object Auto {
+    def of(options: Any): Auto =
+      options match {
+        case withAuto: HasAutoOption => Auto(requested = withAuto.auto, supported = true)
+        case _                       => Auto(requested = false, supported = false)
+      }
+  }
 
   /** Starts a server in `workingDir`, and waits for it to accept a connection.
     *

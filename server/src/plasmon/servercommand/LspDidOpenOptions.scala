@@ -3,6 +3,8 @@ package plasmon.servercommand
 import caseapp.HelpMessage
 import caseapp.core.help.Help
 import caseapp.core.parser.Parser
+import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
+import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 
 // format: off
 @HelpMessage("Tell the server a source file was opened in the editor")
@@ -21,6 +23,7 @@ final case class LspDidOpenOptions(
 // format: on
 
 object LspDidOpenOptions {
-  implicit lazy val parser: Parser[LspDidOpenOptions] = Parser.derive
-  implicit lazy val help: Help[LspDidOpenOptions]     = Help.derive
+  implicit lazy val parser: Parser[LspDidOpenOptions]        = Parser.derive
+  implicit lazy val help: Help[LspDidOpenOptions]            = Help.derive
+  implicit lazy val codec: JsonValueCodec[LspDidOpenOptions] = JsonCodecMaker.make
 }

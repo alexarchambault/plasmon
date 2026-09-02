@@ -3,6 +3,8 @@ package plasmon.servercommand
 import caseapp.HelpMessage
 import caseapp.core.help.Help
 import caseapp.core.parser.Parser
+import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
+import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 
 // format: off
 @HelpMessage("Complete at a position in a source file")
@@ -17,10 +19,11 @@ final case class LspCompletionOptions(
     auto: Boolean = false,
   @HelpMessage("Print the raw LSP response as JSON")
     json: Boolean = false
-)
+) extends HasAutoOption
 // format: on
 
 object LspCompletionOptions {
-  implicit lazy val parser: Parser[LspCompletionOptions] = Parser.derive
-  implicit lazy val help: Help[LspCompletionOptions]     = Help.derive
+  implicit lazy val parser: Parser[LspCompletionOptions]        = Parser.derive
+  implicit lazy val help: Help[LspCompletionOptions]            = Help.derive
+  implicit lazy val codec: JsonValueCodec[LspCompletionOptions] = JsonCodecMaker.make
 }

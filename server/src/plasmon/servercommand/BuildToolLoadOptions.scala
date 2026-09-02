@@ -3,6 +3,8 @@ package plasmon.servercommand
 import caseapp.{HelpMessage, Name}
 import caseapp.core.help.Help
 import caseapp.core.parser.Parser
+import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
+import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 
 // format: off
 @HelpMessage("Load a build tool, discovering it the way the editor extension does")
@@ -18,6 +20,7 @@ final case class BuildToolLoadOptions(
 // format: on
 
 object BuildToolLoadOptions {
-  implicit lazy val parser: Parser[BuildToolLoadOptions] = Parser.derive
-  implicit lazy val help: Help[BuildToolLoadOptions]     = Help.derive
+  implicit lazy val parser: Parser[BuildToolLoadOptions]        = Parser.derive
+  implicit lazy val help: Help[BuildToolLoadOptions]            = Help.derive
+  implicit lazy val codec: JsonValueCodec[BuildToolLoadOptions] = JsonCodecMaker.make
 }
