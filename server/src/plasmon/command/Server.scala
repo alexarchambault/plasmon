@@ -386,6 +386,7 @@ object Server extends caseapp.Command[ServerOptions] {
               }
             } yield ()
           }
+          server.setPersistedImport(init)
           init.onComplete {
             case Success(()) =>
             case Failure(ex) =>

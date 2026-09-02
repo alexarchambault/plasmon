@@ -13,6 +13,8 @@ final case class LspCompletionOptions(
     line: Int,
   @HelpMessage("Column to complete at, zero-based (default: the end of the line)")
     col: Option[Int] = None,
+  @HelpMessage("Load whatever the file needs before answering: start a server if none is running, then load a build tool and a module for the file if it has none")
+    auto: Boolean = false,
   @HelpMessage("Print the raw LSP response as JSON")
     json: Boolean = false
 )

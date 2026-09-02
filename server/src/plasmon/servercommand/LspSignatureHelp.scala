@@ -11,13 +11,17 @@ import scala.jdk.CollectionConverters.*
 
 final case class LspSignatureHelp(
   server: Server,
+  indexer: Indexer,
   client: CommandClient,
   pools: plasmon.command.ServerCommandThreadPools
 ) extends ServerCommandInstance[LspSignatureHelpOptions](client) {
   override def names = LspSignatureHelp.names
   def run(options: LspSignatureHelpOptions, args: RemainingArgs): Unit = {
 
-    val (_, uri) = FileArg.single(args.all, options.uri, server.workingDir)
+    val (path, uri) = FileArg.single(args.all, options.uri, server.workingDir)
+
+    if (options.auto)
+      AutoLoad(server, indexer, pools, path, printLine(_, toStderr = true))
 
     val handler = SignatureHelp.handler(server, pools.cancelTokensEces)
 
@@ -50,7 +54,7 @@ object LspSignatureHelp extends ServerCommand[LspSignatureHelpOptions] {
     lspServer: plasmon.jsonrpc.JsonrpcServer,
     pool: plasmon.command.ServerCommandThreadPools
   ): ServerCommandInstance[LspSignatureHelpOptions] =
-    LspSignatureHelp(server, client, pool)
+    LspSignatureHelp(server, indexer, client, pool)
   override def names = List(
     List("lsp", "signature-help"),
     List("lsp-signature-help")
