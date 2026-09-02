@@ -39,7 +39,7 @@ import java.nio.file.NoSuchFileException
 import java.util.concurrent.{CompletableFuture, TimeUnit}
 
 import scala.collection.immutable.ListMap
-import scala.concurrent.{Future, Promise}
+import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.concurrent.duration.DurationInt
 import scala.jdk.CollectionConverters.*
 import scala.meta.Dialect
@@ -549,7 +549,8 @@ final class Server(
             val extraEvents = bspData.inverseSources(event0.path).toSeq.flatMap { id =>
               val target = GlobalSymbolIndex.BuildTarget(id.getUri)
               Seq(
-                WatchEvent.Compile(target),
+                if (sourcepath.nonEmpty) WatchEvent.ReloadSource(target, event0.path)
+                else WatchEvent.Compile(target),
                 WatchEvent.ComputeInteractiveSemanticdb(target, event0.path)
               )
             }
@@ -589,6 +590,12 @@ final class Server(
                       ex
                     )
                 }(using pools.dummyEc)
+          case event: WatchEvent.ReloadSource =>
+            onSourcepathFileChanged(event.path).onComplete {
+              case Success(_) =>
+              case Failure(ex) =>
+                scribe.error(s"Error reloading ${event.path} upon file watch event", ex)
+            }(using pools.dummyEc)
           case event: WatchEvent.ComputeInteractiveSemanticdb =>
             Future {
               interactiveSemanticdbs.textDocument(event.path, event.targetId)
@@ -669,21 +676,56 @@ final class Server(
     */
   def autoCompile: Boolean = sourcepath.isEmpty
 
+  /** The targets whose presentation compilers read `targetId` from its sources, with a source
+    * path: `targetId`'s own, and those of the targets depending on it.
+    */
+  private def sourcepathReaders(targetId: b.BuildTargetIdentifier): Set[b.BuildTargetIdentifier] =
+    bspData.allInverseDependencies(targetId).toSet + targetId
+
   /** With a source path, presentation compilers read `targetId` from its sources rather than from
-    * built output. Once one of those changed on disk, the compilers that read it - those of
-    * `targetId` and of the targets depending on it - are started over, so that they pick the change
-    * up.
+    * built output. Once those changed in ways a compiler can't take in on the fly - a file gone,
+    * events lost - the compilers that read them are started over.
     */
   def resetSourcepathCompilers(targetId: b.BuildTargetIdentifier): Unit =
     if (sourcepath.nonEmpty)
-      for (id <- bspData.allInverseDependencies(targetId).toSet + targetId)
+      for (id <- sourcepathReaders(targetId))
         presentationCompilers.reset(id)
+
+  /** With a source path, has the presentation compilers reading `path`'s target pick up what
+    * `path` now holds on disk, having been saved or otherwise changed.
+    *
+    * Each loaded compiler reads the file afresh and re-enters what it defines, in place. One that
+    * can't get away with that - a definition it used to know is gone, or the file is not on its
+    * source path yet, having just been created - is started over instead.
+    */
+  def onSourcepathFileChanged(path: os.Path): Future[Unit] =
+    if (sourcepath.isEmpty) Future.successful(())
+    else
+      bspData.inverseSources(path) match {
+        case None =>
+          Future.successful(())
+        case Some(targetId) =>
+          implicit val ec: ExecutionContext = pools.dummyEc
+          Future
+            .traverse(sourcepathReaders(targetId).toSeq) { id =>
+              presentationCompilers.reloadSourcepathFile(id, path).map { needsReset =>
+                if (needsReset) {
+                  scribe.info(s"Starting presentation compiler of ${id.getUri} over after $path changed")
+                  presentationCompilers.reset(id)
+                }
+              }
+            }
+            .map(_ => ())
+      }
 
   private def postCompilation(targetIds: Seq[b.BuildTargetIdentifier]): Unit = {
     // FIXME Do more
     refreshStatus()
-    for (targetId <- targetIds)
-      presentationCompilers.reset(targetId)
+    // With a source path, presentation compilers don't read what a build produces - and a build
+    // may well be the build tool's own doing (Scala CLI watches sources itself)
+    if (autoCompile)
+      for (targetId <- targetIds)
+        presentationCompilers.reset(targetId)
   }
 
   def readAllSemanticdbs(): Unit =

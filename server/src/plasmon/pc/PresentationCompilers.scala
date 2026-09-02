@@ -9,7 +9,7 @@ import com.github.plokhotnyuk.jsoniter_scala.core.{
 }
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import coursier.parse.RawJson
-import dotty.tools.pc.ScalaPresentationCompiler as Scala3PresentationCompiler
+import dotty.tools.pc.{ScalaPresentationCompiler as Scala3PresentationCompiler, SourcePathReload}
 import org.eclipse.lsp4j as l
 import org.eclipse.lsp4j.jsonrpc.messages.Either as JEither
 import plasmon.Logger
@@ -48,6 +48,7 @@ import scala.annotation.tailrec
 import scala.concurrent.{Await, ExecutionContextExecutorService, Future}
 import scala.concurrent.duration.Duration
 import scala.jdk.CollectionConverters.*
+import scala.jdk.javaapi.FutureConverters
 import scala.meta.inputs.{Input, Position}
 import scala.meta.internal.{pc, semanticdb as s}
 import scala.meta.internal.metals.{
@@ -191,6 +192,36 @@ class PresentationCompilers(
 
   private val cache           = jcache.asScala
   private val completionCache = jCompletionCache.asScala
+
+  /** Has the loaded presentation compilers of `targetId` read `path` afresh, `path` being on
+    * their source path. `true` when one of them can't take the change in on the fly - see
+    * [[dotty.tools.pc.SourcePathReload]] - and `targetId`'s compilers are to be started over.
+    * Compilers not loaded yet are left alone: they read the file when they get created.
+    */
+  def reloadSourcepathFile(targetId: b.BuildTargetIdentifier, path: os.Path): Future[Boolean] = {
+    val key = PresentationCompilerKey.ScalaBuildTarget(targetId)
+    val loaded = for {
+      cache0 <- Seq(jcache, jCompletionCache)
+      lazyPc <- Option(cache0.get(key)).toSeq
+      pc     <- lazyPc.compilerOpt.toSeq
+      pc3 <- pc match {
+        case pc0: Scala3PresentationCompiler if pc0.isLoaded() => Seq(pc0)
+        case _                                                  => Nil
+      }
+    } yield pc3
+    Future
+      .traverse(loaded) { pc =>
+        FutureConverters.asScala(pc.reloadSourcePathFile(path.toNIO)).map { outcome =>
+          scribe.info(s"Reloading $path in presentation compiler of ${targetId.getUri}: $outcome")
+          outcome match {
+            case SourcePathReload.Unchanged | SourcePathReload.Reloaded => false
+            case SourcePathReload.NotOnSourcePath | SourcePathReload.DefinitionsRemoved |
+                SourcePathReload.Missing => true
+          }
+        }
+      }
+      .map(_.contains(true))
+  }
   private def buildTargetCompletionPCFromCache(id: b.BuildTargetIdentifier)
     : Option[PresentationCompiler] =
     completionCache

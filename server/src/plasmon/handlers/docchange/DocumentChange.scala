@@ -157,13 +157,10 @@ object DocumentChange {
     } yield server.parserQueue.check(targetId.module, path, buildClient, dialect)
     val compileOrReset =
       if (server.autoCompile) server.compilations.compileFiles(Seq(path))
-      else {
+      else
         // The saved file is on the source path of the modules depending on its own: their
         // presentation compilers, and its own module's, get to read the new version
-        for (targetId <- server.bspData.inverseSources(path))
-          server.resetSourcepathCompilers(targetId)
-        Future.successful(())
-      }
+        server.onSourcepathFileChanged(path)
     Future
       .sequence(
         checks ++ List(
