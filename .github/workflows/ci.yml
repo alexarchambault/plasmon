@@ -14,6 +14,9 @@ permissions:
 jobs:
   test:
     needs: tags
+    # `tags` doesn't run on PRs, and fails on a "v*" tag that releases nothing.
+    # Run when it was skipped, don't when it rejected the release.
+    if: ${{ !cancelled() && needs.tags.result != 'failure' }}
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v7
@@ -51,6 +54,8 @@ jobs:
 
   format:
     needs: tags
+    # See the note on the same condition in the `test` job.
+    if: ${{ !cancelled() && needs.tags.result != 'failure' }}
     timeout-minutes: 15
     runs-on: ubuntu-latest
     steps:
@@ -67,6 +72,8 @@ jobs:
 
   native-test:
     needs: tags
+    # See the note on the same condition in the `test` job.
+    if: ${{ !cancelled() && needs.tags.result != 'failure' }}
     strategy:
       fail-fast: false
       matrix:
@@ -215,6 +222,8 @@ jobs:
   # The other jobs hang off this one, so that a "v*" tag with neither of those
   # alongside it runs no CI at all.
   tags:
+    # A PR releases nothing, so there is nothing for this job to decide there
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     outputs:
       publish: ${{ steps.check.outputs.publish }}
