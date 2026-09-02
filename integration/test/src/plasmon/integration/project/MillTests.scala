@@ -1,14 +1,14 @@
 package plasmon.integration.project
 
 import org.eclipse.lsp4j as l
-import plasmon.integration.{PlasmonSuite, ServerDriver, TestMode}
+import plasmon.integration.{PlasmonSuite, ServerDriver, TestMode, TestProjects}
 import plasmon.integration.TestUtil.*
 
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 
 class MillTests extends PlasmonSuite {
 
-  val millSources = projectsDir / "mill"
+  lazy val millSources = TestProjects.mill
 
   override def munitTimeout: FiniteDuration =
     if (System.getenv("CI") == null)
@@ -29,11 +29,11 @@ class MillTests extends PlasmonSuite {
       body
     }(using loc)
 
-  private val source6 = millSources / "runner/src/mill/runner/MillMain.scala"
-  private val pos6    = new l.Position(194, 27)
-  private val pos6_1  = new l.Position(199, 41)
+  private lazy val source6 = millSources / "runner/src/mill/runner/MillMain.scala"
+  private val pos6         = new l.Position(194, 27)
+  private val pos6_1       = new l.Position(199, 41)
 
-  private val source7 = millSources / "main/eval/src/mill/eval/EvaluatorCore.scala"
+  private lazy val source7 = millSources / "main/eval/src/mill/eval/EvaluatorCore.scala"
   // private val pos7    = new l.Position(2, 37)
   private val pos7_1 = new l.Position(9, 42)
   private val pos7_2 = new l.Position(10, 26)

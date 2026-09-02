@@ -3,7 +3,7 @@ package plasmon.integration.project
 import com.google.gson.Gson
 import io.github.alexarchambault.testutil.TestOutput.FixedReadBytes
 import org.eclipse.lsp4j as l
-import plasmon.integration.{PlasmonSuite, TestMode}
+import plasmon.integration.{PlasmonSuite, TestMode, TestProjects}
 import plasmon.integration.TestUtil.*
 
 import java.io.OutputStream
@@ -13,7 +13,7 @@ import scala.util.Properties
 
 class CoursierTests extends PlasmonSuite {
 
-  val coursierSources = projectsDir / "coursier"
+  lazy val coursierSources = TestProjects.coursier
 
   override def munitTimeout: FiniteDuration = 5.minutes
 
