@@ -1,7 +1,7 @@
 package plasmon.command
 
 import caseapp.core.RemainingArgs
-import plasmon.internal.{BinaryName, Constants}
+import plasmon.internal.{BinaryName, BuildVersion, Constants}
 
 import java.nio.charset.StandardCharsets
 
@@ -61,7 +61,7 @@ object Setup extends caseapp.Command[SetupOptions] {
 
     val currentServerVersionOpt = currentContent.get("metals.serverVersion").map(_.str)
     val serverVersionValue =
-      s"${Constants.organization}:${Constants.moduleName}:${Constants.version}"
+      s"${Constants.organization}:${Constants.moduleName}:${BuildVersion.version}"
     currentServerVersionOpt match {
       case Some(currentServerVersion) =>
         if (currentServerVersion != serverVersionValue) {

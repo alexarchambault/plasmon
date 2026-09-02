@@ -184,6 +184,8 @@ object submodules extends Module {
 object shared extends Module {
   def publishVersion = Task.Input(PlasmonPublishModule.computeBuildVersion())
 
+  def commitHash = Task.Input(PlasmonPublishModule.computeCommitHash())
+
   // Empty ZIP, used as doc JAR by all published modules (we don't generate
   // actual doc JARs, but Maven Central requires those to be there)
   def emptyZip = Task {
@@ -254,6 +256,12 @@ object PlasmonPublishModule {
   }
 
   lazy val buildVersion = computeBuildVersion()
+
+  def computeCommitHash() =
+    // FIXME Print stderr if command fails
+    os.proc("git", "rev-parse", "HEAD")
+      .call(cwd = BuildCtx.workspaceRoot)
+      .out.trim()
 }
 
 def disableScala2Pc = true
@@ -320,7 +328,6 @@ object server extends ScalaModule with PlasmonPublishModule {
          |  def semanticdbJavaVersion = "${Deps.semanticdbJavac.dep.versionConstraint.asString}"
          |  def organization = "${pomSettings().organization}"
          |  def moduleName = "${artifactId()}"
-         |  def version = "${publishVersion()}"
          |  def scala2Version = "${Versions.scala2}"
          |  def scalaVersion = "${Versions.scala}"
          |  def bloopVersion = "${Deps.bloopRifle.dep.versionConstraint.asString}"
@@ -404,6 +411,20 @@ object server extends ScalaModule with PlasmonPublishModule {
     Seq(PathRef(resourceDir))
   }
 
+  // Version and commit hash live in a runtime-only resource rather than in
+  // Constants.scala above: those change at each commit, and having them in
+  // generated sources would recompile the whole module every time.
+  def versionResourcesDir = Task {
+    val resourceDir = Task.dest / "resources"
+    val dest        = resourceDir / "plasmon" / "version.properties"
+    val content =
+      s"""version=${publishVersion()}
+         |commit-hash=${shared.commitHash()}
+         |""".stripMargin
+    os.write.over(dest, content, createFolders = true)
+    Seq(PathRef(resourceDir))
+  }
+
   def resources = Task {
 
     val vsixDir = {
@@ -413,7 +434,7 @@ object server extends ScalaModule with PlasmonPublishModule {
       dir
     }
 
-    super.resources() ++ Seq(PathRef(vsixDir)) ++ settingsEditDir()
+    super.resources() ++ Seq(PathRef(vsixDir)) ++ settingsEditDir() ++ versionResourcesDir()
   }
 
   trait PlasmonNativeImage extends ScalaModule with NativeImage with FormatNativeImageConf {

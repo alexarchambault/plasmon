@@ -2,7 +2,7 @@ package plasmon.command
 
 import caseapp.core.RemainingArgs
 import coursier.jvm.Execve
-import plasmon.internal.{BinaryName, Constants, Directories}
+import plasmon.internal.{BinaryName, BuildVersion, Constants, Directories}
 
 import java.io.File
 import java.nio.file.{Files, Path, Paths}
@@ -31,7 +31,7 @@ object Code extends caseapp.Command[CodeOptions] {
         val codeExtensionsDir = codeDir / "extensions"
 
         val serverDependency =
-          s"${Constants.organization}:${Constants.moduleName}:${Constants.version}"
+          s"${Constants.organization}:${Constants.moduleName}:${BuildVersion.version}"
 
         val extraArgs0 = Seq[os.Shellable](
           "--user-data-dir",
