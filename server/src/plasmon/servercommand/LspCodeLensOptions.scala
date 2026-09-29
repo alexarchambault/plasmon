@@ -1,6 +1,6 @@
 package plasmon.servercommand
 
-import caseapp.HelpMessage
+import caseapp.{HelpMessage, Name}
 import caseapp.core.help.Help
 import caseapp.core.parser.Parser
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
@@ -13,6 +13,9 @@ final case class LspCodeLensOptions(
     uri: Option[String] = None,
   @HelpMessage("Load whatever the file needs before answering: start a server if none is running, then load a build tool and a module for the file if it has none")
     auto: Boolean = false,
+  @HelpMessage("Don't print what is being loaded, nor the output of a build tool being started")
+  @Name("q")
+    quiet: Boolean = false,
   @HelpMessage("Print the raw LSP response as JSON")
     json: Boolean = false
 ) extends HasAutoOption

@@ -21,7 +21,7 @@ final case class LspSignatureHelp(
     val (path, uri) = FileArg.single(args.all, options.uri, server.workingDir)
 
     if (options.auto)
-      AutoLoad(server, indexer, pools, path, printLine(_, toStderr = true))
+      AutoLoad(server, indexer, pools, path, printLine(_, toStderr = true), options.quiet)
 
     val handler = SignatureHelp.handler(server, pools.cancelTokensEces)
 

@@ -51,12 +51,17 @@ object ProjectOps {
     implicit lazy val seqCodec: JsonValueCodec[Seq[ModuleInfo]] = JsonCodecMaker.make
   }
 
+  /** `echo` is where the build tool's own output goes as it starts, on top of its logger - the
+    * console of whoever asked for the load. Only the build tools that
+    * [[plasmon.bsp.BuildTool.echoesOutput]] use it, and only until the caller detaches it.
+    */
   def loadBuildTool(
     server: Server,
     pools: ServerCommandThreadPools,
     discoverId: String,
     toolId: String,
-    currentFileOpt: Option[os.Path]
+    currentFileOpt: Option[os.Path],
+    echo: Option[String => Unit] = None
   ): Future[Either[String, Unit]] = {
     implicit val ec = server.pools.requestsEces
     val f = Future {
@@ -74,7 +79,8 @@ object ProjectOps {
                 tool.buildTool.launcher(server.tools) +: tool.buildTool.extraLaunchers,
                 line => scribe.info("BSP: " + line),
                 pools.bspEces,
-                () => pools.bloopThreads
+                () => pools.bloopThreads,
+                echo
               )
               f.flatMap {
                 case Left(err) =>

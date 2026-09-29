@@ -8,6 +8,7 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 
 import scala.concurrent.duration.Duration
+import scala.util.control.NonFatal
 
 trait Logger {
   def channel: Logger.Channel
@@ -93,6 +94,10 @@ trait Logger {
 
   final def addPrefix(prefix: String): Logger =
     new Logger.Prefixed(prefix, this)
+
+  /** This logger, and `f` too - for lines that have somewhere else to be as well. */
+  final def alsoLogTo(f: String => Unit): Logger =
+    new Logger.Tee(this, f)
 }
 
 object Logger {
@@ -129,6 +134,35 @@ object Logger {
           (ChronoUnit.NANOS, ChronoUnit.NANOS.between(start, end))
         }
     Duration.apply(duration, TimeUnit.of(unit)).toString
+  }
+
+  /** A sink that can be turned off, and that a failure turns off.
+    *
+    * What a command echoes to its console outlives the command otherwise: the logger it is teed
+    * into belongs to a BSP connection, which stays up long after whoever started it has gone - and
+    * writing to a client that is no longer there either fails or waits for an answer that is not
+    * coming. Hence [[detach]], called by the command on its way out, and hence a write that fails
+    * taking the sink out rather than travelling up into the thread reading a build tool's output.
+    */
+  final class Sink(underlying: String => Unit) extends (String => Unit) {
+    @volatile private var attached = true
+    def detach(): Unit =
+      attached = false
+    def apply(line: String): Unit =
+      if (attached)
+        try underlying(line)
+        catch {
+          case NonFatal(_) =>
+            detach()
+        }
+  }
+
+  private class Tee(underlying: Logger, other: String => Unit) extends Logger {
+    def channel: Channel = underlying.channel
+    def log(line: String): Unit = {
+      underlying.log(line)
+      other(line)
+    }
   }
 
   private class Prefixed(prefix: String, underlying: Logger) extends Logger {

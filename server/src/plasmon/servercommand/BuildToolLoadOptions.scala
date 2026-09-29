@@ -15,7 +15,10 @@ final case class BuildToolLoadOptions(
   @HelpMessage("Id to discover the build tool under, if it differs from the build tool id")
     discoverId: Option[String] = None,
   @HelpMessage("URI of the file to discover build tools from, instead of passing it as an argument")
-    uri: Option[String] = None
+    uri: Option[String] = None,
+  @HelpMessage("Don't print what is being loaded, nor the output of a build tool being started")
+  @Name("q")
+    quiet: Boolean = false
 )
 // format: on
 

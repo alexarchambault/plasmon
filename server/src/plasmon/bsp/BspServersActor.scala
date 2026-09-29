@@ -66,7 +66,8 @@ class BspServersActor(
               add.launchers,
               add.log,
               add.bspPool,
-              add.bloopThreads
+              add.bloopThreads,
+              add.echo
             )
             maybeError match {
               case Left(err) =>
@@ -114,29 +115,40 @@ class BspServersActor(
           remove0.onDone(res)
       }
     }
-    finally {
+    finally
       activeMessages = Nil
-    }
 
+  /** `echo` is where a build tool's own output goes besides its logger - the console of whoever
+    * asked for the load, for the build tools that have something to say while they start.
+    */
   private def tryAdd(
     buildTool: BuildTool,
     launchers: Seq[BuildServerLauncher],
     log: String => Unit,
     bspPool: ExecutorService,
-    bloopThreads: () => BloopThreads
+    bloopThreads: () => BloopThreads,
+    echo: Option[String => Unit] = None
   ): Either[String, Unit] =
     inState(
       s"Adding ${buildTool.description(server.workingDir)}",
       progress = s"Adding ${buildTool.description(server.workingDir)}"
     ) {
       val connections = launchers.map { launcher =>
-        val (logger, outputLogger) = createLoggers(
+        val (logger, ownOutputLogger) = createLoggers(
           server.loggerManager,
           server.workingDir,
           launcher.info.workspace,
           launcher.info.id,
           launcher.info.label
         )
+        // Named, since this lands among the lines the command prints itself, and interleaved with
+        // whatever the other launchers of the same build tool have to say
+        val outputLogger =
+          echo.filter(_ => buildTool.echoesOutput).fold(ownOutputLogger) { echo0 =>
+            ownOutputLogger.alsoLogTo { line =>
+              echo0(if (line.isEmpty) "" else s"[${launcher.preliminaryDisplayName}] $line")
+            }
+          }
         val conn = inState(
           s"Starting ${launcher.preliminaryDisplayName} BSP server",
           Some(logger),
@@ -145,10 +157,11 @@ class BspServersActor(
           BspUtil.bspServerFromInfo(
             launcher,
             log,
-            () => server.createBuildClient(
-              launcher.info.id,
-              BspConnection.enhancedName(launcher.preliminaryDisplayName)
-            ),
+            () =>
+              server.createBuildClient(
+                launcher.info.id,
+                BspConnection.enhancedName(launcher.preliminaryDisplayName)
+              ),
             server.languageClient,
             launcher.info.id,
             launcher.preliminaryDisplayName,
@@ -257,6 +270,7 @@ object BspServersActor {
       log: String => Unit,
       bspPool: ExecutorService,
       bloopThreads: () => BloopThreads,
+      echo: Option[String => Unit],
       onDone: Try[Either[String, Unit]] => Unit
     ) extends Message
     final case class AddAllFromFile(

@@ -1,6 +1,6 @@
 package plasmon.servercommand
 
-import plasmon.Server
+import plasmon.{Logger, Server}
 import plasmon.PlasmonEnrichments.StringThingExtensions
 import plasmon.command.ServerCommandThreadPools
 import plasmon.index.Indexer
@@ -24,21 +24,45 @@ import scala.concurrent.duration.Duration
   */
 object AutoLoad {
 
+  /** The two kinds of line a load has to say, and where each of them goes.
+    *
+    * `--quiet` is the reason they are told apart: what is being loaded is worth silencing, what
+    * went wrong on the way to an exit code isn't.
+    */
+  private final case class Out(progress: String => Unit, error: String => Unit)
+
   /** Loads a build tool and a module for `file` if it has none. Returns once indexing has run.
     *
-    * `log` is where the progress goes - stderr for the commands here, so that whatever the request
-    * itself prints on stdout stays the only thing on it.
+    * `log` is where this goes - stderr for the commands here, so that whatever the request itself
+    * prints on stdout stays the only thing on it. `quiet` keeps everything but the errors off it:
+    * neither what is being loaded, nor what the build tool being started has to say for itself.
     */
   def apply(
     server: Server,
     indexer: Indexer,
     pools: ServerCommandThreadPools,
     file: os.Path,
-    log: String => Unit
+    log: String => Unit,
+    quiet: Boolean
   ): Unit = {
-    awaitPersistedImport(server, log)
-    ensureBuildTool(server, pools, file, log)
-    ensureModule(server, indexer, pools, file, log)
+
+    val out = Out(
+      progress = line => if (!quiet) log(line),
+      error = log
+    )
+
+    // Starting a build tool is most of the wait here, and one that says what it is up to
+    // meanwhile - Mill compiling its own build - is worth passing on. The sink outlives this call
+    // otherwise: it is teed into a logger that the connection, not the command, keeps
+    val echo = Option.when(!quiet)(new Logger.Sink(log))
+
+    try {
+      awaitPersistedImport(server, out)
+      ensureBuildTool(server, pools, file, out, echo)
+      ensureModule(server, indexer, pools, file, out)
+    }
+    finally
+      echo.foreach(_.detach())
   }
 
   /** Waits for whatever the server was already restoring when it started.
@@ -49,10 +73,10 @@ object AutoLoad {
     * for the file while the one it had is being restored, and then fails loading a second one over
     * it.
     */
-  private def awaitPersistedImport(server: Server, log: String => Unit): Unit = {
+  private def awaitPersistedImport(server: Server, out: Out): Unit = {
     val f = server.persistedImport
     if (!f.isCompleted)
-      log("Waiting for the server to finish restoring what it had loaded before")
+      out.progress("Waiting for the server to finish restoring what it had loaded before")
     Await.ready(f, Duration.Inf)
   }
 
@@ -71,35 +95,37 @@ object AutoLoad {
     server: Server,
     pools: ServerCommandThreadPools,
     file: os.Path,
-    log: String => Unit
+    out: Out,
+    echo: Option[String => Unit]
   ): Unit =
     if (hasBuildTool(server, file))
-      log(s"Build tool already loaded for $file")
+      out.progress(s"Build tool already loaded for $file")
     else
       ProjectOps.discoverBuildTools(server, Some(file)) match {
         case Seq() =>
-          log(s"No build tool found in ${server.workspace()} for $file")
+          out.error(s"No build tool found in ${server.workspace()} for $file")
           ServerCommandInstance.exit(1)
         case tool +: _ =>
           // Discovery hands back the tools in the order the extension offers them, the one we'd
           // default to first. Not asking is the whole point of --auto, so take that one rather
           // than bailing out on ambiguity the way `build-tool load` does.
-          log(s"Loading build tool ${tool.buildTool.id}")
+          out.progress(s"Loading build tool ${tool.buildTool.id}")
           Await.result(
             ProjectOps.loadBuildTool(
               server,
               pools,
               tool.discoverId,
               tool.buildTool.id,
-              Some(file)
+              Some(file),
+              echo
             ),
             Duration.Inf
           ) match {
             case Left(err) =>
-              log(s"Error loading build tool ${tool.buildTool.id}: $err")
+              out.error(s"Error loading build tool ${tool.buildTool.id}: $err")
               ServerCommandInstance.exit(1)
             case Right(()) =>
-              log(s"Loaded build tool ${tool.buildTool.id}")
+              out.progress(s"Loaded build tool ${tool.buildTool.id}")
           }
       }
 
@@ -108,20 +134,20 @@ object AutoLoad {
     indexer: Indexer,
     pools: ServerCommandThreadPools,
     file: os.Path,
-    log: String => Unit
+    out: Out
   ): Unit =
     if (hasModule(server, file))
-      log(s"Module already loaded for $file")
+      out.progress(s"Module already loaded for $file")
     else
       ProjectOps.listModules(file, server) match {
         case Seq() =>
-          log(s"No module found for $file")
+          out.error(s"No module found for $file")
           ServerCommandInstance.exit(1)
         case modules =>
           // listModules sorts the candidates best first - the recommended one, which is also the
           // one `module load` takes
           val module = modules.head
-          log(s"Loading module ${module.uri}")
+          out.progress(s"Loading module ${module.uri}")
           Await.result(
             ProjectOps.loadModule(
               server,
@@ -134,10 +160,10 @@ object AutoLoad {
             Duration.Inf
           ) match {
             case Left(err) =>
-              log(s"Error loading module ${module.label}: $err")
+              out.error(s"Error loading module ${module.label}: $err")
               ServerCommandInstance.exit(1)
             case Right(_) =>
-              log(s"Loaded module ${module.uri}")
+              out.progress(s"Loaded module ${module.uri}")
           }
           // Loading waits for the re-index it asks for, but the indexer goes on chewing through
           // messages of its own afterwards - workspace source symbols, notably - and a request

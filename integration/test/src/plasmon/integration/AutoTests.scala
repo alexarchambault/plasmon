@@ -42,6 +42,14 @@ class AutoTests extends PlasmonSuite {
       startsServerTest()
     }
 
+  // Real Mill, hence not on CI: the Mill tests there answer from recorded BSP data, and a
+  // recording has no process to have printed anything (see TestParams.recordBspData)
+  if (System.getenv("CI") == null)
+    for (mode <- cliOnlyModes)
+      test("hover shows what Mill prints while it loads" + mode.testNameSuffix) {
+        millOutputTest()
+      }
+
   private def loadsWhatIsNeededTest(): Unit = {
 
     val buildTool = SingleModuleBuildTool.ScalaCli()
@@ -129,6 +137,62 @@ class AutoTests extends PlasmonSuite {
     }
   }
 
+  /** What a build tool has to say while `--auto` starts it.
+    *
+    * Mill compiles its own build before it answers anything, which is the long silence after
+    * "Loading build tool mill" that this is about - its output belongs on the console of whoever is
+    * waiting for it. Scala CLI, which the tests above use, has nothing to say at that point, so
+    * this is the one test with a real Mill in it.
+    */
+  private def millOutputTest(): Unit = {
+
+    val buildTool = SingleModuleBuildTool.Mill
+
+    val (sourceFile, files) = buildTool.singleFile(
+      os.sub / "Foo.scala",
+      s"""//> using scala $scalaVersion
+         |object Foo {
+         |  def greeting: String = "hello"
+         |  def main(args: Array[String]): Unit =
+         |    println(gre<1>eting)
+         |}
+         |""".stripMargin
+    )
+
+    withWorkspaceNoServer(timeout = Some(buildTool.defaultTimeout * 2))(files*) {
+      (workspace, positions) =>
+
+        // What SingleModuleBuildTool.Mill.millSetup lays down for the tests that drive Mill
+        // themselves - here nobody does, --auto discovers and starts it
+        os.copy(SingleModuleBuildTool.Mill.millwPath, workspace / "mill")
+        os.copy(SingleModuleBuildTool.Mill.millwBatPath, workspace / "mill.bat")
+        (workspace / "mill").toIO.setExecutable(true)
+        os.write(workspace / ".mill-version", IntegrationConstants.millVersion)
+
+        val path        = workspace / sourceFile
+        val (line, col) = positions.pos(sourceFile, 1)
+
+        val (hovered, printed) =
+          TestUtil.serverCommandOutputs(workspace, TestLogs.currentStream)(
+            "lsp",
+            "hover",
+            "--auto",
+            "--line",
+            line.toString,
+            "--col",
+            col.toString,
+            path
+          )
+
+        expect(hovered.contains("greeting"))
+
+        // Mill's own output, named after the build server it came from, on stderr so that the
+        // answer stays the only thing on stdout
+        expect(printed.linesIterator.exists(_.startsWith("[Mill] ")))
+        expect(!hovered.contains("[Mill] "))
+    }
+  }
+
   /** `--auto` with nothing running at all - not even a server.
     *
     * The one thing every other test here is handed is the thing this one must not have, hence
@@ -168,8 +232,8 @@ class AutoTests extends PlasmonSuite {
         // Where a server writes down the socket it can be reached on
         val socketFile = workspace / ".plasmon" / "socket"
 
-        def request(command: String, extraArgs: String*): String =
-          TestUtil.serverCommandOutput(workspace, TestLogs.currentStream, autoServerArgs)(
+        def requestOutputs(command: String, extraArgs: String*): (String, String) =
+          TestUtil.serverCommandOutputs(workspace, TestLogs.currentStream, autoServerArgs)(
             "lsp",
             command,
             "--line",
@@ -179,6 +243,9 @@ class AutoTests extends PlasmonSuite {
             extraArgs,
             path
           )
+
+        def request(command: String, extraArgs: String*): String =
+          requestOutputs(command, extraArgs*)._1
 
         def hover(extraArgs: String*): String =
           request("hover", extraArgs*)
@@ -208,9 +275,13 @@ class AutoTests extends PlasmonSuite {
         // Nobody started a server here, so nothing wrote down where one could be reached
         expect(!os.exists(socketFile))
 
-        // …which used to be as far as this got. --auto starts one, and answers through it
-        val hovered = hover("--auto")
+        // …which used to be as far as this got. --auto starts one, and answers through it,
+        // saying what it is loading as it goes - on stderr, so that the answer stays the only
+        // thing on stdout
+        val (hovered, loading) = requestOutputs("hover", "--auto")
         expect(hovered.contains("greeting"))
+        expect(loading.contains("Loading build tool"))
+        expect(loading.contains("Loading module"))
 
         // The server it started stays up, with what --auto loaded in it still loaded: the same
         // request, this time with nothing to start and nothing to load, answers the same
@@ -220,6 +291,15 @@ class AutoTests extends PlasmonSuite {
         // Every request that answers for a file takes --auto, and finding nothing left to start
         // or load is as much a part of it as doing the starting
         expect(request("completion", "--auto").contains("greeting"))
+
+        // …and says so, which is the line -q is about. (The client's own -v chatter, which the
+        // test harness asks for, is not: -q is about what the load has to say)
+        val (_, loadedAnyway) = requestOutputs("hover", "--auto")
+        expect(loadedAnyway.contains("already loaded"))
+
+        val (quietHover, quietProgress) = requestOutputs("hover", "--auto", "-q")
+        expect(quietHover.contains("greeting"))
+        expect(!quietProgress.contains("already loaded"))
 
         // Second time round, in a workspace that now has state persisted in it. The server --auto
         // starts restores that in the background, while already answering commands, so --auto has
