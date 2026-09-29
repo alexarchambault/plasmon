@@ -238,7 +238,7 @@ object GitHubReleaseAssets {
     else {
       val dest = directory / name
       os.copy(nativeLauncher, dest, createFolders = true, replaceExisting = true)
-      os.proc("gzip", "-v", dest.toString).call(
+      os.proc("gzip", "-v", mill.api.PathRef.toAbsString(dest)).call(
         stdin = os.Inherit,
         stdout = os.Inherit,
         stderr = os.Inherit
