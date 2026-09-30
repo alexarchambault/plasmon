@@ -138,6 +138,15 @@ class Tests extends PlasmonSuite {
             }
             expect(entryContent == os.read(workspace / os.SubPath(goToDefRes.path)))
             expect(locations.head.getRange.getStart.getLine == goToDefRes.line)
+
+            // Archive URIs are accepted back, as --uri or as a path, standing for the extracted copy
+            val defPos = new org.eclipse.lsp4j.Position(goToDefRes.line, goToDefRes.colAverage)
+            val expectedHover = driver.hover(workspace / os.SubPath(goToDefRes.path), defPos)
+            expect(expectedHover != null)
+            val uriHover  = cli.hoverRaw(Seq("--uri", uri), defPos)
+            val pathHover = cli.hoverRaw(Seq(s"$jar!$entry"), defPos)
+            expect(uriHover == expectedHover)
+            expect(pathHover == expectedHover)
           case _ =>
         }
 

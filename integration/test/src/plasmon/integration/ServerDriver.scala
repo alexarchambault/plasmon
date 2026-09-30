@@ -390,6 +390,14 @@ object ServerDriver {
         Seq[os.Shellable]("lsp", "definition", "--json") ++ position(pos) :+ path*
       ).toSeq
 
+    /** `lsp hover` on a file passed as-is, rather than as a path - like a URI with `--uri`, or a
+      * `…/foo.jar!path/in/archive` path.
+      */
+    def hoverRaw(fileArgs: Seq[String], pos: l.Position): l.Hover =
+      json(classOf[l.Hover])(
+        Seq[os.Shellable]("lsp", "hover", "--json") ++ position(pos) :+ (fileArgs: os.Shellable)*
+      )
+
     /** `lsp definition --archive-uris`: definitions in dependencies point inside their archive
       * (`file:///…/foo-sources.jar!path/in/archive`) rather than at their extracted copy.
       */
