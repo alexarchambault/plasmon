@@ -4,8 +4,15 @@ import mill.scalalib.*
 
 object `package` extends MillBuildRootModule {
 
+  def repositories = super.repositories() ++ Seq(
+    "https://central.sonatype.com/repository/maven-snapshots"
+  )
+
   override def mvnDeps = Seq(
-    mvn"io.github.alexarchambault.mill::mill-native-image::0.2.4",
+    // Mill 2 serializes paths as `../mill-workspace/...` aliases; the Mill 1.2 flavor of the
+    // plugin turns them back into absolute paths before handing them to docker / native-image.
+    // TODO Switch to mill-native-image 0.2.7 once it is released
+    mvn"io.github.alexarchambault.mill:mill-native-image_mill1.2_3:0.2.7-SNAPSHOT",
     mvn"io.get-coursier:coursier-launcher_2.13:2.1.7",
     mvn"io.get-coursier:interface:1.0.29-M1",
     mvn"commons-io:commons-io:2.16.0",
