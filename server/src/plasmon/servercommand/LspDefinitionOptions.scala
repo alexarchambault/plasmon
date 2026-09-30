@@ -21,7 +21,9 @@ final case class LspDefinitionOptions(
   @Name("q")
     quiet: Boolean = false,
   @HelpMessage("Print the raw LSP response as JSON")
-    json: Boolean = false
+    json: Boolean = false,
+  @HelpMessage("Point at definitions in dependencies inside their archive, like file:///…/foo-sources.jar!path/in/archive, rather than at the copy extracted under .plasmon/readonly")
+    archiveUris: Boolean = false
 ) extends HasAutoOption
 // format: on
 

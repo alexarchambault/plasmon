@@ -390,6 +390,14 @@ object ServerDriver {
         Seq[os.Shellable]("lsp", "definition", "--json") ++ position(pos) :+ path*
       ).toSeq
 
+    /** `lsp definition --archive-uris`: definitions in dependencies point inside their archive
+      * (`file:///…/foo-sources.jar!path/in/archive`) rather than at their extracted copy.
+      */
+    def definitionArchiveUris(path: os.Path, pos: l.Position): Seq[l.Location] =
+      json(classOf[Array[l.Location]])(
+        Seq[os.Shellable]("lsp", "definition", "--json", "--archive-uris") ++ position(pos) :+ path*
+      ).toSeq
+
     /** `lsp hover --auto`: loads a build tool and a module for the file first, if it has none.
       *
       * No counterpart on [[ServerDriver]] - there is nothing over LSP that corresponds to it, an

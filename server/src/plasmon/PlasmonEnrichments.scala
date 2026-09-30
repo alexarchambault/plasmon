@@ -121,12 +121,6 @@ object PlasmonEnrichments {
       workspace: os.Path,
       retryCount: Int
     )(implicit ctx: SourcePath.Context): os.Path = {
-      def toJarMeta(jar: os.Path): String =
-        s"${os.mtime(jar)}\n$jar"
-
-      def readJarMeta(jarMetaFile: os.Path): Option[String] =
-        Option.when(os.exists(jarMetaFile))(os.read(jarMetaFile))
-
       def withJarDirLock[A](dir: os.Path)(f: => A)(fallback: => A): A = {
         val lockFile = dir / ".lock"
         if (os.exists(lockFile))
@@ -175,10 +169,10 @@ object PlasmonEnrichments {
           case z: SourcePath.ZipEntry =>
             val jarDir      = workspace / Directories.dependencies / z.zipPath.getFileName.toString
             val out         = jarDir / z.pathInZip.split("/").toSeq
-            val jarMetaFile = jarDir / ".jar.meta"
+            val jarMetaFile = jarDir / JarMeta.fileName
 
-            lazy val currentJarMeta = readJarMeta(jarMetaFile)
-            lazy val jarMeta        = toJarMeta(os.Path(z.zipPath, os.pwd))
+            lazy val currentJarMeta = JarMeta.read(jarDir)
+            lazy val jarMeta        = JarMeta.content(os.Path(z.zipPath, os.pwd))
 
             val updateMeta = !os.exists(jarDir) || !currentJarMeta.contains(jarMeta)
             if (!os.exists(out) || updateMeta)
