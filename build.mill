@@ -30,12 +30,17 @@ import scala.util.{Properties, Using}
   * (the class path in the JVM launcher) are read back by later runs, so they need the real paths.
   */
 object RealPath {
-  private lazy val realWorkspaceRoot = PathRef.toAbsNioPath(BuildCtx.workspaceRoot).toRealPath()
-  def apply(path: os.Path): String =
-    if (path.startsWith(BuildCtx.workspaceRoot))
-      realWorkspaceRoot.resolve(path.relativeTo(BuildCtx.workspaceRoot).toString).toString
-    else
-      PathRef.toResolvedPathString(path)
+  def apply(path: os.Path): String = {
+    // Resolve the symlinks in the longest existing prefix (which, for a cached PathRef read
+    // back in a new Mill process, includes a forwarder symlink), then re-append the rest.
+    var existing = PathRef.toAbsNioPath(path)
+    var rest     = List.empty[String]
+    while (!java.nio.file.Files.exists(existing) && existing.getParent != null) {
+      rest = existing.getFileName.toString :: rest
+      existing = existing.getParent
+    }
+    rest.foldLeft(existing.toRealPath())(_.resolve(_)).toString
+  }
   def apply(ref: PathRef): String = apply(ref.path)
 }
 
