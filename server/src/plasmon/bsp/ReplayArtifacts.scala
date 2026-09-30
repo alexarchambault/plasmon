@@ -10,6 +10,9 @@ import scala.util.control.NonFatal
   * in the coursier cache there. Replaying it somewhere else - another developer, or CI, where no
   * build tool runs at all - finds those paths empty. Since a coursier cache path maps straight back
   * to the URL it came from, we can simply fetch them.
+  *
+  * The same goes for the BSP data [[plasmon.index.IndexerActor]] caches, which uses the same
+  * layout: the coursier cache may have been cleaned since it was written.
   */
 object ReplayArtifacts {
 
@@ -19,28 +22,42 @@ object ReplayArtifacts {
     * rather than archive-cache paths (see `BspDataPortability.replaceJavaHomes`), and replay uses
     * the server's JVM anyway. Pulling a couple of hundred megabytes of JDK per job to satisfy a
     * path nothing reads would be a poor trade.
+    *
+    * @return
+    *   the entries still missing afterwards, as cache-relative paths, e.g.
+    *   `https/repo1.maven.org/maven2/…/foo.jar`
     */
-  def fetchMissing(dataDir: os.Path, roots: BspDataPortability.Roots, logger: Logger): Unit = {
+  def fetchMissing(
+    dataDir: os.Path,
+    roots: BspDataPortability.Roots,
+    logger: Logger
+  ): Seq[String] = {
+    def missing() =
+      references(dataDir)
+        .filter(ref => !os.exists(localPath(ref, roots, "COURSIER_CACHE")))
+
+    val missing0 = missing()
+    if (missing0.isEmpty) Nil
+    else {
+      logger.log(
+        s"Fetching ${missing0.length} artifact(s) referenced in $dataDir " +
+          "that the local cache doesn't have"
+      )
+      for (ref <- missing0)
+        fetch(urlOf(ref), logger) { url =>
+          coursierapi.Cache.create().get(coursierapi.Artifact.of(url))
+        }
+      missing()
+    }
+  }
+
+  private def references(dataDir: os.Path): Seq[String] = {
     val texts =
       if (os.isDir(dataDir))
         os.list(dataDir).filter(os.isFile).filter(_.last.endsWith(".json")).map(os.read)
       else Nil
 
-    val missing = texts
-      .flatMap(references(_, "COURSIER_CACHE"))
-      .distinct
-      .filter(ref => !os.exists(localPath(ref, roots, "COURSIER_CACHE")))
-
-    if (missing.nonEmpty) {
-      logger.log(
-        s"Replay: fetching ${missing.length} artifact(s) the recording refers to " +
-          "but the local cache doesn't have"
-      )
-      for (ref <- missing)
-        fetch(urlOf(ref), logger) { url =>
-          coursierapi.Cache.create().get(coursierapi.Artifact.of(url))
-        }
-    }
+    texts.flatMap(references(_, "COURSIER_CACHE")).distinct
   }
 
   private def fetch(url: String, logger: Logger)(get: String => java.io.File): Unit =
@@ -52,7 +69,7 @@ object ReplayArtifacts {
       case NonFatal(e) =>
         // Not fatal in itself - whatever needed the artifact will fail with a clearer message, and
         // some recorded entries (a build tool's own scratch files, say) were never downloads
-        logger.log(s"Replay: could not fetch $url ($e)")
+        logger.log(s"Could not fetch $url ($e)")
     }
 
   /** Cache-relative paths, e.g. `https/repo1.maven.org/maven2/…/foo.jar`, under the named root. */
