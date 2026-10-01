@@ -5,6 +5,7 @@ import org.eclipse.lsp4j as l
 import plasmon.{Logger, Server}
 import plasmon.PlasmonEnrichments.*
 import plasmon.handlers.Definition
+import plasmon.ide.JarMeta
 import plasmon.index.Indexer
 import plasmon.protocol.CommandClient
 
@@ -45,11 +46,19 @@ final case class LspDefinition(
 
     val locations = handler.call(params, logger).get()
 
-    if (options.json)
+    if (options.json) {
+      if (options.archiveUris && locations != null)
+        for (location <- locations.asScala)
+          for (archiveUri <- JarMeta.archiveUri(location.getUri.osPathFromUri))
+            location.setUri(archiveUri)
       printJson(Option(locations).getOrElse(Nil.asJava))
+    }
     else if (locations != null)
       for (location <- locations.asScala) {
-        val path           = location.getUri.osPathFromUri
+        val path0 = location.getUri.osPathFromUri
+        val path =
+          if (options.archiveUris) JarMeta.archivePath(path0).getOrElse(path0.toString)
+          else path0.toString
         val startLine: Int = location.getRange.getStart.getLine
         val startCol: Int  = location.getRange.getStart.getCharacter
         val endLine: Int   = location.getRange.getEnd.getLine

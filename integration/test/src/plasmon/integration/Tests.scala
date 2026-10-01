@@ -1,5 +1,6 @@
 package plasmon.integration
 
+import com.eed3si9n.expecty.Expecty.expect
 import plasmon.integration.TestUtil.*
 
 import java.util.concurrent.{TimeUnit, TimeoutException}
@@ -112,6 +113,42 @@ class Tests extends PlasmonSuite {
           goToDefRes,
           osOpt
         )
+
+        driver match {
+          case cli: ServerDriver.Cli =>
+            // Same definition, pointing inside the source JAR rather than at its extracted copy
+            val locations = cli.definitionArchiveUris(
+              workspace / goToDefSourceFile,
+              positions.lspPos(goToDefSourceFile, 1)
+            )
+            expect(locations.length >= 1)
+            val uri = locations.head.getUri
+            val (jarUri, entry) = uri.split("!", 2) match {
+              case Array(jarUri0, entry0) => (jarUri0, entry0)
+              case _                      => sys.error(s"Expected an archive URI, got $uri")
+            }
+            val jar = os.Path(java.nio.file.Paths.get(new java.net.URI(jarUri)))
+            expect(os.isFile(jar))
+            expect(jar.last.endsWith("-sources.jar"))
+            expect(goToDefRes.path.endsWith("/" + jar.last + "/" + entry))
+            val entryContent = {
+              val zf = new java.util.zip.ZipFile(jar.toIO)
+              try new String(zf.getInputStream(zf.getEntry(entry)).readAllBytes(), "UTF-8")
+              finally zf.close()
+            }
+            expect(entryContent == os.read(workspace / os.SubPath(goToDefRes.path)))
+            expect(locations.head.getRange.getStart.getLine == goToDefRes.line)
+
+            // Archive URIs are accepted back, as --uri or as a path, standing for the extracted copy
+            val defPos = new org.eclipse.lsp4j.Position(goToDefRes.line, goToDefRes.colAverage)
+            val expectedHover = driver.hover(workspace / os.SubPath(goToDefRes.path), defPos)
+            expect(expectedHover != null)
+            val uriHover  = cli.hoverRaw(Seq("--uri", uri), defPos)
+            val pathHover = cli.hoverRaw(Seq(s"$jar!$entry"), defPos)
+            expect(uriHover == expectedHover)
+            expect(pathHover == expectedHover)
+          case _ =>
+        }
 
         var positions0           = positions
         val completionSourceFile = actualPath(os.sub / "Completion.scala")

@@ -11,7 +11,8 @@ import plasmon.bsp.{
   BspConnection,
   BspDataPortability,
   BuildServerInfo,
-  PlasmonBuildServer
+  PlasmonBuildServer,
+  ReplayArtifacts
 }
 import plasmon.ide.{AdjustLspData, AdjustedLspData}
 import plasmon.index.TargetData
@@ -341,15 +342,15 @@ class IndexerActor(
     // build tools loaded keeps them apart. Paths in them are placeholder-ised on the way out
     // and restored on the way in, which is what lets a recording be committed and replayed
     // elsewhere (see BuildServerInfo.Replay).
+    val portabilityRoots = BspDataPortability.Roots.default(info.workspace)
     val cacheDirOpt =
-      if (info.workspace.startsWith(server.workingDir))
-        Some((
-          bspDataCache / info.cacheKey / info.workspace.subRelativeTo(server.workingDir),
-          mayReadFromCache
-        ))
+      if (info.workspace.startsWith(server.workingDir)) {
+        val cacheDir =
+          bspDataCache / info.cacheKey / info.workspace.subRelativeTo(server.workingDir)
+        Some((cacheDir, mayReadFromCache && bspCacheIsUsable(cacheDir, portabilityRoots)))
+      }
       else
         None
-    val portabilityRoots = BspDataPortability.Roots.default(info.workspace)
 
     // Recorded so that a replay can answer the handshake the same way the real build tool did.
     // The display name matters beyond cosmetics: "mill-bsp" turns on millHack below.
@@ -609,6 +610,33 @@ class IndexerActor(
         }
       }
     } yield ()
+  }
+
+  /** Whether the BSP data cached in `cacheDir` can stand in for the build server's answers.
+    *
+    * Cached responses name artifacts by their coursier cache path. If the cache has since been
+    * cleaned, those paths are gone, and indexing from them silently leaves dependencies out of the
+    * index (go-to-definition into the standard library finds nothing, say). A coursier cache path
+    * maps back to the URL it came from, so we fetch them again, which is still much cheaper than
+    * asking the build server. Only if some can't be fetched (offline, say) do we ask the build
+    * server instead.
+    */
+  private def bspCacheIsUsable(cacheDir: os.Path, roots: BspDataPortability.Roots): Boolean = {
+    val missing = ReplayArtifacts.fetchMissing(cacheDir, roots, logger)
+    if (missing.nonEmpty) {
+      val what =
+        if (missing.lengthCompare(1) > 0) s"${missing.length} files it refers to are"
+        else "a file it refers to is"
+      logger.log(
+        s"BSP cache: not reading $cacheDir, $what missing from the coursier cache " +
+          s"and couldn't be fetched (${missing.take(3).mkString(", ")}" +
+          (if (missing.lengthCompare(3) > 0) ", …" else "") +
+          "), fetching BSP data from the build server instead"
+      )
+      false
+    }
+    else
+      true
   }
 
   private def fetchBspData(
