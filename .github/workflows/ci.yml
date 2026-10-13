@@ -276,26 +276,34 @@ jobs:
     needs: tags
     if: needs.tags.outputs.publish == 'true'
     runs-on: ubuntu-latest
+    # to publish to GitHub Packages
+    permissions:
+      contents: read
+      packages: write
+    # Never publish to Sonatype Central from two jobs at a time (snapshots of successive pushes,
+    # or a snapshot and a release). A job waits for the running one rather than cancelling it.
+    # GitHub keeps only one waiting job per group though, and cancels an older waiting one.
+    concurrency:
+      group: sonatype-central-publish-${{ github.repository }}
+      cancel-in-progress: false
     steps:
     - uses: actions/checkout@v7
       with:
         fetch-depth: 0
         submodules: true
     - uses: coursier/setup-action@v3
-    - name: Ignore tags (non-tag push)
-      if: ${{ !startsWith(github.ref, 'refs/tags/') }}
-      shell: bash
-      run: |
-        # The version we publish and upload to comes from the tags at HEAD, and
-        # a non-tag push must get a snapshot version out of them
-        for tag in $(git tag --points-at HEAD); do
-          git tag -d "$tag"
-        done
     - name: Publish
       run: |
         if [[ "$GITHUB_REF" == refs/tags/* ]]; then
-          ./mill -i mill.scalalib.SonatypeCentralPublishModule/ --bundleName "plasmon-${GITHUB_REF#refs/tags/v}"
+          # --shouldRelease false: the bundle is uploaded and validated on Sonatype Central, but has
+          # to be published manually from https://central.sonatype.com/publishing/deployments
+          ./mill -i mill.scalalib.SonatypeCentralPublishModule/ --bundleName "plasmon-${GITHUB_REF#refs/tags/v}" --shouldRelease false
         else
+          # The version we publish comes from the tags at HEAD, and a non-tag
+          # push must get a snapshot version out of them
+          for tag in $(git tag --points-at HEAD); do
+            git tag -d "$tag"
+          done
           ./mill -i mill.scalalib.SonatypeCentralPublishModule/
         fi
       env:
@@ -303,6 +311,19 @@ jobs:
         MILL_PGP_PASSPHRASE: ${{ secrets.PUBLISH_SECRET_KEY_PASSWORD }}
         MILL_SONATYPE_USERNAME: ${{ secrets.PUBLISH_USER }}
         MILL_SONATYPE_PASSWORD: ${{ secrets.PUBLISH_PASSWORD }}
+    # Same artifacts, snapshots included, to https://github.com/alexarchambault?tab=packages
+    # Best effort: Sonatype Central is the source of truth, so a failure here shouldn't hold
+    # back the jobs uploading launchers after a release.
+    - name: Publish to GitHub Packages
+      continue-on-error: true
+      run: |
+        ./mill -i mill.javalib.MavenPublishModule/publishAll \
+          --publishArtifacts "__:PublishModule.publishArtifacts" \
+          --releaseUri "https://maven.pkg.github.com/$GITHUB_REPOSITORY" \
+          --snapshotUri "https://maven.pkg.github.com/$GITHUB_REPOSITORY"
+      env:
+        MILL_MAVEN_USERNAME: ${{ github.actor }}
+        MILL_MAVEN_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
 
   # Tied to publishing rather than to the CLI release: the JAR launchers just
   # resolve the artifacts we've published, on the nightly release too
