@@ -6,16 +6,6 @@
       },
       "sources": [
         {
-          "uri": "file:///$WORKSPACE$/.bsp/out/mill-build/compileGeneratedSources.dest",
-          "kind": 2,
-          "generated": true
-        },
-        {
-          "uri": "file:///$WORKSPACE$/.bsp/out/mill-build/generatedScriptSources.dest/support",
-          "kind": 2,
-          "generated": true
-        },
-        {
           "uri": "file:///$WORKSPACE$/build.mill",
           "kind": 1,
           "generated": false
@@ -24,6 +14,16 @@
           "uri": "file:///$WORKSPACE$/mill-build/src",
           "kind": 2,
           "generated": false
+        },
+        {
+          "uri": "file:///$WORKSPACE$/out/mill-build/compileGeneratedSources.dest",
+          "kind": 2,
+          "generated": true
+        },
+        {
+          "uri": "file:///$WORKSPACE$/out/mill-build/generatedScriptSources.dest/support",
+          "kind": 2,
+          "generated": true
         }
       ]
     },
@@ -45,7 +45,7 @@
       },
       "sources": [
         {
-          "uri": "file:///$WORKSPACE$/.bsp/out/test-mod/compileGeneratedSources.dest",
+          "uri": "file:///$WORKSPACE$/out/test-mod/compileGeneratedSources.dest",
           "kind": 2,
           "generated": true
         },
