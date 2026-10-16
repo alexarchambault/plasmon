@@ -275,14 +275,11 @@ object PlasmonPublishModule {
         .stripPrefix("v")
     }
     maybeExactTag.toOption.getOrElse {
-      // FIXME Print stderr if command fails
-      val commitsSinceTaggedVersion =
-        os.proc("git", "rev-list", gitHead, "--not", latestTaggedVersion, "--count")
-          .call(cwd = BuildCtx.workspaceRoot, stderr = os.Pipe).out.trim()
-          .toInt
-      val gitHash =
-        os.proc("git", "rev-parse", "--short", "HEAD").call(cwd = BuildCtx.workspaceRoot).out.trim()
-      s"${latestTaggedVersion.stripPrefix("v")}-$commitsSinceTaggedVersion-$gitHash-SNAPSHOT"
+      // Latest tagged version, with its patch number bumped: v0.0.5 gives 0.0.6-SNAPSHOT
+      // (the commit hash of snapshots is in version.properties, see commitHash)
+      val parts = latestTaggedVersion.stripPrefix("v").split('.').take(3)
+      val last  = parts.last.takeWhile(_.isDigit).toInt
+      (parts.init :+ (last + 1).toString).mkString(".") + "-SNAPSHOT"
     }
   }
 
