@@ -453,10 +453,37 @@ object server extends ScalaModule with PlasmonPublishModule {
       Deps.semanticdbJavac
     )
 
+    // Same as mill-native-image's nativeImageGraalvmHome, but compiled against the coursier
+    // that Mill ships: mill-native-image 0.2.7 is built against Mill 1.0.0 (coursier
+    // 2.1.25-M13), whose ArchiveCache.apply overloads are gone in Mill 1.3.0's coursier 2.1.26,
+    // so calling the plugin's implementation fails with a NoSuchMethodError.
+    // TODO Drop this once mill-native-image is released against Mill >= 1.3
+    private def baseGraalvmHome = Task {
+      val f = () => {
+        val strPath = Task.env.get("GRAALVM_HOME").getOrElse {
+          import coursier.cache.ArchiveCache
+          import coursier.util.{Task => CsTask}
+          import scala.concurrent.duration.Duration
+
+          val csCache      = FileCache[CsTask]().withTtl(Duration.Zero)
+          val archiveCache = ArchiveCache().copy(cache = csCache)
+          val jvmCache =
+            JvmCache().copy(archiveCache = archiveCache).withIndex(NativeImage.jvmIndex)
+          val javaHome = JavaHome().copy(cache = Some(jvmCache), update = true)
+          javaHome.get(nativeImageGraalVmJvmId())
+            .unsafeRun(wrapExceptions = true)(using csCache.ec)
+            .getAbsolutePath
+        }
+        PathRef(os.Path(strPath), quick = true)
+      }
+      if (generateNativeImageWithFileSystemChecker) f()
+      else BuildCtx.withFilesystemCheckerDisabled(f())
+    }
+
     def nativeImageGraalvmHome =
       if (Properties.isWin)
         Task {
-          val baseHome = super.nativeImageGraalvmHome().path
+          val baseHome = baseGraalvmHome().path
           val newHome  = BuildCtx.workspaceRoot / "graalvm"
 
           BuildCtx.withFilesystemCheckerDisabled {
@@ -471,7 +498,7 @@ object server extends ScalaModule with PlasmonPublishModule {
           }
         }
       else
-        super.nativeImageGraalvmHome
+        baseGraalvmHome
 
     private def stripFile(
       jar: os.Path,
