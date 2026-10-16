@@ -1,4 +1,4 @@
-//| mill-version: 2.0.0-M2
+//| mill-version: 1.3.0
 //| bspScriptIgnore: ["*"]
 
 import coursier.cache.FileCache
@@ -21,29 +21,6 @@ import java.util.Arrays
 import scala.jdk.CollectionConverters.*
 import scala.util.{Properties, Using}
 
-/** Absolute path strings that stay valid once the current Mill run is over.
-  *
-  * Mill 2 renders paths under the workspace and home directories as `../mill-workspace/...` and
-  * `../mill-home/...` aliases, and `PathRef.toAbsString` resolves those through forwarder symlinks
-  * that only live as long as the current Mill process does (`out/mill-no-daemon/<id>/...` with
-  * `-i`). Values that Mill caches (task results such as `forkArgs`) or that end up in artifacts
-  * (the class path in the JVM launcher) are read back by later runs, so they need the real paths.
-  */
-object RealPath {
-  def apply(path: os.Path): String = {
-    // Resolve the symlinks in the longest existing prefix (which, for a cached PathRef read
-    // back in a new Mill process, includes a forwarder symlink), then re-append the rest.
-    var existing = PathRef.toAbsNioPath(path)
-    var rest     = List.empty[String]
-    while (!java.nio.file.Files.exists(existing) && existing.getParent != null) {
-      rest = existing.getFileName.toString :: rest
-      existing = existing.getParent
-    }
-    rest.foldLeft(existing.toRealPath())(_.resolve(_)).toString
-  }
-  def apply(ref: PathRef): String = apply(ref.path)
-}
-
 object Versions {
   def scala2  = "2.13.18"
   def scalaJs = "1.20.1"
@@ -62,8 +39,8 @@ object Versions {
   def sbt      = "1.9.9"
 
   object Test {
-    def mill            = "1.1.7"
-    def millwCommit     = "1.1.7"
+    def mill            = "1.3.0"
+    def millwCommit     = "1.3.0"
     def sbt             = "1.12.4"
     def sbtExtrasCommit = "c28642dc97914b82f5e5a1cdfd39710c1c5e95ce"
 
@@ -417,9 +394,7 @@ object server extends ScalaModule with PlasmonPublishModule {
     val preamble = Preamble()
       .withOsKind(isWin)
       .callsItself(isWin)
-    val entries = cp.map(path =>
-      ClassPathEntry.Url(java.nio.file.Paths.get(RealPath(path)).toUri.toASCIIString)
-    )
+    val entries       = cp.map(path => ClassPathEntry.Url(path.toNIO.toUri.toASCIIString))
     val loaderContent = coursier.launcher.ClassLoaderContent(entries)
     val params = Parameters.Bootstrap(Seq(loaderContent), mainClass0)
       .withDeterministic(true)
@@ -804,7 +779,7 @@ object server extends ScalaModule with PlasmonPublishModule {
               assert(os.isDir(ref.path))
               val jar = tmpDir / s"jar-$count.jar"
               count += 1
-              os.proc("jar", "cf", PathRef.toAbsString(jar), ".")
+              os.proc("jar", "cf", jar, ".")
                 .call(cwd = ref.path, stdin = os.Inherit, stdout = os.Inherit)
               PathRef(jar)
             }
@@ -813,7 +788,7 @@ object server extends ScalaModule with PlasmonPublishModule {
     }
 
     def printNativeImageClassPath() = Task.Command[String] {
-      nativeImageClassPathAsJars().map(RealPath(_)).mkString(File.pathSeparator)
+      nativeImageClassPathAsJars().map(_.path).mkString(File.pathSeparator)
     }
 
     /** Whether to build the image in GraalVM's quick build mode (`-Ob`), off by default.
@@ -960,16 +935,13 @@ object integration extends ScalaModule {
 
   def testLogsDir = BuildCtx.workspaceRoot / "out/integration-test-logs"
 
-  // Paths are passed as real absolute strings (see RealPath): the forked test JVM runs without
-  // Mill's path relativizer, hands some of them to sub-processes (Plasmon server, build tools)
-  // running in other directories, and Mill caches these arguments across runs.
   def sharedForkArgs = Task {
     Seq(
-      s"-Dplasmon.integration.projects=${RealPath(BuildCtx.workspaceRoot / "out/test-projects")}",
-      s"-Dplasmon.integration.fixture-dir=${RealPath(BuildCtx.workspaceRoot / "integration/test/resources/data")}",
-      s"-Dplasmon.integration.generated-resources-dir=${RealPath(BuildCtx.workspaceRoot / "integration/test/resources/generated")}",
+      s"-Dplasmon.integration.projects=${BuildCtx.workspaceRoot / "out/test-projects"}",
+      s"-Dplasmon.integration.fixture-dir=${BuildCtx.workspaceRoot / "integration/test/resources/data"}",
+      s"-Dplasmon.integration.generated-resources-dir=${BuildCtx.workspaceRoot / "integration/test/resources/generated"}",
       s"-Dplasmon.integration.disableScala2Pc=$disableScala2Pc",
-      s"-Dplasmon.integration.test-logs-dir=${RealPath(testLogsDir)}"
+      s"-Dplasmon.integration.test-logs-dir=$testLogsDir"
     )
   }
 
@@ -977,7 +949,7 @@ object integration extends ScalaModule {
     def testFramework   = "munit.Framework"
     def testParallelism = enableTestParallelism
     def forkArgs = super.forkArgs() ++ sharedForkArgs() ++ Seq(
-      s"-Dplasmon.integration.launcher=${RealPath(server.launcher())}",
+      s"-Dplasmon.integration.launcher=${server.launcher().path}",
       "-Dplasmon.integration.launcher-kind=jvm"
     )
     def compileMvnDeps   = Seq(Deps.jsoniterMacros)
@@ -1021,7 +993,7 @@ object integration extends ScalaModule {
     def forkArgs = Task {
       server.native.validatedNativeImage()
       super.forkArgs() ++ sharedForkArgs() ++ Seq(
-        s"-Dplasmon.integration.launcher=${RealPath(server.native.nativeImage())}",
+        s"-Dplasmon.integration.launcher=${server.native.nativeImage().path}",
         "-Dplasmon.integration.launcher-kind=native"
       )
     }
@@ -1192,7 +1164,7 @@ object extension extends Module {
 
       val coursierRepoEnv = {
         val currentOpt = Option(System.getenv("COURSIER_REPOSITORIES")).filter(_.trim.nonEmpty)
-        s"${java.nio.file.Paths.get(RealPath(`local-repo`.localRepo())).toUri.toASCIIString}|${currentOpt.getOrElse("ivy2Local|central")}"
+        s"${`local-repo`.localRepo().path.toNIO.toUri.toASCIIString}|${currentOpt.getOrElse("ivy2Local|central")}"
       }
 
       runCode(
@@ -1224,7 +1196,7 @@ object extension extends Module {
         sharedArgs,
         args,
         Map(
-          "PLASMON_FORCED_BINARY" -> RealPath(nativeLauncher),
+          "PLASMON_FORCED_BINARY" -> nativeLauncher.toString,
           "PLASMON_DEBUG"         -> "false"
         ),
         BuildCtx.workspaceRoot
@@ -1266,14 +1238,7 @@ object `settings-edit` extends ScalaJSModule {
     val dest          = Task.dest / "settingsEdit.js"
     if (!os.exists(dest) || os.mtime(dest) < os.mtime(originalInput)) {
       os.copy.over(originalInput, input, createFolders = true)
-      os.proc(
-        node,
-        esBuildBinary,
-        input,
-        "--bundle",
-        "--platform=node",
-        s"--outfile=${PathRef.toAbsString(dest)}"
-      )
+      os.proc(node, esBuildBinary, input, "--bundle", "--platform=node", s"--outfile=$dest")
         .call(cwd = workingDir, stdin = os.Inherit, stdout = os.Inherit)
     }
 
@@ -1292,7 +1257,7 @@ object `settings-edit` extends ScalaJSModule {
       )
       def testFramework = "munit.Framework"
       def forkArgs = super.forkArgs() ++ Seq(
-        s"-Dsettings-edit.launcher=${RealPath(bundle())}"
+        s"-Dsettings-edit.launcher=${bundle().path}"
       )
     }
   }
@@ -1519,12 +1484,12 @@ object ci extends Module {
     os.proc(
       "scala-cli",
       "--server=false",
-      PathRef.toAbsString(script),
+      script,
       "--",
       "--max",
       maxFiles.toString,
       "--dir",
-      PathRef.toAbsString(integration.testLogsDir)
+      integration.testLogsDir.toString
     ).call(cwd = BuildCtx.workspaceRoot, stdin = os.Inherit, stdout = os.Inherit)
     ()
   }
