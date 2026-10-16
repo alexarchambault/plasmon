@@ -23,7 +23,7 @@ Creates a collection with the specified elements.
 ***
 **Expression type**
 ```scala
-Seq[Thing]
+Seq[Any]
 ```
 
 
@@ -36,5 +36,5 @@ val Seq: scala.collection.immutable
 ***
 **Expression type**
 ```scala
-Seq[Thing]
+Seq[Any]
 ```
