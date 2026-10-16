@@ -10,3 +10,6 @@
 [submodule "submodules/scala3"]
 	path = submodules/scala3
 	url = https://github.com/plasmon-scala/scala3.git
+[submodule "mill-build/mill-native-image"]
+	path = mill-build/mill-native-image
+	url = https://github.com/alexarchambault/mill-native-image.git

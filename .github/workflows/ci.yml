@@ -67,6 +67,9 @@ jobs:
         jvm: 21
         apps: scalafmt
     - run: scalafmt --check
+    # The build compiles mill-native-image from this submodule. Checked out only after
+    # scalafmt, which would otherwise go over its sources too.
+    - run: git submodule update --init mill-build/mill-native-image
     - name: Check native-image config format
       run: ./mill -i __.checkNativeImageConfFormat
 
