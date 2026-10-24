@@ -1,5 +1,5 @@
 {
-  // Only used for type-checking (npx tsc): Playwright and Node run the .ts files directly
+  // Only used for type-checking (pnpm typecheck): Playwright and Node run the .ts files directly
   "compilerOptions": {
     "module": "NodeNext",
     "target": "ES2023",

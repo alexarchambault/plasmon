@@ -250,10 +250,10 @@
     }
   },
   "scripts": {
-    "vscode:prepublish": "npm run compile",
+    "vscode:prepublish": "pnpm run compile",
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
-    "pretest": "npm run compile && npm run lint",
+    "pretest": "pnpm run compile && pnpm run lint",
     "lint": "eslint src --ext ts",
     "test": "vscode-test",
     "package": "vsce package"
@@ -275,5 +275,6 @@
   },
   "extensionPack": [
     "scala-lang.scala"
-  ]
+  ],
+  "packageManager": "pnpm@12.12.1"
 }
