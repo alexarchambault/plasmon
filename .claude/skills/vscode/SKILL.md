@@ -41,6 +41,8 @@ Playwright drives it.
 
 Things to know:
 
+- Mill calls `pnpm`: if it's not on PATH, `corepack enable pnpm --install-directory <dir>` and put
+  `<dir>` in PATH (the version comes from `packageManager` in the `package.json` files).
 - Positions are 1-based line / column. Reach them with `vscode.goTo` (Ctrl+G) rather than by
   clicking: Monaco merges tokens like `g.message` into a single DOM node.
 - The Plasmon status bar item only shows while a file is focused.

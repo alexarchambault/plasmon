@@ -71,8 +71,11 @@ jobs:
     - uses: actions/setup-node@v7
       with:
         node-version: 24
+    - uses: pnpm/action-setup@v6
+      with:
+        package_json_file: extension/package.json
     - name: Install Playwright system dependencies
-      run: npx -y playwright@1.64.1 install-deps chromium
+      run: pnpm dlx playwright@1.64.1 install-deps chromium
     - name: Test
       run: ./mill -i extension.e2e.test
     - uses: actions/upload-artifact@v7

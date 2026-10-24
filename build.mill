@@ -1037,6 +1037,7 @@ object integration extends ScalaModule {
 object extension extends Module {
   def packageJson = Task.Sources(os.sub / "package.json")
   def jsSources   = Task.Sources(os.sub / "src")
+  def pnpmFiles   = Task.Sources(os.sub / "pnpm-lock.yaml", os.sub / "pnpm-workspace.yaml")
 
   // from https://github.com/VirtusLab/scala-cli/blob/b92d86a02e741a3cea9cc943f59712a5fb385617/modules/build/src/main/scala/scala/build/internal/Runner.scala#L175-L202
   private def endsWithCaseInsensitive(s: String, suffix: String): Boolean =
@@ -1067,11 +1068,11 @@ object extension extends Module {
       matches.find(_ => true)
     }
 
-  private lazy val npm =
-    if (Properties.isWin) findInPath("npm").getOrElse("npm") else "npm"
+  private lazy val pnpm =
+    if (Properties.isWin) findInPath("pnpm").getOrElse("pnpm") else "pnpm"
 
   def sources = Task {
-    packageJson() ++ jsSources()
+    packageJson() ++ pnpmFiles() ++ jsSources()
   }
 
   def version = Task {
@@ -1083,9 +1084,9 @@ object extension extends Module {
   def vsix = Task {
     sources()
     val version0 = version()
-    os.proc(npm, "install")
+    os.proc(pnpm, "install", "--frozen-lockfile")
       .call(cwd = BuildCtx.workspaceRoot / "extension", stdin = os.Inherit, stdout = os.Inherit)
-    os.proc(npm, "run", "package")
+    os.proc(pnpm, "run", "package")
       .call(cwd = BuildCtx.workspaceRoot / "extension", stdin = os.Inherit, stdout = os.Inherit)
     val dest = Task.dest / s"plasmon-$version0.vsix"
     BuildCtx.withFilesystemCheckerDisabled {
@@ -1244,18 +1245,19 @@ object extension extends Module {
     * Both use the JVM launcher of the server (`server.launcher`), and the extension from `vsix`.
     */
   object e2e extends Module {
-    private lazy val npx =
-      if (Properties.isWin) findInPath("npx").getOrElse("npx") else "npx"
-
-    def npmSources = Task.Sources(os.sub / "package.json", os.sub / "package-lock.json")
+    def pnpmSources = Task.Sources(
+      os.sub / "package.json",
+      os.sub / "pnpm-lock.yaml",
+      os.sub / "pnpm-workspace.yaml"
+    )
 
     // node_modules and the Chromium of Playwright
-    def npmInstall = Task {
-      npmSources()
+    def pnpmInstall = Task {
+      pnpmSources()
       BuildCtx.withFilesystemCheckerDisabled {
-        os.proc(npm, "ci")
+        os.proc(pnpm, "install", "--frozen-lockfile")
           .call(cwd = moduleDir, stdin = os.Inherit, stdout = os.Inherit)
-        os.proc(npx, "playwright", "install", "chromium")
+        os.proc(pnpm, "exec", "playwright", "install", "chromium")
           .call(cwd = moduleDir, stdin = os.Inherit, stdout = os.Inherit)
       }
       ()
@@ -1303,8 +1305,8 @@ object extension extends Module {
       }
 
     def test(args: String*) = Task.Command(exclusive = true) {
-      npmInstall()
-      os.proc(npx, "playwright", "test", args)
+      pnpmInstall()
+      os.proc(pnpm, "exec", "playwright", "test", args)
         .call(
           cwd = moduleDir,
           env = env() ++ javaEnv(),
@@ -1315,7 +1317,7 @@ object extension extends Module {
     }
 
     def serve(args: String*) = Task.Command(exclusive = true) {
-      npmInstall()
+      pnpmInstall()
       os.proc("node", "dev/serve.ts", args)
         .call(
           cwd = moduleDir,

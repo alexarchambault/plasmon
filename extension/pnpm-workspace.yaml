@@ -1,0 +1,6 @@
+# vsce packages the dependencies it gets from `npm list --production`, which only understands a flat,
+# npm-like node_modules
+nodeLinker: hoisted
+allowBuilds:
+  # Optional dependency of vsce, only used to store publishing tokens
+  keytar: false

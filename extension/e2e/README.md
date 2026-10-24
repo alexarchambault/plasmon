@@ -5,8 +5,9 @@ These check the Plasmon extension and server together, in a real VSCode workbenc
 and the server built from `server/`, and drive it from a headless Chromium with
 [Playwright](https://playwright.dev).
 
-Requirements: Node ≥ 22.18 (the TypeScript sources run as is) on Linux or macOS. Mill fetches
-code-server (`Versions.Test.codeServer` in `build.mill`) and Playwright's Chromium itself.
+Requirements: Node ≥ 22.18 (the TypeScript sources run as is) and [pnpm](https://pnpm.io)
+(`corepack enable pnpm` for example), on Linux or macOS. Mill fetches code-server
+(`Versions.Test.codeServer` in `build.mill`) and Playwright's Chromium itself.
 
 ## Running the tests
 
@@ -15,8 +16,8 @@ code-server (`Versions.Test.codeServer` in `build.mill`) and Playwright's Chromi
 ./mill -i extension.e2e.test tests/mill.spec.ts -g hover   # Playwright arguments are passed as is
 ```
 
-This builds `server.launcher` and `extension.vsix`, then runs `npx playwright test` here. Each
-Playwright worker starts its own code-server (on a free port, with its own profile under
+This builds `server.launcher` and `extension.vsix`, then runs `pnpm exec playwright test` here.
+Each Playwright worker starts its own code-server (on a free port, with its own profile under
 `test-results/`), on a fresh copy of the workspace its spec file asks for, and the tests of a spec
 file share that workbench, running serially. On failure, a screenshot of the workbench and the end
 of the Plasmon log get attached to the test, and the code-server logs stay in `test-results/`.

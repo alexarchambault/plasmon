@@ -3,3 +3,4 @@ out/
 .plasmon/
 .bloop/
 .scala-build/
+.pnpm-store/
