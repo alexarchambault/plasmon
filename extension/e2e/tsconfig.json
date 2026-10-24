@@ -1,0 +1,14 @@
+{
+  // Only used for type-checking (npx tsc): Playwright and Node run the .ts files directly
+  "compilerOptions": {
+    "module": "NodeNext",
+    "target": "ES2023",
+    "lib": ["ES2023", "DOM"],
+    "strict": true,
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "erasableSyntaxOnly": true,
+    "skipLibCheck": true
+  },
+  "include": ["lib", "tests", "dev", "playwright.config.ts"]
+}
