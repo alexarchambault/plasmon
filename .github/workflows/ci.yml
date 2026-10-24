@@ -52,6 +52,37 @@ jobs:
       if: failure()
       run: scala-cli --server=false integration/print-failing-test-logs.scala
 
+  vscode-e2e:
+    needs: tags
+    # See the note on the same condition in the `test` job.
+    if: ${{ !cancelled() && needs.tags.result != 'failure' }}
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        fetch-depth: 0
+        submodules: true
+    - uses: coursier/cache-action@v8
+      with:
+        disableFallback: true
+    - uses: coursier/setup-action@v3
+      with:
+        jvm: 17
+    - uses: actions/setup-node@v7
+      with:
+        node-version: 24
+    - name: Install Playwright system dependencies
+      run: npx -y playwright@1.64.1 install-deps chromium
+    - name: Test
+      run: ./mill -i extension.e2e.test
+    - uses: actions/upload-artifact@v7
+      if: failure()
+      with:
+        name: vscode-e2e-results
+        path: |
+          extension/e2e/test-results
+          extension/e2e/playwright-report
+
   format:
     needs: tags
     # See the note on the same condition in the `test` job.
