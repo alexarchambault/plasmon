@@ -63,6 +63,7 @@ object Versions {
 
   object Test {
     def mill            = "1.1.7"
+    def codeServer      = "4.141.0"
     def millwCommit     = "1.1.7"
     def sbt             = "1.12.4"
     def sbtExtrasCommit = "c28642dc97914b82f5e5a1cdfd39710c1c5e95ce"
@@ -1036,6 +1037,7 @@ object integration extends ScalaModule {
 object extension extends Module {
   def packageJson = Task.Sources(os.sub / "package.json")
   def jsSources   = Task.Sources(os.sub / "src")
+  def pnpmFiles   = Task.Sources(os.sub / "pnpm-lock.yaml", os.sub / "pnpm-workspace.yaml")
 
   // from https://github.com/VirtusLab/scala-cli/blob/b92d86a02e741a3cea9cc943f59712a5fb385617/modules/build/src/main/scala/scala/build/internal/Runner.scala#L175-L202
   private def endsWithCaseInsensitive(s: String, suffix: String): Boolean =
@@ -1066,11 +1068,11 @@ object extension extends Module {
       matches.find(_ => true)
     }
 
-  private lazy val npm =
-    if (Properties.isWin) findInPath("npm").getOrElse("npm") else "npm"
+  private lazy val pnpm =
+    if (Properties.isWin) findInPath("pnpm").getOrElse("pnpm") else "pnpm"
 
   def sources = Task {
-    packageJson() ++ jsSources()
+    packageJson() ++ pnpmFiles() ++ jsSources()
   }
 
   def version = Task {
@@ -1082,9 +1084,9 @@ object extension extends Module {
   def vsix = Task {
     sources()
     val version0 = version()
-    os.proc(npm, "install")
+    os.proc(pnpm, "install", "--frozen-lockfile")
       .call(cwd = BuildCtx.workspaceRoot / "extension", stdin = os.Inherit, stdout = os.Inherit)
-    os.proc(npm, "run", "package")
+    os.proc(pnpm, "run", "package")
       .call(cwd = BuildCtx.workspaceRoot / "extension", stdin = os.Inherit, stdout = os.Inherit)
     val dest = Task.dest / s"plasmon-$version0.vsix"
     BuildCtx.withFilesystemCheckerDisabled {
@@ -1229,6 +1231,101 @@ object extension extends Module {
         ),
         BuildCtx.workspaceRoot
       )
+    }
+  }
+
+  /** End-to-end tests of the extension and server, driving code-server with Playwright.
+    *
+    *   - `./mill extension.e2e.test [playwright test args]` runs the specs under
+    *     `extension/e2e/tests`
+    *   - `./mill extension.e2e.serve [workspace]` starts code-server and a headless Chromium on it,
+    *     for `node extension/e2e/dev/drive.ts` to drive interactively (see
+    *     `extension/e2e/README.md`)
+    *
+    * Both use the JVM launcher of the server (`server.launcher`), and the extension from `vsix`.
+    */
+  object e2e extends Module {
+    def pnpmSources = Task.Sources(
+      os.sub / "package.json",
+      os.sub / "pnpm-lock.yaml",
+      os.sub / "pnpm-workspace.yaml"
+    )
+
+    // node_modules and the Chromium of Playwright
+    def pnpmInstall = Task {
+      pnpmSources()
+      BuildCtx.withFilesystemCheckerDisabled {
+        os.proc(pnpm, "install", "--frozen-lockfile")
+          .call(cwd = moduleDir, stdin = os.Inherit, stdout = os.Inherit)
+        os.proc(pnpm, "exec", "playwright", "install", "chromium")
+          .call(cwd = moduleDir, stdin = os.Inherit, stdout = os.Inherit)
+      }
+      ()
+    }
+
+    // code-server, from its GitHub releases
+    def codeServer = Task {
+      val platform = (Properties.isMac, System.getProperty("os.arch")) match {
+        case (true, "aarch64")           => "macos-arm64"
+        case (true, _)                   => "macos-amd64"
+        case (false, "aarch64")          => "linux-arm64"
+        case (false, "amd64" | "x86_64") => "linux-amd64"
+        case (_, arch) =>
+          sys.error(s"code-server isn't available for ${Properties.osName} / $arch")
+      }
+      val ver  = Versions.Test.codeServer
+      val name = s"code-server-$ver-$platform"
+      val url  = s"https://github.com/coder/code-server/releases/download/v$ver/$name.tar.gz"
+      val dir = coursier.cache.ArchiveCache()
+        .get(coursier.util.Artifact(url))
+        .unsafeRun()(scala.concurrent.ExecutionContext.global)
+        .fold(err => throw new Exception(err), os.Path(_))
+      RealPath(dir / name / "bin" / "code-server")
+    }
+
+    def env = Task {
+      Map(
+        "PLASMON_E2E_CODE_SERVER"  -> codeServer(),
+        "PLASMON_E2E_VSIX"         -> RealPath(vsix()),
+        "PLASMON_E2E_LAUNCHER"     -> RealPath(server.launcher()),
+        "PLASMON_E2E_MILL_VERSION" -> Versions.Test.mill
+      )
+    }
+
+    // The launcher runs the server with the java found in PATH / JAVA_HOME,
+    // use the JVM running Mill if there's none
+    private def javaEnv(): Map[String, String] =
+      if (findInPath("java").nonEmpty) Map.empty
+      else {
+        val javaHome = sys.props("java.home")
+        Map(
+          "JAVA_HOME" -> javaHome,
+          "PATH"      -> s"$javaHome${File.separator}bin${File.pathSeparator}${sys.env("PATH")}"
+        )
+      }
+
+    def test(args: String*) = Task.Command(exclusive = true) {
+      pnpmInstall()
+      os.proc(pnpm, "exec", "playwright", "test", args)
+        .call(
+          cwd = moduleDir,
+          env = env() ++ javaEnv(),
+          stdin = os.InheritRaw,
+          stdout = os.InheritRaw
+        )
+      ()
+    }
+
+    def serve(args: String*) = Task.Command(exclusive = true) {
+      pnpmInstall()
+      os.proc("node", "dev/serve.ts", args)
+        .call(
+          cwd = moduleDir,
+          env = env() ++ javaEnv(),
+          stdin = os.InheritRaw,
+          stdout = os.InheritRaw
+        )
+      ()
     }
   }
 }
