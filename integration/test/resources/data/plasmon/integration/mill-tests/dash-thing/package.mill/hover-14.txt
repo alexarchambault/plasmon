@@ -1,7 +1,3 @@
 ```scala
-type build = package_
-```
-
-```scala
-object package_
+package build
 ```
