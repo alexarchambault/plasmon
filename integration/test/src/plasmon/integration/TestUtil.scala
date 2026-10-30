@@ -151,7 +151,6 @@ object TestUtil {
     shutdownServer: Boolean = true,
     timeout: Option[FiniteDuration] = Some(baseTimeout),
     extraServerOpts: Seq[String] = Nil,
-    workspaceOpt: Option[os.Path] = None,
     count: Int = 1
   )(
     content: (os.SubPath, os.Source)*
@@ -188,7 +187,7 @@ object TestUtil {
       count = count,
       env = serverEnv,
       runProcIn = tmpDir => {
-        val dir = workspaceOpt.getOrElse(tmpDir / workingDir)
+        val dir = tmpDir / workingDir
         os.makeDir.all(dir)
         dir
       },
@@ -201,7 +200,7 @@ object TestUtil {
       content.map { case (p, s) => (workingDir / p, s) }*
     ) {
       (tmpDir, subProc, ignoreSubProcExit, output, runCount) =>
-        val workspace   = workspaceOpt.getOrElse(tmpDir / workingDir)
+        val workspace   = tmpDir / workingDir
         val printStream = TestLogs.printStream(output.printStream)
         val osOpt       = TestLogs.outputStream(output.outputStreamOpt)
 

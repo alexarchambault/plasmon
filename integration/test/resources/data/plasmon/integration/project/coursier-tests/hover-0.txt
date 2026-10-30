@@ -1,3 +1,0 @@
-```scala
-def dependenciesWithRetainedVersion(res: Resolution): Seq[Dependency]
-```
