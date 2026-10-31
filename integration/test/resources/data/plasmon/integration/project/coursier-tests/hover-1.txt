@@ -1,3 +1,0 @@
-```scala
-def addDependencies(dependencies: Dependency*): Resolve[Task]
-```

@@ -1,3 +1,0 @@
-```scala
-package scala.collection.mutable
-```
