@@ -471,9 +471,15 @@ object PlasmonCommands {
                     // Ignored, reported via the returned future
                   }
 
-                  f.map { _ =>
-                    // FIXME We don't really check that everything went right here
-                    LoadBuildToolResult(success = true, None)
+                  f.map { l =>
+                    val removedAny = l.exists(res => res._1 || res._2)
+                    if (removedAny)
+                      LoadBuildToolResult(success = true, None)
+                    else
+                      LoadBuildToolResult(
+                        success = false,
+                        Some(s"Build tool $toolId wasn't loaded")
+                      )
                   }
                 case None =>
                   Future.successful {
