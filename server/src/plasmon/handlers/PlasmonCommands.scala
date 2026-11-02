@@ -585,8 +585,16 @@ object PlasmonCommands {
     CommandHandler.of("plasmon/compile", refreshStatus = true) { (params, _) =>
       params.asFileUri("plasmon/compile") { file =>
         ProjectOps.compile(server, file)
-          .map[Object](_ => null)(using server.pools.dummyEc)
           .asJava
+          .thenCompose {
+            case None =>
+              CommandHandler.failed(
+                ResponseErrorCode.RequestFailed,
+                s"No module found for $file, nothing to compile"
+              )
+            case Some(_) =>
+              CompletableFuture.completedFuture(null)
+          }
       }
     },
     CommandHandler.of("plasmon/clean", refreshStatus = true) { (params, _) =>
