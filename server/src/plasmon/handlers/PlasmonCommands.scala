@@ -559,10 +559,11 @@ object PlasmonCommands {
         val removedModuleCount    = removed.sum
 
         val allInfos = indexerInfos ++ extraInfos
-        if (allInfos.nonEmpty) {
-          implicit val ec0 = pools.dummyEc
-          Future.traverse(allInfos)(server.bspServers.remove(_)).onComplete {
-            case Success(_) =>
+        val removing =
+          if (allInfos.isEmpty) Future.unit
+          else {
+            implicit val ec0 = pools.dummyEc
+            Future.traverse(allInfos)(server.bspServers.remove(_)).map { _ =>
               indexer.persist()
               server.bspServers.persist()
               indexer.reIndex().onComplete {
@@ -570,17 +571,19 @@ object PlasmonCommands {
                 case Failure(ex) =>
                   scribe.error("Error re-indexing", ex)
               }
-            case Failure(ex0) =>
-              scribe.error("Error removing BSP servers", ex0)
+            }
           }
-        }
-        writeToGson(
-          UnloadAllModulesAndBuildToolsResponse(
-            removedModuleCount,
-            removedBuildToolCount
+        removing.map { _ =>
+          writeToGson(
+            UnloadAllModulesAndBuildToolsResponse(
+              removedModuleCount,
+              removedBuildToolCount
+            )
           )
-        )
-      }(using server.pools.requestsEces).asJava
+        }(using pools.dummyEc)
+      }(using server.pools.requestsEces)
+        .flatten
+        .asJava
     },
     CommandHandler.of("plasmon/compile", refreshStatus = true) { (params, _) =>
       params.asFileUri("plasmon/compile") { file =>
