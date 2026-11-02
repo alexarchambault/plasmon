@@ -85,10 +85,24 @@ class IndexerActor(
     }
   }
 
+  /** Callbacks of index runs superseded by a newer Index message, called once that one is done */
+  private var supersededOnDone = Seq.empty[Try[Unit] => Unit]
+
   override def runBatch(msgs: Seq[Message]): Unit = {
     super.runBatch(msgs)
 
     val interruptIndexingIdxOpt = Some(msgs.lastIndexOf(Message.InterruptIndexing)).filter(_ >= 0)
+
+    for (interruptIndexingIdx <- interruptIndexingIdxOpt) {
+      val interruptedOnDone = supersededOnDone ++
+        msgs.take(interruptIndexingIdx).collect { case msg: Message.Index => msg.onDone }.flatten
+      supersededOnDone = Nil
+      if (interruptedOnDone.nonEmpty) {
+        val res = Failure(new IndexingInterruptedException)
+        interruptedOnDone.foreach(_(res))
+      }
+    }
+
     val indexMessages = msgs.zipWithIndex.collect {
       case (msg: Message.Index, idx) if interruptIndexingIdxOpt.forall(idx > _) =>
         (msg, idx)
@@ -103,30 +117,43 @@ class IndexerActor(
     }
 
     for ((indexMessage, _) <- indexMessageOpt)
-      try
-        if (!interruptIndexing()) {
-          val res = Try {
-            SourcePath.withContext { implicit ctx =>
-              val res = doIndex(indexMessage, () => interruptIndexing())
-              if (!interruptIndexing()) {
-                latestToplevelCacheOnly =
-                  indexMessage.toplevelCacheOnly.getOrElse(latestToplevelCacheOnly)
-                latestIgnoreToplevelSymbolsErrors =
-                  indexMessage.ignoreToplevelSymbolsErrors
-                    .getOrElse(latestIgnoreToplevelSymbolsErrors)
-                latestIndexed = res
+      try {
+        val resOpt =
+          if (interruptIndexing()) None
+          else
+            Some {
+              Try {
+                SourcePath.withContext { implicit ctx =>
+                  val res = doIndex(indexMessage, () => interruptIndexing())
+                  if (!interruptIndexing()) {
+                    latestToplevelCacheOnly =
+                      indexMessage.toplevelCacheOnly.getOrElse(latestToplevelCacheOnly)
+                    latestIgnoreToplevelSymbolsErrors =
+                      indexMessage.ignoreToplevelSymbolsErrors
+                        .getOrElse(latestIgnoreToplevelSymbolsErrors)
+                    latestIndexed = res
 
-                for (persistTo <- indexMessage.persistTo)
-                  Persist.persistTargets(
-                    indexMessage.targets,
-                    persistTo
-                  )
+                    for (persistTo <- indexMessage.persistTo)
+                      Persist.persistTargets(
+                        indexMessage.targets,
+                        persistTo
+                      )
+                  }
+                }
               }
             }
-          }
-          if (!interruptIndexing())
-            indexMessage.onDone.foreach(_(res))
+        resOpt match {
+          case Some(res) if !interruptIndexing() =>
+            val onDone = supersededOnDone ++ indexMessage.onDone
+            supersededOnDone = Nil
+            onDone.foreach(_(res))
+          case _ =>
+            // A newer Index message is waiting: its run reports to our callers too
+            for (case Failure(ex) <- resOpt)
+              scribe.warn("Interrupted indexing run failed", ex)
+            supersededOnDone = supersededOnDone ++ indexMessage.onDone
         }
+      }
       finally resetInterruptIndexingPromise()
 
     nonIndexMessages.foreach {
@@ -146,7 +173,7 @@ class IndexerActor(
       case Message.InterruptIndexing =>
       // ignored
       case _: Message.Index =>
-        sys.error("Cannot happen")
+      // interrupted by a later InterruptIndexing message, handled above
     }
   }
 
@@ -1283,6 +1310,8 @@ class IndexerActor(
 }
 
 object IndexerActor {
+  final class IndexingInterruptedException extends Exception("Indexing interrupted")
+
   sealed abstract class Message extends Product with Serializable
   object Message {
     case object InterruptIndexing extends Message
