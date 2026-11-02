@@ -186,7 +186,15 @@ object DocumentChange {
 
   private def sendToClient(server: Server, reactions: Reactions): Unit =
     for (edit <- reactions.edits)
-      server.languageClient.applyEdit(new l.ApplyWorkspaceEditParams(edit))
+      server.languageClient.applyEdit(new l.ApplyWorkspaceEditParams(edit)).whenComplete {
+        (resOrNull, exOrNull) =>
+          if (exOrNull != null)
+            scribe.error("Error applying edit", exOrNull)
+          else if (resOrNull != null && !resOrNull.isApplied)
+            scribe.warn(
+              s"Edit not applied by client${Option(resOrNull.getFailureReason).fold("")(r => s": $r")}"
+            )
+      }
 
   private def didOpenHandler(server: Server) =
     NotificationHandler.of[l.DidOpenTextDocumentParams]("textDocument/didOpen") { (params, _) =>
