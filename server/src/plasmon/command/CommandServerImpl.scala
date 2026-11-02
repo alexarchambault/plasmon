@@ -6,7 +6,10 @@ import plasmon.protocol.{CommandClient, CommandServer, RemainingArgsJson}
 import plasmon.protocol.CommandClient.ops.*
 import plasmon.servercommand.ServerCommandInstance
 
+import java.io.{PrintWriter, StringWriter}
 import java.util.concurrent.{CompletableFuture, ExecutorService}
+
+import scala.util.control.NonFatal
 
 class CommandServerImpl(
   remoteCommands: CommandClient => Seq[ServerCommandInstance[?]],
@@ -37,6 +40,13 @@ class CommandServerImpl(
             res.setExitCode(e.code)
           case e: Throwable =>
             scribe.warn(s"Caught exception when running command ${name.mkString(" ")}", e)
+            val sw = new StringWriter
+            e.printStackTrace(new PrintWriter(sw))
+            try client.printLine(sw.toString.stripLineEnd, toStderr = true)
+            catch {
+              case NonFatal(e0) =>
+                scribe.warn("Error sending exception to command client", e0)
+            }
             res.setExitCode(1)
         }
         res
