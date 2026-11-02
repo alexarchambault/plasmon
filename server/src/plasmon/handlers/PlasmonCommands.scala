@@ -10,6 +10,7 @@ import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import com.google.gson.{Gson, JsonElement}
 import dotty.tools.pc.ScalaPresentationCompiler as Scala3PresentationCompiler
 import org.eclipse.lsp4j as l
+import org.eclipse.lsp4j.jsonrpc.messages.ResponseErrorCode
 import plasmon.Server
 import plasmon.PlasmonEnrichments.*
 import plasmon.bsp.{
@@ -164,15 +165,6 @@ object PlasmonCommands {
 
   private object OrganizeImportsResponse {
     implicit lazy val codec: JsonValueCodec[OrganizeImportsResponse] = JsonCodecMaker.make
-  }
-
-  private final case class OrganizeImportsInModuleResponse(
-    error: Option[String],
-    fileChanged: Int
-  )
-
-  private object OrganizeImportsInModuleResponse {
-    implicit lazy val codec: JsonValueCodec[OrganizeImportsInModuleResponse] = JsonCodecMaker.make
   }
 
   private final case class CancelAllCompilationsResponse(
@@ -662,7 +654,10 @@ object PlasmonCommands {
       f.map[Object](_ => null)(using server.pools.dummyEc).asJava
     },
     CommandHandler.of("plasmon/cleanAll", refreshStatus = true) { (_, _) =>
-      ???
+      CommandHandler.failed(
+        ResponseErrorCode.RequestFailed,
+        "Cleaning all modules isn't implemented yet"
+      )
     },
     CommandHandler.of("plasmon/reImport", refreshStatus = true) { (params, _) =>
       params.asFileUri("plasmon/reImport") { file =>
@@ -795,8 +790,10 @@ object PlasmonCommands {
     },
     CommandHandler.of("plasmon/organizeImportsInModule", refreshStatus = true) { (params, _) =>
       params.asFileUri("plasmon/organizeImportsInModule") { _ =>
-        ???
-        CompletableFuture.completedFuture(writeToGson(OrganizeImportsInModuleResponse(???, ???)))
+        CommandHandler.failed(
+          ResponseErrorCode.RequestFailed,
+          "Organizing imports in a whole module isn't implemented yet"
+        )
       }
     },
     CommandHandler.of("plasmon/cancelAllCompilations", refreshStatus = true) { (_, _) =>
