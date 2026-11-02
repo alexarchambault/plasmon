@@ -94,6 +94,8 @@ final class InteractiveSemanticdbs(
 
                       Right(TextDocumentLookup.Success(doc, source))
                     case Failure(ex) =>
+                      // Many callers discard the lookup result, so this is our only chance to log it
+                      scribe.warn(s"Error computing interactive semanticdb of $source", ex)
                       Right(TextDocumentLookup.Error(ex, source.toNIO.toUri.toASCIIString))
                   }
                 case Some(existingDoc) =>
