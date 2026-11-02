@@ -603,7 +603,14 @@ object PlasmonCommands {
                     .handle {
                       (resOrNull, exOrNull) =>
                         if (resOrNull != null)
-                          CleanResponse("", "")
+                          if (resOrNull.getCleaned) CleanResponse("", "")
+                          else {
+                            val msg = Option(resOrNull.getMessage).filter(_.nonEmpty).getOrElse {
+                              s"Build server could not clean $targetId"
+                            }
+                            scribe.warn(s"Error while cleaning $targetId: $msg")
+                            CleanResponse(msg, "")
+                          }
                         else if (exOrNull != null) {
                           scribe.error(s"Error while cleaning $targetId", exOrNull)
                           val baos = new ByteArrayOutputStream

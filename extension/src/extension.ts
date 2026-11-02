@@ -2009,9 +2009,17 @@ export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(
     vscode.commands.registerCommand("plasmon.clean", () => {
       let uri = lastFocusedDocument
+      type Resp = {
+        error: string
+        exceptionString: string
+      }
       client?.sendRequest(ExecuteCommandRequest.type, { command: "plasmon/clean", arguments: [uri] }).then(
-        () => {
-          // nothing to do
+        (resp: Resp) => {
+          if (resp.error) {
+            if (resp.exceptionString)
+              console.log(`Error cleaning up module of ${uri}: ${resp.exceptionString}`)
+            vscode.window.showErrorMessage(`Error cleaning up module: ${resp.error}`)
+          }
         },
         (err) => {
           console.log(`Failed to clean-up module of ${uri}: ${JSON.stringify(err)}`)
