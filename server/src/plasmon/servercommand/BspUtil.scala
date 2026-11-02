@@ -20,6 +20,7 @@ import plasmon.PlasmonEnrichments.*
 import plasmon.bsp.{
   BspConnection,
   BspDataPortability,
+  BuildServerConnectionClosedException,
   BuildServerInfo,
   BuildServerLauncher,
   BuildServerProcess,
@@ -44,7 +45,7 @@ import java.io.{
   PrintStream
 }
 import java.nio.charset.StandardCharsets
-import java.util.concurrent.ExecutorService
+import java.util.concurrent.{CancellationException, ExecutionException, ExecutorService}
 
 import scala.jdk.CollectionConverters.*
 import scala.util.Properties
@@ -602,9 +603,34 @@ object BspUtil {
     )
 
     log("Connecting to build server")
-    languageClient.reportProgress(buildToolId, buildToolName, "Connecting to build server") {
-      launcher.startListening()
+    val listening =
+      languageClient.reportProgress(buildToolId, buildToolName, "Connecting to build server") {
+        launcher.startListening()
+      }
+    val listeningWatcher = new Thread(s"bsp-listening-watcher-$buildToolId") {
+      setDaemon(true)
+      override def run(): Unit = {
+        val reason =
+          try {
+            listening.get()
+            new BuildServerConnectionClosedException(buildToolName)
+          }
+          catch {
+            case e: ExecutionException =>
+              new BuildServerConnectionClosedException(
+                buildToolName,
+                Option(e.getCause).getOrElse(e)
+              )
+            case e: CancellationException =>
+              new BuildServerConnectionClosedException(buildToolName, e)
+            case _: InterruptedException =>
+              new BuildServerConnectionClosedException(buildToolName)
+          }
+        buildServer.connectionClosed(reason)
+        logger.log(reason.getMessage)
+      }
     }
+    listeningWatcher.start()
     log("Connected to build server")
 
     val initRes =

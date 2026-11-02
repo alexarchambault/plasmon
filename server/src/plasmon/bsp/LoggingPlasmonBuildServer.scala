@@ -7,10 +7,11 @@ import plasmon.Logger
 import plasmon.languageclient.PlasmonLanguageClient
 
 import java.util.{Objects, UUID}
-import java.util.concurrent.CompletableFuture
+import java.util.concurrent.{CompletableFuture, ConcurrentHashMap}
 
 import scala.build.bsp.{WrappedSourcesParams, WrappedSourcesResult}
 import scala.annotation.nowarn
+import scala.jdk.CollectionConverters.*
 
 final class LoggingPlasmonBuildServer(
   underlying: PlasmonBuildServer,
@@ -21,7 +22,33 @@ final class LoggingPlasmonBuildServer(
 ) extends PlasmonBuildServer {
   import LoggingPlasmonBuildServer._
 
-  private def request[T](reqName: String)(f: => CompletableFuture[T]): CompletableFuture[T] = {
+  private val pending              = ConcurrentHashMap.newKeySet[CompletableFuture[?]]()
+  @volatile private var closedWith = Option.empty[Throwable]
+
+  /** Fails the requests still waiting for a response, and the ones sent from now on.
+    *
+    * lsp4j doesn't do that itself: when the connection to the build server goes away, the requests
+    * it already sent stay pending forever.
+    */
+  def connectionClosed(reason: Throwable): Unit = {
+    closedWith = Some(reason)
+    pending.asScala.toVector.foreach(_.completeExceptionally(reason))
+  }
+
+  private def request[T](reqName: String)(f: => CompletableFuture[T]): CompletableFuture[T] =
+    closedWith match {
+      case Some(reason) => CompletableFuture.failedFuture(reason)
+      case None =>
+        val f0 = request0(reqName)(f)
+        pending.add(f0)
+        f0.whenComplete((_, _) => pending.remove(f0))
+        // in case the connection got closed right before we added f0 to pending
+        for (reason <- closedWith)
+          f0.completeExceptionally(reason)
+        f0
+    }
+
+  private def request0[T](reqName: String)(f: => CompletableFuture[T]): CompletableFuture[T] = {
     val reqId = UUID.randomUUID().toString
     val reqName0 =
       if (reqName.startsWith("buildTarget"))
