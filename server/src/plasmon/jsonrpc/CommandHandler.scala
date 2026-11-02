@@ -3,6 +3,8 @@ package plasmon.jsonrpc
 import com.github.plokhotnyuk.jsoniter_scala.core.*
 import com.google.gson.{Gson, JsonElement, JsonPrimitive}
 import org.eclipse.lsp4j as l
+import org.eclipse.lsp4j.jsonrpc.ResponseErrorException
+import org.eclipse.lsp4j.jsonrpc.messages.{ResponseError, ResponseErrorCode}
 import plasmon.Logger
 import plasmon.PlasmonEnrichments.StringThingExtensions
 
@@ -24,6 +26,15 @@ object CommandHandler {
     refreshStatus: Boolean = false
   )(call: (l.ExecuteCommandParams, Logger) => CompletableFuture[Object]): CommandHandler =
     CommandHandler(commandName, call, refreshStatus)
+
+  /** Fails a request with an error that lsp4j sends back as is to the client */
+  def failed(code: ResponseErrorCode, message: String): CompletableFuture[Object] =
+    CompletableFuture.failedFuture(
+      new ResponseErrorException(new ResponseError(code, message, null))
+    )
+
+  def invalidParams(message: String): CompletableFuture[Object] =
+    failed(ResponseErrorCode.InvalidParams, message)
 
   object ParamsHelpers {
 
@@ -101,7 +112,7 @@ object CommandHandler {
 
       def as[T: ArgParser](
         commandName: String,
-        onError: String => CompletableFuture[Object] = _ => CompletableFuture.completedFuture(null)
+        onError: String => CompletableFuture[Object] = invalidParams
       )(f: T => CompletableFuture[Object])
         : CompletableFuture[Object] =
         arguments match {
@@ -116,7 +127,7 @@ object CommandHandler {
 
       def asFileUri(
         commandName: String,
-        onError: String => CompletableFuture[Object] = _ => CompletableFuture.completedFuture(null)
+        onError: String => CompletableFuture[Object] = invalidParams
       )(f: os.Path => CompletableFuture[Object])
         : CompletableFuture[Object] =
         as[String](commandName, onError) { uri =>
@@ -126,7 +137,7 @@ object CommandHandler {
 
       def asOpt[T: ArgParser](
         commandName: String,
-        onError: String => CompletableFuture[Object] = _ => CompletableFuture.completedFuture(null)
+        onError: String => CompletableFuture[Object] = invalidParams
       )(f: Option[T] => CompletableFuture[Object])
         : CompletableFuture[Object] =
         arguments match {
@@ -141,7 +152,7 @@ object CommandHandler {
 
       def asSeq[T: ArgParser](
         commandName: String,
-        onError: String => CompletableFuture[Object] = _ => CompletableFuture.completedFuture(null)
+        onError: String => CompletableFuture[Object] = invalidParams
       )(f: Seq[T] => CompletableFuture[Object])
         : CompletableFuture[Object] = {
         val parsed = arguments.map(ArgParser[T]().parse(_))
@@ -178,13 +189,11 @@ object CommandHandler {
       def asValues[A: ArgParser, B: ArgParser](
         commandName: String
       )(f: (A, B) => CompletableFuture[Object]): CompletableFuture[Object] =
-        asValues[A, B](commandName, _ => CompletableFuture.completedFuture(null))(f)
+        asValues[A, B](commandName, invalidParams)(f)
 
       def asValues[A: ArgParser, B: ArgParser, C: ArgParser](
         commandName: String,
-        onError: String => CompletableFuture[
-          Object
-        ] // = _ => CompletableFuture.completedFuture(null)
+        onError: String => CompletableFuture[Object]
       )(f: (A, B, C) => CompletableFuture[Object]): CompletableFuture[Object] =
         arguments match {
           case Seq()  => error(commandName, Seq("No argument passed"), onError)
@@ -211,7 +220,7 @@ object CommandHandler {
       def asValues[A: ArgParser, B: ArgParser, C: ArgParser](
         commandName: String
       )(f: (A, B, C) => CompletableFuture[Object]): CompletableFuture[Object] =
-        asValues[A, B, C](commandName, _ => CompletableFuture.completedFuture(null))(f)
+        asValues[A, B, C](commandName, invalidParams)(f)
     }
   }
 }
