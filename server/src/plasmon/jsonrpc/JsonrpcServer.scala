@@ -68,7 +68,7 @@ final class JsonrpcServer(
     futureResp.handle { (resOrNull, exOrNull) =>
       ongoingRequests.remove((method, parameter, futureResp))
       if (exOrNull == null)
-        logger.log(s"Response ${resOrNull.toString.take(100)}")
+        logger.log(s"Response ${String.valueOf(resOrNull).take(100)}")
       else
         exOrNull match {
           case _: CancellationException =>
