@@ -21,7 +21,7 @@ final case class BspReload(
     val buildToolOpt = Await.result(server.bspServers.remove(info0), Duration.Inf)
     buildToolOpt match {
       case Some(buildTool) =>
-        server.bspServers.addOne(
+        val resF = server.bspServers.addOne(
           buildTool,
           info0,
           detailsOpt.fold(info0.`type`)(_.name),
@@ -29,7 +29,13 @@ final case class BspReload(
           pool.bspEces,
           () => pool.bloopThreads
         )
-        indexer.reIndex()
+        Await.result(resF, Duration.Inf) match {
+          case Left(err) =>
+            printLine(err, toStderr = true)
+            exit(1)
+          case Right(()) =>
+            Await.result(indexer.reIndex(), Duration.Inf)
+        }
       case None =>
         printLine("Nothing to reload")
         if (options.strict)

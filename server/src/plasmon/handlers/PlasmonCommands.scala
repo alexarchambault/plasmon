@@ -32,7 +32,7 @@ import java.nio.charset.StandardCharsets
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.atomic.AtomicInteger
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 import scala.jdk.CollectionConverters.*
 import scala.meta.cli.Reporter
 import scala.meta.internal.metals.EmptyCancelToken
@@ -235,27 +235,33 @@ object PlasmonCommands {
     info: BuildServerInfo,
     name: String,
     hard: Boolean
-  ): Unit = {
-    val connOpt = server.bspServers.get(info)
-    if (connOpt.isEmpty)
+  ): Future[Either[String, Unit]] = {
+    if (server.bspServers.get(info).isEmpty)
       scribe.error(s"No connection details found for $info (should not happen)")
-    server.bspServers.remove(info, hard)
     val targetDataOpt = server.bspData.targetData(info)
     if (targetDataOpt.isEmpty)
       scribe.error(s"No target data found for $info (should not happen)")
-    server.bspServers.addOne(
-      buildTool,
-      info,
-      name,
-      str => scribe.info(s"Starting BSP server: $str"), // FIXME Show that to users too
-      pools.bspEces,
-      () => pools.bloopThreads
-    )
-    val updatedConnOpt = server.bspServers.get(info)
-    if (updatedConnOpt.isEmpty)
-      scribe.error(s"No connection details found for $info after restart (should not happen)")
-    for (data <- targetDataOpt)
-      data.buildServerOpt = connOpt.map(_.conn)
+    given ExecutionContext = pools.dummyEc
+    for {
+      _ <- server.bspServers.remove(info, hard)
+      res <- server.bspServers.addOne(
+        buildTool,
+        info,
+        name,
+        str => scribe.info(s"Starting BSP server: $str"), // FIXME Show that to users too
+        pools.bspEces,
+        () => pools.bloopThreads
+      )
+    } yield {
+      if (res.isRight) {
+        val updatedConnOpt = server.bspServers.get(info)
+        if (updatedConnOpt.isEmpty)
+          scribe.error(s"No connection details found for $info after restart (should not happen)")
+        for (data <- targetDataOpt)
+          data.buildServerOpt = updatedConnOpt.map(_.conn)
+      }
+      res
+    }
   }
 
   def buildToolRestartCommand(
@@ -302,8 +308,12 @@ object PlasmonCommands {
                     )
               }
           }
-          val restarted = bspServerOpt.map(_.map {
-            case (buildTool, bspServer) =>
+          bspServerOpt match {
+            case None =>
+              Future.successful(BuildToolRestartResponse("", "", None, noModule = true))
+            case Some(Left(err)) =>
+              Future.successful(BuildToolRestartResponse("", "", Some(err), noModule = false))
+            case Some(Right((buildTool, bspServer))) =>
               restartBuildTool(
                 server,
                 pools,
@@ -311,22 +321,25 @@ object PlasmonCommands {
                 bspServer.info,
                 bspServer.enhancedName,
                 hard
-              )
-              indexer.reIndex().onComplete {
-                case Success(()) =>
-                case Failure(ex) =>
-                  scribe.error("Error re-indexing", ex)
+              ).map { res =>
+                if (res.isRight)
+                  indexer.reIndex().onComplete {
+                    case Success(()) =>
+                    case Failure(ex) =>
+                      scribe.error("Error re-indexing", ex)
+                  }(using pools.dummyEc)
+                BuildToolRestartResponse(
+                  bspServer.info.workspace.toString,
+                  bspServer.name,
+                  res.left.toOption,
+                  noModule = false
+                )
               }(using pools.dummyEc)
-              ()
-          })
-          val resp = BuildToolRestartResponse(
-            bspServerOpt.flatMap(_.toOption).fold("")(_._2.info.workspace.toString),
-            bspServerOpt.flatMap(_.toOption).fold("")(_._2.name),
-            restarted.flatMap(_.left.toOption),
-            noModule = restarted.isEmpty
-          )
-          writeToGson(resp)
-        }(using server.pools.requestsEces).asJava
+          }
+        }(using server.pools.requestsEces)
+          .flatten
+          .map(writeToGson(_))(using pools.dummyEc)
+          .asJava
       }
     }
 
@@ -667,6 +680,11 @@ object PlasmonCommands {
                     hard = false
                   )
                 }(using pools.bspEces) // use another pool?
+                  .flatten
+                  .flatMap {
+                    case Left(err) => Future.failed(new Exception(err))
+                    case Right(()) => Future.unit
+                  }(using pools.dummyEc)
                 f.onComplete {
                   case Success(()) =>
                     indexer.reIndex().onComplete {
