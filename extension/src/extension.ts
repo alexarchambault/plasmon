@@ -750,8 +750,9 @@ function loadModuleOf(uri: string | undefined): void {
               console.log(`User picked module ${entry.uri}`)
               if (entry.alreadyLoaded)
                 client?.sendRequest(ExecuteCommandRequest.type, { command: "plasmon/unloadModule", arguments: [entry.workspace, entry.server, entry.uri] }).then(
-                  (res) => {
-
+                  (resp: { error?: string }) => {
+                    if (resp?.error)
+                      vscode.window.showErrorMessage(`Error unloading module ${entry.label}: ${resp.error}`)
                   },
                   (err) => {
                     let msg = `Error while sending plasmon/unloadModule command: ${err}`
@@ -761,8 +762,9 @@ function loadModuleOf(uri: string | undefined): void {
                 )
               else
               client?.sendRequest(ExecuteCommandRequest.type, { command: "plasmon/loadModule", arguments: [entry.workspace, entry.server, entry.uri] }).then(
-                (res) => {
-
+                (resp: { error?: string }) => {
+                  if (resp?.error)
+                    vscode.window.showErrorMessage(`Error loading module ${entry.label}: ${resp.error}`)
                 },
                 (err) => {
                   let msg = `Error while sending plasmon/loadModule command: ${err}`
@@ -915,8 +917,9 @@ function loadBuildToolOrModule(uri: string | undefined, onlyModules: boolean): v
               console.log(`User picked module ${entry.uri}`)
               if (entry.alreadyLoaded)
                 client?.sendRequest(ExecuteCommandRequest.type, { command: "plasmon/unloadModule", arguments: [entry.workspace, entry.server, entry.uri] }).then(
-                  (res) => {
-
+                  (resp: { error?: string }) => {
+                    if (resp?.error)
+                      vscode.window.showErrorMessage(`Error unloading module ${entry.label}: ${resp.error}`)
                   },
                   (err) => {
                     let msg = `Error while sending plasmon/unloadModule command: ${err}`
@@ -926,8 +929,9 @@ function loadBuildToolOrModule(uri: string | undefined, onlyModules: boolean): v
                 )
               else
               client?.sendRequest(ExecuteCommandRequest.type, { command: "plasmon/loadModule", arguments: [entry.workspace, entry.server, entry.uri] }).then(
-                (res) => {
-
+                (resp: { error?: string }) => {
+                  if (resp?.error)
+                    vscode.window.showErrorMessage(`Error loading module ${entry.label}: ${resp.error}`)
                 },
                 (err) => {
                   let msg = `Error while sending plasmon/loadModule command: ${err}`
