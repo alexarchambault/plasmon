@@ -547,6 +547,9 @@ function createClient(
           client.sendNotification("metals/didFocusTextDocument", lastFocusedDocument)
         }
       }
+    }).catch((err) => {
+      console.log(`Error setting up Plasmon LSP client: ${err}`)
+      vscode.window.showErrorMessage(`Error setting up Plasmon LSP client: ${err}`)
     })
 
     return true
@@ -571,7 +574,7 @@ async function stopClient(context: vscode.ExtensionContext): Promise<void> {
     console.log("Stopping Plasmon LSP server")
     let client0 = client
     if (client0) {
-      try { await client0.stop(); } catch { /* swallow */ }
+      try { await client0.stop(); } catch (err) { console.log(`Error stopping Plasmon LSP client: ${err}`) }
       clientSubscriptions.forEach(element => {
         element.dispose()
         let index = context.subscriptions.indexOf(element)
@@ -1746,6 +1749,10 @@ export function activate(context: vscode.ExtensionContext) {
                   })
                   quickPick.show()
                 }
+              },
+              (err) => {
+                console.log(`Error listing running build tools: ${err}`)
+                vscode.window.showErrorMessage(`Error listing running build tools: ${err}`, { modal: false })
               }
             )
           }
