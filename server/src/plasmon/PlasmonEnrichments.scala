@@ -109,7 +109,7 @@ object PlasmonEnrichments {
     def toFileOnDisk(workspace: os.Path)(implicit
       ctx: SourcePath.Context
     ): SourcePath.Standard =
-      SourcePath.Standard(toFileOnDisk0(workspace, 0).toNIO)
+      SourcePath.Standard(toFileOnDisk0(workspace, 0, None).toNIO)
 
     def isMill: Boolean =
       path match {
@@ -119,28 +119,29 @@ object PlasmonEnrichments {
 
     private def toFileOnDisk0(
       workspace: os.Path,
-      retryCount: Int
+      retryCount: Int,
+      lastError: Option[IOException]
     )(implicit ctx: SourcePath.Context): os.Path = {
-      def withJarDirLock[A](dir: os.Path)(f: => A)(fallback: => A): A = {
+      def withJarDirLock[A](dir: os.Path)(f: => A)(fallback: Option[IOException] => A): A = {
         val lockFile = dir / ".lock"
         if (os.exists(lockFile))
-          fallback
+          fallback(None)
         else
           try {
             os.write(lockFile, Array.emptyByteArray, createFolders = true)
             f
           }
           catch {
-            case _: IOException =>
-              fallback
+            case e: IOException =>
+              fallback(Some(e))
           }
           finally
             os.remove(lockFile)
       }
 
-      def retry: os.Path = {
+      def retry(error: Option[IOException]): os.Path = {
         Thread.sleep(50)
-        this.toFileOnDisk0(workspace, retryCount + 1)
+        this.toFileOnDisk0(workspace, retryCount + 1, error.orElse(lastError))
       }
 
       def writeFile(dest: os.Path, content: Array[Byte]): Unit = {
@@ -161,7 +162,7 @@ object PlasmonEnrichments {
 
       // prevent infinity loop
       if (retryCount > 5)
-        throw new Exception(s"Unable to save $path in workspace")
+        throw new Exception(s"Unable to save $path in workspace", lastError.orNull)
       else
         path match {
           case s: SourcePath.Standard =>
