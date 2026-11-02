@@ -1344,8 +1344,10 @@ object PlasmonCommands {
                       val (logName, _) =
                         server.presentationCompilers.loggerIdName(targetId, pc.scalaVersion)
                       Right(PcDebugResp(logName, formerValue, ""))
-                    case _ =>
-                      Left("")
+                    case other =>
+                      Left(
+                        s"Debug logs are only supported for Scala 3 presentation compilers (got ${other.getClass.getName})"
+                      )
                   }
               }
             val resp = errOrResp
