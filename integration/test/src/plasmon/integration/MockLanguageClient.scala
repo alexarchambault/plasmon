@@ -73,7 +73,25 @@ trait MockLanguageClient extends LanguageClient with MockLanguageClient.Stuff
     lock.synchronized {
       outputStream.pprint(params)
       showMessage0 += params
+      lock.notifyAll()
     }
+
+  /** Waits for the server to show a message matching `pred`. */
+  def awaitShowMessage(
+    timeout: FiniteDuration
+  )(pred: l.MessageParams => Boolean): Option[l.MessageParams] = {
+    val deadline = System.currentTimeMillis() + timeout.toMillis
+    lock.synchronized {
+      var res       = showMessage0.find(pred)
+      var remaining = deadline - System.currentTimeMillis()
+      while (res.isEmpty && remaining > 0L) {
+        lock.wait(remaining)
+        res = showMessage0.find(pred)
+        remaining = deadline - System.currentTimeMillis()
+      }
+      res
+    }
+  }
   override def showMessageRequest(params: l.ShowMessageRequestParams)
     : CompletableFuture[l.MessageActionItem] =
     lock.synchronized {
