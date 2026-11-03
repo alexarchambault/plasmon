@@ -1,0 +1,8 @@
+{
+  "services": {
+    "code-server": {
+      "command": "set -o pipefail; cmd=\"$(./mill show extension.codeServer.cmd --host=0.0.0.0 --port={bind_port} --base-address={external_https_proxy_url} | jq -r .)\" && eval \"exec $cmd\"",
+      "proxy": true
+    }
+  }
+}
