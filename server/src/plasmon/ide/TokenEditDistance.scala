@@ -506,9 +506,9 @@ object TokenEditDistance {
           Right(
             TokenEditDistance.fromTokens(
               originalInput,
-              original.tokens,
+              original.toArray,
               revisedInput,
-              revised.tokens
+              revised.toArray
             )
           )
         case (Some(err: Tokenized.Error), _) =>

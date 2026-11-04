@@ -47,7 +47,6 @@ import scala.meta.internal.mtags.{GlobalSymbolIndex, SourcePath}
 import scala.meta.internal.pc.{CompletionItemData, RangeOffset}
 import scala.meta.internal.semanticdb.Language
 import scala.meta.internal.semanticdb.SymbolInformation.Kind as k
-import scala.meta.internal.tokenizers.{LegacyScanner, LegacyTokenData}
 import scala.meta.io.AbsolutePath
 import scala.meta.pc.{OffsetParams, VirtualFileParams}
 import scala.meta.tokens.Token
@@ -935,20 +934,6 @@ object PlasmonEnrichments {
         .flatMap(item => Option(item.getSnippetSupport))
         .map(_.booleanValue)
         .getOrElse(false)
-  }
-
-  implicit class XtensionScanner(scanner: LegacyScanner) {
-
-    import scala.meta.internal.tokenizers.LegacyToken._
-
-    def foreach(f: LegacyTokenData => Unit): Unit = {
-      scanner.initialize()
-      var curr = scanner.nextToken()
-      while (curr.token != EOF) {
-        f(curr)
-        curr = scanner.nextToken()
-      }
-    }
   }
 
   implicit class XtensionLspRange(range: l.Range) {
