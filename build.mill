@@ -52,7 +52,7 @@ object Versions {
   def coursierDocker    = "2.1.25-M24"
   def coursierInterface = "1.0.29-M3"
   def mtags             = "1.6.7-1"
-  def scalaCli          = "1.11.0"
+  def scalaCli          = "1.18.0"
 
   def scala213 = scala2
   def scala    = "3.10.0"

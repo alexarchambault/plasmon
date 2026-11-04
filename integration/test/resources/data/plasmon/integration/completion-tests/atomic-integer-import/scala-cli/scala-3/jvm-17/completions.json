@@ -40,7 +40,7 @@
         ],
         "data": {
           "symbol": "java/util/concurrent/atomic/AtomicInteger#",
-          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_41e103cfb2",
           "kind": 6
         }
       },
@@ -82,7 +82,7 @@
         ],
         "data": {
           "symbol": "java/util/concurrent/atomic/AtomicIntegerArray#",
-          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_41e103cfb2",
           "kind": 6
         }
       },
@@ -124,7 +124,7 @@
         ],
         "data": {
           "symbol": "java/util/concurrent/atomic/AtomicIntegerFieldUpdater#",
-          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_41e103cfb2",
           "kind": 6
         }
       }
