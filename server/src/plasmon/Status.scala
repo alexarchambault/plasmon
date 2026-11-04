@@ -5,7 +5,6 @@ import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import org.eclipse.lsp4j as l
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException
-import org.eclipse.lsp4j.jsonrpc.messages.ResponseErrorCode
 import plasmon.PlasmonEnrichments.*
 import plasmon.bsp.{BspConnection, BuildServerInfo, BuildServerProcess}
 import plasmon.languageclient.*
@@ -640,22 +639,22 @@ object Status {
           new Runnable {
             def run(): Unit = {
               val updatedStatus =
-                if (future.isCancelled() || future.isDone())
+                if (future.isCancelled())
                   BuildServerState.Unknown
-                else if (future.isCompletedExceptionally())
+                else if (future.isDone())
                   try {
                     future.join()
-                    BuildServerState.Unknown
+                    BuildServerState.Running
                   }
                   catch {
                     case ex: CompletionException =>
                       ex.getCause match {
-                        case ex: ResponseErrorException
-                            if ex.getResponseError.getCode == ResponseErrorCode.MethodNotFound.getValue =>
+                        // Any error response means the build server is there and answering
+                        case _: ResponseErrorException =>
                           BuildServerState.Running
                         case ex0: Throwable =>
                           scribe.info("Got BSP health check exception", ex0)
-                          BuildServerState.Unknown
+                          BuildServerState.Errored
                       }
                   }
                 else {

@@ -547,6 +547,9 @@ function createClient(
           client.sendNotification("metals/didFocusTextDocument", lastFocusedDocument)
         }
       }
+    }).catch((err) => {
+      console.log(`Error setting up Plasmon LSP client: ${err}`)
+      vscode.window.showErrorMessage(`Error setting up Plasmon LSP client: ${err}`)
     })
 
     return true
@@ -571,7 +574,7 @@ async function stopClient(context: vscode.ExtensionContext): Promise<void> {
     console.log("Stopping Plasmon LSP server")
     let client0 = client
     if (client0) {
-      try { await client0.stop(); } catch { /* swallow */ }
+      try { await client0.stop(); } catch (err) { console.log(`Error stopping Plasmon LSP client: ${err}`) }
       clientSubscriptions.forEach(element => {
         element.dispose()
         let index = context.subscriptions.indexOf(element)
@@ -750,8 +753,9 @@ function loadModuleOf(uri: string | undefined): void {
               console.log(`User picked module ${entry.uri}`)
               if (entry.alreadyLoaded)
                 client?.sendRequest(ExecuteCommandRequest.type, { command: "plasmon/unloadModule", arguments: [entry.workspace, entry.server, entry.uri] }).then(
-                  (res) => {
-
+                  (resp: { error?: string }) => {
+                    if (resp?.error)
+                      vscode.window.showErrorMessage(`Error unloading module ${entry.label}: ${resp.error}`)
                   },
                   (err) => {
                     let msg = `Error while sending plasmon/unloadModule command: ${err}`
@@ -761,8 +765,9 @@ function loadModuleOf(uri: string | undefined): void {
                 )
               else
               client?.sendRequest(ExecuteCommandRequest.type, { command: "plasmon/loadModule", arguments: [entry.workspace, entry.server, entry.uri] }).then(
-                (res) => {
-
+                (resp: { error?: string }) => {
+                  if (resp?.error)
+                    vscode.window.showErrorMessage(`Error loading module ${entry.label}: ${resp.error}`)
                 },
                 (err) => {
                   let msg = `Error while sending plasmon/loadModule command: ${err}`
@@ -915,8 +920,9 @@ function loadBuildToolOrModule(uri: string | undefined, onlyModules: boolean): v
               console.log(`User picked module ${entry.uri}`)
               if (entry.alreadyLoaded)
                 client?.sendRequest(ExecuteCommandRequest.type, { command: "plasmon/unloadModule", arguments: [entry.workspace, entry.server, entry.uri] }).then(
-                  (res) => {
-
+                  (resp: { error?: string }) => {
+                    if (resp?.error)
+                      vscode.window.showErrorMessage(`Error unloading module ${entry.label}: ${resp.error}`)
                   },
                   (err) => {
                     let msg = `Error while sending plasmon/unloadModule command: ${err}`
@@ -926,8 +932,9 @@ function loadBuildToolOrModule(uri: string | undefined, onlyModules: boolean): v
                 )
               else
               client?.sendRequest(ExecuteCommandRequest.type, { command: "plasmon/loadModule", arguments: [entry.workspace, entry.server, entry.uri] }).then(
-                (res) => {
-
+                (resp: { error?: string }) => {
+                  if (resp?.error)
+                    vscode.window.showErrorMessage(`Error loading module ${entry.label}: ${resp.error}`)
                 },
                 (err) => {
                   let msg = `Error while sending plasmon/loadModule command: ${err}`
@@ -1742,6 +1749,10 @@ export function activate(context: vscode.ExtensionContext) {
                   })
                   quickPick.show()
                 }
+              },
+              (err) => {
+                console.log(`Error listing running build tools: ${err}`)
+                vscode.window.showErrorMessage(`Error listing running build tools: ${err}`, { modal: false })
               }
             )
           }
@@ -2009,9 +2020,17 @@ export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(
     vscode.commands.registerCommand("plasmon.clean", () => {
       let uri = lastFocusedDocument
+      type Resp = {
+        error: string
+        exceptionString: string
+      }
       client?.sendRequest(ExecuteCommandRequest.type, { command: "plasmon/clean", arguments: [uri] }).then(
-        () => {
-          // nothing to do
+        (resp: Resp) => {
+          if (resp.error) {
+            if (resp.exceptionString)
+              console.log(`Error cleaning up module of ${uri}: ${resp.exceptionString}`)
+            vscode.window.showErrorMessage(`Error cleaning up module: ${resp.error}`)
+          }
         },
         (err) => {
           console.log(`Failed to clean-up module of ${uri}: ${JSON.stringify(err)}`)

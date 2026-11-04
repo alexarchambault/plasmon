@@ -425,6 +425,15 @@ object server extends ScalaModule with PlasmonPublishModule {
 
   def mainClass = Some("plasmon.Plasmon")
 
+  // In-process tests, for what the integration tests can't reach reliably (connections
+  // going away, handlers throwing, …)
+  object test extends ScalaTests {
+    def mvnDeps = super.mvnDeps() ++ Seq(
+      Deps.munit
+    )
+    def testFramework = "munit.Framework"
+  }
+
   def settingsEditDir = Task(persistent = true) {
     val resourceDir = Task.dest / "resources"
     val bundleDest  = resourceDir / "plasmon" / "settingsEdit.js"

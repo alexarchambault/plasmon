@@ -11,10 +11,11 @@ import java.io.{FileDescriptor, FileOutputStream, IOException, PrintStream}
 import java.net.{StandardProtocolFamily, UnixDomainSocketAddress}
 import java.nio.channels.SocketChannel
 import java.nio.charset.StandardCharsets
-import java.util.concurrent.{LinkedBlockingQueue, TimeUnit}
+import java.util.concurrent.{ExecutionException, LinkedBlockingQueue, TimeUnit}
 
 import scala.concurrent.Promise
 import scala.util.{Properties, Success}
+import scala.util.control.NonFatal
 
 object Command extends caseapp.Command[CommandOptions] {
 
@@ -211,11 +212,34 @@ object Command extends caseapp.Command[CommandOptions] {
 
         if (options.verbosity >= 2)
           System.err.println("Starting JSON-RPC exchange")
-        launcher.startListening()
+        val listening = launcher.startListening()
 
         if (options.verbosity >= 1)
           System.err.println(s"Running command ${request.getName.mkString(" ")} via JSON-RPC")
-        val res = remoteServer.runCommand(request).get()
+        val resFuture = remoteServer.runCommand(request)
+
+        // lsp4j leaves the request pending forever if the server goes away before answering
+        val listeningWatcher = new Thread("plasmon-command-listening-watcher") {
+          setDaemon(true)
+          override def run(): Unit = {
+            try listening.get()
+            catch {
+              case NonFatal(_) =>
+            }
+            resFuture.completeExceptionally(
+              new IOException("Connection to the plasmon server closed before it answered")
+            )
+          }
+        }
+        listeningWatcher.start()
+
+        val res =
+          try resFuture.get()
+          catch {
+            case e: ExecutionException if e.getCause.isInstanceOf[IOException] =>
+              System.err.println(e.getCause.getMessage)
+              sys.exit(1)
+          }
 
         val exitCode = res.getExitCode
         if (options.verbosity >= 1)

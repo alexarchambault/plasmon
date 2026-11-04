@@ -10,6 +10,7 @@ import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import com.google.gson.{Gson, JsonElement}
 import dotty.tools.pc.ScalaPresentationCompiler as Scala3PresentationCompiler
 import org.eclipse.lsp4j as l
+import org.eclipse.lsp4j.jsonrpc.messages.ResponseErrorCode
 import plasmon.Server
 import plasmon.PlasmonEnrichments.*
 import plasmon.bsp.{
@@ -32,7 +33,7 @@ import java.nio.charset.StandardCharsets
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.atomic.AtomicInteger
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 import scala.jdk.CollectionConverters.*
 import scala.meta.cli.Reporter
 import scala.meta.internal.metals.EmptyCancelToken
@@ -166,15 +167,6 @@ object PlasmonCommands {
     implicit lazy val codec: JsonValueCodec[OrganizeImportsResponse] = JsonCodecMaker.make
   }
 
-  private final case class OrganizeImportsInModuleResponse(
-    error: Option[String],
-    fileChanged: Int
-  )
-
-  private object OrganizeImportsInModuleResponse {
-    implicit lazy val codec: JsonValueCodec[OrganizeImportsInModuleResponse] = JsonCodecMaker.make
-  }
-
   private final case class CancelAllCompilationsResponse(
     cancelledCount: Int
   )
@@ -235,27 +227,33 @@ object PlasmonCommands {
     info: BuildServerInfo,
     name: String,
     hard: Boolean
-  ): Unit = {
-    val connOpt = server.bspServers.get(info)
-    if (connOpt.isEmpty)
+  ): Future[Either[String, Unit]] = {
+    if (server.bspServers.get(info).isEmpty)
       scribe.error(s"No connection details found for $info (should not happen)")
-    server.bspServers.remove(info, hard)
     val targetDataOpt = server.bspData.targetData(info)
     if (targetDataOpt.isEmpty)
       scribe.error(s"No target data found for $info (should not happen)")
-    server.bspServers.addOne(
-      buildTool,
-      info,
-      name,
-      str => scribe.info(s"Starting BSP server: $str"), // FIXME Show that to users too
-      pools.bspEces,
-      () => pools.bloopThreads
-    )
-    val updatedConnOpt = server.bspServers.get(info)
-    if (updatedConnOpt.isEmpty)
-      scribe.error(s"No connection details found for $info after restart (should not happen)")
-    for (data <- targetDataOpt)
-      data.buildServerOpt = connOpt.map(_.conn)
+    given ExecutionContext = pools.dummyEc
+    for {
+      _ <- server.bspServers.remove(info, hard)
+      res <- server.bspServers.addOne(
+        buildTool,
+        info,
+        name,
+        str => scribe.info(s"Starting BSP server: $str"), // FIXME Show that to users too
+        pools.bspEces,
+        () => pools.bloopThreads
+      )
+    } yield {
+      if (res.isRight) {
+        val updatedConnOpt = server.bspServers.get(info)
+        if (updatedConnOpt.isEmpty)
+          scribe.error(s"No connection details found for $info after restart (should not happen)")
+        for (data <- targetDataOpt)
+          data.buildServerOpt = updatedConnOpt.map(_.conn)
+      }
+      res
+    }
   }
 
   def buildToolRestartCommand(
@@ -302,8 +300,12 @@ object PlasmonCommands {
                     )
               }
           }
-          val restarted = bspServerOpt.map(_.map {
-            case (buildTool, bspServer) =>
+          bspServerOpt match {
+            case None =>
+              Future.successful(BuildToolRestartResponse("", "", None, noModule = true))
+            case Some(Left(err)) =>
+              Future.successful(BuildToolRestartResponse("", "", Some(err), noModule = false))
+            case Some(Right((buildTool, bspServer))) =>
               restartBuildTool(
                 server,
                 pools,
@@ -311,22 +313,25 @@ object PlasmonCommands {
                 bspServer.info,
                 bspServer.enhancedName,
                 hard
-              )
-              indexer.reIndex().onComplete {
-                case Success(()) =>
-                case Failure(ex) =>
-                  scribe.error("Error re-indexing", ex)
+              ).map { res =>
+                if (res.isRight)
+                  indexer.reIndex().onComplete {
+                    case Success(()) =>
+                    case Failure(ex) =>
+                      scribe.error("Error re-indexing", ex)
+                  }(using pools.dummyEc)
+                BuildToolRestartResponse(
+                  bspServer.info.workspace.toString,
+                  bspServer.name,
+                  res.left.toOption,
+                  noModule = false
+                )
               }(using pools.dummyEc)
-              ()
-          })
-          val resp = BuildToolRestartResponse(
-            bspServerOpt.flatMap(_.toOption).fold("")(_._2.info.workspace.toString),
-            bspServerOpt.flatMap(_.toOption).fold("")(_._2.name),
-            restarted.flatMap(_.left.toOption),
-            noModule = restarted.isEmpty
-          )
-          writeToGson(resp)
-        }(using server.pools.requestsEces).asJava
+          }
+        }(using server.pools.requestsEces)
+          .flatten
+          .map(writeToGson(_))(using pools.dummyEc)
+          .asJava
       }
     }
 
@@ -466,9 +471,15 @@ object PlasmonCommands {
                     // Ignored, reported via the returned future
                   }
 
-                  f.map { _ =>
-                    // FIXME We don't really check that everything went right here
-                    LoadBuildToolResult(success = true, None)
+                  f.map { l =>
+                    val removedAny = l.exists(res => res._1 || res._2)
+                    if (removedAny)
+                      LoadBuildToolResult(success = true, None)
+                    else
+                      LoadBuildToolResult(
+                        success = false,
+                        Some(s"Build tool $toolId wasn't loaded")
+                      )
                   }
                 case None =>
                   Future.successful {
@@ -548,10 +559,11 @@ object PlasmonCommands {
         val removedModuleCount    = removed.sum
 
         val allInfos = indexerInfos ++ extraInfos
-        if (allInfos.nonEmpty) {
-          implicit val ec0 = pools.dummyEc
-          Future.traverse(allInfos)(server.bspServers.remove(_)).onComplete {
-            case Success(_) =>
+        val removing =
+          if (allInfos.isEmpty) Future.unit
+          else {
+            implicit val ec0 = pools.dummyEc
+            Future.traverse(allInfos)(server.bspServers.remove(_)).map { _ =>
               indexer.persist()
               server.bspServers.persist()
               indexer.reIndex().onComplete {
@@ -559,23 +571,33 @@ object PlasmonCommands {
                 case Failure(ex) =>
                   scribe.error("Error re-indexing", ex)
               }
-            case Failure(ex0) =>
-              scribe.error("Error removing BSP servers", ex0)
+            }
           }
-        }
-        writeToGson(
-          UnloadAllModulesAndBuildToolsResponse(
-            removedModuleCount,
-            removedBuildToolCount
+        removing.map { _ =>
+          writeToGson(
+            UnloadAllModulesAndBuildToolsResponse(
+              removedModuleCount,
+              removedBuildToolCount
+            )
           )
-        )
-      }(using server.pools.requestsEces).asJava
+        }(using pools.dummyEc)
+      }(using server.pools.requestsEces)
+        .flatten
+        .asJava
     },
     CommandHandler.of("plasmon/compile", refreshStatus = true) { (params, _) =>
       params.asFileUri("plasmon/compile") { file =>
         ProjectOps.compile(server, file)
-          .map[Object](_ => null)(using server.pools.dummyEc)
           .asJava
+          .thenCompose {
+            case None =>
+              CommandHandler.failed(
+                ResponseErrorCode.RequestFailed,
+                s"No module found for $file, nothing to compile"
+              )
+            case Some(_) =>
+              CompletableFuture.completedFuture(null)
+          }
       }
     },
     CommandHandler.of("plasmon/clean", refreshStatus = true) { (params, _) =>
@@ -590,7 +612,14 @@ object PlasmonCommands {
                     .handle {
                       (resOrNull, exOrNull) =>
                         if (resOrNull != null)
-                          CleanResponse("", "")
+                          if (resOrNull.getCleaned) CleanResponse("", "")
+                          else {
+                            val msg = Option(resOrNull.getMessage).filter(_.nonEmpty).getOrElse {
+                              s"Build server could not clean $targetId"
+                            }
+                            scribe.warn(s"Error while cleaning $targetId: $msg")
+                            CleanResponse(msg, "")
+                          }
                         else if (exOrNull != null) {
                           scribe.error(s"Error while cleaning $targetId", exOrNull)
                           val baos = new ByteArrayOutputStream
@@ -642,7 +671,10 @@ object PlasmonCommands {
       f.map[Object](_ => null)(using server.pools.dummyEc).asJava
     },
     CommandHandler.of("plasmon/cleanAll", refreshStatus = true) { (_, _) =>
-      ???
+      CommandHandler.failed(
+        ResponseErrorCode.RequestFailed,
+        "Cleaning all modules isn't implemented yet"
+      )
     },
     CommandHandler.of("plasmon/reImport", refreshStatus = true) { (params, _) =>
       params.asFileUri("plasmon/reImport") { file =>
@@ -667,6 +699,11 @@ object PlasmonCommands {
                     hard = false
                   )
                 }(using pools.bspEces) // use another pool?
+                  .flatten
+                  .flatMap {
+                    case Left(err) => Future.failed(new Exception(err))
+                    case Right(()) => Future.unit
+                  }(using pools.dummyEc)
                 f.onComplete {
                   case Success(()) =>
                     indexer.reIndex().onComplete {
@@ -770,8 +807,10 @@ object PlasmonCommands {
     },
     CommandHandler.of("plasmon/organizeImportsInModule", refreshStatus = true) { (params, _) =>
       params.asFileUri("plasmon/organizeImportsInModule") { _ =>
-        ???
-        CompletableFuture.completedFuture(writeToGson(OrganizeImportsInModuleResponse(???, ???)))
+        CommandHandler.failed(
+          ResponseErrorCode.RequestFailed,
+          "Organizing imports in a whole module isn't implemented yet"
+        )
       }
     },
     CommandHandler.of("plasmon/cancelAllCompilations", refreshStatus = true) { (_, _) =>
@@ -1316,8 +1355,10 @@ object PlasmonCommands {
                       val (logName, _) =
                         server.presentationCompilers.loggerIdName(targetId, pc.scalaVersion)
                       Right(PcDebugResp(logName, formerValue, ""))
-                    case _ =>
-                      Left("")
+                    case other =>
+                      Left(
+                        s"Debug logs are only supported for Scala 3 presentation compilers (got ${other.getClass.getName})"
+                      )
                   }
               }
             val resp = errOrResp

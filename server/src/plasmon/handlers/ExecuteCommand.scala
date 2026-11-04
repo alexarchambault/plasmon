@@ -79,8 +79,7 @@ object ExecuteCommand {
                 server.refreshStatus()
           case None =>
             logger.log("No handler for command")
-            // FIXME Trapped error… (for users)
-            CompletableFuture.completedFuture(null)
+            CommandHandler.invalidParams(s"Unknown command: ${params.getCommand}")
         }
     }
   }

@@ -9,7 +9,7 @@ import plasmon.index.BspData
 import plasmon.render.JsonCodecs.given
 
 import java.time.OffsetDateTime
-import java.util.concurrent.CompletableFuture
+import java.util.concurrent.{CancellationException, CompletableFuture}
 
 import scala.collection.mutable
 import scala.collection.concurrent.TrieMap
@@ -17,6 +17,7 @@ import scala.collection.immutable.ListMap
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.jdk.CollectionConverters.*
 import scala.util.{Failure, Success, Try}
+import scala.util.control.NonFatal
 
 final class Compilations(
   bspData: BspData,
@@ -63,18 +64,31 @@ final class Compilations(
             updateLatestCompilations(target, startTime)
           running.put(buildServer, (elem, f))
           f.whenComplete { (compileRes, ex) =>
-            val endTime         = OffsetDateTime.now()
-            val updatedValueOpt = Option(compileRes).map(PastCompilation(startTime, endTime, _))
-            for (target <- elem.targets)
-              updateLatestCompilationsDone(target, updatedValueOpt)
-            val res = if (ex == null) Success(compileRes) else Failure(ex)
-            if (ex == null)
-              afterSuccessfulCompilation(elem.targets)
-            elem.promise.complete(res)
-            for (elem0 <- queue if !elem0.promise.isCompleted && elem0.targets == elem.targets)
-              elem0.promise.complete(res)
-            running -= buildServer
-            checkQueue() // FIXME Run that on a specific thread pool instead?
+            // Anything thrown from here would be lost, and would leave the queue stuck
+            val res =
+              try {
+                val endTime         = OffsetDateTime.now()
+                val updatedValueOpt = Option(compileRes).map(PastCompilation(startTime, endTime, _))
+                for (target <- elem.targets)
+                  updateLatestCompilationsDone(target, updatedValueOpt)
+                if (ex == null)
+                  afterSuccessfulCompilation(elem.targets)
+                if (ex == null) Success(compileRes) else Failure(ex)
+              }
+              catch {
+                case NonFatal(e) =>
+                  scribe.error(s"Error after compiling ${elem.targets.map(_.getUri)}", e)
+                  Failure(e)
+              }
+            try {
+              elem.promise.tryComplete(res)
+              for (elem0 <- queue if !elem0.promise.isCompleted && elem0.targets == elem.targets)
+                elem0.promise.tryComplete(res)
+            }
+            finally {
+              running -= buildServer
+              checkQueue() // FIXME Run that on a specific thread pool instead?
+            }
           }
         }
       }
@@ -95,7 +109,10 @@ final class Compilations(
       0
     else
       queueLock.synchronized {
-        var count = 0
+        var count     = 0
+        val cancelled = new CancellationException("Compilation cancelled")
+        for ((_, queue) <- queues; elem <- queue)
+          elem.promise.tryFailure(cancelled)
         queues = ListMap.empty
         for ((_, (_, f)) <- running)
           if (f.cancel(true))

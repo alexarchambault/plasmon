@@ -391,6 +391,12 @@ object Server extends caseapp.Command[ServerOptions] {
             case Success(()) =>
             case Failure(ex) =>
               scribe.error("Error initializing server", ex)
+              server.languageClient.showMessage(
+                new l.MessageParams(
+                  l.MessageType.Error,
+                  s"Error restoring the previously loaded build tools and modules: $ex"
+                )
+              )
           }(using pools.dummyEc)
         }
 

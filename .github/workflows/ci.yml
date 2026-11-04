@@ -30,6 +30,8 @@ jobs:
       with:
         apps: sbt scala-cli
         jvm: 17
+    - name: Unit tests
+      run: ./mill -i server.test.testForked
     - name: Test
       run: ./mill -i integration.test.testForked
       env:

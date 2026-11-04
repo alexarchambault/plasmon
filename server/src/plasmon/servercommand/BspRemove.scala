@@ -26,7 +26,7 @@ final case class BspRemove(
       server.bspServers.persist()
 
     if (server.bspData.targetData(info0).isDefined)
-      indexer.reIndex()
+      Await.result(indexer.reIndex(), Duration.Inf)
   }
 }
 

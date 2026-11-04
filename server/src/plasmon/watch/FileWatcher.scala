@@ -22,6 +22,7 @@ import scala.collection.mutable
 import scala.concurrent.{Await, ExecutionContext, Future, Promise}
 import scala.concurrent.duration.*
 import scala.util.{Failure, Success, Try}
+import scala.util.control.NonFatal
 
 /** Watch selected files and execute a callback on file events.
   *
@@ -205,7 +206,12 @@ object FileWatcher {
               .toList
           processWatchEvent(WatchEvent.normalize(events.flatMap(preprocessWatchEvent)))
         }
-        catch { case _: InterruptedException => }
+        catch {
+          case _: InterruptedException =>
+          case NonFatal(ex)            =>
+            // Keep the thread alive, or file watching silently stops until the server restarts
+            scribe.error("Error processing file watch events", ex)
+        }
         if (!stopWatchingSignal.get) loop()
       }
       override def run(): Unit = loop()

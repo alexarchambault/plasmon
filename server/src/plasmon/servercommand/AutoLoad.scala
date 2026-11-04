@@ -7,6 +7,7 @@ import plasmon.index.Indexer
 
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
+import scala.util.Failure
 
 /** Bringing a file to the point where a language feature can answer for it.
   *
@@ -78,6 +79,9 @@ object AutoLoad {
     if (!f.isCompleted)
       out.progress("Waiting for the server to finish restoring what it had loaded before")
     Await.ready(f, Duration.Inf)
+    // Not fatal: what follows loads what's needed for the file anyway
+    for (case Failure(ex) <- f.value)
+      out.error(s"Warning: error restoring what the server had loaded before: $ex")
   }
 
   /** Whether a loaded build tool covers `file`. */

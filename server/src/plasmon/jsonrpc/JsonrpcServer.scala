@@ -12,6 +12,8 @@ import java.util.concurrent.{
 }
 import java.util.concurrent.atomic.AtomicInteger
 
+import scala.util.control.NonFatal
+
 final class JsonrpcServer(
   handlers: Handlers,
   requestsLogger: Logger
@@ -51,6 +53,12 @@ final class JsonrpcServer(
     val futureResp =
       try handler.call(parameter, logger)
       catch {
+        // lsp4j rethrows the Errors (like NotImplementedError) thrown here, which ends its read
+        // loop, so we answer with an error response ourselves
+        case NonFatal(t) =>
+          logger.log("Exception when starting to process request")
+          logger.log(t)
+          JCFuture.failedFuture(t)
         case t: Throwable =>
           logger.log("Exception when starting to process request")
           logger.log(t)
@@ -60,7 +68,7 @@ final class JsonrpcServer(
     futureResp.handle { (resOrNull, exOrNull) =>
       ongoingRequests.remove((method, parameter, futureResp))
       if (exOrNull == null)
-        logger.log(s"Response ${resOrNull.toString.take(100)}")
+        logger.log(s"Response ${String.valueOf(resOrNull).take(100)}")
       else
         exOrNull match {
           case _: CancellationException =>
@@ -86,6 +94,14 @@ final class JsonrpcServer(
       ongoingNotifications.put((method, parameter), ())
       try handler.call(parameter, logger)
       catch {
+        case NonFatal(t) =>
+          logger.log("Exception when starting to process notification")
+          logger.log(t)
+          // lsp4j only catches Exceptions here, an Error (like NotImplementedError) ends its read loop
+          t match {
+            case e: Exception => throw e
+            case _            => throw new Exception(s"Error processing notification $method", t)
+          }
         case t: Throwable =>
           logger.log("Exception when starting to process notification")
           logger.log(t)
