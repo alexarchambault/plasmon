@@ -77,7 +77,7 @@
       },
       "options": [],
       "classpath": [
-        "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/org/scala-lang/scala-library/3.8.4/scala-library-3.8.4.jar",
+        "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/org/scala-lang/scala-library/3.10.0/scala-library-3.10.0.jar",
         "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/com/lihaoyi/os-lib_3/0.9.1/os-lib_3-0.9.1.jar",
         "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/com/lihaoyi/geny_3/1.0.0/geny_3-1.0.0.jar",
         "file:///$WORKSPACE$/test-mod/compile-resources"

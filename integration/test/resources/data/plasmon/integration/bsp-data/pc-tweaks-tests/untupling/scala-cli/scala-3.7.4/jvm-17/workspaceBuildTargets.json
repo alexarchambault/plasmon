@@ -2,9 +2,9 @@
   "targets": [
     {
       "id": {
-        "uri": "file:/$WORKSPACE$/.scala-build/?id\u003dtest-project_d5c0a6989e"
+        "uri": "file:/$WORKSPACE$/.scala-build/?id\u003dtest-project_41e103cfb2"
       },
-      "displayName": "test-project_d5c0a6989e",
+      "displayName": "test-project_41e103cfb2",
       "baseDirectory": "file:///$WORKSPACE$/.scala-build/",
       "tags": [
         "library"
@@ -47,9 +47,9 @@
     },
     {
       "id": {
-        "uri": "file:/$WORKSPACE$/.scala-build/?id\u003dtest-project_d5c0a6989e-test"
+        "uri": "file:/$WORKSPACE$/.scala-build/?id\u003dtest-project_41e103cfb2-test"
       },
-      "displayName": "test-project_d5c0a6989e-test",
+      "displayName": "test-project_41e103cfb2-test",
       "baseDirectory": "file:///$WORKSPACE$/.scala-build/",
       "tags": [
         "test"
@@ -60,7 +60,7 @@
       ],
       "dependencies": [
         {
-          "uri": "file:/$WORKSPACE$/.scala-build/?id\u003dtest-project_d5c0a6989e"
+          "uri": "file:/$WORKSPACE$/.scala-build/?id\u003dtest-project_41e103cfb2"
         }
       ],
       "capabilities": {

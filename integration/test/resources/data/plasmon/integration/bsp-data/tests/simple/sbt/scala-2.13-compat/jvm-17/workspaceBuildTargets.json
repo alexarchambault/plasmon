@@ -104,7 +104,7 @@
           "import _root_.sbt.nio.Keys._",
           "import _root_.sbt.ScriptedPlugin.autoImport._, _root_.sbt.plugins.JUnitXmlReportPlugin.autoImport._, _root_.sbt.plugins.MiniDependencyTreePlugin.autoImport._",
           "import _root_.sbt.plugins.IvyPlugin, _root_.sbt.plugins.JvmPlugin, _root_.sbt.plugins.CorePlugin, _root_.sbt.ScriptedPlugin, _root_.sbt.plugins.SbtPlugin, _root_.sbt.plugins.SemanticdbPlugin, _root_.sbt.plugins.JUnitXmlReportPlugin, _root_.sbt.plugins.Giter8TemplatePlugin, _root_.sbt.plugins.MiniDependencyTreePlugin",
-          "import $3163d413d54742df4757.`test$minusmod`"
+          "import $8e016bb431a7089ee528.`test$minusmod`"
         ],
         "scalaBuildTarget": {
           "scalaOrganization": "org.scala-lang",

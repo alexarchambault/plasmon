@@ -21,7 +21,7 @@
           "generated": false
         },
         {
-          "uri": "file:/$WORKSPACE$/foo/target/scala-3.8.4/src_managed/main",
+          "uri": "file:/$WORKSPACE$/foo/target/scala-3.10.0/src_managed/main",
           "kind": 2,
           "generated": true
         }
@@ -48,7 +48,7 @@
           "generated": false
         },
         {
-          "uri": "file:/$WORKSPACE$/foo/target/scala-3.8.4/src_managed/test",
+          "uri": "file:/$WORKSPACE$/foo/target/scala-3.10.0/src_managed/test",
           "kind": 2,
           "generated": true
         }

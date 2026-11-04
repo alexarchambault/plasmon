@@ -46,17 +46,16 @@ object RealPath {
 
 object Versions {
   def scala2  = "2.13.18"
-  def scalaJs = "1.20.1"
+  def scalaJs = "1.22.0"
 
   def coursier          = "2.1.25-M24"
   def coursierDocker    = "2.1.25-M24"
   def coursierInterface = "1.0.29-M3"
   def mtags             = "1.6.7-1"
-  def scalaCli          = "1.11.0"
+  def scalaCli          = "1.18.0"
 
   def scala213 = scala2
-  def scala    = "3.8.4"
-  def scala3Pc = "3.8.4-1"
+  def scala    = "3.10.0"
 
   def sbtBloop = "2.0.13"
   def sbt      = "1.9.9"

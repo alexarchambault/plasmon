@@ -927,11 +927,39 @@
         }
       },
       {
+        "label": "-\u003e[B](inline that: B): (PrintStream, B)",
+        "kind": "Method",
+        "tags": [],
+        "detail": "[B](inline that: B): (PrintStream, B)",
+        "sortText": "00033",
+        "filterText": "-\u003e",
+        "insertTextFormat": "Snippet",
+        "textEdit": {
+          "range": {
+            "start": {
+              "line": 13,
+              "character": 13
+            },
+            "end": {
+              "line": 13,
+              "character": 13
+            }
+          },
+          "newText": "-\u003e($0)"
+        },
+        "additionalTextEdits": [],
+        "data": {
+          "symbol": "scala/Predef.`-\u003e`().",
+          "target": "file:///workspace/foo",
+          "kind": 3
+        }
+      },
+      {
         "label": "asInstanceOf[X0]: X0",
         "kind": "Method",
         "tags": [],
         "detail": "[X0]: X0",
-        "sortText": "00033",
+        "sortText": "00034",
         "filterText": "asInstanceOf",
         "insertTextFormat": "Snippet",
         "textEdit": {
@@ -959,7 +987,7 @@
         "kind": "Method",
         "tags": [],
         "detail": "(x$0: Any): Boolean",
-        "sortText": "00034",
+        "sortText": "00035",
         "filterText": "equals",
         "insertTextFormat": "Snippet",
         "textEdit": {
@@ -977,7 +1005,7 @@
         },
         "additionalTextEdits": [],
         "data": {
-          "symbol": "scala/Any#equals().",
+          "symbol": "java/lang/Object#equals().",
           "target": "file:///workspace/foo",
           "kind": 3
         }
@@ -987,7 +1015,7 @@
         "kind": "Method",
         "tags": [],
         "detail": "[X0 \u003e: err.type](): Class[? \u003c: X0]",
-        "sortText": "00035",
+        "sortText": "00036",
         "filterText": "getClass",
         "insertTextFormat": "Snippet",
         "textEdit": {
@@ -1015,7 +1043,7 @@
         "kind": "Method",
         "tags": [],
         "detail": "(): Int",
-        "sortText": "00036",
+        "sortText": "00037",
         "filterText": "hashCode",
         "insertTextFormat": "Snippet",
         "textEdit": {
@@ -1033,7 +1061,7 @@
         },
         "additionalTextEdits": [],
         "data": {
-          "symbol": "scala/Any#hashCode().",
+          "symbol": "java/lang/Object#hashCode().",
           "target": "file:///workspace/foo",
           "kind": 3
         }
@@ -1043,7 +1071,7 @@
         "kind": "Method",
         "tags": [],
         "detail": "[X0]: Boolean",
-        "sortText": "00037",
+        "sortText": "00038",
         "filterText": "isInstanceOf",
         "insertTextFormat": "Snippet",
         "textEdit": {
@@ -1071,7 +1099,7 @@
         "kind": "Method",
         "tags": [],
         "detail": "[X0](x$0: X0): X0",
-        "sortText": "00038",
+        "sortText": "00039",
         "filterText": "synchronized",
         "insertTextFormat": "Snippet",
         "textEdit": {
@@ -1099,7 +1127,7 @@
         "kind": "Method",
         "tags": [],
         "detail": "(): String",
-        "sortText": "00039",
+        "sortText": "00040",
         "filterText": "toString",
         "insertTextFormat": "Snippet",
         "textEdit": {
@@ -1118,34 +1146,6 @@
         "additionalTextEdits": [],
         "data": {
           "symbol": "scala/Any#toString().",
-          "target": "file:///workspace/foo",
-          "kind": 3
-        }
-      },
-      {
-        "label": "-\u003e[B](y: B): (PrintStream, B)",
-        "kind": "Method",
-        "tags": [],
-        "detail": "[B](y: B): (PrintStream, B)",
-        "sortText": "00040",
-        "filterText": "-\u003e",
-        "insertTextFormat": "Snippet",
-        "textEdit": {
-          "range": {
-            "start": {
-              "line": 13,
-              "character": 13
-            },
-            "end": {
-              "line": 13,
-              "character": 13
-            }
-          },
-          "newText": "-\u003e($0)"
-        },
-        "additionalTextEdits": [],
-        "data": {
-          "symbol": "scala/Predef.ArrowAssoc#`-\u003e`().",
           "target": "file:///workspace/foo",
           "kind": 3
         }
@@ -1344,36 +1344,6 @@
         "additionalTextEdits": [],
         "data": {
           "symbol": "scala/Predef.StringFormat#formatted().",
-          "target": "file:///workspace/foo",
-          "kind": 3
-        }
-      },
-      {
-        "label": "→[B](y: B): (PrintStream, B)",
-        "kind": "Method",
-        "tags": [
-          "Deprecated"
-        ],
-        "detail": "[B](y: B): (PrintStream, B)",
-        "sortText": "00048",
-        "filterText": "→",
-        "insertTextFormat": "Snippet",
-        "textEdit": {
-          "range": {
-            "start": {
-              "line": 13,
-              "character": 13
-            },
-            "end": {
-              "line": 13,
-              "character": 13
-            }
-          },
-          "newText": "→($0)"
-        },
-        "additionalTextEdits": [],
-        "data": {
-          "symbol": "scala/Predef.ArrowAssoc#`→`().",
           "target": "file:///workspace/foo",
           "kind": 3
         }

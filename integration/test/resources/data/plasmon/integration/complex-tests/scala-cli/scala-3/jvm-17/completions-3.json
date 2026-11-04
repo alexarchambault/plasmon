@@ -26,7 +26,7 @@
         "additionalTextEdits": [],
         "data": {
           "symbol": "scala/collection/IterableFactory#apply().",
-          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_41e103cfb2",
           "kind": 3
         }
       },
@@ -54,7 +54,7 @@
         "additionalTextEdits": [],
         "data": {
           "symbol": "scala/collection/IterableFactory#apply().",
-          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_41e103cfb2",
           "kind": 3
         }
       },
@@ -82,7 +82,7 @@
         "additionalTextEdits": [],
         "data": {
           "symbol": "scala/collection/MapFactory#apply().",
-          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_41e103cfb2",
           "kind": 3
         }
       },
@@ -110,7 +110,7 @@
         "additionalTextEdits": [],
         "data": {
           "symbol": "scala/collection/mutable/LinkedHashMap#`\u003cinit\u003e`().",
-          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_41e103cfb2",
           "kind": 3
         }
       },
@@ -138,7 +138,7 @@
         "additionalTextEdits": [],
         "data": {
           "symbol": "scala/collection/mutable/LinkedHashSet#`\u003cinit\u003e`().",
-          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_41e103cfb2",
           "kind": 3
         }
       },
@@ -166,7 +166,7 @@
         "additionalTextEdits": [],
         "data": {
           "symbol": "scala/collection/mutable/ListBuffer#`\u003cinit\u003e`().",
-          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_41e103cfb2",
           "kind": 3
         }
       },
@@ -194,7 +194,7 @@
         "additionalTextEdits": [],
         "data": {
           "symbol": "scala/collection/mutable/LinkedHashMap.",
-          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_41e103cfb2",
           "kind": 3
         }
       },
@@ -222,7 +222,7 @@
         "additionalTextEdits": [],
         "data": {
           "symbol": "scala/collection/mutable/LinkedHashSet.",
-          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_41e103cfb2",
           "kind": 3
         }
       },
@@ -250,7 +250,7 @@
         "additionalTextEdits": [],
         "data": {
           "symbol": "scala/collection/mutable/ListBuffer.",
-          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_41e103cfb2",
           "kind": 3
         }
       },
@@ -278,7 +278,7 @@
         "additionalTextEdits": [],
         "data": {
           "symbol": "scala/collection/MapFactory#apply().",
-          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_41e103cfb2",
           "kind": 3
         }
       },
@@ -306,7 +306,7 @@
         "additionalTextEdits": [],
         "data": {
           "symbol": "scala/collection/mutable/ListMap#`\u003cinit\u003e`().",
-          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_41e103cfb2",
           "kind": 3
         }
       },
@@ -334,7 +334,7 @@
         "additionalTextEdits": [],
         "data": {
           "symbol": "scala/collection/mutable/ListMap.",
-          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_41e103cfb2",
           "kind": 3
         }
       },
@@ -362,7 +362,7 @@
         "additionalTextEdits": [],
         "data": {
           "symbol": "scala/collection/SortedMapFactory#apply().",
-          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_41e103cfb2",
           "kind": 3
         }
       },
@@ -390,7 +390,7 @@
         "additionalTextEdits": [],
         "data": {
           "symbol": "scala/collection/mutable/CollisionProofHashMap#`\u003cinit\u003e`(+1).",
-          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_41e103cfb2",
           "kind": 3
         }
       },
@@ -418,7 +418,7 @@
         "additionalTextEdits": [],
         "data": {
           "symbol": "scala/collection/mutable/CollisionProofHashMap#`\u003cinit\u003e`().",
-          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_41e103cfb2",
           "kind": 3
         }
       },
@@ -446,7 +446,7 @@
         "additionalTextEdits": [],
         "data": {
           "symbol": "scala/collection/mutable/CollisionProofHashMap.",
-          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_41e103cfb2",
           "kind": 3
         }
       },
@@ -474,7 +474,7 @@
         "additionalTextEdits": [],
         "data": {
           "symbol": "scala/collection/mutable/DoublingUnrolledBuffer#`\u003cinit\u003e`().",
-          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_41e103cfb2",
           "kind": 3
         }
       },
@@ -502,7 +502,7 @@
         "additionalTextEdits": [],
         "data": {
           "symbol": "scala/collection/mutable/GrowableBuilder#`\u003cinit\u003e`().",
-          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_41e103cfb2",
           "kind": 3
         }
       }

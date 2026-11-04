@@ -5,7 +5,7 @@
         "uri": "file:///$WORKSPACE$/bar"
       },
       "sources": [
-        "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/org/scala-lang/scala-library/3.8.4/scala-library-3.8.4-sources.jar"
+        "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/org/scala-lang/scala-library/3.10.0/scala-library-3.10.0-sources.jar"
       ]
     },
     {
@@ -13,7 +13,7 @@
         "uri": "file:///$WORKSPACE$/foo"
       },
       "sources": [
-        "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/org/scala-lang/scala-library/3.8.4/scala-library-3.8.4-sources.jar"
+        "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/org/scala-lang/scala-library/3.10.0/scala-library-3.10.0-sources.jar"
       ]
     },
     {

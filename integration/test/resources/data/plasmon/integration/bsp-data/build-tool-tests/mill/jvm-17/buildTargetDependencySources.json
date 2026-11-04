@@ -5,7 +5,7 @@
         "uri": "file:///$WORKSPACE$/app"
       },
       "sources": [
-        "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/org/scala-lang/scala-library/3.8.4/scala-library-3.8.4-sources.jar",
+        "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/org/scala-lang/scala-library/3.10.0/scala-library-3.10.0-sources.jar",
         "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/com/google/guava/guava/33.2.1-jre/guava-33.2.1-jre-sources.jar",
         "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/com/google/guava/failureaccess/1.0.2/failureaccess-1.0.2-sources.jar",
         "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2-sources.jar",
@@ -19,7 +19,7 @@
         "uri": "file:///$WORKSPACE$/app/test"
       },
       "sources": [
-        "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/org/scala-lang/scala-library/3.8.4/scala-library-3.8.4-sources.jar",
+        "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/org/scala-lang/scala-library/3.10.0/scala-library-3.10.0-sources.jar",
         "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/org/scalameta/munit_3/1.0.2/munit_3-1.0.2-sources.jar",
         "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/org/scalameta/junit-interface/1.0.2/junit-interface-1.0.2-sources.jar",
         "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/org/scalameta/munit-diff_3/1.0.2/munit-diff_3-1.0.2-sources.jar",
@@ -40,7 +40,7 @@
         "uri": "file:///$WORKSPACE$/core"
       },
       "sources": [
-        "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/org/scala-lang/scala-library/3.8.4/scala-library-3.8.4-sources.jar",
+        "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/org/scala-lang/scala-library/3.10.0/scala-library-3.10.0-sources.jar",
         "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/com/google/guava/guava/33.2.1-jre/guava-33.2.1-jre-sources.jar",
         "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/com/google/guava/failureaccess/1.0.2/failureaccess-1.0.2-sources.jar",
         "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2-sources.jar",
