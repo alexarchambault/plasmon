@@ -12,11 +12,83 @@ permissions:
   attestations: write
 
 jobs:
-  test:
+  # Which of the test tasks the changes of a PR can affect, with Mill's selective execution
+  # (https://mill-build.org/mill/large/selective-execution.html): `selective.prepare` hashes the
+  # task inputs and build code on the base commit, `selective.resolve` lists the tasks downstream
+  # of what differs on the PR. Each output is "true" or "false", and the test jobs and steps
+  # below only skip what is "false" - an empty output (this job failed) runs everything.
+  # Pushes and tags always run everything, as they publish what they tested.
+  selective:
     needs: tags
+    # See the note on the same condition in the `test` job.
+    if: ${{ !cancelled() && needs.tags.result != 'failure' }}
+    runs-on: ubuntu-latest
+    outputs:
+      server_test: ${{ steps.select.outputs.server_test }}
+      integration_test: ${{ steps.select.outputs.integration_test }}
+      integration_native: ${{ steps.select.outputs.integration_native }}
+    steps:
+    # No submodules: their sources are hashed identically on both sides, and a change to their
+    # commits selects everything (see below)
+    - uses: actions/checkout@v7
+      if: github.event_name == 'pull_request'
+      with:
+        fetch-depth: 0
+    - uses: coursier/cache-action@v9
+      if: github.event_name == 'pull_request'
+      with:
+        disableFallback: true
+    - id: select
+      shell: bash
+      run: |
+        modules=(server.test integration.test integration.native)
+        select_all() {
+          echo "$1, selecting all tests"
+          for m in "${modules[@]}"; do
+            echo "${m//./_}=true" >> "$GITHUB_OUTPUT"
+          done
+          exit 0
+        }
+        if [[ "$GITHUB_EVENT_NAME" != pull_request ]]; then
+          select_all "Not a pull request"
+        fi
+        # On pull requests, HEAD is the merge of the PR into its base branch, which is the first
+        # parent
+        head="$(git rev-parse HEAD)"
+        base="$(git rev-parse HEAD^1)"
+        # Changes that Mill can't see: the CI itself, the Mill launcher, and the submodules
+        # (only checked out on the PR side, if at all, they would hash the same on both)
+        if ! git diff --quiet "$base" "$head" -- .github mill mill.bat submodules; then
+          select_all "Changes under .github, to the Mill launcher, or to the submodules"
+        fi
+        selector="{$(IFS=,; echo "${modules[*]}")}.testForked"
+        # With the Mill daemon rather than -i: under -i, Mill hashes the paths of the sources
+        # through a per-run alias directory (out/mill-no-daemon/<random>/mill-workspace), so that
+        # every source would differ from one run to the other
+        git checkout -q "$base"
+        ./mill --ticker false selective.prepare "$selector" || select_all "selective.prepare failed"
+        git checkout -q "$head"
+        ./mill --ticker false selective.resolve "$selector" > selected.txt ||
+          select_all "selective.resolve failed"
+        ./mill shutdown || true
+        echo "Selected tasks:"
+        cat selected.txt
+        for m in "${modules[@]}"; do
+          if grep -qxF "$m.testForked" selected.txt; then
+            echo "${m//./_}=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "${m//./_}=false" >> "$GITHUB_OUTPUT"
+          fi
+        done
+
+  test:
+    needs: [tags, selective]
     # `tags` doesn't run on PRs, and fails on a "v*" tag that releases nothing.
     # Run when it was skipped, don't when it rejected the release.
-    if: ${{ !cancelled() && needs.tags.result != 'failure' }}
+    if: >-
+      !cancelled()
+      && needs.tags.result != 'failure'
+      && (needs.selective.outputs.server_test != 'false' || needs.selective.outputs.integration_test != 'false')
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v7
@@ -31,8 +103,10 @@ jobs:
         apps: sbt scala-cli
         jvm: 17
     - name: Unit tests
+      if: needs.selective.outputs.server_test != 'false'
       run: ./mill -i server.test.testForked
     - name: Test
+      if: needs.selective.outputs.integration_test != 'false'
       run: ./mill -i integration.test.testForked
       env:
         # The per-test budget is a hang detector, not a performance target. CI runners fork one
@@ -99,9 +173,12 @@ jobs:
       run: ./mill -i __.checkNativeImageConfFormat
 
   native-test:
-    needs: tags
+    needs: [tags, selective]
     # See the note on the same condition in the `test` job.
-    if: ${{ !cancelled() && needs.tags.result != 'failure' }}
+    if: >-
+      !cancelled()
+      && needs.tags.result != 'failure'
+      && needs.selective.outputs.integration_native != 'false'
     strategy:
       fail-fast: false
       matrix:

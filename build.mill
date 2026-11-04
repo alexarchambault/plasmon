@@ -247,7 +247,10 @@ trait PlasmonPublishModule extends PublishModule {
       Developer("alexarchambault", "Alex Archambault", "https://github.com/alexarchambault")
     )
   )
-  def publishVersion = Task {
+  // Kept out of selective execution (empty selectiveInputs), like versionResourcesDir: the
+  // version changes when the base commit of a PR is a release, and it ends up in JAR manifests,
+  // so that tracking it would select every test downstream of a JAR on the CI
+  def publishVersion = Task(selectiveInputs = Nil) {
     shared.publishVersion()
   }
 }
@@ -448,7 +451,12 @@ object server extends ScalaModule with PlasmonPublishModule {
   // Version and commit hash live in a runtime-only resource rather than in
   // Constants.scala above: those change at each commit, and having them in
   // generated sources would recompile the whole module every time.
-  def versionResourcesDir = Task {
+  //
+  // For the same reason, they're kept out of selective execution (empty selectiveInputs): the
+  // commit hash differs between any two commits, so tracking it would have the CI select every
+  // test downstream of the server class path on every PR. Changes to this task's own code are
+  // still picked up.
+  def versionResourcesDir = Task(selectiveInputs = Nil) {
     val resourceDir = Task.dest / "resources"
     val dest        = resourceDir / "plasmon" / "version.properties"
     val content =
@@ -1028,6 +1036,11 @@ object integration extends ScalaModule {
     def sources = Task {
       integration.test.sources()
     }
+    // Mostly so that selective execution (on the CI) re-runs these tests when the recorded
+    // data under integration/test/resources/data changes, like it does for integration.test
+    def resources = Task {
+      integration.test.resources()
+    }
     def generatedSources = super.generatedSources() ++ Seq(integration.test.constantsFile())
   }
 }
@@ -1035,6 +1048,12 @@ object integration extends ScalaModule {
 object extension extends Module {
   def packageJson = Task.Sources(os.sub / "package.json")
   def jsSources   = Task.Sources(os.sub / "src")
+  // Other files that npm or vsce read when building the VSIX
+  def buildFiles = Task.Sources(
+    os.sub / "package-lock.json",
+    os.sub / "tsconfig.json",
+    os.sub / ".vscodeignore"
+  )
 
   // from https://github.com/VirtusLab/scala-cli/blob/b92d86a02e741a3cea9cc943f59712a5fb385617/modules/build/src/main/scala/scala/build/internal/Runner.scala#L175-L202
   private def endsWithCaseInsensitive(s: String, suffix: String): Boolean =
@@ -1069,7 +1088,7 @@ object extension extends Module {
     if (Properties.isWin) findInPath("npm").getOrElse("npm") else "npm"
 
   def sources = Task {
-    packageJson() ++ jsSources()
+    packageJson() ++ jsSources() ++ buildFiles()
   }
 
   def version = Task {
