@@ -5,7 +5,7 @@
         "uri": "file:/$WORKSPACE$/.scala-build/?id\u003dtest-project_d5c0a6989e"
       },
       "options": [
-        "-Xplugin:$COURSIER_CACHE$/https/repo1.maven.org/maven2/org/scalameta/semanticdb-scalac_2.13.16/4.17.3/semanticdb-scalac_2.13.16-4.17.3.jar",
+        "-Xplugin:$COURSIER_CACHE$/https/repo1.maven.org/maven2/org/scalameta/semanticdb-scalac_2.13.16/4.17.4/semanticdb-scalac_2.13.16-4.17.4.jar",
         "-Yrangepos",
         "-P:semanticdb:failures:warning",
         "-P:semanticdb:synthetics:on",
@@ -23,7 +23,7 @@
         "uri": "file:/$WORKSPACE$/.scala-build/?id\u003dtest-project_d5c0a6989e-test"
       },
       "options": [
-        "-Xplugin:$COURSIER_CACHE$/https/repo1.maven.org/maven2/org/scalameta/semanticdb-scalac_2.13.16/4.17.3/semanticdb-scalac_2.13.16-4.17.3.jar",
+        "-Xplugin:$COURSIER_CACHE$/https/repo1.maven.org/maven2/org/scalameta/semanticdb-scalac_2.13.16/4.17.4/semanticdb-scalac_2.13.16-4.17.4.jar",
         "-Yrangepos",
         "-P:semanticdb:failures:warning",
         "-P:semanticdb:synthetics:on",

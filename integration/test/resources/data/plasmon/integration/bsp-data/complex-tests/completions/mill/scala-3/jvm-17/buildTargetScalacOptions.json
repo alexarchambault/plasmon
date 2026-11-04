@@ -6,7 +6,7 @@
       },
       "options": [],
       "classpath": [
-        "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/org/scala-lang/scala-library/3.8.4/scala-library-3.8.4.jar",
+        "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/org/scala-lang/scala-library/3.10.0/scala-library-3.10.0.jar",
         "file:///$WORKSPACE$/foo/compile-resources"
       ],
       "classDirectory": "file:///$WORKSPACE$/.bsp/out/foo/compile.dest/classes"
