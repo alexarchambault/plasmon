@@ -166,7 +166,8 @@ object TestUtil {
           // Add JAVA_HOME in env too
           // s"-agentlib:native-image-agent=config-output-dir=..../native-config",
           "--add-opens=java.base/java.util=ALL-UNNAMED", // needed for TimerThreadsHack
-          "--add-opens=jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED", // needed for Java compiler class path hacks
+          // needed for Java compiler class path hacks, and by the Metals Java indexer
+          IntegrationConstants.javacInternalsJavaOptions,
           serverExtraJavaOpts,
           "-jar",
           launcher

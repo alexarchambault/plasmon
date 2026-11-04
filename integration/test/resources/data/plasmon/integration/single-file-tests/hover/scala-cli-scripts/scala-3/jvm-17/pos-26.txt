@@ -12,3 +12,17 @@ If not [set](#setContextClassLoader), the default is the
 `ClassLoader` of the
 primordial thread is typically set to the class loader used to load the
 application.
+
+**Returns** the context `ClassLoader` for this thread, or `null`
+indicating the system class loader (or, failing that, the
+bootstrap class loader)
+
+
+***
+
+**Throws**
+- `SecurityException`: 
+if a security manager is present, and the caller's class loader
+is not `null` and is not the same as or an ancestor of the
+context class loader, and the caller does not have the
+[RuntimePermission](RuntimePermission)`("getClassLoader")`

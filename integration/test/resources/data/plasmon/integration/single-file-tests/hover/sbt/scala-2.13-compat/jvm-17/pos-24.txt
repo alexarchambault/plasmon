@@ -54,3 +54,13 @@ a thread is created, a new name is generated for it.
 Unless otherwise noted, passing a `null` argument to a constructor
 or method in this class will cause a [NullPointerException](NullPointerException) to be
 thrown.
+
+
+
+***
+
+**See**
+- [Runnable](Runnable)
+- [Runtime#exit(int)](Runtime#exit(int))
+- [#run()](#run())
+- [#stop()](#stop())

@@ -97,6 +97,35 @@ object Deps {
   def svm              = mvn"org.graalvm.nativeimage:svm:24.0.2"
 }
 
+/** Access to the javac internals that Metals' Java indexer (`JavacMtags`) and Java presentation
+  * compiler use - same as `sharedJavaOptions` in submodules/metals/build.sbt. Without these, Java
+  * sources can't be indexed, and hovers on JDK symbols lose their Javadoc.
+  */
+object JavacInternals {
+  def exportedPackages = Seq(
+    "api",
+    "code",
+    "comp",
+    "file",
+    "jvm",
+    "main",
+    "model",
+    "parser",
+    "processing",
+    "resources",
+    "tree",
+    "util"
+  )
+  def openedPackages = Seq("code", "comp", "file", "parser")
+
+  def addExports = exportedPackages.map { pkg =>
+    s"--add-exports=jdk.compiler/com.sun.tools.javac.$pkg=ALL-UNNAMED"
+  }
+  def javaOptions = addExports ++ openedPackages.map { pkg =>
+    s"--add-opens=jdk.compiler/com.sun.tools.javac.$pkg=ALL-UNNAMED"
+  }
+}
+
 object submodules extends Module {
 
   private def excludeScalaCompiler(dep: Dep): Dep =
@@ -129,11 +158,11 @@ object submodules extends Module {
       def moduleDeps = Seq(`mtags-interfaces`)
       def mvnDeps = Seq(
         mvn"org.lz4:lz4-java:1.8.1",
-        mvn"com.google.protobuf:protobuf-java:4.34.0",
-        mvn"com.google.guava:guava:33.5.0-jre",
+        mvn"com.google.protobuf:protobuf-java:4.36.1",
+        mvn"com.google.guava:guava:33.7.1-jre",
         mvn"io.get-coursier:interface:1.0.29-M2",
-        excludeScalaCompiler(mvn"com.outr::scribe:3.18.0"),
-        excludeScalaCompiler(mvn"com.lihaoyi::pprint:0.8.1")
+        excludeScalaCompiler(mvn"com.outr::scribe:3.19.0"),
+        excludeScalaCompiler(mvn"com.lihaoyi::pprint:0.9.6")
       )
     }
 
@@ -159,7 +188,7 @@ object submodules extends Module {
              |  def supportedScalaBinaryVersions = Seq("3", "2.13")
              |  def scala212 = "2.12.21"
              |  def scala213 = "${Versions.scala2}"
-             |  def scala3 = "3.3.7"
+             |  def scala3 = "3.3.8"
              |}
              |""".stripMargin
         os.write.over(dest, code, createFolders = true)
@@ -167,15 +196,14 @@ object submodules extends Module {
       }
       def moduleDeps = Seq(`mtags-shared`)
       def mvnDeps = Seq(
-        excludeScalaCompiler(mvn"com.lihaoyi::geny:1.0.0"),
-        mvn"com.thoughtworks.qdox:qdox:2.2.0",
+        excludeScalaCompiler(mvn"com.lihaoyi::geny:1.1.1"),
         mvn"org.scala-lang.modules::scala-java8-compat:1.0.2",
-        mvn"org.jsoup:jsoup:1.22.1",
+        mvn"org.jsoup:jsoup:1.23.2",
         mvn"io.get-coursier:interface:1.0.29-M2",
         mvn"org.lz4:lz4-java:1.8.1",
-        excludeScalaCompiler(mvn"com.outr::scribe:3.18.0"),
+        excludeScalaCompiler(mvn"com.outr::scribe:3.19.0"),
         mvn"com.googlecode.java-diff-utils:diffutils:1.3.0",
-        mvn"org.scalameta:semanticdb-scalac-core_${Versions.scala2}:4.15.2",
+        mvn"org.scalameta:semanticdb-scalac-core_${Versions.scala2}:4.17.4",
         mvn"org.scala-lang:scala-compiler:${Versions.scala2}"
       )
     }
@@ -866,7 +894,7 @@ object server extends ScalaModule with PlasmonPublishModule {
         "--add-opens=org.graalvm.nativeimage.builder/com.oracle.svm.core.posix.headers=ALL-UNNAMED", // needed for Signal stuff used by libdaemon-jvm
         s"-Dplasmon.disableScala2Pc=$disableScala2Pc",
         "--enable-native-access=ALL-UNNAMED"
-      ) ++ ciOptions ++ quickBuildOptions
+      ) ++ JavacInternals.addExports ++ ciOptions ++ quickBuildOptions
     }
 
     def nativeImagePersist      = System.getenv("CI") != null
@@ -987,6 +1015,8 @@ object integration extends ScalaModule {
     def constantsFile = Task(persistent = true) {
       val dir  = Task.dest / "constants"
       val dest = dir / "IntegrationConstants.scala"
+      val javacInternalsJavaOptions =
+        JavacInternals.javaOptions.map(opt => "\"" + opt + "\"").mkString(", ")
       val code =
         s"""package plasmon.integration
            |
@@ -1001,6 +1031,8 @@ object integration extends ScalaModule {
            |  def millwCommit = "${Versions.Test.millwCommit}"
            |  def sbtVersion = "${Versions.Test.sbt}"
            |  def sbtExtrasCommit = s"${Versions.Test.sbtExtrasCommit}"
+           |
+           |  def javacInternalsJavaOptions = Seq($javacInternalsJavaOptions)
            |}
            |""".stripMargin
       if (!os.isFile(dest) || os.read(dest) != code) {
