@@ -10,3 +10,6 @@ Returns the number of processors available to the Java virtual machine.
 machine.  Applications that are sensitive to the number of available
 processors should therefore occasionally poll this property and adjust
 their resource usage appropriately.
+
+**Returns** the maximum number of processors available to the virtual
+machine; never smaller than one

@@ -7,3 +7,7 @@ public static java.lang.Runtime getRuntime()
 Returns the runtime object associated with the current Java application.
 Most of the methods of class `Runtime` are instance
 methods and must be invoked with respect to the current runtime object.
+
+
+**Returns** the `Runtime` object associated with the current
+Java application.

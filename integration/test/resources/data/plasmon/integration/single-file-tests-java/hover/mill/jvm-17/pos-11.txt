@@ -17,3 +17,25 @@ Additionally, and except for the special case where the resource has a
 name ending with "`.class`", this method will only find resources in
 packages of named modules when the package is [opened](Module#isOpen(String)) unconditionally (even if the caller of this method is in the
 same module as the resource).
+
+
+***
+
+**Parameters**
+- `name`: 
+The resource name
+
+**Returns** An enumeration of [URL](java.net.URL) objects for the
+resource. If no resources could be found, the enumeration will
+be empty. Resources for which a `URL` cannot be
+constructed, are in a package that is not opened
+unconditionally, or access to the resource is denied by the
+security manager, are not returned in the enumeration.
+
+
+***
+
+**Throws**
+- `IOException`: 
+If I/O errors occur
+- `NullPointerException`: If `name` is `null`

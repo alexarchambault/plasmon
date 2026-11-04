@@ -10,3 +10,10 @@ the environment in which the application is running. The current
 runtime can be obtained from the `getRuntime` method.
 
 An application cannot create its own instance of this class.
+
+
+
+***
+
+**See**
+- [java.lang.Runtime#getRuntime()](java.lang.Runtime#getRuntime())
