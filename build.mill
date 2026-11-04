@@ -1258,6 +1258,101 @@ object extension extends Module {
       )
     }
   }
+
+  /** Runs code-server, with the extension and the server built from sources.
+    *
+    * The `cmd` command installs the extension, publishes the server in a local repository, and
+    * prints a shell command running code-server against those (rather than running code-server
+    * itself, so that the Mill daemon isn't kept busy while code-server runs):
+    * {{{
+    * eval "exec $(./mill show extension.codeServer.cmd --port=8080 | jq -r .)"
+    * }}}
+    */
+  object codeServer extends Module {
+    private lazy val codeServer =
+      if (Properties.isWin) extension.findInPath("code-server").getOrElse("code-server")
+      else "code-server"
+
+    def userDataDir = Task(persistent = true) {
+      val dir = Task.dest
+      dir.toString // no PathRef, no need to look into what changed in that directory
+    }
+    def extensionsDir = Task(persistent = true) {
+      val dir = Task.dest
+      dir.toString // no PathRef, no need to look into what changed in that directory
+    }
+
+    private def shellQuote(s: String): String =
+      if (s.nonEmpty && s.forall(c => c.isLetterOrDigit || "-_./:=@,+".contains(c))) s
+      else "'" + s.replace("'", "'\"'\"'") + "'"
+
+    /** @param host
+      *   address code-server binds to
+      * @param port
+      *   port code-server binds to
+      * @param baseAddress
+      *   external URL code-server is reached through, when it sits behind a proxy (the proxy is
+      *   expected to strip any path prefix, code-server only uses relative paths)
+      * @param folder
+      *   directory to open, the workspace root by default
+      */
+    def cmd(
+      host: String = "127.0.0.1",
+      port: Int = 8080,
+      baseAddress: String = "",
+      folder: String = ""
+    ) = Task.Command[String] {
+      val vsix0 = RealPath(vsix())
+      val sharedArgs = Seq(
+        "--user-data-dir",
+        RealPath(os.Path(userDataDir())),
+        "--extensions-dir",
+        RealPath(os.Path(extensionsDir()))
+      )
+      os.proc(codeServer, sharedArgs, "--install-extension", vsix0, "--force")
+        .call(cwd = BuildCtx.workspaceRoot, stdin = os.Inherit, stdout = os.Inherit)
+
+      val ver = shared.publishVersion()
+
+      val coursierRepoEnv = {
+        val currentOpt = Option(System.getenv("COURSIER_REPOSITORIES")).filter(_.trim.nonEmpty)
+        s"${java.nio.file.Paths.get(RealPath(`local-repo`.localRepo())).toUri.toASCIIString}|${currentOpt.getOrElse("ivy2Local|central")}"
+      }
+
+      // code-server rejects WebSocket connections whose origin doesn't match the host header,
+      // which proxies may rewrite
+      val trustedOriginArgs = Option(baseAddress).filter(_.trim.nonEmpty).toSeq.flatMap {
+        address =>
+          Seq("--trusted-origins", new java.net.URI(address.trim).getAuthority)
+      }
+
+      val folder0 =
+        if (folder.trim.isEmpty) BuildCtx.workspaceRoot
+        else os.Path(folder, BuildCtx.workspaceRoot)
+
+      val env = Seq(
+        "COURSIER_REPOSITORIES"  -> coursierRepoEnv,
+        "PLASMON_FORCED_VERSION" -> ver,
+        "PLASMON_DEBUG"          -> "false"
+      )
+      val command = Seq("env") ++
+        env.map { case (k, v) => s"$k=$v" } ++
+        Seq(codeServer) ++
+        sharedArgs ++
+        Seq(
+          "--bind-addr",
+          s"$host:$port",
+          "--auth",
+          "none",
+          "--disable-telemetry",
+          "--disable-update-check",
+          "--disable-workspace-trust"
+        ) ++
+        trustedOriginArgs ++
+        Seq(RealPath(folder0))
+      command.map(shellQuote).mkString(" ")
+    }
+  }
 }
 
 object `settings-edit` extends ScalaJSModule {
@@ -1335,7 +1430,11 @@ object `local-repo` extends Module {
   }
 
   def localRepo = {
-    val staged = Task.sequence(publishModules.map(_.publishLocalTestRepo))
+    // publishLocalTestRepo only publishes the module itself, not its module dependencies
+    val modules = publishModules.flatMap { mod =>
+      (mod +: mod.transitiveModuleDeps).collect { case p: PublishModule => p }
+    }.distinct
+    val staged = Task.sequence(modules.map(_.publishLocalTestRepo))
 
     Task {
       val dest = Task.dest
