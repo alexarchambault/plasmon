@@ -1784,7 +1784,11 @@ object PresentationCompilers {
     def buildTargetId: b.BuildTargetIdentifier = scalaTarget.id
 
     protected def newCompiler(classpath: Seq[java.nio.file.Path]): PresentationCompiler = {
+      // Mill (>= 1.3) passes `-Ymagic-offset-header:…` so that the compiler maps positions in
+      // the sources it generates out of build files back to the build files. We map positions
+      // between the two ourselves (see MillWrappedSources), so the compiler mustn't do it too.
       val options = enrichWithReleaseOption(scalaTarget)
+        .filter(!_.startsWith("-Ymagic-offset-header"))
       // Best Effort option `-Ybest-effort` is useless for PC,
       // and it may unnecesarily dump semanticdb and tasty files
       val bestEffortOpt  = "-Ybest-effort"

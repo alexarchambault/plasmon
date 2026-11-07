@@ -11,6 +11,7 @@ import plasmon.bsp.{
   BspConnection,
   BspDataPortability,
   BuildServerInfo,
+  MillWrappedSources,
   PlasmonBuildServer,
   ReplayArtifacts
 }
@@ -791,7 +792,11 @@ class IndexerActor(
         )
       )
 
-    val wrappedSourcesRes =
+    val sourcesRes = maybeCached("buildTargetSources") {
+      buildServer.buildTargetSources(new b.SourcesParams(targetList)).get()
+    }
+
+    val wrappedSourcesRes0 =
       if (info.id == "sbt") new WrappedSourcesResult(Nil.asJava)
       else
         maybeCached("buildTargetWrappedSources") {
@@ -817,6 +822,10 @@ class IndexerActor(
               }
           }
         }
+
+    val wrappedSourcesRes =
+      if (millHack) MillWrappedSources.fallback(wrappedSourcesRes0, sourcesRes)
+      else wrappedSourcesRes0
 
     val mappedSources =
       for {
@@ -893,10 +902,6 @@ class IndexerActor(
 
     for ((targetId, mappedSource) <- mappedSources)
       targetData.addMappedSource(targetId, mappedSource)
-
-    val sourcesRes = maybeCached("buildTargetSources") {
-      buildServer.buildTargetSources(new b.SourcesParams(targetList)).get()
-    }
 
     for {
       item       <- sourcesRes.getItems.asScala

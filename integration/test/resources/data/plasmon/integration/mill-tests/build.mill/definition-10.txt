@@ -3,18 +3,18 @@
     "path": "thing/package.mill",
     "line": 13,
     "colRange": [
-      15,
-      23
+      7,
+      15
     ],
-    "content": "` extend"
+    "content": "`package"
   },
   {
     "path": "thing/package.mill",
     "line": 13,
     "colRange": [
-      15,
-      23
+      7,
+      15
     ],
-    "content": "` extend"
+    "content": "`package"
   }
 ]

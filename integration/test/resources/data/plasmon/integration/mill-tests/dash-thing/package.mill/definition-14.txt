@@ -9,7 +9,7 @@
     "content": ""
   },
   {
-    "path": ".bsp/out/mill-build/generatedScriptSources.dest/wrapped/build_/build.mill",
+    "path": "out/mill-build/generatedScriptSources.dest/wrapped/build_/build.mill",
     "line": 9,
     "colRange": [
       7,

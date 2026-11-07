@@ -4,18 +4,20 @@ import mill.scalalib.*
 
 object `package` extends MillBuildRootModule {
 
-  def repositories = super.repositories() ++ Seq(
-    "https://central.sonatype.com/repository/maven-snapshots"
-  )
-
   override def mvnDeps = Seq(
-    // Mill 2 serializes paths as `../mill-workspace/...` aliases; the Mill 1.2 flavor of the
-    // plugin turns them back into absolute paths before handing them to docker / native-image.
-    // TODO Switch to mill-native-image 0.2.7 once it is released
-    mvn"io.github.alexarchambault.mill:mill-native-image_mill1.2_3:0.2.7-SNAPSHOT",
     mvn"io.get-coursier:coursier-launcher_2.13:2.1.7",
     mvn"io.get-coursier:interface:1.0.29-M1",
     mvn"commons-io:commons-io:2.16.0",
     mvn"com.softwaremill.sttp.client4::core:4.0.9"
   )
+
+  // mill-native-image is built from the mill-native-image submodule rather than pulled from
+  // Maven Central, so that it's compiled against the Mill (and coursier) this build runs on
+  def millNativeImageSources = Task.Sources(
+    moduleDir / "mill-native-image/plugin/src",
+    moduleDir / "mill-native-image/plugin/src-mill1"
+  )
+  override def sources = Task {
+    super.sources() ++ millNativeImageSources()
+  }
 }

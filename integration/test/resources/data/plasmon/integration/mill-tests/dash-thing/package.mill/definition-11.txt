@@ -1,7 +1,7 @@
 [
   {
-    "path": ".plasmon/readonly/dependencies/mill-libs-javalib_3-1.1.7-sources.jar/mill/javalib/TestModule.scala",
-    "line": 602,
+    "path": ".plasmon/readonly/dependencies/mill-libs-javalib_3-1.3.0-sources.jar/mill/javalib/TestModule.scala",
+    "line": 620,
     "colRange": [
       8,
       13
