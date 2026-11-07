@@ -54,6 +54,29 @@ jobs:
       if: failure()
       run: scala-cli --server=false integration/print-failing-test-logs.scala
 
+  neovim:
+    needs: tags
+    # See the note on the same condition in the `test` job.
+    if: ${{ !cancelled() && needs.tags.result != 'failure' }}
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        fetch-depth: 0
+        submodules: true
+    - uses: coursier/cache-action@v9
+      with:
+        disableFallback: true
+    - uses: coursier/setup-action@v3
+      with:
+        apps: scala-cli
+        jvm: 17
+    # Neovim itself is downloaded by Mill (neovim.nvim), into the coursier cache
+    - name: Plugin tests
+      run: ./mill -i neovim.test
+    - name: Plugin tests against the server
+      run: ./mill -i neovim.integrationTest
+
   format:
     needs: tags
     # See the note on the same condition in the `test` job.

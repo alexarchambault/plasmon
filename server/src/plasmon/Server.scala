@@ -101,6 +101,21 @@ final class Server(
       languageClient.underlying = underlyingLanguageClient()
   }
 
+  /** Whether the client shows VS Code `$(name)` icon markers in labels (code lens titles, …).
+    *
+    * Like in Metals, the `icons` initialization option tells: `"vscode"`, or no value (what the VS
+    * Code extension sends), keeps them; anything else (`"none"`, …) has them stripped.
+    */
+  def clientRendersCodicons: Boolean =
+    initializeParamsOpt0
+      .flatMap(params => Option(params.getInitializationOptions))
+      .collect {
+        case obj: com.google.gson.JsonObject => obj
+      }
+      .flatMap(obj => Option(obj.get("icons")))
+      .filter(elem => elem.isJsonPrimitive && elem.getAsJsonPrimitive.isString)
+      .forall(_.getAsString == "vscode")
+
   var onShutdown = Seq.empty[() => Unit]
   var onExit     = Seq.empty[() => Unit]
 

@@ -7,6 +7,13 @@ final case class Icons(
 )
 
 object Icons {
+
+  private val codicon = """\$\([\w~-]+\)\s*""".r
+
+  /** Removes VS Code `$(name)` icon markers, for clients that would show them verbatim. */
+  def stripCodicons(text: String): String =
+    codicon.replaceAllIn(text, "").trim
+
   // icons for vscode can be found here("Icons in Labels"):
   // https://code.visualstudio.com/api/references/icons-in-labels
   val vscode = Icons(

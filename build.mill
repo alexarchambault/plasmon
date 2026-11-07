@@ -1327,6 +1327,159 @@ object extension extends Module {
   }
 }
 
+/** The Neovim plugin, under neovim/, and its tests.
+  *
+  * {{{
+  * ./mill -i neovim.test             # against a fake server, fast
+  * ./mill -i neovim.integrationTest  # against the server built from sources, on a Scala CLI project
+  * }}}
+  *
+  * Both accept spec names and `--filter <test name substring>`. Neovim is downloaded, unless
+  * `PLASMON_NVIM` points to an nvim binary. The integration tests need scala-cli on PATH.
+  */
+object neovim extends Module {
+  def nvimVersion = "0.12.6"
+
+  private def nvimArchiveName: String = {
+    val isArm = Option(System.getProperty("os.arch")).exists(arch =>
+      arch == "aarch64" || arch == "arm64"
+    )
+    if (Properties.isWin) "nvim-win64.zip"
+    else if (Properties.isMac) if (isArm) "nvim-macos-arm64.tar.gz" else "nvim-macos-x86_64.tar.gz"
+    else if (isArm) "nvim-linux-arm64.tar.gz"
+    else "nvim-linux-x86_64.tar.gz"
+  }
+
+  /** Path of the nvim binary the tests run */
+  def nvim = Task.Input {
+    Option(System.getenv("PLASMON_NVIM")).filter(_.trim.nonEmpty) match {
+      case Some(path) => path
+      case None =>
+        val url =
+          s"https://github.com/neovim/neovim/releases/download/v$nvimVersion/$nvimArchiveName"
+        val dir = os.Path(
+          coursierapi.ArchiveCache.create().get(coursierapi.Artifact.of(url)),
+          BuildCtx.workspaceRoot
+        )
+        val exe = if (Properties.isWin) "nvim.exe" else "nvim"
+        val bin = os.walk(dir, maxDepth = 3)
+          .find(p => p.last == exe && (p / os.up).last == "bin")
+          .getOrElse(sys.error(s"No $exe found under $dir"))
+        RealPath(bin)
+    }
+  }
+
+  private def specNames = Set("unit", "integration")
+
+  private def runTests(
+    nvim: String,
+    pluginDir: os.Path,
+    defaultSpec: String,
+    args: Seq[String],
+    env: Map[String, String]
+  ): Unit = {
+    val specs = if (args.exists(specNames)) args else defaultSpec +: args
+    val res = os.proc(
+      nvim,
+      "--clean",
+      "--headless",
+      "-l",
+      RealPath(pluginDir / "tests/run.lua"),
+      specs
+    ).call(
+      cwd = BuildCtx.workspaceRoot,
+      env = env,
+      stdin = os.Inherit,
+      stdout = os.Inherit,
+      stderr = os.Inherit,
+      check = false
+    )
+    if (res.exitCode != 0)
+      sys.error(s"Neovim tests failed (exit code ${res.exitCode})")
+  }
+
+  /** Runs the plugin tests against a fake server (`unit` spec by default) */
+  def test(args: String*) = Task.Command {
+    runTests(
+      nvim(),
+      moduleDir,
+      "unit",
+      args,
+      Map.empty
+    )
+  }
+
+  /** Command starting the server built from sources, as JSON (for PLASMON_NVIM_SERVER_CMD) */
+  private def serverCmdJson(launcher: PathRef): String = {
+    // JAVA_HOME, else the JVM Mill runs on (`java` may not be on PATH, Mill downloads its JVM)
+    val javaHome = Option(System.getenv("JAVA_HOME"))
+      .filter(_.trim.nonEmpty)
+      .getOrElse(System.getProperty("java.home"))
+    val java =
+      RealPath(os.Path(javaHome) / "bin" / (if (Properties.isWin) "java.exe" else "java"))
+    val serverCmd = Seq(java, "--add-opens=java.base/java.util=ALL-UNNAMED") ++
+      JavacInternals.javaOptions ++
+      Seq("-jar", RealPath(launcher), "server")
+    ujson.write(ujson.Arr.from(serverCmd))
+  }
+
+  /** Runs the plugin tests against the server built from sources (`integration` spec by default) */
+  def integrationTest(args: String*) = Task.Command(exclusive = true) {
+    runTests(
+      nvim(),
+      moduleDir,
+      "integration",
+      args,
+      Map(
+        "PLASMON_NVIM_SERVER_CMD"    -> serverCmdJson(server.launcher()),
+        "PLASMON_NVIM_SCALA_VERSION" -> Versions.scala
+      )
+    )
+  }
+
+  /** Runs Neovim, with the plugin and the server built from sources, in a directory or on a file
+    *
+    * Uses a minimal config (neovim/dev/init.lua), not the user's one. Extra arguments are passed to
+    * nvim. Needs `./mill -i`, so that nvim gets the terminal.
+    */
+  def run(@mainargs.arg(positional = true) path: String, args: String*) =
+    Task.Command(exclusive = true) {
+      val target = os.Path(path, BuildCtx.workspaceRoot)
+      if (!os.exists(target))
+        sys.error(s"$target not found")
+      val (cwd, files) =
+        if (os.isDir(target)) (target, Nil)
+        else (target / os.up, Seq(RealPath(target)))
+      val headless = args.contains("--headless") || args.contains("--embed")
+      if (!headless && !Properties.isWin) {
+        val isTty = os.proc("test", "-t", "0")
+          .call(stdin = os.InheritRaw, stdout = os.InheritRaw, check = false)
+          .exitCode == 0
+        if (!isTty)
+          sys.error("No terminal: run this command with ./mill -i")
+      }
+      val nvim0          = nvim()
+      val serverCmdJson0 = serverCmdJson(server.launcher())
+      val res = os.proc(
+        nvim0,
+        "--clean",
+        "-u",
+        RealPath(moduleDir / "dev/init.lua"),
+        args,
+        files
+      ).call(
+        cwd = os.Path(RealPath(cwd)),
+        env = Map("PLASMON_NVIM_SERVER_CMD" -> serverCmdJson0),
+        stdin = os.InheritRaw,
+        stdout = os.InheritRaw,
+        stderr = os.InheritRaw,
+        check = false
+      )
+      if (res.exitCode != 0)
+        sys.error(s"nvim exited with code ${res.exitCode}")
+    }
+}
+
 object `settings-edit` extends ScalaJSModule {
   def scalaVersion   = Versions.scala
   def scalaJSVersion = Versions.scalaJs

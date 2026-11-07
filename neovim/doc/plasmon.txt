@@ -1,0 +1,140 @@
+*plasmon.txt*  Plasmon, the Scala language server, in Neovim
+
+Requires Neovim 0.11 or later, and the `plasmon` launcher.
+
+==============================================================================
+CONTENTS                                                    *plasmon-contents*
+
+  Setup ............................................ |plasmon-setup|
+  Options .......................................... |plasmon-options|
+  Commands ......................................... |plasmon-commands|
+  Status ........................................... |plasmon-status|
+  Workspace root ................................... |plasmon-root|
+
+==============================================================================
+SETUP                                                          *plasmon-setup*
+
+                                                             *plasmon.setup()*
+>lua
+    require("plasmon").setup({})
+<
+Configures and enables the `plasmon` LSP config (|vim.lsp.config()|,
+|vim.lsp.enable()|). The plugin also ships that config as `lsp/plasmon.lua`,
+so `vim.lsp.enable("plasmon")` works without calling `setup()`.
+
+Then, from a Scala or Java file, load its build tool and modules: >vim
+    :Plasmon load-build-tool
+<
+Plasmon remembers what is loaded, and restores it when it starts again in
+the same workspace.
+
+==============================================================================
+OPTIONS                                                      *plasmon-options*
+
+Passed to |plasmon.setup()|:
+
+  binary              Plasmon launcher. Default: "plasmon"
+  server_args         Extra arguments, after `plasmon server`. Default: {}
+  cmd                 Full command starting the server, replacing `binary`
+                      and `server_args`.
+  cmd_env             Extra environment variables for the server.
+  on_build_change     "ask" (default), "reindex" or "ignore": what to do when
+                      the server detects a change in the build.
+  codelens            Show code lenses. Default: true
+  on_type_formatting  On-type formatting, Neovim >= 0.12. Default: true
+  notify_progress     Report Plasmon progress as LSP progress (|LspProgress|,
+                      |vim.lsp.status()|). Default: true
+  max_log_lines       Lines kept per log. Default: 10000
+  lsp                 Merged into the LSP config (capabilities, ...).
+
+The server is started in the workspace root, where Plasmon keeps its state,
+log and command socket (`.plasmon/`). If you override `cmd` with
+|vim.lsp.config()| rather than `setup()`, use a function or set `cmd_cwd` to
+keep that.
+
+==============================================================================
+COMMANDS                                                    *plasmon-commands*
+
+                                                                    *:Plasmon*
+:Plasmon [status]       Show the server status, run one of its actions.
+:Plasmon load-build-tool
+                        Load or unload a build tool, then its modules.
+:Plasmon load           Load or unload a build tool or a module.
+:Plasmon load-module    Load or unload a module of the current file.
+:Plasmon unload-all-modules
+:Plasmon unload-all-build-tools
+:Plasmon build-tool-restart
+:Plasmon build-tool-restart-or-reconnect
+:Plasmon re-index
+:Plasmon re-import      Re-import the build of the current file.
+:Plasmon compile        Compile the module of the current file.
+:Plasmon compile-all
+:Plasmon clean          Clean the module of the current file.
+:Plasmon clean-all
+:Plasmon cancel-all-compilations
+:Plasmon organize-imports
+:Plasmon organize-imports-in-module
+                        Need `scalafix-native` on PATH.
+:Plasmon toggle-pc-diagnostics
+:Plasmon enable-pc-diagnostics
+:Plasmon disable-pc-diagnostics
+                        Presentation compiler diagnostics.
+:Plasmon module-actions
+:Plasmon interactive-compiler
+:Plasmon log [{name}]   Show a Plasmon log, following it.
+:Plasmon server-log     Open the server log, `.plasmon/log`.
+:Plasmon restart        Restart the server.
+:Plasmon check-concurrent-server
+                        Find, and offer to stop, another Plasmon server
+                        running in the same workspace (the server waits for
+                        the workspace lock until it exits).
+:Plasmon dump-server-state
+:Plasmon dump-bsp-data
+:Plasmon dump-typed-tree
+:Plasmon dump-symbol-index
+:Plasmon dump-semanticdb-details
+:Plasmon dump-compact-semanticdb-details
+                        Debugging.
+
+Commands about "the current file" use the last Plasmon file focused, when run
+from another buffer. `:checkhealth plasmon` checks the set-up.
+
+==============================================================================
+STATUS                                                        *plasmon-status*
+
+                                                        *plasmon.statusline()*
+require("plasmon").statusline([{bufnr}])
+    Short status, for 'statusline'. Empty in buffers no Plasmon server
+    handles. >lua
+        vim.o.statusline = "%f %= %{v:lua.require'plasmon'.statusline()} "
+<
+                                                            *plasmon.status()*
+require("plasmon").status([{opts}])
+    Status items last sent by the server, as a list of
+    `{ id, text, severity, busy, detail?, command? }`.
+
+                                                              *PlasmonStatus*
+A |User| autocmd with the `PlasmonStatus` pattern fires when the status
+changes.
+
+==============================================================================
+WORKSPACE ROOT                                                  *plasmon-root*
+
+The workspace root of a file is, in order of preference:
+- the closest directory with a `.plasmon` directory, a workspace Plasmon
+  already worked in (dependency sources Plasmon extracts under
+  `.plasmon/readonly/` are handled by the server of their workspace this way),
+- the closest directory with a Mill or sbt build (for sbt, the outermost one
+  of nested builds),
+- the closest directory with Scala CLI files (`project.scala`,
+  `.scala-build`, `.bsp`),
+- the git root,
+- the file's directory.
+
+The search stops at the git repository (or worktree) the file is in, so that
+a repository cloned inside another project gets a server of its own. Git
+submodules don't stop it: their files stay in the enclosing build.
+
+Pass `lsp = { root_dir = ... }` to |plasmon.setup()| to change that.
+
+ vim:tw=78:ts=8:ft=help:norl:

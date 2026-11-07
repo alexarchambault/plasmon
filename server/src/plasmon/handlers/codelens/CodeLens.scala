@@ -5,7 +5,7 @@ import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import org.eclipse.lsp4j as l
 import plasmon.Server
 import plasmon.PlasmonEnrichments.*
-import plasmon.ide.ClientCommands
+import plasmon.ide.{ClientCommands, Icons}
 import plasmon.jsonrpc.{CommandHandler, Handlers, RequestHandler}
 import plasmon.jsonrpc.CommandHandler.ParamsHelpers.*
 import plasmon.semdb.Semanticdbs
@@ -142,6 +142,9 @@ object CodeLens {
                 val lenses = semdbLenses.toList.sortBy(_.getRange.getStart.getLine) ++
                   mappedToLenses ++
                   mappedFromLenses
+                if (!server.clientRendersCodicons)
+                  for (lens <- lenses; command <- Option(lens.getCommand))
+                    command.setTitle(Icons.stripCodicons(command.getTitle))
                 lenses.asJava
               }(using server.pools.codeLensEc)
             case None =>
