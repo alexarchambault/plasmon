@@ -1,11 +1,11 @@
 [
   {
-    "path": "build.mill",
-    "line": 2,
+    "path": "out/mill-build/generatedScriptSources.dest/wrapped/build_/build.mill",
+    "line": 9,
     "colRange": [
-      8,
-      13
+      7,
+      15
     ],
-    "content": "build"
+    "content": "package_"
   }
 ]

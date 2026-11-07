@@ -1,0 +1,16 @@
+```scala
+def moduleDeps: Seq[JavaModule]
+```
+
+***
+
+The direct dependencies of this module.
+ This is meant to be overridden to add dependencies.
+ To read the value, you should use [moduleDepsChecked](moduleDepsChecked) instead,
+ which uses a cached result which is also checked to be free of cycle.
+
+
+***
+
+**See**
+- [moduleDepsChecked](moduleDepsChecked)

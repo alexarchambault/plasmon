@@ -1,3 +1,20 @@
 [
-  
+  {
+    "path": "thing/package.mill",
+    "line": 13,
+    "colRange": [
+      7,
+      15
+    ],
+    "content": "`package"
+  },
+  {
+    "path": "thing/package.mill",
+    "line": 13,
+    "colRange": [
+      7,
+      15
+    ],
+    "content": "`package"
+  }
 ]

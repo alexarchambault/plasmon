@@ -1,0 +1,3 @@
+```scala
+def mvn(args: Any*): Dep
+```
