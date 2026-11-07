@@ -1,4 +1,4 @@
--- Minimal Neovim config to try the plugin, used by `./mill -i neovim.run <path>`.
+-- Minimal Neovim config to try the plugin, used by `./mill -i neovim.run <path> --config minimal`.
 --
 --   nvim --clean -u neovim/dev/init.lua [file...]
 --

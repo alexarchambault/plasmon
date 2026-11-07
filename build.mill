@@ -1573,11 +1573,32 @@ object neovim extends Module {
 
   /** Runs Neovim, with the plugin and the server built from sources, in a directory or on a file
     *
-    * Uses a minimal config (neovim/dev/init.lua), not the user's one. Extra arguments are passed to
-    * nvim. Needs `./mill -i`, so that nvim gets the terminal.
+    * Doesn't use the user's config, but either
+    *   - `--config lazyvim` (default): LazyVim (neovim/dev/lazyvim.lua), with a file tree, a
+    *     statusline, etc. Plugins are downloaded on the first run, under
+    *     ~/.local/share/plasmon-dev-lazyvim (NVIM_APPNAME=plasmon-dev-lazyvim), and pinned by
+    *     neovim/dev/lazy-lock.json.
+    *   - `--config minimal`: a minimal config (neovim/dev/init.lua), with no other plugin.
+    *
+    * Extra arguments are passed to nvim. Needs `./mill -i`, so that nvim gets the terminal.
     */
-  def run(@mainargs.arg(positional = true) path: String, args: String*) =
+  def run(
+    @mainargs.arg(positional = true) path: String,
+    @mainargs.arg(doc = "Neovim config: lazyvim (default) or minimal") config: String = "lazyvim",
+    args: String*
+  ) =
     Task.Command(exclusive = true) {
+      val (configArgs, configEnv) = config match {
+        case "lazyvim" =>
+          (
+            Seq("-u", (moduleDir / "dev/lazyvim.lua").toString),
+            Map("NVIM_APPNAME" -> "plasmon-dev-lazyvim")
+          )
+        case "minimal" =>
+          (Seq("--clean", "-u", (moduleDir / "dev/init.lua").toString), Map.empty[String, String])
+        case other =>
+          sys.error(s"Unknown config '$other' (expected lazyvim or minimal)")
+      }
       val target = os.Path(path, BuildCtx.workspaceRoot)
       if (!os.exists(target))
         sys.error(s"$target not found")
@@ -1596,14 +1617,12 @@ object neovim extends Module {
       val serverCmdJson0 = serverCmdJson(server.launcher())
       val res = os.proc(
         nvim0,
-        "--clean",
-        "-u",
-        moduleDir / "dev/init.lua",
+        configArgs,
         args,
         files
       ).call(
         cwd = cwd,
-        env = Map("PLASMON_NVIM_SERVER_CMD" -> serverCmdJson0),
+        env = configEnv + ("PLASMON_NVIM_SERVER_CMD" -> serverCmdJson0),
         stdin = os.InheritRaw,
         stdout = os.InheritRaw,
         stderr = os.InheritRaw,
