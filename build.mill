@@ -1365,7 +1365,7 @@ object neovim extends Module {
         val bin = os.walk(dir, maxDepth = 3)
           .find(p => p.last == exe && (p / os.up).last == "bin")
           .getOrElse(sys.error(s"No $exe found under $dir"))
-        RealPath(bin)
+        bin.toString
     }
   }
 
@@ -1384,7 +1384,7 @@ object neovim extends Module {
       "--clean",
       "--headless",
       "-l",
-      RealPath(pluginDir / "tests/run.lua"),
+      pluginDir / "tests/run.lua",
       specs
     ).call(
       cwd = BuildCtx.workspaceRoot,
@@ -1416,10 +1416,10 @@ object neovim extends Module {
       .filter(_.trim.nonEmpty)
       .getOrElse(System.getProperty("java.home"))
     val java =
-      RealPath(os.Path(javaHome) / "bin" / (if (Properties.isWin) "java.exe" else "java"))
+      (os.Path(javaHome) / "bin" / (if (Properties.isWin) "java.exe" else "java")).toString
     val serverCmd = Seq(java, "--add-opens=java.base/java.util=ALL-UNNAMED") ++
       JavacInternals.javaOptions ++
-      Seq("-jar", RealPath(launcher), "server")
+      Seq("-jar", launcher.path.toString, "server")
     ujson.write(ujson.Arr.from(serverCmd))
   }
 
@@ -1449,7 +1449,7 @@ object neovim extends Module {
         sys.error(s"$target not found")
       val (cwd, files) =
         if (os.isDir(target)) (target, Nil)
-        else (target / os.up, Seq(RealPath(target)))
+        else (target / os.up, Seq(target))
       val headless = args.contains("--headless") || args.contains("--embed")
       if (!headless && !Properties.isWin) {
         val isTty = os.proc("test", "-t", "0")
@@ -1464,11 +1464,11 @@ object neovim extends Module {
         nvim0,
         "--clean",
         "-u",
-        RealPath(moduleDir / "dev/init.lua"),
+        moduleDir / "dev/init.lua",
         args,
         files
       ).call(
-        cwd = os.Path(RealPath(cwd)),
+        cwd = cwd,
         env = Map("PLASMON_NVIM_SERVER_CMD" -> serverCmdJson0),
         stdin = os.InheritRaw,
         stdout = os.InheritRaw,
