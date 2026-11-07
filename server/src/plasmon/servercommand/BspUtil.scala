@@ -941,8 +941,19 @@ object BspUtil {
           .sortBy(_.segmentCount)
 
         val forCurrentFile0 = currentFile.toSeq.flatMap { f =>
-          val forDir  = if (isScalaCliDir(f)) Seq(f) else Nil
-          val forFile = if (isScalaCliFile(f)) Seq(f, f / os.up) else Nil
+          val forDir = if (isScalaCliDir(f)) Seq(f) else Nil
+          val forFile =
+            if (isScalaCliFile(f)) Seq(f, f / os.up)
+            else if (os.isFile(f) && f.startsWith(workspace))
+              // A source file with no directives, next to files with some (the directives of a
+              // Scala CLI project often sit in one file only): offer the closest directory with
+              // such files
+              Iterator
+                .iterate(f / os.up)(_ / os.up)
+                .takeWhile(dir => dir.startsWith(workspace))
+                .find(isScalaCliDir)
+                .toSeq
+            else Nil
           forDir ++ forFile
         }
 

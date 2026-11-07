@@ -3,3 +3,4 @@ out/
 .plasmon/
 .bloop/
 .scala-build/
+/neovim/doc/tags
