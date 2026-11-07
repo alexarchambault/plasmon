@@ -1086,8 +1086,26 @@ object extension extends Module {
       matches.find(_ => true)
     }
 
-  private lazy val pnpm =
-    if (Properties.isWin) findInPath("pnpm").getOrElse("pnpm") else "pnpm"
+  /** Command running pnpm
+    *
+    * pnpm from PATH if it's there, else the version pinned by `packageManager` in
+    * extension/package.json, via npx (that only needs Node, which CI runners have by default)
+    */
+  lazy val pnpm: Seq[String] =
+    findInPath("pnpm") match {
+      case Some(path) => Seq(path)
+      case None =>
+        val packageManager = BuildCtx.withFilesystemCheckerDisabled {
+          ujson.read(os.read(BuildCtx.workspaceRoot / "extension/package.json"))
+            .obj.get("packageManager").map(_.str)
+        }
+        val spec = packageManager
+          .map(_.takeWhile(_ != '+')) // strip the optional "+sha512.…" suffix
+          .filter(_.startsWith("pnpm@"))
+          .getOrElse("pnpm")
+        val npx = findInPath("npx").getOrElse("npx")
+        Seq(npx, "--yes", spec)
+    }
 
   def sources = Task {
     packageJson() ++ jsSources() ++ buildFiles()
