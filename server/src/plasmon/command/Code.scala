@@ -2,10 +2,11 @@ package plasmon.command
 
 import caseapp.core.RemainingArgs
 import coursier.jvm.Execve
-import plasmon.internal.{BinaryName, BuildVersion, Constants, Directories}
+import plasmon.internal.{BinaryName, Directories}
 
 import java.io.File
 import java.nio.file.{Files, Path, Paths}
+import java.security.MessageDigest
 
 import scala.util.Properties
 
@@ -18,49 +19,77 @@ object Code extends caseapp.Command[CodeOptions] {
       .filter(_.nonEmpty)
       .getOrElse("code")
 
-    val (extraArgs, _, hasExtension) =
+    val dataDir = os.Path((new Directories).dataDir(), os.pwd)
+    val codeDir = dataDir / "code"
+
+    val vsixBytes = os.read.bytes(os.resource / "plasmon" / "plasmon.vsix")
+    val vsixHash  = sha256(vsixBytes)
+
+    // code-server accepts most of the code CLI options, but not --disable-extension
+    val isCodeServer = os.FilePath(codeCommand).last.startsWith("code-server")
+
+    // dirArgs: passed to all code invocations
+    // launchArgs: passed only when opening the editor
+    val (dirArgs, launchArgs, extensionMarker, hasExtension) =
       if (options.global) {
-        val res           = os.proc(codeCommand, "--list-extensions").call()
-        val hasExtension0 = res.out.lines().contains(extensionOrgName)
-        (Nil, Map.empty[String, String], hasExtension0)
+        val res = os.proc(codeCommand, "--list-extensions").call()
+        val hasExtension0 =
+          res.out.lines().map(_.trim).exists(_.equalsIgnoreCase(extensionOrgName))
+        (Nil, Nil, codeDir / "global-extension.sha256", hasExtension0)
       }
       else {
-        val dataDir           = os.Path((new Directories).dataDir(), os.pwd)
-        val codeDir           = dataDir / "code"
         val codeUserDataDir   = codeDir / "user"
         val codeExtensionsDir = codeDir / "extensions"
 
-        val serverDependency =
-          s"${Constants.organization}:${Constants.moduleName}:${BuildVersion.version}"
-
-        val extraArgs0 = Seq[os.Shellable](
+        val dirArgs0 = Seq(
           "--user-data-dir",
-          codeUserDataDir,
+          codeUserDataDir.toString,
           "--extensions-dir",
-          codeExtensionsDir,
-          "--disable-extension",
-          metalsExtensionOrgName
+          codeExtensionsDir.toString
         )
-        val extraEnv0 =
-          Map("PLASMON_SERVER_DEPENDENCY" -> serverDependency) ++
-            BinaryName.pathOpt.map("PLASMON_BINARY" -> _.toString).toSeq
+        val launchArgs0 =
+          if (isCodeServer) Nil
+          else Seq("--disable-extension", metalsExtensionOrgName)
         val hasExtension0 =
           os.isDir(codeExtensionsDir) &&
           os.list(codeExtensionsDir)
             .iterator
             .filter(_.last.startsWith(extensionOrgName + "-"))
-            .filter(os.isDir)
-            .find(_ => true)
-            .isDefined
+            .exists(os.isDir)
 
-        (extraArgs0, extraEnv0, hasExtension0)
+        (dirArgs0, launchArgs0, codeDir / "extension.sha256", hasExtension0)
       }
 
-    if (!hasExtension)
-      os.proc(codeCommand, extraArgs, "--install-extension", vsix, "--force")
-        .call(stdin = os.Inherit, stdout = os.Inherit)
+    // The extension embedded in this launcher may differ from the installed one even if their
+    // versions match, so we keep track of what we installed via a hash of the VSIX file
+    val upToDate = hasExtension &&
+      os.isFile(extensionMarker) &&
+      os.read(extensionMarker).trim == vsixHash
 
-    val allArgs = extraArgs.flatMap(_.value) ++ remainingArgs.all
+    if (!upToDate) {
+      val vsix = codeDir / s"plasmon-$vsixHash.vsix"
+      os.write.over(vsix, vsixBytes, createFolders = true)
+      try
+        os.proc(codeCommand, dirArgs, "--install-extension", vsix, "--force")
+          .call(stdin = os.Inherit, stdout = os.Inherit)
+      finally
+        os.remove(vsix)
+      os.write.over(extensionMarker, vsixHash, createFolders = true)
+    }
+
+    // dropping the "--" separating our options from those of code, if any
+    // (as we stop at the first unrecognized argument, it ends up in remainingArgs.remaining)
+    val userArgs = remainingArgs.remaining ++ remainingArgs.unparsed match {
+      case "--" +: rest => rest
+      case other        => other
+    }
+    val allArgs = dirArgs ++ launchArgs ++ userArgs
+
+    val env = {
+      val selfEnv0 = selfEnv()
+      if (selfEnv0.isEmpty) sys.env
+      else sys.env -- forcedEnvVars ++ selfEnv0
+    }
 
     if (Execve.available()) {
       val (fullPath, name) =
@@ -76,17 +105,56 @@ object Code extends caseapp.Command[CodeOptions] {
       Execve.execve(
         fullPath,
         name +: allArgs.toArray,
-        sys.env.toArray.sorted.map { case (k, v) => s"$k=$v" }
+        env.toArray.sorted.map { case (k, v) => s"$k=$v" }
       )
       sys.error("should not happen")
     }
     else {
       val res = os.proc(codeCommand, allArgs)
-        .call(stdin = os.Inherit, stdout = os.Inherit, check = false)
+        .call(
+          stdin = os.Inherit,
+          stdout = os.Inherit,
+          check = false,
+          env = env,
+          propagateEnv = false
+        )
       if (res.exitCode != 0)
         sys.exit(res.exitCode)
     }
   }
+
+  /** Environment variables the extension reads to know how to start the plasmon server */
+  private def forcedEnvVars = Set(
+    "PLASMON_FORCED_COMMAND",
+    "PLASMON_FORCED_BINARY",
+    "PLASMON_FORCED_VERSION"
+  )
+
+  /** Environment variables telling the extension to start the plasmon server with the very plasmon
+    * launcher running this, rather than whatever 'plasmon' is in the PATH
+    */
+  private def selfEnv(): Map[String, String] =
+    BinaryName.pathOpt match {
+      case Some(binary) =>
+        Map("PLASMON_FORCED_BINARY" -> binary.toString)
+      case None =>
+        AutoServer.selfCommand() match {
+          case Some(command) =>
+            Map("PLASMON_FORCED_COMMAND" -> ujson.write(ujson.Arr(command.map(ujson.Str(_))*)))
+          case None =>
+            System.err.println(
+              "Warning: cannot work out how to start plasmon from here, " +
+                "the extension will use the plasmon from the PATH"
+            )
+            Map.empty
+        }
+    }
+
+  private def sha256(bytes: Array[Byte]): String =
+    MessageDigest.getInstance("SHA-256")
+      .digest(bytes)
+      .map(b => f"${b & 0xff}%02x")
+      .mkString
 
   // from https://github.com/VirtusLab/scala-cli/blob/b92d86a02e741a3cea9cc943f59712a5fb385617/modules/build/src/main/scala/scala/build/internal/Runner.scala#L175-L202
   private def endsWithCaseInsensitive(s: String, suffix: String): Boolean =
@@ -119,11 +187,4 @@ object Code extends caseapp.Command[CodeOptions] {
 
   private def extensionOrgName       = "alexarchambault.plasmon"
   private def metalsExtensionOrgName = "scalameta.metals"
-
-  private lazy val vsix =
-    os.temp(
-      os.read.bytes(os.resource / "plasmon/plasmon.vsix"),
-      prefix = "plasmon",
-      suffix = ".vsix"
-    )
 }

@@ -26,6 +26,9 @@
         "pattern": "\\Qplasmon/version.properties\\E"
       },
       {
+        "pattern": "\\Qplasmon/plasmon.vsix\\E"
+      },
+      {
         "pattern": "\\Qnative/x86_64/libswoval-files0.dylib\\E"
       }
     ]
