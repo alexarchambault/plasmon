@@ -10,6 +10,7 @@ object Plasmon extends CommandsEntryPoint {
     val all = Seq(
       Code,
       Command,
+      Nvim,
       Revert,
       Server,
       Setup,

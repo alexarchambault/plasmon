@@ -17,6 +17,29 @@ completions, diagnostics, etc. on its own. This plugin adds what Plasmon needs o
 - tells the server which file is being looked at (Plasmon's status and several commands rely on
   it), and a warning when another Plasmon server already runs in the same workspace.
 
+## Try it with `plasmon nvim`
+
+```
+plasmon nvim [directory] [nvim arguments…]
+```
+
+runs Neovim on the current directory (or the one passed), with this plugin set up to use the
+`plasmon` binary you ran. It doesn't touch your own Neovim set-up: Neovim's config, data, state
+and cache directories (the `XDG_*` variables) point to Plasmon's own directories (under
+`~/.local/share/plasmon/neovim` and `~/.cache/plasmon/neovim` on Linux). The Plasmon server
+gets your actual `XDG_*` directories back.
+
+- By default, Neovim runs with [LazyVim](https://www.lazyvim.org) (file explorer with
+  `<leader>e`, statusline with Plasmon's status, pickers, completion, …). Its plugins are
+  downloaded on the first run (that needs `git`), at the versions Plasmon was tested with.
+  `--lazyvim=false` runs Neovim with a minimal config instead, with this plugin alone.
+- Neovim itself is downloaded (the version Plasmon was tested with, cached by coursier).
+  `--neovim=system` uses the `nvim` on your `PATH` instead, `--neovim=<path>` a given
+  binary, and `--neovim=<version>` downloads that version.
+
+Programs started from that Neovim (`:terminal`, `git`, …) see Plasmon's `XDG_*` directories
+rather than yours.
+
 ## Install
 
 You need the `plasmon` launcher on your `PATH` (or pass its path, see below).

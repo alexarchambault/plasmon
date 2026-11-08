@@ -226,7 +226,7 @@ object AutoServer {
     while (!found && idx < args.length) {
       val arg = args(idx)
       if (arg == "-jar" && idx + 1 < args.length) {
-        prefix ++= Seq(arg, args(idx + 1))
+        prefix ++= Seq(arg, absolute(args(idx + 1)))
         idx += 2
         found = true
       }
@@ -234,7 +234,7 @@ object AutoServer {
         (arg == "-cp" || arg == "-classpath" || arg == "--class-path") && idx + 2 < args.length
       ) {
         // the class path, then the main class right after it
-        prefix ++= Seq(arg, args(idx + 1), args(idx + 2))
+        prefix ++= Seq(arg, absoluteClassPath(args(idx + 1)), args(idx + 2))
         idx += 3
         found = true
       }
@@ -263,8 +263,16 @@ object AutoServer {
     else if (!classPath.contains(File.pathSeparator) && classPath.endsWith(".jar"))
       // A launcher JAR: let its manifest say what to start, the class path we can see may well be
       // the launcher alone, with the actual one inside it
-      Some(Seq("-jar", classPath))
+      Some(Seq("-jar", absolute(classPath)))
     else
-      Some(Seq("-cp", classPath, "plasmon.Plasmon"))
+      Some(Seq("-cp", absoluteClassPath(classPath), "plasmon.Plasmon"))
   }
+
+  // The command we build may run in another directory than ours: no relative paths in it
+  private def absolute(path: String): String =
+    os.Path(path, os.pwd).toString
+  private def absoluteClassPath(classPath: String): String =
+    classPath.split(
+      File.pathSeparator
+    ).filter(_.nonEmpty).map(absolute).mkString(File.pathSeparator)
 }

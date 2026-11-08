@@ -365,6 +365,7 @@ object server extends ScalaModule with PlasmonPublishModule {
          |  def scalametaVersion = "${Deps.semanticDbScalac.dep.versionConstraint.asString}"
          |  def sbtBloopVersion = "${Versions.sbtBloop}"
          |  def defaultSbtVersion = "${Versions.sbt}"
+         |  def neovimVersion = "${neovim.nvimVersion}"
          |
          |  def disableScala2Pc = $disableScala2Pc
          |}
@@ -477,7 +478,26 @@ object server extends ScalaModule with PlasmonPublishModule {
       dir
     }
 
-    super.resources() ++ Seq(PathRef(vsixDir)) ++ settingsEditDir() ++ versionResourcesDir()
+    super.resources() ++ Seq(PathRef(vsixDir)) ++ settingsEditDir() ++ versionResourcesDir() ++
+      Seq(neovimResourcesDir())
+  }
+
+  /** The Neovim plugin and the configs `plasmon nvim` runs, under plasmon/neovim/, along with the
+    * list of their files (plasmon/neovim/files.txt)
+    */
+  def neovimResourcesDir = Task {
+    val dest = Task.dest / "resources" / "plasmon" / "neovim"
+    val files =
+      for {
+        (src, sub) <- neovim.pluginSources().map(_.path).flatMap { dir =>
+          os.walk(dir).filter(os.isFile).map(f => f -> (os.sub / dir.last / f.relativeTo(dir)))
+        } ++ neovim.configSources().map(_.path).map(f => f -> (os.sub / "config" / f.last))
+      } yield {
+        os.copy(src, dest / sub, createFolders = true)
+        sub.toString
+      }
+    os.write(dest / "files.txt", files.sorted.mkString("", "\n", "\n"))
+    PathRef(Task.dest / "resources")
   }
 
   trait PlasmonNativeImage extends ScalaModule with NativeImage with FormatNativeImageConf {
@@ -1473,6 +1493,12 @@ object extension extends Module {
   */
 object neovim extends Module {
   def nvimVersion = "0.12.6"
+
+  /** Directories of the plugin, bundled in the server (for `plasmon nvim`) */
+  def pluginSources = Task.Sources("plugin", "lua", "lsp", "doc")
+
+  /** Neovim configs `plasmon nvim` runs, bundled in the server */
+  def configSources = Task.Sources("dev/lazyvim.lua", "dev/init.lua", "dev/lazy-lock.json")
 
   private def nvimArchiveName: String = {
     val isArm = Option(System.getProperty("os.arch")).exists(arch =>

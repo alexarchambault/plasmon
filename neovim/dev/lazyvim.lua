@@ -1,15 +1,16 @@
--- LazyVim config to try the plugin, used by `./mill -i neovim.run <path>` (the default
--- `--config lazyvim`; `--config minimal` uses init.lua, next to this file).
+-- LazyVim config with the Plasmon plugin. Used by `plasmon nvim`, and by `./mill -i neovim.run <path>`
+-- (the default `--config lazyvim`; `--config minimal` uses init.lua, next to this file).
 --
 --   NVIM_APPNAME=plasmon-dev-lazyvim nvim -u neovim/dev/lazyvim.lua [file...]
 --
--- NVIM_APPNAME keeps LazyVim, its plugins and their state apart from the user's own Neovim set-up
--- (under ~/.local/share/plasmon-dev-lazyvim, ~/.local/state/plasmon-dev-lazyvim, …). Plugin
--- versions are pinned by lazy-lock.json, next to this file (`:Lazy update` updates it).
+-- Neither touches the user's own Neovim set-up: `plasmon nvim` points the XDG_* directories to
+-- Plasmon's own directories, `neovim.run` sets NVIM_APPNAME (LazyVim, its plugins and their state
+-- then go under ~/.local/share/plasmon-dev-lazyvim, ~/.local/state/plasmon-dev-lazyvim, …).
+-- Plugin versions are pinned by lazy-lock.json, next to this file (`:Lazy update` updates it).
 --
--- Loads the Plasmon plugin from this checkout. The server command comes from
--- PLASMON_NVIM_SERVER_CMD (JSON array, set by `neovim.run` to the server built from sources), else
--- `plasmon server` is used.
+-- Loads the Plasmon plugin from the parent directory of this file's directory. The server command
+-- comes from PLASMON_NVIM_SERVER_CMD (JSON array), else `plasmon server` is used, and
+-- PLASMON_NVIM_SERVER_ENV (JSON object) adds environment variables to it.
 
 local dev_dir = vim.fs.dirname(vim.fs.normalize(vim.fn.fnamemodify(debug.getinfo(1, "S").source:sub(2), ":p")))
 local plugin_dir = vim.fs.dirname(dev_dir)
@@ -61,6 +62,10 @@ require("lazy").setup({
         local server_cmd = vim.env.PLASMON_NVIM_SERVER_CMD
         if server_cmd and server_cmd ~= "" then
           opts.cmd = vim.json.decode(server_cmd)
+        end
+        local server_env = vim.env.PLASMON_NVIM_SERVER_ENV
+        if server_env and server_env ~= "" then
+          opts.cmd_env = vim.json.decode(server_env)
         end
         return opts
       end,
