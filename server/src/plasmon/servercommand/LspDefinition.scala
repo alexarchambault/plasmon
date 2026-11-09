@@ -22,6 +22,8 @@ final case class LspDefinition(
 
     val (path, uri) = FileArg.single(args.all, options.uri, server.workingDir)
 
+    ensureFileContent(server, path)
+
     if (options.auto)
       AutoLoad(server, indexer, pools, path, printLine(_, toStderr = true), options.quiet)
 

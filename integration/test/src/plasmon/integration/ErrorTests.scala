@@ -118,4 +118,29 @@ class ErrorTests extends PlasmonSuite {
           expect(!err.contains("\tat "))
       }
     }
+
+  for (mode <- cliOnlyModes)
+    test("language features on a missing file fail" + mode.testNameSuffix) {
+      withWorkspaceAndServer(mode)(files*) {
+        (workspace, _, osOpt, _) =>
+          // in no module either, so that the request handlers would only have answered nothing
+          val expectedErr = s"Error: ${workspace / "Missing.scala"}: no such file"
+          for (command <- Seq("hover", "definition")) {
+            val ex = intercept[os.SubprocessException] {
+              serverCommandOutputs(workspace, osOpt)(
+                "lsp",
+                command,
+                "Missing.scala",
+                "--line",
+                "0",
+                "--col",
+                "0"
+              )
+            }
+            expect(ex.result.exitCode == 1)
+            val err = ex.result.err.text()
+            expect(err.contains(expectedErr))
+          }
+      }
+    }
 }
