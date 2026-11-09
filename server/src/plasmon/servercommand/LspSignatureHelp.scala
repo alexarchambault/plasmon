@@ -2,7 +2,7 @@ package plasmon.servercommand
 
 import caseapp.core.RemainingArgs
 import org.eclipse.lsp4j as l
-import plasmon.{Logger, Server}
+import plasmon.Server
 import plasmon.handlers.SignatureHelp
 import plasmon.index.Indexer
 import plasmon.protocol.CommandClient
@@ -30,13 +30,7 @@ final case class LspSignatureHelp(
       new l.Position(options.line, options.col)
     )
 
-    // Out of the way of the JSON on stdout, but not lost
-    val loggerManager = Logger.Manager.create {
-      channel => msg =>
-        printLine(s"[${channel.label}] $msg", toStderr = options.json)
-    }
-
-    val res = handler.call(params, loggerManager.create("request", "Request")).get()
+    val res = handler.call(params, requestLogger(options.quiet)).get()
 
     if (options.json)
       printJson(res)

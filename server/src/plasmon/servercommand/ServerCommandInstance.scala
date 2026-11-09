@@ -6,6 +6,7 @@ import caseapp.core.help.Help
 import caseapp.core.parser.Parser
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromString}
 import com.google.gson.Gson
+import plasmon.Logger
 import plasmon.protocol.CommandClient
 import plasmon.protocol.CommandClient.ops.*
 
@@ -34,6 +35,19 @@ abstract class ServerCommandInstance[T](client: CommandClient)(implicit
     */
   protected def printJson(value: Object): Unit =
     printLine(new Gson().toJson(value))
+
+  /** A logger for the LSP request a command runs on behalf of its user.
+    *
+    * Its logs go to stderr, out of the way of the result on stdout (plain text or JSON), and
+    * nowhere at all with `quiet`.
+    */
+  protected def requestLogger(quiet: Boolean): Logger =
+    Logger.Manager
+      .create { channel => msg =>
+        if (!quiet)
+          printLine(s"[${channel.label}] $msg", toStderr = true)
+      }
+      .create("request", "Request")
 }
 
 object ServerCommandInstance {

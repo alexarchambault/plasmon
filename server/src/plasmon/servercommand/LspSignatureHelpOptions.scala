@@ -17,7 +17,7 @@ final case class LspSignatureHelpOptions(
     col: Int,
   @HelpMessage("Load whatever the file needs before answering: start a server if none is running, then load a build tool and a module for the file if it has none")
     auto: Boolean = false,
-  @HelpMessage("Don't print what is being loaded, nor the output of a build tool being started")
+  @HelpMessage("Don't print what is being loaded, nor the output of a build tool being started, nor the logs of the request (printed on stderr otherwise)")
   @Name("q")
     quiet: Boolean = false,
   @HelpMessage("Print the raw LSP response as JSON")
