@@ -123,7 +123,8 @@ object ProjectOps {
       .filter(tool => !alreadyAdded.contains(tool.buildTool))
   }
 
-  /** The modules a file belongs to: those not loaded yet, best candidate first, then the loaded ones.
+  /** The modules a file belongs to: those not loaded yet, best candidate first, then the loaded
+    * ones.
     */
   def listModules(
     file: os.Path,
@@ -131,16 +132,13 @@ object ProjectOps {
   ): Seq[ModuleInfo] = {
     val loadedTargetIds = server.bspData.allTargetData
       .flatMap { targetData =>
-        scribe.info(s"targetData.sourceBuildTargets($file)=" + pprint.apply(
-          targetData.sourceBuildTargets(file)
-        ))
         targetData.sourceBuildTargets(file)
           .toSeq
           .flatMap(_.toVector.sortBy(_.getUri))
       }
       .toSet
     server.bspServers.list.flatMap(_._2).flatMap { server0 =>
-      scribe.info(s"server0.name=" + pprint.apply(server0.name))
+      scribe.debug(s"Looking for the modules of $file in ${server0.name}")
       val workspaceBuildTargetsRes = server0.conn.workspaceBuildTargets().get()
       val targetMap = workspaceBuildTargetsRes.getTargets.asScala.map(t => t.getId -> t).toMap
       val targets =
@@ -151,7 +149,6 @@ object ProjectOps {
               new b.SourcesParams(workspaceBuildTargetsRes.getTargets.asScala.map(_.getId).asJava)
             )
             .get()
-          scribe.info("sourcesRes=" + pprint.apply(sourcesRes))
           sourcesRes
             .getItems
             .asScala
@@ -226,7 +223,7 @@ object ProjectOps {
                 }
             }
 
-          scribe.info(s"Looking for ${file.toNIO.toUri.toASCIIString} in $wrappedSourcesRes")
+          scribe.debug(s"Looking for ${file.toNIO.toUri.toASCIIString} in $wrappedSourcesRes")
 
           wrappedSourcesRes.getItems.asScala.iterator
             .filter(_.getSources.asScala.exists(_.getUri == file.toNIO.toUri.toASCIIString))
