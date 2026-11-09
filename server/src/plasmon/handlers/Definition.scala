@@ -46,9 +46,11 @@ object Definition {
     val uri = params.getTextDocument.getUri
     if (
       uri.endsWith(".scala") || uri.endsWith(".sc") || uri.endsWith(".sbt") || uri.endsWith(".mill")
-    ) {
-      val f = presentationCompilers.definition(params, token)
-      f.onComplete {
+    )
+      // andThen rather than onComplete: callers get the result once it's logged, so that what's
+      // logged on their behalf doesn't come after they're done (and their client gone, for a CLI
+      // command)
+      presentationCompilers.definition(params, token).andThen {
         case Success(locations) =>
           if (locations.isEmpty)
             logger.log("No location found via presentation compiler")
@@ -62,8 +64,6 @@ object Definition {
           }
         case Failure(_) =>
       }(using dummyEc)
-      f
-    }
     else {
       logger.log("Not a Scala file")
       Future.successful(Nil)
