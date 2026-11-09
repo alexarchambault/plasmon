@@ -39,6 +39,7 @@ object Versions {
 
   object Test {
     def mill            = "1.3.0"
+    def codeServer      = "4.141.0"
     def millwCommit     = "1.3.0"
     def sbt             = "1.12.4"
     def sbtExtrasCommit = "c28642dc97914b82f5e5a1cdfd39710c1c5e95ce"
@@ -1048,9 +1049,10 @@ object integration extends ScalaModule {
 object extension extends Module {
   def packageJson = Task.Sources(os.sub / "package.json")
   def jsSources   = Task.Sources(os.sub / "src")
-  // Other files that npm or vsce read when building the VSIX
+  // Other files that pnpm or vsce read when building the VSIX
   def buildFiles = Task.Sources(
-    os.sub / "package-lock.json",
+    os.sub / "pnpm-lock.yaml",
+    os.sub / "pnpm-workspace.yaml",
     os.sub / "tsconfig.json",
     os.sub / ".vscodeignore"
   )
@@ -1084,8 +1086,26 @@ object extension extends Module {
       matches.find(_ => true)
     }
 
-  private lazy val npm =
-    if (Properties.isWin) findInPath("npm").getOrElse("npm") else "npm"
+  /** Command running pnpm
+    *
+    * pnpm from PATH if it's there, else the version pinned by `packageManager` in
+    * extension/package.json, via npx (that only needs Node, which CI runners have by default)
+    */
+  lazy val pnpm: Seq[String] =
+    findInPath("pnpm") match {
+      case Some(path) => Seq(path)
+      case None =>
+        val packageManager = BuildCtx.withFilesystemCheckerDisabled {
+          ujson.read(os.read(BuildCtx.workspaceRoot / "extension/package.json"))
+            .obj.get("packageManager").map(_.str)
+        }
+        val spec = packageManager
+          .map(_.takeWhile(_ != '+')) // strip the optional "+sha512.…" suffix
+          .filter(_.startsWith("pnpm@"))
+          .getOrElse("pnpm")
+        val npx = findInPath("npx").getOrElse("npx")
+        Seq(npx, "--yes", spec)
+    }
 
   def sources = Task {
     packageJson() ++ jsSources() ++ buildFiles()
@@ -1100,9 +1120,9 @@ object extension extends Module {
   def vsix = Task {
     sources()
     val version0 = version()
-    os.proc(npm, "install")
+    os.proc(pnpm, "install", "--frozen-lockfile")
       .call(cwd = BuildCtx.workspaceRoot / "extension", stdin = os.Inherit, stdout = os.Inherit)
-    os.proc(npm, "run", "package")
+    os.proc(pnpm, "run", "package")
       .call(cwd = BuildCtx.workspaceRoot / "extension", stdin = os.Inherit, stdout = os.Inherit)
     val dest = Task.dest / s"plasmon-$version0.vsix"
     BuildCtx.withFilesystemCheckerDisabled {
@@ -1342,6 +1362,101 @@ object extension extends Module {
         trustedOriginArgs ++
         Seq(folder0.toString)
       command.map(shellQuote).mkString(" ")
+    }
+  }
+
+  /** End-to-end tests of the extension and server, driving code-server with Playwright.
+    *
+    *   - `./mill extension.e2e.test [playwright test args]` runs the specs under
+    *     `extension/e2e/tests`
+    *   - `./mill extension.e2e.serve [workspace]` starts code-server and a headless Chromium on it,
+    *     for `node extension/e2e/dev/drive.ts` to drive interactively (see
+    *     `extension/e2e/README.md`)
+    *
+    * Both use the JVM launcher of the server (`server.launcher`), and the extension from `vsix`.
+    */
+  object e2e extends Module {
+    def pnpmSources = Task.Sources(
+      os.sub / "package.json",
+      os.sub / "pnpm-lock.yaml",
+      os.sub / "pnpm-workspace.yaml"
+    )
+
+    // node_modules and the Chromium of Playwright
+    def pnpmInstall = Task {
+      pnpmSources()
+      BuildCtx.withFilesystemCheckerDisabled {
+        os.proc(pnpm, "install", "--frozen-lockfile")
+          .call(cwd = moduleDir, stdin = os.Inherit, stdout = os.Inherit)
+        os.proc(pnpm, "exec", "playwright", "install", "chromium")
+          .call(cwd = moduleDir, stdin = os.Inherit, stdout = os.Inherit)
+      }
+      ()
+    }
+
+    // code-server, from its GitHub releases
+    def codeServer = Task {
+      val platform = (Properties.isMac, System.getProperty("os.arch")) match {
+        case (true, "aarch64")           => "macos-arm64"
+        case (true, _)                   => "macos-amd64"
+        case (false, "aarch64")          => "linux-arm64"
+        case (false, "amd64" | "x86_64") => "linux-amd64"
+        case (_, arch) =>
+          sys.error(s"code-server isn't available for ${Properties.osName} / $arch")
+      }
+      val ver  = Versions.Test.codeServer
+      val name = s"code-server-$ver-$platform"
+      val url  = s"https://github.com/coder/code-server/releases/download/v$ver/$name.tar.gz"
+      val dir = coursier.cache.ArchiveCache()
+        .get(coursier.util.Artifact(url))
+        .unsafeRun()(scala.concurrent.ExecutionContext.global)
+        .fold(err => throw new Exception(err), os.Path(_))
+      (dir / name / "bin" / "code-server").toString
+    }
+
+    def env = Task {
+      Map(
+        "PLASMON_E2E_CODE_SERVER"  -> codeServer(),
+        "PLASMON_E2E_VSIX"         -> vsix().path.toString,
+        "PLASMON_E2E_LAUNCHER"     -> server.launcher().path.toString,
+        "PLASMON_E2E_MILL_VERSION" -> Versions.Test.mill
+      )
+    }
+
+    // The launcher runs the server with the java found in PATH / JAVA_HOME,
+    // use the JVM running Mill if there's none
+    private def javaEnv(): Map[String, String] =
+      if (findInPath("java").nonEmpty) Map.empty
+      else {
+        val javaHome = sys.props("java.home")
+        Map(
+          "JAVA_HOME" -> javaHome,
+          "PATH"      -> s"$javaHome${File.separator}bin${File.pathSeparator}${sys.env("PATH")}"
+        )
+      }
+
+    def test(args: String*) = Task.Command(exclusive = true) {
+      pnpmInstall()
+      os.proc(pnpm, "exec", "playwright", "test", args)
+        .call(
+          cwd = moduleDir,
+          env = env() ++ javaEnv(),
+          stdin = os.InheritRaw,
+          stdout = os.InheritRaw
+        )
+      ()
+    }
+
+    def serve(args: String*) = Task.Command(exclusive = true) {
+      pnpmInstall()
+      os.proc("node", "dev/serve.ts", args)
+        .call(
+          cwd = moduleDir,
+          env = env() ++ javaEnv(),
+          stdin = os.InheritRaw,
+          stdout = os.InheritRaw
+        )
+      ()
     }
   }
 }

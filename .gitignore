@@ -4,3 +4,4 @@ out/
 .bloop/
 .scala-build/
 /neovim/doc/tags
+.pnpm-store/

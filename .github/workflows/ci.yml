@@ -151,6 +151,40 @@ jobs:
     - name: Plugin tests against the server
       run: ./mill -i neovim.integrationTest
 
+  vscode-e2e:
+    needs: tags
+    # See the note on the same condition in the `test` job.
+    if: ${{ !cancelled() && needs.tags.result != 'failure' }}
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        fetch-depth: 0
+        submodules: true
+    - uses: coursier/cache-action@v9
+      with:
+        disableFallback: true
+    - uses: coursier/setup-action@v3
+      with:
+        jvm: 17
+    - uses: actions/setup-node@v7
+      with:
+        node-version: 24
+    - uses: pnpm/action-setup@v6
+      with:
+        package_json_file: extension/package.json
+    - name: Install Playwright system dependencies
+      run: pnpm dlx playwright@1.64.1 install-deps chromium
+    - name: Test
+      run: ./mill -i extension.e2e.test
+    - uses: actions/upload-artifact@v7
+      if: failure()
+      with:
+        name: vscode-e2e-results
+        path: |
+          extension/e2e/test-results
+          extension/e2e/playwright-report
+
   format:
     needs: tags
     # See the note on the same condition in the `test` job.
@@ -230,7 +264,7 @@ jobs:
       if: runner.os == 'Windows'
       run: ./generate-native-image.bat
     - name: Copy artifacts
-      run: ./mill ci.copyLauncher --directory artifacts/
+      run: ./mill -i ci.copyLauncher --directory artifacts/
     - uses: actions/attest-build-provenance@v4
       if: startsWith(github.ref, 'refs/tags/v')
       with:
@@ -286,7 +320,7 @@ jobs:
     - name: Generate native image
       run: jps -ml; ./generate-native-image.sh
     - name: Copy artifacts
-      run: ./mill ci.copyLauncher --directory artifacts/
+      run: ./mill -i ci.copyLauncher --directory artifacts/
     - uses: actions/attest-build-provenance@v4
       if: startsWith(github.ref, 'refs/tags/v')
       with:
