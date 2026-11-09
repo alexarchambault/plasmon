@@ -11,7 +11,13 @@ import java.util.concurrent.{CompletableFuture, ExecutorService}
 
 import scala.util.control.NonFatal
 
+/** Runs the commands sent over one command connection, printing their output to [[client]].
+  *
+  * One instance per connection: commands get the client of the connection that sent them, rather
+  * than that of whichever connection came last.
+  */
 class CommandServerImpl(
+  client: ConnectionCommandClient,
   remoteCommands: CommandClient => Seq[ServerCommandInstance[?]],
   pool: ExecutorService
 ) extends CommandServer {
@@ -22,7 +28,10 @@ class CommandServerImpl(
         val name = Option(params).flatMap(p => Option(p.getName)).map(_.toList).getOrElse(Nil)
         scribe.info(s"Run command ${name.mkString(" ")}")
         val res = new protocol.CommandResult
-        try
+        try {
+          // Queued behind other commands while its client went away - nobody's waiting for it
+          if (client.isClosed)
+            throw new ConnectionCommandClient.ClientGoneException
           // The client parsed this out of the very same command list, so a name we don't know
           // means the two sides disagree on what commands there are - a client from another
           // version, most likely
@@ -35,9 +44,13 @@ class CommandServerImpl(
               client.printLine(message, toStderr = true)
               res.setExitCode(1)
           }
+        }
         catch {
           case e: ServerCommandInstance.Exit =>
             res.setExitCode(e.code)
+          case _: ConnectionCommandClient.ClientGoneException =>
+            scribe.info(s"Client of command ${name.mkString(" ")} went away, abandoning it")
+            res.setExitCode(1)
           case e: Throwable =>
             scribe.warn(s"Caught exception when running command ${name.mkString(" ")}", e)
             val sw = new StringWriter

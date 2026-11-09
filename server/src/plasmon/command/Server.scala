@@ -18,7 +18,6 @@ import plasmon.jsonrpc.{
 }
 import plasmon.languageclient.PlasmonLanguageClient
 import plasmon.pc.Scala2PresentationCompilerHandler
-import plasmon.protocol.{CommandClient, CommandServer}
 import plasmon.servercommand.*
 import plasmon.util.{ThreadUtil, TimerThreadsHack}
 import plasmon.watch.WatchEvent
@@ -33,7 +32,6 @@ import java.util.{Locale, Map as JMap}
 import java.util.concurrent.{
   CompletableFuture,
   CountDownLatch,
-  ExecutorService,
   ScheduledFuture
 }
 
@@ -558,12 +556,6 @@ object Server extends caseapp.Command[ServerOptions] {
         server.loggerManager.create("lsp-requests", "Requests")
       )
 
-      def commandServer(pool: ExecutorService): CommandServer =
-        new CommandServerImpl(
-          client => remoteCommands.map(_.instance(server, indexer, client, lspServer, pools)),
-          pool
-        )
-
       val commandSocketPath =
         options.socket.filter(_.trim.nonEmpty)
           .map(os.Path(_, os.pwd))
@@ -590,45 +582,11 @@ object Server extends caseapp.Command[ServerOptions] {
         setDaemon(true)
         override def run(): Unit =
           try
-            ThreadUtil.withFixedThreadPool("plasmon-commands-jsonrpc", 4) { pool =>
-              ThreadUtil.withFixedThreadPool("plasmon-commands", 4) { runCommandPool =>
-
-                val commandServer0 = commandServer(runCommandPool)
-
-                while (true) {
-                  val clientSocketChannel = commandServerSocketChannel.accept()
-                  val clientSocket        = libdaemonjvm.Util.socketFromChannel(clientSocketChannel)
-
-                  val (input, output) =
-                    if (options.logJsonrpcInput.getOrElse(false))
-                      DebugInput.debug(
-                        clientSocket.getInputStream,
-                        clientSocket.getOutputStream,
-                        (line, isOut) =>
-                          scribe.info(s"Command server ${if (isOut) ">" else "<"} $line")
-                      )
-                    else
-                      (clientSocket.getInputStream, clientSocket.getOutputStream)
-
-                  val launcher = new Launcher.Builder[CommandClient]()
-                    .setExecutorService(pool)
-                    .setInput(input)
-                    .setOutput(output)
-                    .setRemoteInterface(classOf[CommandClient])
-                    .setLocalService(commandServer0)
-                    .setExceptionHandler { t =>
-                      scribe.info("Error during command processing", t)
-                      l.jsonrpc.RemoteEndpoint.DEFAULT_EXCEPTION_HANDLER.apply(t)
-                    }
-                    .create()
-
-                  val remoteClient = launcher.getRemoteProxy
-                  commandServer0.setClient(remoteClient)
-
-                  launcher.startListening()
-                }
-              }
-            }
+            CommandSocketServer.run(
+              commandServerSocketChannel,
+              client => remoteCommands.map(_.instance(server, indexer, client, lspServer, pools)),
+              logJsonrpc = options.logJsonrpcInput.getOrElse(false)
+            )
           catch {
             case _: ClosedByInterruptException =>
               scribe.info("Command server thread exiting on interruption")
