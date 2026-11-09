@@ -768,16 +768,15 @@ class IndexerActor(
     )
 
     targetData.addWorkspaceBuildTargets(targets0)
-    targetData.addScalacOptions(
-      postProcessScalacOptionResult(
-        maybeCached("buildTargetScalacOptions") {
-          buildServer.buildTargetScalacOptions(new b.ScalacOptionsParams(targetList)).get()
-        },
-        jdkCp,
-        millHack,
-        info.workspace
-      )
+    val scalacOptionsRes = postProcessScalacOptionResult(
+      maybeCached("buildTargetScalacOptions") {
+        buildServer.buildTargetScalacOptions(new b.ScalacOptionsParams(targetList)).get()
+      },
+      jdkCp,
+      millHack,
+      info.workspace
     )
+    targetData.addScalacOptions(scalacOptionsRes)
     // sbt is a pile of … and just doesn't do anything when sent a request it doesn't support
     // it just stays idle and do nothing, and everything's stuck
     if (info.id != "sbt")
@@ -909,11 +908,14 @@ class IndexerActor(
     }
       targetData.addSourceItem(sourceItem.getUri.osPathFromUri, item.getTarget)
 
-    val depSourcesRes = maybeCached("buildTargetDependencySources") {
-      buildServer
-        .buildTargetDependencySources(new b.DependencySourcesParams(targetList))
-        .get()
-    }
+    val depSourcesRes = postProcessDependencySourcesResult(
+      maybeCached("buildTargetDependencySources") {
+        buildServer
+          .buildTargetDependencySources(new b.DependencySourcesParams(targetList))
+          .get()
+      },
+      scalacOptionsRes.getItems.asScala.map(_.getTarget).toSet
+    )
 
     (workspaceBuildTargetsResp, targets0, sourcesRes, depSourcesRes, wrappedSourcesRes)
   }
@@ -1210,6 +1212,32 @@ class IndexerActor(
   private lazy val scalaLibraryJar =
     jarOf("org.scala-lang", "scala-library", Properties.versionNumberString)
 
+  // Sources of scalaLibraryJar, None if they can't be fetched
+  private lazy val scalaLibrarySourcesJar: Option[String] =
+    try {
+      val files = coursierapi.Fetch.create()
+        .addDependencies(
+          coursierapi.Dependency
+            .of("org.scala-lang", "scala-library", Properties.versionNumberString)
+            .withTransitive(false)
+        )
+        .withClassifiers(Set("sources").asJava)
+        .fetch()
+        .asScala
+        .toList
+      files match {
+        case List(file) => Some(file.toPath.toUri.toASCIIString)
+        case _ =>
+          scribe.warn(s"Expected one scala-library sources JAR, got $files")
+          None
+      }
+    }
+    catch {
+      case NonFatal(e) =>
+        scribe.warn("Could not fetch scala-library sources", e)
+        None
+    }
+
   private def classPathMillHack(
     classDir: String,
     classPath: List[String],
@@ -1288,6 +1316,39 @@ class IndexerActor(
     }
     res
   }
+
+  /** Adds the sources of the scala-library the presentation compiler uses, after the build's own
+    *
+    * postProcessScalacOptionResult swaps the scala-library JAR of Scala targets for the one of the
+    * Scala version Plasmon runs on (and drops scala3-library_3), so the presentation compiler
+    * resolves standard library symbols from that JAR. Some of them don't exist in the build's
+    * scala-library, like the Char / Int extensions of Scala 3.8+: their definitions can only be
+    * found in the sources of the newer one.
+    *
+    * These sources come last, so that definitions found in the build's own scala-library still
+    * point there (when the same file is found in several source JARs, the first one wins, see
+    * PatchedSymbolIndex). Replacing the build's sources isn't an option: Scalameta can't parse many
+    * files of recent scala-library sources (capture checking syntax), so their members would lose
+    * their definitions and Scaladoc.
+    */
+  private def postProcessDependencySourcesResult(
+    res: b.DependencySourcesResult,
+    scalaTargets: Set[b.BuildTargetIdentifier]
+  ): b.DependencySourcesResult = {
+    for {
+      item <- res.getItems.asScala.toList
+      if scalaTargets.contains(item.getTarget)
+      sources <- Option(item.getSources).map(_.asScala.toList)
+      if sources.exists(uri => isSubstitutableScalaLibrarySources(uri.osPathFromUri.last))
+      pcSources <- scalaLibrarySourcesJar
+      if !sources.contains(pcSources)
+    }
+      item.setSources((sources :+ pcSources).asJava)
+    res
+  }
+
+  private def isSubstitutableScalaLibrarySources(fileName: String): Boolean =
+    fileName.startsWith("scala-library-") && fileName.endsWith("-sources.jar")
 
   private def postProcessJavacOptionResult(
     res: b.JavacOptionsResult,

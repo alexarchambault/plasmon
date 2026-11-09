@@ -12,6 +12,11 @@ class DependencyDefinitionTests extends PlasmonSuite {
       inlineAccessorsTest(mode)
     }
 
+  for (mode <- modes)
+    test("standard library sources of an older Scala version" + mode.testNameSuffix) {
+      olderScalaStdLibTest(mode)
+    }
+
   // Private and qualified-private members used from inline methods are replaced by synthetic
   // accessors (inline$…) in the typed trees. Go-to-definition and hover should point at the
   // members themselves. Mill's mill.api.Task, browsed from a project depending on Mill, is full
@@ -79,6 +84,78 @@ class DependencyDefinitionTests extends PlasmonSuite {
         check(3, "private[foo] def other", "other")
         // accessor taking the receiver as first parameter
         check(4, "private[foo] def hidden", "hidden")
+    }
+  }
+
+  // The presentation compiler gets the scala-library of the Scala version Plasmon runs on (it
+  // replaces the one of the build). Members that only exist there, like the Char extensions of
+  // Scala 3.8+, are looked up in its sources. The others still point to the sources of the
+  // build's own scala-library.
+  private def olderScalaStdLibTest(mode: TestMode): Unit = {
+    val scalaVersion = "3.3.8"
+    val buildTool = SingleModuleBuildTool.Replayed(
+      SingleModuleBuildTool.ScalaCli(),
+      os.sub / "dependency-definition-tests/older-scala-stdlib/scala-cli" /
+        s"scala-$scalaVersion" / s"jvm-${jvm.label}"
+    )
+    val source =
+      s"""//> using scala $scalaVersion
+         |//> using jvm ${jvm.value}
+         |
+         |object Foo {
+         |  val letter = 'a'.isLet<1>ter
+         |  val empty  = Vector.em<2>pty[Int]
+         |}
+         |""".stripMargin
+
+    val (sourceFile, files) = buildTool.singleFile(os.sub / "Foo.scala", source)
+
+    withWorkspaceServerPositions(
+      mode = mode,
+      extraServerOpts = Seq("--jvm", jvm.value),
+      timeout = Some(buildTool.defaultTimeout)
+    )(files*) {
+      (workspace, driver, positions, osOpt) =>
+
+        buildTool.setup(workspace, driver, osOpt, compiles = false)
+
+        val dependencies = ".plasmon/readonly/dependencies"
+
+        val isLetterRes =
+          goToDef(driver, workspace, workspace / sourceFile, positions.lspPos(sourceFile, 1))
+        expect(
+          isLetterRes.path ==
+            s"$dependencies/scala-library-${IntegrationConstants.scala3}-sources.jar/scala/Char.scala"
+        )
+        expect(isLetterRes.content == "isLetter")
+
+        val emptyRes =
+          goToDef(driver, workspace, workspace / sourceFile, positions.lspPos(sourceFile, 2))
+        expect(emptyRes.path.startsWith(s"$dependencies/scala-library-2.13."))
+        expect(emptyRes.path.endsWith("-sources.jar/scala/collection/immutable/Vector.scala"))
+        expect(emptyRes.content == "empty")
+
+        // Scaladoc comes along
+        val emptyHover =
+          hoverMarkdown(driver, workspace / sourceFile, positions.lspPos(sourceFile, 2))
+        expect(emptyHover.contains("empty"))
+        expect(emptyHover.contains("***"))
+
+        // Definitions from within those sources work too
+        val vectorFile  = os.SubPath(emptyRes.path)
+        val vectorLines = os.read.lines(workspace / vectorFile)
+        val emptyLine   = vectorLines(emptyRes.line)
+        val vector0Col  = emptyLine.indexOf("Vector0")
+        expect(vector0Col >= 0)
+        val vector0Res = goToDef(
+          driver,
+          workspace,
+          workspace / vectorFile,
+          new org.eclipse.lsp4j.Position(emptyRes.line, vector0Col + 2)
+        )
+        expect(vector0Res.path == emptyRes.path)
+        expect(vector0Res.content == "Vector0")
+        expect(vectorLines(vector0Res.line).contains("object Vector0"))
     }
   }
 }
