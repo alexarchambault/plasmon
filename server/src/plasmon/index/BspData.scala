@@ -12,7 +12,7 @@ import plasmon.bsp.{
   PlasmonBuildClientImpl,
   PlasmonBuildServer
 }
-import plasmon.ide.{Directories, JavaTarget, ScalaTarget}
+import plasmon.ide.{Directories, JavaTarget, JvmTarget, ScalaTarget}
 import plasmon.render.JsonCodecs.given
 
 import java.util.concurrent.ConcurrentHashMap
@@ -124,6 +124,34 @@ final class BspData(
     id: b.BuildTargetIdentifier
   ): Iterable[b.BuildTargetIdentifier] =
     buildTargetTransitiveDependencies(List(id))
+
+  /** Class directories of a target and of its transitive workspace dependencies
+    *
+    * These are the workspace part of a target's compilation classpath, that [[targetJarClasspath]]
+    * leaves out. They're only populated once the corresponding targets have been compiled.
+    */
+  def targetTransitiveClassDirectories(id: b.BuildTargetIdentifier): List[os.Path] =
+    buildTargetTransitiveDependencies(id)
+      .iterator
+      .flatMap(depId => jvmTargets(depId).map(_.classDirectory))
+      .toList
+      .distinct
+
+  /** Source items (source directories or files) of a target and of its transitive workspace
+    * dependencies, those of the target itself first
+    */
+  def targetTransitiveSourceItems(id: b.BuildTargetIdentifier): List[os.Path] = {
+    val dependencies = buildTargetTransitiveDependencies(id).toSet
+    val items        = data.iterator.flatMap(_.sourceItemsToBuildTarget.iterator).toList
+    val own          = items.collect { case (item, targets) if targets.contains(id) => item }
+    val fromDependencies = items.collect {
+      case (item, targets) if targets.asScala.exists(dependencies) => item
+    }
+    (own ++ fromDependencies).distinct
+  }
+
+  private def jvmTargets(id: b.BuildTargetIdentifier): List[JvmTarget] =
+    List(scalaTarget(id), javaTarget(id)).flatten
 
   private def buildTargetTransitiveDependencies(
     ids: List[b.BuildTargetIdentifier]

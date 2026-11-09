@@ -1,0 +1,11 @@
+[
+  {
+    "path": "paths/src/paths/Util.java",
+    "line": 2,
+    "colRange": [
+      19,
+      23
+    ],
+    "content": "Util"
+  }
+]

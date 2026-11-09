@@ -1,0 +1,11 @@
+[
+  {
+    "path": "launcher/src/launcher/Download.java",
+    "line": 3,
+    "colRange": [
+      16,
+      28
+    ],
+    "content": "getLocalURLs"
+  }
+]
