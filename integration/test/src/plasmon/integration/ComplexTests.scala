@@ -119,6 +119,11 @@ class ComplexTests extends PlasmonSuite {
       adtInOtherModuleModuleLoadTest()
     }
 
+  for (mode <- cliOnlyModes)
+    test("module load of a file whose module is loaded" + mode.testNameSuffix) {
+      moduleAlreadyLoadedTest()
+    }
+
   private def adtMainFile = os.sub / "bar/src/bar/Test.scala"
 
   private def adtInOtherModuleFiles(scalaVersion: Labelled[String]): Seq[(os.SubPath, String)] = {
@@ -258,6 +263,62 @@ class ComplexTests extends PlasmonSuite {
             hover,
             osOpt
           )
+        }
+    }
+  }
+
+  /** `module list` / `module load` on files whose modules are already loaded.
+    *
+    * Both used to leave loaded modules out entirely: `module list` came back empty, and `module
+    * load` failed with "No module found" - or, for a file in several cross versions, loaded another
+    * one, which then served the file instead of the one already loaded.
+    */
+  private def moduleAlreadyLoadedTest(): Unit = {
+    val scalaVersion = Labelled("3", IntegrationConstants.scala3)
+    val jvm          = jvmValues.head
+    val mainFile     = adtMainFile
+    val otherFile    = os.sub / "foo/src/foo/Thing.scala"
+
+    withWorkspaceServerPositions(
+      mode = TestMode.Cli,
+      extraServerOpts = Seq("--jvm", jvm.value),
+      timeout = Some(SingleModuleBuildTool.Mill.defaultTimeout)
+    )(adtInOtherModuleFiles(scalaVersion)*) {
+      (workspace, driver, _, _) =>
+        val driver0 = driver match {
+          case cli: ServerDriver.Cli => cli
+          case other                 => sys.error(s"Expected a CLI driver, got $other")
+        }
+        BspDataFixture.install(workspace, adtRecording(scalaVersion, jvm).key)
+        driver.loadBuildTool(
+          BspDataFixture.replayBuildToolId,
+          BspDataFixture.replayBuildToolId,
+          workspace / mainFile
+        )
+
+        def modules(file: os.SubPath): Seq[(String, Boolean)] =
+          driver0.listModulesOf(workspace / file).map { obj =>
+            (
+              obj.get("uri").getAsString.stripSuffix("/").split('/').last,
+              obj.get("alreadyLoaded").getAsBoolean
+            )
+          }
+
+        expect(modules(mainFile) == Seq(("bar", false)))
+
+        val firstLoad = driver0.loadModuleOfOutput(workspace / mainFile)
+        expect(firstLoad.contains("Loaded module"))
+
+        // Listed, flagged as loaded - not left out. foo too: loading bar loads what it depends on
+        expect(modules(mainFile) == Seq(("bar", true)))
+        expect(modules(otherFile) == Seq(("foo", true)))
+
+        // Said to be loaded already, rather than failing, or loading something else - whether
+        // loaded by hand, or along with a module depending on it
+        for (file <- Seq(mainFile, otherFile)) {
+          val output = driver0.loadModuleOfOutput(workspace / file)
+          expect(output.contains("already loaded"))
+          expect(!output.contains("Loaded module"))
         }
     }
   }

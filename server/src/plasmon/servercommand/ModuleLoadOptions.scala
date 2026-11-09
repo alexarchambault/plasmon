@@ -9,7 +9,7 @@ import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 // format: off
 @HelpMessage("Load the module a source file belongs to")
 final case class ModuleLoadOptions(
-  @HelpMessage("Load every module the file belongs to, rather than the recommended one only")
+  @HelpMessage("Load every module the file belongs to, rather than the recommended one only (and only if none is loaded yet)")
     all: Boolean = false,
   @HelpMessage("Compile the loaded modules (and the modules they depend on) before returning, so that hovers and definitions can resolve what is defined in other files and modules")
     compile: Boolean = true,

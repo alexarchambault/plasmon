@@ -145,7 +145,7 @@ object AutoLoad {
     if (hasModule(server, file))
       out.progress(s"Module already loaded for $file")
     else
-      ProjectOps.listModules(file, server) match {
+      ProjectOps.listModules(file, server).filter(!_.alreadyLoaded) match {
         case Seq() =>
           out.error(s"No module found for $file")
           ServerCommandInstance.exit(1)

@@ -117,7 +117,8 @@ object ProjectOps {
       .filter(tool => !alreadyAdded.contains(tool.buildTool))
   }
 
-  /** The not-yet-loaded modules a file belongs to, best candidate first. */
+  /** The modules a file belongs to: those not loaded yet, best candidate first, then the loaded ones.
+    */
   def listModules(
     file: os.Path,
     server: Server
@@ -228,13 +229,7 @@ object ProjectOps {
         }
         else targets
       val retainedTargets = {
-        val l = targets0
-          .collect {
-            case id if !loadedTargetIds.contains(id) =>
-              id
-          }
-          .toVector
-        val l0 = l.sortBy { id =>
+        val l0 = targets0.distinct.toVector.sortBy { id =>
           val scalaTargetOpt = targetMap.get(id)
             .orElse {
               server.bspData.targetData(server0.info).flatMap(_.buildTargetInfo.get(id))
@@ -262,8 +257,12 @@ object ProjectOps {
             (targetId = id, recommended = recommended)
         }
       }
-      retainedTargets.map {
+      // The ones that could still be loaded first, then those already loaded - which editors list
+      // too, to offer unloading them, and which `module load` reports rather than loading another
+      // module for the same file (another cross version, say) over them
+      retainedTargets.sortBy(t => loadedTargetIds.contains(t.targetId)).map {
         case (id, recommended) =>
+          val alreadyLoaded = loadedTargetIds.contains(id)
           val targetOpt = targetMap.get(id).orElse {
             server.bspData.targetData(server0.info).flatMap(_.buildTargetInfo.get(id))
           }
@@ -291,9 +290,12 @@ object ProjectOps {
             server = server0.name,
             uri = id.getUri,
             label = (if (supported) if (recommended) "$(tag) " else "" else "$(warning) ") + name,
-            detail = if (supported) "Load module" else "Unsupported Scala version",
+            detail =
+              if (alreadyLoaded) "Unload module"
+              else if (supported) "Load module"
+              else "Unsupported Scala version",
             description = (Seq(server0.enhancedName) ++ commentOpt.map(_._2)).mkString(", "),
-            alreadyLoaded = false
+            alreadyLoaded = alreadyLoaded
           )
       }
     }

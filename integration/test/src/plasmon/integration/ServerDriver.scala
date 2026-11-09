@@ -132,23 +132,26 @@ object ServerDriver {
         .map(_.getAsJsonObject)
         .filter(_.has("uri"))
         .toVector
-      val module = modules
-        .find(obj => !obj.get("alreadyLoaded").getAsBoolean)
-        .orElse(modules.headOption)
-        .getOrElse(sys.error(s"No module found for $currentFile"))
+      if (modules.isEmpty)
+        sys.error(s"No module found for $currentFile")
+      // Same as `plasmon module load`: nothing to do if the file already has a module loaded,
+      // else the best candidate, which comes first
+      if (!modules.exists(_.get("alreadyLoaded").getAsBoolean)) {
+        val module = modules.head
 
-      val loadRes = executeCommand(
-        "plasmon/loadModule",
-        module.get("workspace").getAsString,
-        module.get("server").getAsString,
-        module.get("uri").getAsString
-      )
-      val loadObj = new Gson().toJsonTree(loadRes).getAsJsonObject
-      if (loadObj.has("error") && !loadObj.get("error").getAsString.isEmpty)
-        sys.error(
-          s"Error loading module ${module.get("label").getAsString}: " +
-            loadObj.get("error").getAsString
+        val loadRes = executeCommand(
+          "plasmon/loadModule",
+          module.get("workspace").getAsString,
+          module.get("server").getAsString,
+          module.get("uri").getAsString
         )
+        val loadObj = new Gson().toJsonTree(loadRes).getAsJsonObject
+        if (loadObj.has("error") && !loadObj.get("error").getAsString.isEmpty)
+          sys.error(
+            s"Error loading module ${module.get("label").getAsString}: " +
+              loadObj.get("error").getAsString
+          )
+      }
     }
 
     def compile(currentFile: os.Path): Unit = {
@@ -335,6 +338,19 @@ object ServerDriver {
 
     def loadModuleOf(currentFile: os.Path): Unit =
       run("module", "load", currentFile)
+
+    /** `module load`, returning what it said about the modules it loaded or found loaded. */
+    def loadModuleOfOutput(currentFile: os.Path): String = {
+      val command = Seq[os.Shellable]("module", "load", currentFile)
+      failing(command)(TestUtil.serverCommandOutputs(workspace, errOpt)(command*))._2
+    }
+
+    /** `module list --json`, one JSON object per module the file belongs to. */
+    def listModulesOf(currentFile: os.Path): Seq[com.google.gson.JsonObject] =
+      json(classOf[com.google.gson.JsonArray])("module", "list", "--json", currentFile)
+        .asScala
+        .map(_.getAsJsonObject)
+        .toVector
 
     // Matches what plasmon/compile does: it reports a failed build, it doesn't raise it
     def compile(currentFile: os.Path): Unit =
