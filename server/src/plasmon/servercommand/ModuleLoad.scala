@@ -56,6 +56,14 @@ final case class ModuleLoad(
           exit(1)
         case Right(true) =>
           printLine(s"Loaded module ${module.uri}", toStderr = true)
+          // Nothing else would build it from the command line - see CompileAfterLoad
+          if (options.compile)
+            CompileAfterLoad(
+              server,
+              module.uri,
+              progress = printLine(_, toStderr = true),
+              log = printLine(_, toStderr = true)
+            )
         case Right(false) =>
           printLine(s"Module ${module.uri} already loaded", toStderr = true)
       }

@@ -112,15 +112,18 @@ class ComplexTests extends PlasmonSuite {
       adtInOtherModuleTest(mode, scalaVersion, jvm, serverOpt)
     }
 
-  def adtInOtherModuleTest(
-    mode: TestMode,
-    scalaVersion: Labelled[String],
-    jvm: Labelled[String],
-    serverOpt: Seq[String]
-  ): Unit = {
-    val mainFile = os.sub / "bar/src/bar/Test.scala"
+  // CLI only: over LSP, an editor opens files, and opened files get compiled - from a terminal,
+  // `module load` is all there is to build what hovers then resolve against
+  for (mode <- cliOnlyModes)
+    test("ADT in other module, compiled by module load" + mode.testNameSuffix) {
+      adtInOtherModuleModuleLoadTest()
+    }
 
-    val files = Seq(
+  private def adtMainFile = os.sub / "bar/src/bar/Test.scala"
+
+  private def adtInOtherModuleFiles(scalaVersion: Labelled[String]): Seq[(os.SubPath, String)] = {
+    val mainFile = adtMainFile
+    Seq(
       os.sub / "build.mill" ->
         s"""import mill._
            |import mill.scalalib._
@@ -161,11 +164,29 @@ class ComplexTests extends PlasmonSuite {
           |}
           |""".stripMargin
     )
+  }
 
-    val testFixtureDir =
-      fixtureDir / "plasmon/integration/complex-tests/other/adt-in-other-module" /
-        s"jvm-${jvm.label}" /
-        s"scala-${scalaVersion.label}"
+  private def adtRecording(scalaVersion: Labelled[String], jvm: Labelled[String]) =
+    SingleModuleBuildTool.Replayed(
+      SingleModuleBuildTool.Mill,
+      os.sub / "complex-tests/adt-in-other-module" /
+        s"scala-${scalaVersion.label}" / s"jvm-${jvm.label}"
+    )
+
+  private def adtFixtureDir(scalaVersion: Labelled[String], jvm: Labelled[String]) =
+    fixtureDir / "plasmon/integration/complex-tests/other/adt-in-other-module" /
+      s"jvm-${jvm.label}" /
+      s"scala-${scalaVersion.label}"
+
+  def adtInOtherModuleTest(
+    mode: TestMode,
+    scalaVersion: Labelled[String],
+    jvm: Labelled[String],
+    serverOpt: Seq[String]
+  ): Unit = {
+    val mainFile       = adtMainFile
+    val files          = adtInOtherModuleFiles(scalaVersion)
+    val testFixtureDir = adtFixtureDir(scalaVersion, jvm)
     withWorkspaceServerPositions(
       mode = mode,
       extraServerOpts = Seq("--jvm", jvm.value) ++ serverOpt,
@@ -174,11 +195,7 @@ class ComplexTests extends PlasmonSuite {
       (workspace, driver, positions, osOpt) =>
         // Cross-module: hovers here resolve symbols defined in the other module, so the recording
         // is compiled at replay time to give them real class files to resolve against
-        SingleModuleBuildTool.Replayed(
-          SingleModuleBuildTool.Mill,
-          os.sub / "complex-tests/adt-in-other-module" /
-            s"scala-${scalaVersion.label}" / s"jvm-${jvm.label}"
-        ).setup(
+        adtRecording(scalaVersion, jvm).setup(
           workspace,
           driver,
           osOpt,
@@ -201,4 +218,47 @@ class ComplexTests extends PlasmonSuite {
     }
   }
 
+  /** `module load`, then hovers - no `compile` in between.
+    *
+    * The module loaded is `bar`, and what is hovered is defined in `foo`, which `bar` depends on:
+    * resolving it takes `foo`'s class directory. Before `module load` compiled the module it loads,
+    * nothing would have built it, and these hovers came back as `package ` rather than the ADT
+    * cases - quietly wrong rather than failing.
+    */
+  private def adtInOtherModuleModuleLoadTest(): Unit = {
+    val scalaVersion   = Labelled("3", IntegrationConstants.scala3)
+    val jvm            = jvmValues.head
+    val mainFile       = adtMainFile
+    val testFixtureDir = adtFixtureDir(scalaVersion, jvm)
+    val recording      = adtRecording(scalaVersion, jvm)
+
+    withWorkspaceServerPositions(
+      mode = TestMode.Cli,
+      extraServerOpts = Seq("--jvm", jvm.value),
+      timeout = Some(SingleModuleBuildTool.Mill.defaultTimeout)
+    )(adtInOtherModuleFiles(scalaVersion)*) {
+      (workspace, driver, positions, osOpt) =>
+        BspDataFixture.install(workspace, recording.key)
+        driver.loadBuildTool(
+          BspDataFixture.replayBuildToolId,
+          BspDataFixture.replayBuildToolId,
+          workspace / mainFile
+        )
+        // What the test is about: no driver.compile after this
+        driver.loadModuleOf(workspace / mainFile)
+
+        for (i <- (1 to 4).iterator ++ (11 to 14).iterator) {
+          val hover = hoverMarkdown(
+            driver,
+            workspace / mainFile,
+            positions.lspPos(mainFile, i)
+          )
+          checkTextFixture(
+            testFixtureDir / s"hover-$i.txt",
+            hover,
+            osOpt
+          )
+        }
+    }
+  }
 }

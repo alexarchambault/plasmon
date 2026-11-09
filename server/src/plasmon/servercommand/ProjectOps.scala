@@ -371,27 +371,49 @@ object ProjectOps {
           scribe.warn(s"No build target found for $file, nothing to compile")
           Future.successful(None)
         case Some(f) =>
-          val recovered = f.recover {
-            case ex
-                if Iterator
-                  .iterate(Option(ex))(_.flatMap(e => Option(e.getCause)))
-                  .takeWhile(_.nonEmpty)
-                  .flatten
-                  .exists(e =>
-                    e.isInstanceOf[ResponseErrorException] &&
-                    Option(e.getMessage).exists(_.contains("Compilation failed"))
-                  ) =>
-              new b.CompileResult(b.StatusCode.ERROR)
-          }(using server.pools.compilationEc)
-          recovered.onComplete {
-            case Success(_) =>
-            case Failure(ex) =>
-              scribe.error(s"Compiling $file failed", ex)
-          }(using server.pools.compilationEc)
-          recovered.map(Some(_))(using server.pools.dummyEc)
+          reportingFailures(server, file.toString, f).map(Some(_))(using server.pools.dummyEc)
       }
     }(using server.pools.requestsEces)
 
     f.flatten
   }
+
+  /** Compiles a loaded module - and, the build tool being asked to compile it, its dependencies. */
+  def compileModule(
+    server: Server,
+    targetId: b.BuildTargetIdentifier
+  ): Future[b.CompileResult] = {
+    val f = Future {
+      reportingFailures(server, targetId.getUri, server.compilations.compileTarget(targetId))
+    }(using server.pools.requestsEces)
+
+    f.flatten
+  }
+
+  /** A failed build as an `ERROR` result rather than an exception, anything else logged. */
+  private def reportingFailures(
+    server: Server,
+    what: String,
+    f: Future[b.CompileResult]
+  ): Future[b.CompileResult] = {
+    val recovered = f.recover {
+      case ex
+          if Iterator
+            .iterate(Option(ex))(_.flatMap(e => Option(e.getCause)))
+            .takeWhile(_.nonEmpty)
+            .flatten
+            .exists(e =>
+              e.isInstanceOf[ResponseErrorException] &&
+              Option(e.getMessage).exists(_.contains("Compilation failed"))
+            ) =>
+        new b.CompileResult(b.StatusCode.ERROR)
+    }(using server.pools.compilationEc)
+    recovered.onComplete {
+      case Success(_) =>
+      case Failure(ex) =>
+        scribe.error(s"Compiling $what failed", ex)
+    }(using server.pools.compilationEc)
+    recovered
+  }
+
 }

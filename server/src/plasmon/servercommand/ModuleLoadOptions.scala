@@ -11,6 +11,8 @@ import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 final case class ModuleLoadOptions(
   @HelpMessage("Load every module the file belongs to, rather than the recommended one only")
     all: Boolean = false,
+  @HelpMessage("Compile the loaded modules (and the modules they depend on) before returning, so that hovers and definitions can resolve what is defined in other files and modules")
+    compile: Boolean = true,
   @HelpMessage("URI of the file to load the module of, instead of passing it as an argument")
     uri: Option[String] = None
 )
