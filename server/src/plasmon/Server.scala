@@ -287,11 +287,14 @@ final class Server(
 
   private[plasmon] lazy val jdkContext = new SourcePath.Context
 
-  private[plasmon] lazy val javaFileManager = new CustomFileManager(
-    javaHome.toNIO,
-    JavaMetalsGlobal.COMPILER.getStandardFileManager(null, null, null),
-    jdkContext
-  )
+  private def newJavaFileManager(): CustomFileManager =
+    new CustomFileManager(
+      javaHome.toNIO,
+      JavaMetalsGlobal.COMPILER.getStandardFileManager(null, null, null),
+      jdkContext
+    )
+
+  private[plasmon] lazy val javaFileManager = newJavaFileManager()
 
   private lazy val presentationCompilerConfig: PresentationCompilerConfigImpl =
     PresentationCompilerConfigImpl()
@@ -373,7 +376,9 @@ final class Server(
   // stateless
   private lazy val javaInteractiveSemanticdb =
     JavaInteractiveSemanticdb.create(
-      () => javaFileManager,
+      // javac hands options such as -cp or -sourcepath to its file manager, which keeps them,
+      // so each run gets its own file manager, rather than sharing the presentation compiler's
+      () => newJavaFileManager(),
       workspace() /* TODO by-name */,
       workingDir,
       bspData,

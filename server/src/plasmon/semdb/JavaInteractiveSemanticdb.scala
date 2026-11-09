@@ -105,6 +105,7 @@ object JavaInteractiveSemanticdb {
 
         val writer      = new StringWriter
         val printWriter = new PrintWriter(writer)
+        val fileManager = javaFileManager()
         val successOpt =
           try {
             // JavacFileManager#getLocationForModule specifically tests that JavaFileObject is instanceof PathFileObject when using Patch-Module
@@ -126,7 +127,7 @@ object JavaInteractiveSemanticdb {
             val javacTask = JavaMetalsGlobal.COMPILER
               .getTask(
                 printWriter,
-                javaFileManager(),
+                fileManager,
                 diagnosticListener,
                 allOptions.asJava,
                 null,
@@ -144,6 +145,8 @@ object JavaInteractiveSemanticdb {
               )
               None
           }
+          finally
+            fileManager.close()
         for (success <- successOpt if !success) {
           printWriter.flush()
           val log = writer.getBuffer
