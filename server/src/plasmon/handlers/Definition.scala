@@ -281,7 +281,9 @@ object Definition {
               if (source.isScalaFilename || source.isJavaFilename)
                 CancelTokens.future { token =>
                   definitionResult(targetId.module, server, params, logger, token)
-                    .map(_.asJava)(using definitionStuffEc)
+                    // The presentation compiler can return the same location several times,
+                    // like for a Java class in an import, both a class and an object for Scala
+                    .map(_.distinct.asJava)(using definitionStuffEc)
                 }(using cancelTokensEces)
               else
                 CompletableFuture.completedFuture(Nil.asJava)
