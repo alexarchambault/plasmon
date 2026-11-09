@@ -345,6 +345,10 @@ object ServerDriver {
       failing(command)(TestUtil.serverCommandOutputs(workspace, errOpt)(command*))._2
     }
 
+    /** `module list`, as printed for humans. */
+    def listModulesOfText(currentFile: os.Path): String =
+      output("module", "list", currentFile)
+
     /** `module list --json`, one JSON object per module the file belongs to. */
     def listModulesOf(currentFile: os.Path): Seq[com.google.gson.JsonObject] =
       json(classOf[com.google.gson.JsonArray])("module", "list", "--json", currentFile)

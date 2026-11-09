@@ -28,8 +28,17 @@ final case class ModuleList(
     else if (modules.isEmpty)
       printLine(s"No module found for $file", toStderr = true)
     else
-      for (module <- modules)
-        printLine(s"${module.uri} (${module.description})")
+      for (module <- modules) {
+        val markers =
+          Seq(
+            Option.when(module.recommended)("recommended"),
+            Option.when(!module.supported)("unsupported"),
+            Option.when(module.alreadyLoaded)("loaded")
+          ).flatten
+        printLine(
+          s"${module.uri} (${module.description})" + markers.map(m => s" [$m]").mkString
+        )
+      }
   }
 }
 

@@ -35,7 +35,11 @@ object ProjectOps {
       -value.compare(that.value)
   }
 
-  /** A build target that a file belongs to, and could be loaded from. */
+  /** A build target that a file belongs to, and could be loaded from.
+    *
+    * `label` is the plain module name: editors decorate it themselves (see
+    * `PlasmonCommands.listModules`), from `recommended` and `supported`.
+    */
   final case class ModuleInfo(
     workspace: String,
     server: String,
@@ -43,7 +47,9 @@ object ProjectOps {
     label: String,
     detail: String,
     description: String,
-    alreadyLoaded: Boolean
+    alreadyLoaded: Boolean,
+    recommended: Boolean,
+    supported: Boolean
   )
 
   object ModuleInfo {
@@ -289,13 +295,15 @@ object ProjectOps {
             workspace = server0.info.workspace.toNIO.toUri.toASCIIString,
             server = server0.name,
             uri = id.getUri,
-            label = (if (supported) if (recommended) "$(tag) " else "" else "$(warning) ") + name,
+            label = name,
             detail =
               if (alreadyLoaded) "Unload module"
               else if (supported) "Load module"
               else "Unsupported Scala version",
             description = (Seq(server0.enhancedName) ++ commentOpt.map(_._2)).mkString(", "),
-            alreadyLoaded = alreadyLoaded
+            alreadyLoaded = alreadyLoaded,
+            recommended = recommended,
+            supported = supported
           )
       }
     }

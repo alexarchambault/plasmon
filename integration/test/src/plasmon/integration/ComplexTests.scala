@@ -313,6 +313,16 @@ class ComplexTests extends PlasmonSuite {
         expect(modules(mainFile) == Seq(("bar", true)))
         expect(modules(otherFile) == Seq(("foo", true)))
 
+        // The CLI says what's recommended or loaded in words - VS Code codicons such as `$(tag)`
+        // are for editors to render, not for a terminal
+        val listed = driver0.listModulesOfText(workspace / mainFile)
+        expect(listed.contains("[recommended]"))
+        expect(listed.contains("[loaded]"))
+        expect(!listed.contains("$("))
+        expect(driver0.listModulesOf(workspace / mainFile).forall { obj =>
+          obj.get("label").getAsString == "bar" && obj.get("recommended").getAsBoolean
+        })
+
         // Said to be loaded already, rather than failing, or loading something else - whether
         // loaded by hand, or along with a module depending on it
         for (file <- Seq(mainFile, otherFile)) {
