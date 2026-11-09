@@ -1,0 +1,39 @@
+{
+  "items": [
+    {
+      "target": {
+        "uri": "file:/$WORKSPACE$/.scala-build/?id\u003dtest-project_41e103cfb2"
+      },
+      "options": [
+        "-Xsemanticdb",
+        "-sourceroot",
+        "$WORKSPACE$"
+      ],
+      "classpath": [
+        "file:///$WORKSPACE$/.scala-build/test-project_41e103cfb2/classes/main/",
+        "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/org/scala-lang/scala3-library_3/3.10.0/scala3-library_3-3.10.0.jar",
+        "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/org/scala-lang/scala-library/3.10.0/scala-library-3.10.0.jar",
+        "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/com/sourcegraph/semanticdb-javac/0.12.3/semanticdb-javac-0.12.3.jar"
+      ],
+      "classDirectory": "file:///$WORKSPACE$/.scala-build/test-project_41e103cfb2/classes/main/"
+    },
+    {
+      "target": {
+        "uri": "file:/$WORKSPACE$/.scala-build/?id\u003dtest-project_41e103cfb2-test"
+      },
+      "options": [
+        "-Xsemanticdb",
+        "-sourceroot",
+        "$WORKSPACE$"
+      ],
+      "classpath": [
+        "file:///$WORKSPACE$/.scala-build/test-project_41e103cfb2/classes/test/",
+        "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/org/scala-lang/scala3-library_3/3.10.0/scala3-library_3-3.10.0.jar",
+        "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/org/scala-lang/scala-library/3.10.0/scala-library-3.10.0.jar",
+        "file:///$WORKSPACE$/.scala-build/test-project_41e103cfb2/classes/main/",
+        "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/com/sourcegraph/semanticdb-javac/0.12.3/semanticdb-javac-0.12.3.jar"
+      ],
+      "classDirectory": "file:///$WORKSPACE$/.scala-build/test-project_41e103cfb2/classes/test/"
+    }
+  ]
+}
