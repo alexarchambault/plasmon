@@ -9,11 +9,11 @@ import scala.jdk.CollectionConverters.*
 /** Works out the wrapped sources of Mill builds that don't report them.
   *
   * Since Mill 1.3, the sources Mill generates out of `build.mill` / `package.mill` files have the
-  * user code preceded by a `///SOURCE_CODE_START:<original path>` line, but `buildTarget/wrappedSources`
-  * still looks for the former `//SOURCECODE_ORIGINAL_CODE_START_MARKER` one, and reports nothing.
-  * The generated sources are still around, next to the `generatedScriptSources.dest/support`
-  * directory Mill reports as a generated source directory, so we compute the wrappers from them,
-  * the way Mill should.
+  * user code preceded by a `///SOURCE_CODE_START:<original path>` line, but
+  * `buildTarget/wrappedSources` still looks for the former
+  * `//SOURCECODE_ORIGINAL_CODE_START_MARKER` one, and reports nothing. The generated sources are
+  * still around, next to the `generatedScriptSources.dest/support` directory Mill reports as a
+  * generated source directory, so we compute the wrappers from them, the way Mill should.
   */
 object MillWrappedSources {
 
@@ -21,16 +21,21 @@ object MillWrappedSources {
 
   /** Splits a generated source into the code before and after the user code.
     *
-    * The user code starts right after the marker line, and has the same length as the original
-    * source (Mill only makes length-preserving edits to it, as `-Ymagic-offset-header` relies on
-    * offsets), so what follows it is the code after `originalLength` characters.
+    * The user code starts right after the marker line, and spans as many lines as the original
+    * source, so what follows it is the code after that many lines.
     *
+    * Its length can differ from the original's: Mill splices the user code into a template it then
+    * passes to `stripMargin` (as of Mill 1.3.1), so user lines starting with `<spaces>|` (in
+    * multi-line `stripMargin` strings) lose their margin. That keeps lines intact, though.
+    *
+    * @param originalContent
+    *   the content of an original source, if it can be read
     * @return
     *   the path of the original source, the top wrapper, and the bottom wrapper
     */
   def wrappers(
     generatedContent: String,
-    originalLength: os.Path => Option[Int]
+    originalContent: os.Path => Option[String]
   ): Option[(os.Path, String, String)] = {
     val markerIdx =
       if (generatedContent.startsWith(userCodeStartMarker)) 0
@@ -53,9 +58,8 @@ object MillWrappedSources {
           case _: IllegalArgumentException => None
         }
       }
-      length <- originalLength(original)
-      userCodeEnd = markerLineEnd + 1 + length
-      if userCodeEnd <= generatedContent.length
+      content     <- originalContent(original)
+      userCodeEnd <- userCodeEnd(generatedContent, markerLineEnd + 1, content)
     } yield (
       original,
       generatedContent.take(markerLineEnd + 1),
@@ -63,7 +67,49 @@ object MillWrappedSources {
     )
   }
 
-  /** Wrapped sources of the targets Mill reported none for, computed from their generated sources */
+  /** Where the user code starting at `start` in `generatedContent` ends, given the original code.
+    *
+    * After as many line breaks as in the original code, and, if the original doesn't end with one,
+    * after the line that follows.
+    */
+  private def userCodeEnd(
+    generatedContent: String,
+    start: Int,
+    originalContent: String
+  ): Option[Int] = {
+    val lineBreaks = originalContent.count(_ == '\n')
+    val afterLineBreaks = Iterator
+      .iterate(Option(start)) { idxOpt =>
+        idxOpt.flatMap { idx =>
+          generatedContent.indexOf('\n', idx) match {
+            case -1 => None
+            case n  => Some(n + 1)
+          }
+        }
+      }
+      .drop(lineBreaks)
+      .next()
+    afterLineBreaks.map { idx =>
+      if (originalContent.isEmpty || originalContent.endsWith("\n")) idx
+      else {
+        // the last line of the original, without line break
+        val lineEnd = generatedContent.indexOf('\n', idx) match {
+          case -1 => generatedContent.length
+          case n  => n
+        }
+        // don't leave a '\r' of a "\r\n" line break in the user code
+        if (
+          lineEnd > idx && generatedContent.charAt(lineEnd - 1) == '\r' &&
+          !originalContent.endsWith("\r")
+        )
+          lineEnd - 1
+        else lineEnd
+      }
+    }
+  }
+
+  /** Wrapped sources of the targets Mill reported none for, computed from their generated sources
+    */
   def fallback(
     wrappedSources: WrappedSourcesResult,
     sources: b.SourcesResult
@@ -88,7 +134,7 @@ object MillWrappedSources {
         generated <- os.walk(dir).filter(_.last.endsWith(".mill")).filter(os.isFile)
         (original, top, bottom) <- wrappers(
           os.read(generated),
-          p => if (os.isFile(p)) Some(os.read(p).length) else None
+          p => if (os.isFile(p)) Some(os.read(p)) else None
         )
       } yield {
         val sourceItem = new WrappedSourceItem(
@@ -105,7 +151,7 @@ object MillWrappedSources {
     if (computed.isEmpty) wrappedSources
     else {
       val computedTargets = computed.map(_.getTarget).toSet
-      val kept            = wrappedSources.getItems.asScala.filter(i => !computedTargets(i.getTarget))
+      val kept = wrappedSources.getItems.asScala.filter(i => !computedTargets(i.getTarget))
       new WrappedSourcesResult((kept ++ computed).asJava)
     }
   }
