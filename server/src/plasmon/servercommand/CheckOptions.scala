@@ -11,8 +11,6 @@ final case class CheckOptions(
   require: List[String] = Nil,
   target: Option[String] = None,
   fullTree: Boolean = false,
-  verbose: Boolean = false,
-  metap: Boolean = false,
   @Name("metapInteractive")
   interactiveMetap: Boolean = false
 )
