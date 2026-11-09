@@ -189,7 +189,7 @@ object AutoServer {
     }
 
   /** How to start another instance of ourselves, up to the arguments. */
-  private def selfCommand(): Option[Seq[String]] =
+  private[plasmon] def selfCommand(): Option[Seq[String]] =
     BinaryName.pathOpt match {
       case Some(binary) => Some(Seq(binary.toString))
       case None         => javaCommand()

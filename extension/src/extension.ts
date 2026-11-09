@@ -1022,9 +1022,39 @@ export function activate(context: vscode.ExtensionContext) {
     }
   }
 
+  // A full command line (JSON array of strings) starting the plasmon CLI, the `server`
+  // argument being appended to it. Set by `plasmon code` when it runs on the JVM, so that
+  // we use the very plasmon that started VSCode.
+  function forcedCommandServerOptions(value: string): ServerOptions | undefined {
+    let parsed: unknown
+    try {
+      parsed = JSON.parse(value)
+    }
+    catch (e) {
+      console.log(`Ignoring malformed PLASMON_FORCED_COMMAND (${e}): ${value}`)
+      return undefined
+    }
+    if (!Array.isArray(parsed) || parsed.length === 0 || !parsed.every((elem) => typeof elem === "string")) {
+      console.log(`Ignoring PLASMON_FORCED_COMMAND, expected a non-empty JSON array of strings: ${value}`)
+      return undefined
+    }
+    let command = parsed as string[]
+    return {
+      command: command[0],
+      args: command.slice(1).concat(serverArgs),
+      options: {}
+    }
+  }
+
   let serverOptions: ServerOptions
 
-  if (env["PLASMON_FORCED_BINARY"]) {
+  let forcedCommandOptions = env["PLASMON_FORCED_COMMAND"] ? forcedCommandServerOptions(env["PLASMON_FORCED_COMMAND"]) : undefined
+
+  if (forcedCommandOptions !== undefined) {
+    console.log(`Using plasmon command from PLASMON_FORCED_COMMAND`)
+    serverOptions = forcedCommandOptions
+  }
+  else if (env["PLASMON_FORCED_BINARY"]) {
     console.log(`Using plasmon binary from PLASMON_FORCED_BINARY`)
     serverOptions = binaryServerOptions(env["PLASMON_FORCED_BINARY"])
   }
