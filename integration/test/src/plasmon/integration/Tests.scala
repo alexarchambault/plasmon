@@ -116,6 +116,24 @@ class Tests extends PlasmonSuite {
 
         driver match {
           case cli: ServerDriver.Cli =>
+            // Plain text output: one path:line:col:end-line:end-col per location, 1-based like
+            // compiler messages (unlike LSP positions), and nothing else on stdout
+            val textLines = cli
+              .definitionText(workspace / goToDefSourceFile, positions.lspPos(goToDefSourceFile, 1))
+              .linesIterator
+              .toVector
+            val expectedTextLines = driver
+              .definition(workspace / goToDefSourceFile, positions.lspPos(goToDefSourceFile, 1))
+              .map { loc =>
+                val start = loc.getRange.getStart
+                val end   = loc.getRange.getEnd
+                s"${os.Path(java.nio.file.Paths.get(new java.net.URI(loc.getUri)))}:" +
+                  s"${start.getLine + 1}:${start.getCharacter + 1}:" +
+                  s"${end.getLine + 1}:${end.getCharacter + 1}"
+              }
+              .toVector
+            expect(textLines == expectedTextLines)
+
             // Same definition, pointing inside the source JAR rather than at its extracted copy
             val locations = cli.definitionArchiveUris(
               workspace / goToDefSourceFile,

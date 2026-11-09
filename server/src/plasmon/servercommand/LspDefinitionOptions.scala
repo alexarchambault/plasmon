@@ -7,7 +7,7 @@ import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 
 // format: off
-@HelpMessage("Go to definition at a position in a source file")
+@HelpMessage("Go to definition at a position in a source file\n\nPrints definitions as path:line:col, or path:line:col:end-line:end-col for a range, with 1-based lines and columns (unlike --line and --col, zero-based like LSP positions). --json prints them as LSP locations, zero-based.")
 final case class LspDefinitionOptions(
   @HelpMessage("URI of the file to look at, instead of passing it as an argument")
     uri: Option[String] = None,
