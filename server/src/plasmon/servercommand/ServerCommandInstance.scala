@@ -52,6 +52,13 @@ abstract class ServerCommandInstance[T](client: CommandClient)(implicit
 
 object ServerCommandInstance {
   final class Exit(val code: Int) extends Exception(s"Command exited with code $code")
+
+  /** A command can't run because of how it was called (a missing argument, a file that isn't
+    * there…): the command client gets the message alone, no stack trace.
+    */
+  final class UsageError(message: String) extends Exception(message)
+  def usageError(message: String): Nothing =
+    throw new UsageError(message)
   def exit(code: Int): Nothing =
     throw new Exit(code)
 }
