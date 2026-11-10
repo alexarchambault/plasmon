@@ -25,7 +25,7 @@ object FileArg {
   ): (os.Path, String) =
     (args, uriOpt) match {
       case (Seq(), None) =>
-        sys.error("No file specified")
+        ServerCommandInstance.usageError("No file specified")
       case (Seq(strPath), None) =>
         val path = archiveEntry(strPath, workingDir)
           .map(extract(_, workingDir))
@@ -50,10 +50,10 @@ object FileArg {
             (uri.osPathFromUri, uri)
         }
       case (Seq(_), Some(_)) =>
-        sys.error("Cannot specify both a file and a URI")
+        ServerCommandInstance.usageError("Cannot specify both a file and a URI")
       case (other, _) =>
         assert(other.length > 1)
-        sys.error("Too many files specified (only one file accepted)")
+        ServerCommandInstance.usageError("Too many files specified (only one file accepted)")
     }
 
   /** `/…/foo.jar!path/in/archive`, when `/…/foo.jar` is a file and `/…/foo.jar!path` isn't.
@@ -79,7 +79,7 @@ object FileArg {
   private def extract(entry: SourcePath.ZipEntry, workingDir: os.Path): os.Path =
     SourcePath.withContext { implicit ctx =>
       if (!entry.exists())
-        sys.error(s"${entry.pathInZip} not found in ${entry.zipPath}")
+        ServerCommandInstance.usageError(s"${entry.pathInZip} not found in ${entry.zipPath}")
       os.Path(entry.toFileOnDisk(workingDir).path)
     }
 

@@ -177,10 +177,6 @@ final case class Check(
       else
         printLine("Compilation done")
 
-      printLine(s"Checking for $strPath semantic DB")
-      printLine("Semanticdbs are disabled")
-      exit(1)
-
       printLine(s"Compiling $strPath with interactive compiler")
       val dummyToken = {
         import scala.concurrent.ExecutionContext.Implicits.global

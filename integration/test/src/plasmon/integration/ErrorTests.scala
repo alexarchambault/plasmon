@@ -101,4 +101,21 @@ class ErrorTests extends PlasmonSuite {
           expect(ex.result.err.text().contains("No build server found"))
       }
     }
+
+  for (mode <- cliOnlyModes)
+    test("a missing file gets an error message, not a stack trace" + mode.testNameSuffix) {
+      withWorkspaceAndServer(mode)(files*) {
+        (workspace, _, osOpt, _) =>
+          val ex = intercept[os.SubprocessException] {
+            serverCommandOutputs(workspace, osOpt)("lsp", "did-open", workspace / "Nope.scala")
+          }
+          expect(ex.result.exitCode == 1)
+          val err = ex.result.err.text()
+          // Out of the expect call: Expecty can't rewrite an interpolated os.Path
+          val expectedError = s"Error: ${workspace / "Nope.scala"}: no such file"
+          expect(err.contains(expectedError))
+          expect(!err.contains("NoSuchFileException"))
+          expect(!err.contains("\tat "))
+      }
+    }
 }

@@ -2,7 +2,7 @@ package plasmon.servercommand
 
 import caseapp.core.RemainingArgs
 import org.eclipse.lsp4j as l
-import plasmon.{Logger, Server}
+import plasmon.Server
 import plasmon.handlers.Hover
 import plasmon.ide.HoverExtParams
 import plasmon.index.Indexer
@@ -35,13 +35,7 @@ final case class LspHover(
       position = new l.Position(options.line, options.col)
     )
 
-    // Out of the way of the JSON on stdout, but not lost
-    val loggerManager = Logger.Manager.create {
-      channel => msg =>
-        printLine(s"[${channel.label}] $msg", toStderr = options.json)
-    }
-
-    val logger = loggerManager.create("request", "Request")
+    val logger = requestLogger(options.quiet)
 
     val res = handler.call(params, logger).get()
 

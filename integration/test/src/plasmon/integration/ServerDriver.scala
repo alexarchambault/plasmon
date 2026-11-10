@@ -390,6 +390,10 @@ object ServerDriver {
         Seq[os.Shellable]("lsp", "definition", "--json") ++ position(pos) :+ path*
       ).toSeq
 
+    /** `lsp definition` without `--json`: its plain text output, what a user reads. */
+    def definitionText(path: os.Path, pos: l.Position): String =
+      output(Seq[os.Shellable]("lsp", "definition") ++ position(pos) :+ path*)
+
     /** `lsp hover` on a file passed as-is, rather than as a path - like a URI with `--uri`, or a
       * `…/foo.jar!path/in/archive` path.
       */

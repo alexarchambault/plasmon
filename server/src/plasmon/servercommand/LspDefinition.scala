@@ -2,7 +2,7 @@ package plasmon.servercommand
 
 import caseapp.core.RemainingArgs
 import org.eclipse.lsp4j as l
-import plasmon.{Logger, Server}
+import plasmon.Server
 import plasmon.PlasmonEnrichments.*
 import plasmon.handlers.Definition
 import plasmon.ide.JarMeta
@@ -36,13 +36,7 @@ final case class LspDefinition(
       new l.Position(options.line, options.col)
     )
 
-    // Out of the way of the JSON on stdout, but not lost
-    val loggerManager = Logger.Manager.create {
-      channel => msg =>
-        printLine(s"[${channel.label}] $msg", toStderr = options.json)
-    }
-
-    val logger = loggerManager.create("request", "Request")
+    val logger = requestLogger(options.quiet)
 
     val locations = handler.call(params, logger).get()
 
@@ -59,10 +53,12 @@ final case class LspDefinition(
         val path =
           if (options.archiveUris) JarMeta.archivePath(path0).getOrElse(path0.toString)
           else path0.toString
-        val startLine: Int = location.getRange.getStart.getLine
-        val startCol: Int  = location.getRange.getStart.getCharacter
-        val endLine: Int   = location.getRange.getEnd.getLine
-        val endCol: Int    = location.getRange.getEnd.getCharacter
+        // 1-based, the way compilers print positions, and editors and terminals read
+        // `path:line:col` - unlike LSP positions (--line / --col, and the --json output)
+        val startLine: Int = location.getRange.getStart.getLine + 1
+        val startCol: Int  = location.getRange.getStart.getCharacter + 1
+        val endLine: Int   = location.getRange.getEnd.getLine + 1
+        val endCol: Int    = location.getRange.getEnd.getCharacter + 1
         val coords =
           if (startLine == endLine && startCol == endCol) s"$startLine:$startCol"
           else s"$startLine:$startCol:$endLine:$endCol"

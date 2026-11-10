@@ -7,7 +7,13 @@ import plasmon.protocol.CommandClient.ops.*
 import plasmon.servercommand.ServerCommandInstance
 
 import java.io.{PrintWriter, StringWriter}
-import java.util.concurrent.{CompletableFuture, ExecutorService}
+import java.nio.file.NoSuchFileException
+import java.util.concurrent.{
+  CompletableFuture,
+  CompletionException,
+  ExecutionException,
+  ExecutorService
+}
 
 import scala.util.control.NonFatal
 
@@ -51,6 +57,15 @@ class CommandServerImpl(
           case _: ConnectionCommandClient.ClientGoneException =>
             scribe.info(s"Client of command ${name.mkString(" ")} went away, abandoning it")
             res.setExitCode(1)
+          case e if CommandServerImpl.userError(e).isDefined =>
+            scribe.info(s"Command ${name.mkString(" ")} failed", e)
+            val message = CommandServerImpl.userError(e).getOrElse("")
+            try client.printLine(s"Error: $message", toStderr = true)
+            catch {
+              case NonFatal(e0) =>
+                scribe.warn("Error sending error message to command client", e0)
+            }
+            res.setExitCode(1)
           case e: Throwable =>
             scribe.warn(s"Caught exception when running command ${name.mkString(" ")}", e)
             val sw = new StringWriter
@@ -75,4 +90,26 @@ class CommandServerImpl(
       .map(json => readFromString[RemainingArgsJson](json.toString))
       .getOrElse(RemainingArgsJson.empty)
       .toRemainingArgs
+}
+
+object CommandServerImpl {
+
+  /** The message to show for an exception caused by how a command was called rather than by a bug,
+    * which a stack trace wouldn't make clearer.
+    *
+    * Besides explicit [[ServerCommandInstance.UsageError]]s, a file that doesn't exist: nearly
+    * always one passed on the command line, that commands read. The server log keeps the stack
+    * trace either way.
+    */
+  private def userError(e: Throwable): Option[String] =
+    e match {
+      case e: ServerCommandInstance.UsageError =>
+        Some(e.getMessage)
+      case e: NoSuchFileException =>
+        Some(s"${e.getFile}: no such file")
+      case _: ExecutionException | _: CompletionException if e.getCause != null =>
+        userError(e.getCause)
+      case _ =>
+        None
+    }
 }

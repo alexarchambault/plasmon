@@ -2,7 +2,7 @@ package plasmon.servercommand
 
 import caseapp.core.RemainingArgs
 import org.eclipse.lsp4j as l
-import plasmon.{Logger, Server}
+import plasmon.Server
 import plasmon.handlers.codelens.CodeLens
 import plasmon.index.Indexer
 import plasmon.protocol.CommandClient
@@ -27,13 +27,7 @@ final case class LspCodeLens(
 
     val params = new l.CodeLensParams(new l.TextDocumentIdentifier(uri))
 
-    // Out of the way of the JSON on stdout, but not lost
-    val loggerManager = Logger.Manager.create {
-      channel => msg =>
-        printLine(s"[${channel.label}] $msg", toStderr = options.json)
-    }
-
-    val lenses = handler.call(params, loggerManager.create("request", "Request")).get()
+    val lenses = handler.call(params, requestLogger(options.quiet)).get()
 
     if (options.json)
       printJson(Option(lenses).getOrElse(Nil.asJava))
