@@ -768,13 +768,19 @@ class IndexerActor(
     )
 
     targetData.addWorkspaceBuildTargets(targets0)
+    val scalaVersions = targets0
+      .flatMap(target => target.asScalaBuildTarget.map(target.getId -> _.getScalaVersion))
+      .toMap
+    def substituteScalaLibrary(id: b.BuildTargetIdentifier): Boolean =
+      scalaVersions.get(id).forall(server.presentationCompilers.usesScala3Pc)
     val scalacOptionsRes = postProcessScalacOptionResult(
       maybeCached("buildTargetScalacOptions") {
         buildServer.buildTargetScalacOptions(new b.ScalacOptionsParams(targetList)).get()
       },
       jdkCp,
       millHack,
-      info.workspace
+      info.workspace,
+      substituteScalaLibrary
     )
     targetData.addScalacOptions(scalacOptionsRes)
     // sbt is a pile of … and just doesn't do anything when sent a request it doesn't support
@@ -914,7 +920,8 @@ class IndexerActor(
           .buildTargetDependencySources(new b.DependencySourcesParams(targetList))
           .get()
       },
-      scalacOptionsRes.getItems.asScala.map(_.getTarget).toSet
+      // only the targets whose scala-library we swapped need the sources of the new one
+      scalacOptionsRes.getItems.asScala.map(_.getTarget).filter(substituteScalaLibrary).toSet
     )
 
     (workspaceBuildTargetsResp, targets0, sourcesRes, depSourcesRes, wrappedSourcesRes)
@@ -1280,21 +1287,28 @@ class IndexerActor(
       fileName.startsWith("scala3-library_sjs1_3-")
     }
 
+  /** @param substituteScalaLibrary
+    *   whether to swap the scala-library JAR of a build target for the one of the Scala version
+    *   Plasmon runs on, which the Scala 3 presentation compiler needs (the Scala 2 one can't read
+    *   it)
+    */
   private def postProcessScalacOptionResult(
     res: b.ScalacOptionsResult,
     extraCp: List[String],
     millHack: Boolean,
-    workspace: os.Path
+    workspace: os.Path,
+    substituteScalaLibrary: b.BuildTargetIdentifier => Boolean
   ): b.ScalacOptionsResult = {
     for (item <- res.getItems.asScala.toList) {
       var didUpdateClasspath = false
+      val substitute         = substituteScalaLibrary(item.getTarget)
       var updatedClasspath = item.getClasspath.asScala.toList.flatMap { elem =>
         val path = elem.osPathFromUri
-        if (isSubstitutableScalaLibrary(path.last)) {
+        if (substitute && isSubstitutableScalaLibrary(path.last)) {
           didUpdateClasspath = true
           Seq(scalaLibraryJar)
         }
-        else if (isScala3Library3(path.last)) {
+        else if (substitute && isScala3Library3(path.last)) {
           didUpdateClasspath = true
           // Removing scala3-library_3
           Nil

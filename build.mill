@@ -229,6 +229,12 @@ object `remote-pc` extends Module {
     def moduleDeps   = Seq(protocol, submodules.metals.mtags)
     def mainClass    = Some("plasmon.remotepc.host.Scala2PcHost")
 
+    /** The class path of the host, made of JARs only (no class directories) */
+    def jarClassPath = Task {
+      val moduleJars = Task.traverse(transitiveModuleDeps.distinct)(m => Task.Anon(m.jar()))()
+      runClasspath().filter(ref => os.isFile(ref.path)) ++ moduleJars
+    }
+
     object test extends ScalaTests {
       def mvnDeps       = Seq(Deps.munit)
       def testFramework = "munit.Framework"
@@ -319,8 +325,6 @@ object PlasmonPublishModule {
       .out.trim()
 }
 
-def disableScala2Pc = true
-
 def enableTestParallelism =
   System.getenv("CI") != null // messes with the output frame locally
 
@@ -329,7 +333,8 @@ object server extends ScalaModule with PlasmonPublishModule {
   def moduleDeps = Seq(
     submodules.metals.mtags,
     submodules.metals.`mtags-java`,
-    submodules.scala3.`presentation-compiler`
+    submodules.scala3.`presentation-compiler`,
+    `remote-pc`.protocol
   )
   def compileMvnDeps = Seq(
     Deps.jsoniterMacros,
@@ -392,8 +397,7 @@ object server extends ScalaModule with PlasmonPublishModule {
          |  def sbtBloopVersion = "${Versions.sbtBloop}"
          |  def defaultSbtVersion = "${Versions.sbt}"
          |  def neovimVersion = "${editors.neovim.nvimVersion}"
-         |
-         |  def disableScala2Pc = $disableScala2Pc
+         |  def scala2PcHostModuleName = "${`remote-pc`.`scala2-host`.artifactId()}"
          |}
          |""".stripMargin
     if (!os.isFile(dest) || os.read(dest) != code) {
@@ -447,9 +451,13 @@ object server extends ScalaModule with PlasmonPublishModule {
       .callsItself(isWin)
     val entries       = cp.map(path => ClassPathEntry.Url(path.toNIO.toUri.toASCIIString))
     val loaderContent = coursier.launcher.ClassLoaderContent(entries)
+    // Not published, the Scala 2 presentation compiler host can't be fetched by the server
+    val scala2PcHostClassPath =
+      `remote-pc`.`scala2-host`.jarClassPath().map(_.path.toString).mkString(File.pathSeparator)
     val params = Parameters.Bootstrap(Seq(loaderContent), mainClass0)
       .withDeterministic(true)
       .withPreamble(preamble)
+      .withJavaProperties(Seq("plasmon.scala2PcHost.classPath" -> scala2PcHostClassPath))
 
     BootstrapGenerator.generate(params, dest.toNIO)
 
@@ -465,6 +473,10 @@ object server extends ScalaModule with PlasmonPublishModule {
       Deps.munit
     )
     def testFramework = "munit.Framework"
+    def forkArgs = super.forkArgs() ++ Seq(
+      "-Dplasmon.scala2PcHost.classPath=" +
+        `remote-pc`.`scala2-host`.jarClassPath().map(_.path.toString).mkString(File.pathSeparator)
+    )
   }
 
   def settingsEditDir = Task(persistent = true) {
@@ -921,7 +933,6 @@ object server extends ScalaModule with PlasmonPublishModule {
         "--enable-url-protocols=http,https",
         "--add-opens=java.base/java.util=ALL-UNNAMED", // needed for TimerThreadsHack
         "--add-opens=org.graalvm.nativeimage.builder/com.oracle.svm.core.posix.headers=ALL-UNNAMED", // needed for Signal stuff used by libdaemon-jvm
-        s"-Dplasmon.disableScala2Pc=$disableScala2Pc",
         "--enable-native-access=ALL-UNNAMED"
       ) ++ JavacInternals.addExports ++ ciOptions ++ quickBuildOptions
     }
@@ -1023,7 +1034,8 @@ object integration extends ScalaModule {
     Seq(
       s"-Dplasmon.integration.fixture-dir=${BuildCtx.workspaceRoot / "integration/test/resources/data"}",
       s"-Dplasmon.integration.generated-resources-dir=${BuildCtx.workspaceRoot / "integration/test/resources/generated"}",
-      s"-Dplasmon.integration.disableScala2Pc=$disableScala2Pc",
+      // the integration tests don't cover the Scala 2 presentation compiler host yet
+      "-Dplasmon.integration.disableScala2Pc=true",
       s"-Dplasmon.integration.test-logs-dir=$testLogsDir"
     )
   }

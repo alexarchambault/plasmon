@@ -67,8 +67,7 @@ import scala.meta.internal.pc.{
   InlayHints,
   JavaPresentationCompiler,
   LogMessages,
-  PcSymbolInformation,
-  ScalaPresentationCompiler as Scala2PresentationCompiler
+  PcSymbolInformation
 }
 import scala.meta.pc.{
   AutoImportsResult,
@@ -113,6 +112,7 @@ class PresentationCompilers(
   languageClient: PlasmonLanguageClient,
   scala2Compat: Boolean,
   sourcepath: Option[SourcepathMode],
+  scala2PcHost: RemotePcHost,
   emitDiagnostics: (
     Scala3PresentationCompiler,
     GlobalSymbolIndex.Module,
@@ -126,7 +126,7 @@ class PresentationCompilers(
   import PresentationCompilers.*
 
   val interactiveCompilersStatuses = new ConcurrentHashMap[
-    scala.meta.pc.PresentationCompiler & scala.meta.internal.pc.HasCompilerAccess,
+    scala.meta.pc.PresentationCompiler,
     ::[(String, String)]
   ]
 
@@ -1106,14 +1106,23 @@ class PresentationCompilers(
 
   private val diagnosticSource = s"Scala ${Properties.versionNumberString} presentation compiler"
 
+  /** Whether the build targets of a Scala version get the Scala 3 presentation compiler
+    *
+    * Scala 2 build targets get it if we're asked to, or if we can't run the Scala 2 presentation
+    * compiler. Else, they get the Scala 2 one, run in [[scala2PcHost]].
+    */
+  def usesScala3Pc(scalaVersion: String): Boolean =
+    scalaVersion.startsWith("3.") ||
+    (scalaVersion.startsWith("2.") && (scala2Compat || scala2PcHost.classPathOrError.isLeft))
+
   private def resolve(
     targetId: b.BuildTargetIdentifier,
     scalaVersion: String
   ): (MakeCompiler, Seq[os.Path]) = {
     val (id, label) = loggerIdName(targetId, scalaVersion)
     def logger()    = loggerManager.create(id, label)
-    def setupPc(pc0: PresentationCompiler & pc.HasCompilerAccess): Unit = {
-      pc0.compilerAccess.beforeAccess { (reqId, name, uri) =>
+    def setupPc(pc0: PresentationCompiler, hooks: PcAccessHooks): Unit = {
+      hooks.beforeAccess { (reqId, name, uri) =>
         interactiveCompilersStatuses.compute(
           pc0,
           (_, previousValueOrNull) =>
@@ -1131,7 +1140,7 @@ class PresentationCompilers(
           )
         )
       }
-      pc0.compilerAccess.afterAccess { (reqId, name, uri) =>
+      hooks.afterAccess { (reqId, name, uri) =>
         interactiveCompilersStatuses.compute(
           pc0,
           (_, previousValueOrNull) =>
@@ -1156,7 +1165,7 @@ class PresentationCompilers(
         )
       }
     }
-    if ((scala2Compat && scalaVersion.startsWith("2.")) || scalaVersion.startsWith("3.")) {
+    if (usesScala3Pc(scalaVersion)) {
       val makeCompiler = MakeCompiler { javaHome =>
         scribe.info("Loading Scala 3 PC")
         lazy val pc: Scala3PresentationCompiler = new Scala3PresentationCompiler(
@@ -1203,10 +1212,10 @@ class PresentationCompilers(
           },
           module = targetId.module
         )
-        setupPc(pc)
+        setupPc(pc, PcAccessHooks(pc.compilerAccess))
         pc.preferSymbolSearch = PatchedSymbolIndex.millBuildPackagePattern.matches
         pc
-      }
+      }.copy(adaptScala2Options = scalaVersion.startsWith("2."))
       val extraCp =
         if (scalaVersion.startsWith("2.")) Seq(scala3Library)
         else Nil
@@ -1214,16 +1223,14 @@ class PresentationCompilers(
     }
     else {
       val makeCompiler = MakeCompiler { javaHome =>
-        scribe.error(s"Was asked presentation compiler for Scala $scalaVersion")
-        val pc0 = new Scala2PresentationCompilerHandler().create(
-          javaHome.toNIO,
+        scribe.info(s"Using the Scala 2 presentation compiler host for Scala $scalaVersion")
+        val pc0 = new RemotePresentationCompiler(
+          scala2PcHost,
+          javaHome,
           () => logger().consumer,
           targetId.module
-        ) match {
-          case pc1: (PresentationCompiler & pc.HasCompilerAccess) => pc1
-          case _                                                  => ???
-        }
-        setupPc(pc0)
+        )
+        setupPc(pc0, pc0)
         pc0
       }
       (makeCompiler, Nil)
@@ -1371,7 +1378,7 @@ class PresentationCompilers(
   private def compilerTargetId(pc: PresentationCompiler): String =
     pc match {
       case s: Scala3PresentationCompiler => s.module.targetId
-      case s: Scala2PresentationCompiler => s.module.targetId
+      case r: RemotePresentationCompiler => r.module.targetId
       case j: JavaPresentationCompiler =>
         GlobalSymbolIndex.Module.fromString(j.moduleString).targetId
       case _ => "" // ???
@@ -1831,7 +1838,7 @@ object PresentationCompilers {
       // Mill (>= 1.3) passes `-Ymagic-offset-header:…` so that the compiler maps positions in
       // the sources it generates out of build files back to the build files. We map positions
       // between the two ourselves (see MillWrappedSources), so the compiler mustn't do it too.
-      val options = enrichWithReleaseOption(scalaTarget)
+      val options = enrichWithReleaseOption(scalaTarget, makeCompiler.adaptScala2Options)
         .filter(!_.startsWith("-Ymagic-offset-header"))
       // Best Effort option `-Ybest-effort` is useless for PC,
       // and it may unnecesarily dump semanticdb and tasty files
@@ -1901,6 +1908,7 @@ object PresentationCompilers {
         additionalClasspath = additionalClasspath,
         ref = Option(refValue).map {
           case pc: Scala3PresentationCompiler => ScalaLazyCompiler.pcAsJson(pc)
+          case _: RemotePresentationCompiler  => ScalaLazyCompiler.PcAsJson()
           case other                          => sys.error(s"Unsupported PC type: $other")
         },
         future = presentationCompilerFuture.value match {
@@ -2093,8 +2101,8 @@ object PresentationCompilers {
     )
   }
 
-  private def enrichWithReleaseOption(scalaTarget: ScalaTarget) = {
-    val isScala2 = scalaTarget.scalaInfo.getScalaVersion.startsWith("2.")
+  private def enrichWithReleaseOption(scalaTarget: ScalaTarget, adaptScala2Options: Boolean) = {
+    val isScala2 = adaptScala2Options && scalaTarget.scalaInfo.getScalaVersion.startsWith("2.")
 
     // Try to adapt Scala 2 options to Scala 3, so that the compiler
     // doesn't error out
