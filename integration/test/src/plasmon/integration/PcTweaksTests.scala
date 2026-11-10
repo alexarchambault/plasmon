@@ -26,6 +26,68 @@ class PcTweaksTests extends PlasmonSuite {
       weirdMethodCallTest(mode, scalaVersion, jvm, serverOpt)
     }
 
+  for {
+    (scalaVersionOpt, serverOpt, buildTool, jvm, testNameSuffix) <- scalaVersionBuildToolJvmValues
+    if buildTool == SingleModuleBuildTool.ScalaCli()
+    scalaVersion <- scalaVersionOpt
+    // Scala 3.10 stdlib sources use capture checking syntax that the Scalameta parser rejects, so
+    // the symbol index has nothing for their members, and the PC points at class files instead
+    if scalaVersion.label == "3"
+    mode <- modes
+  }
+    test("Definition in class file" + testNameSuffix + mode.testNameSuffix) {
+      definitionInClassFileTest(mode, scalaVersion, jvm, serverOpt)
+    }
+
+  def definitionInClassFileTest(
+    mode: TestMode,
+    scalaVersion: Labelled[String],
+    jvm: Labelled[String],
+    serverOpt: Seq[String]
+  ): Unit = {
+    // Presentation compiler behaviour only - replayed rather than imported for real
+    val buildTool = SingleModuleBuildTool.Replayed(
+      SingleModuleBuildTool.ScalaCli(),
+      os.sub / "pc-tweaks-tests/definition-in-class-file/scala-cli" /
+        s"scala-${scalaVersion.label}" / s"jvm-${jvm.label}"
+    )
+    val source =
+      s"""//> using scala ${scalaVersion.value}
+         |//> using jvm ${jvm.value}
+         |
+         |object Foo {
+         |  val m: Map[String, Int] = Map("a" -> 1)
+         |  val value = m.g<1>et("a")
+         |}
+         |""".stripMargin
+
+    val (sourceFile, files) = buildTool.singleFile(os.sub / "Foo.scala", source)
+
+    withWorkspaceServerPositions(
+      mode = mode,
+      extraServerOpts = Seq("--jvm", jvm.value) ++ serverOpt,
+      timeout = Some(buildTool.defaultTimeout)
+    )(files*) {
+      (workspace, driver, positions, osOpt) =>
+
+        buildTool.setup(workspace, driver, osOpt, compiles = false)
+
+        // The Scala 3 PC returns a jar:file:///…/scala-library-….jar!/scala/collection/MapOps.class
+        // location here, that should be mapped to the definition of MapOps in the sources JAR
+        checkJsoniterFixture(
+          fixtureDir / "plasmon/integration/pc-tweaks-tests/definition-in-class-file/definition" /
+            buildTool.id / s"scala-${scalaVersion.label}" / s"jvm-${jvm.label}" / "definition-1.txt",
+          goToDef(
+            driver,
+            workspace,
+            workspace / sourceFile,
+            positions.lspPos(sourceFile, 1)
+          ),
+          osOpt
+        )
+    }
+  }
+
   def untuplingTest(
     mode: TestMode,
     scalaVersion: Labelled[String],

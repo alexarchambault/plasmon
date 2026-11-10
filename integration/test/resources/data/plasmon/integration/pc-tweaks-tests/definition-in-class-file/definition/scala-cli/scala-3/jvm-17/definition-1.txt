@@ -1,0 +1,9 @@
+{
+  "path": ".plasmon/readonly/dependencies/scala-library-3.10.0-sources.jar/scala/collection/Map.scala",
+  "line": 102,
+  "colRange": [
+    18,
+    24
+  ],
+  "content": "MapOps"
+}

@@ -43,16 +43,22 @@ final case class LspDefinition(
     if (options.json) {
       if (options.archiveUris && locations != null)
         for (location <- locations.asScala)
-          for (archiveUri <- JarMeta.archiveUri(location.getUri.osPathFromUri))
+          for {
+            path       <- fileUriPath(location.getUri)
+            archiveUri <- JarMeta.archiveUri(path)
+          }
             location.setUri(archiveUri)
       printJson(Option(locations).getOrElse(Nil.asJava))
     }
     else if (locations != null)
       for (location <- locations.asScala) {
-        val path0 = location.getUri.osPathFromUri
-        val path =
-          if (options.archiveUris) JarMeta.archivePath(path0).getOrElse(path0.toString)
-          else path0.toString
+        val path = fileUriPath(location.getUri) match {
+          case Some(path0) =>
+            if (options.archiveUris) JarMeta.archivePath(path0).getOrElse(path0.toString)
+            else path0.toString
+          case None =>
+            location.getUri
+        }
         // 1-based, the way compilers print positions, and editors and terminals read
         // `path:line:col` - unlike LSP positions (--line / --col, and the --json output)
         val startLine: Int = location.getRange.getStart.getLine + 1
@@ -65,6 +71,9 @@ final case class LspDefinition(
         printLine(s"$path:$coords")
       }
   }
+
+  private def fileUriPath(uri: String): Option[os.Path] =
+    Option(uri).filter(_.startsWith("file:")).flatMap(_.maybeOsPathFromUri)
 }
 
 object LspDefinition extends ServerCommand[LspDefinitionOptions] {

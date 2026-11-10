@@ -320,6 +320,15 @@ final class BspData(
       id => data.fromOptions(_.inverseDependencies.get(id))
     )
 
+  /** The sources JAR of a class path JAR, from the dependency modules the build tools report, or
+    * else next to it (`foo.jar` → `foo-sources.jar`, like in the coursier cache).
+    */
+  def sourcesJar(jar: os.Path): Option[os.Path] =
+    data.fromOptions(_.findConnectedArtifact(jar, None)).orElse {
+      val sibling = jar / os.up / (jar.last.stripSuffix(".jar") + "-sources.jar")
+      Option.when(jar.last.endsWith(".jar") && os.isFile(sibling))(sibling)
+    }
+
   @deprecated(
     "This might return false positives since names of jars could repeat."
   )

@@ -16,6 +16,7 @@ import plasmon.Logger
 import plasmon.PlasmonEnrichments.*
 import plasmon.ide.{
   AdjustLspData,
+  ArchiveLocations,
   AdjustRange,
   Buffers,
   HoverExtParams,
@@ -877,12 +878,21 @@ class PresentationCompilers(
         else
           pc.definition(CompilerOffsetParamsUtils.fromPos(pos, token))
       defResult.asScala.map { c =>
+        // Locations in archives (class files, for symbols missing from the index) are mapped to
+        // extracted source files, or dropped if that fails
+        val locations = c.locations.asScala.toSeq.flatMap { loc =>
+          if (ArchiveLocations.isArchiveUri(loc.getUri))
+            ArchiveLocations.toFileLocation(loc, workspace, bspData.sourcesJar).toSeq
+          else
+            Seq(loc)
+        }
         for {
-          loc <- c.locations.asScala
+          loc  <- locations
+          path <- Option(loc.getUri).filter(_.startsWith("file:")).flatMap(_.maybeOsPathFromUri)
           mappedSource <- bspData.mappedFrom(
             // FIXME This only looks at wrapped files in the same module as the input source
             new b.BuildTargetIdentifier(pc.buildTargetId()),
-            loc.getUri.osPathFromUri
+            path
           )
           startLine <- mappedSource.toUserLine(loc.getRange.getStart.getLine)
           endLine   <- mappedSource.toUserLine(loc.getRange.getEnd.getLine)
@@ -892,7 +902,7 @@ class PresentationCompilers(
           loc.getRange.getStart.setLine(startLine)
           loc.getRange.getEnd.setLine(endLine)
         }
-        c.locations().asScala.toSeq
+        locations
       }
     }.getOrElse(Future.successful(Nil))
 
