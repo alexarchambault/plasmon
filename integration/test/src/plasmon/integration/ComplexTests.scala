@@ -26,7 +26,7 @@ class ComplexTests extends PlasmonSuite {
     val buildTool = SingleModuleBuildTool.Replayed(
       buildTool0,
       os.sub / "complex-tests/completions" / buildTool0.id /
-        s"scala-${scalaVersionOpt.map(_.label).getOrElse("default")}" / s"jvm-${jvm.label}"
+        s"scala-${scalaVersionOpt.map(_.recordingLabel).getOrElse("default")}" / s"jvm-${jvm.label}"
     )
 
     val header = scalaVersionOpt match {
@@ -175,7 +175,7 @@ class ComplexTests extends PlasmonSuite {
     SingleModuleBuildTool.Replayed(
       SingleModuleBuildTool.Mill,
       os.sub / "complex-tests/adt-in-other-module" /
-        s"scala-${scalaVersion.label}" / s"jvm-${jvm.label}"
+        s"scala-${scalaVersion.recordingLabel}" / s"jvm-${jvm.label}"
     )
 
   private def adtFixtureDir(scalaVersion: Labelled[String], jvm: Labelled[String]) =

@@ -16,7 +16,7 @@
       "arguments": [
         {
           "symbol": "scala/collection/Iterator#hasNext().",
-          "module": "buildTarget:file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e"
+          "module": "buildTarget:file:/workspace/.scala-build/?id\u003dtest-project_41e103cfb2"
         }
       ]
     }
@@ -38,7 +38,7 @@
       "arguments": [
         {
           "symbol": "scala/collection/Iterator#next().",
-          "module": "buildTarget:file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e"
+          "module": "buildTarget:file:/workspace/.scala-build/?id\u003dtest-project_41e103cfb2"
         }
       ]
     }

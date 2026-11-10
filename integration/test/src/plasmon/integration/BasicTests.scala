@@ -8,17 +8,12 @@ import scala.jdk.CollectionConverters.*
 
 class BasicTests extends PlasmonSuite {
 
-  private lazy val defaultScalaVersion =
-    if (disableScala2Pc) scala213Compat else scala213
+  private lazy val defaultScalaVersion = scala213
 
-  private lazy val scalaVersions = {
-    val scala213Values =
-      if (disableScala2Pc) Nil
-      else Seq((scala213, Nil))
-    scala213Values ++ Seq(
-      (scala213Compat, compatServerOpt)
-    )
-  }
+  private lazy val scalaVersions = Seq(
+    (scala213, Nil),
+    (scala213Compat, compatServerOpt)
+  )
 
   private def fileContentFor(jvm: String, scalaVersionOpt: Option[String]): String = {
     val scalaVersion = scalaVersionOpt.getOrElse(defaultScalaVersion.value)
@@ -137,7 +132,7 @@ class BasicTests extends PlasmonSuite {
         SingleModuleBuildTool.Replayed(
           buildTool0,
           os.sub / "basic-tests" / buildTool0.id /
-            s"scala-${scalaVersionOpt.map(_.label).getOrElse("default")}" / s"jvm-${jvm.label}"
+            s"scala-${scalaVersionOpt.map(_.recordingLabel).getOrElse("default")}" / s"jvm-${jvm.label}"
         )
 
     val header = (

@@ -1,0 +1,10 @@
+```scala
+def toVector: Vector[URL]
+```
+
+***
+
+Converts this collection to a `Vector`.
+
+
+**Returns** This collection as a `Vector[A]`.

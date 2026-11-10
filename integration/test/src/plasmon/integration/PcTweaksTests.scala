@@ -98,7 +98,7 @@ class PcTweaksTests extends PlasmonSuite {
     val buildTool = SingleModuleBuildTool.Replayed(
       SingleModuleBuildTool.ScalaCli(),
       os.sub / "pc-tweaks-tests/untupling/scala-cli" /
-        s"scala-${scalaVersion.label}" / s"jvm-${jvm.label}"
+        s"scala-${scalaVersion.recordingLabel}" / s"jvm-${jvm.label}"
     )
     val source =
       s"""//> using scala ${scalaVersion.value}
@@ -170,7 +170,7 @@ class PcTweaksTests extends PlasmonSuite {
     val buildTool = SingleModuleBuildTool.Replayed(
       SingleModuleBuildTool.ScalaCli(),
       os.sub / "pc-tweaks-tests/weird-method-call/scala-cli" /
-        s"scala-${scalaVersion.label}" / s"jvm-${jvm.label}"
+        s"scala-${scalaVersion.recordingLabel}" / s"jvm-${jvm.label}"
     )
     val source =
       s"""//> using scala ${scalaVersion.value}

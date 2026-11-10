@@ -56,18 +56,6 @@ object TestUtil {
         sys.error("plasmon.integration.generated-resources-dir not set")
       }
 
-  lazy val disableScala2Pc =
-    sys.props
-      .get("plasmon.integration.disableScala2Pc")
-      .map {
-        case "true"  => true
-        case "false" => false
-        case other   => sys.error(s"Malformed plasmon.integration.disableScala2Pc value: '$other'")
-      }
-      .getOrElse {
-        sys.error("plasmon.integration.disableScala2Pc not set")
-      }
-
   lazy val baseTimeout = Option(System.getenv("PLASMON_TIMEOUT_OVERRIDE"))
     .map(Duration(_))
     .map {
@@ -745,15 +733,11 @@ object TestUtil {
         if (scripting) Seq(SingleModuleBuildTool.ScalaCli(scriptMode = true))
         else Nil
       }
-      (scalaVersion, serverOpt) <- {
-        val maybeScala213 =
-          if (disableScala2Pc) Nil
-          else Seq((scala213, Nil))
-        maybeScala213 ++ Seq(
-          (scala213Compat, compatServerOpt),
-          (Labelled("3", IntegrationConstants.scala3), Nil)
-        )
-      }
+      (scalaVersion, serverOpt) <- Seq(
+        (scala213, Nil),
+        (scala213Compat, compatServerOpt),
+        (Labelled("3", IntegrationConstants.scala3), Nil)
+      )
       jvm <- jvmValues
       if jvm.label != "8" || buildTool != SingleModuleBuildTool.Mill // issue with Mill 0.11.7 and BSP, that requires Java >= 11
       testNameSuffix =
@@ -770,15 +754,11 @@ object TestUtil {
     )] =
     for {
       buildTool <- buildTools
-      (scalaVersion, serverOpt) <- {
-        val maybeScala213 =
-          if (disableScala2Pc) Nil
-          else Seq((Labelled("2.13.16", "2.13.16"), Nil))
-        maybeScala213 ++ Seq(
-          (Labelled("2.13.16-compat", "2.13.16"), compatServerOpt),
-          (Labelled("3.7.4", "3.7.4"), Nil)
-        )
-      }
+      (scalaVersion, serverOpt) <- Seq(
+        (Labelled("2.13.16", "2.13.16"), Nil),
+        (Labelled("2.13.16-compat", "2.13.16"), compatServerOpt),
+        (Labelled("3.7.4", "3.7.4"), Nil)
+      )
       jvm <- jvmValues
       if jvm.label != "8" || buildTool != SingleModuleBuildTool.Mill // issue with Mill 0.11.7 and BSP, that requires Java >= 11
       testNameSuffix =

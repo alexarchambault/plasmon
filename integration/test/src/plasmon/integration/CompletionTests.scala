@@ -61,7 +61,7 @@ class CompletionTests extends PlasmonSuite {
     val buildTool = SingleModuleBuildTool.Replayed(
       buildTool0,
       os.sub / "completion-tests/import" / buildTool0.id /
-        s"scala-${scalaVersionOpt.map(_.label).getOrElse("default")}" / s"jvm-${jvm.label}"
+        s"scala-${scalaVersionOpt.map(_.recordingLabel).getOrElse("default")}" / s"jvm-${jvm.label}"
     )
 
     val header = (
@@ -130,7 +130,7 @@ class CompletionTests extends PlasmonSuite {
     val buildTool = SingleModuleBuildTool.Replayed(
       buildTool0,
       os.sub / "completion-tests/chains" / buildTool0.id /
-        s"scala-${scalaVersionOpt.map(_.label).getOrElse("default")}" / s"jvm-${jvm.label}"
+        s"scala-${scalaVersionOpt.map(_.recordingLabel).getOrElse("default")}" / s"jvm-${jvm.label}"
     )
 
     val header = scalaVersionOpt match {

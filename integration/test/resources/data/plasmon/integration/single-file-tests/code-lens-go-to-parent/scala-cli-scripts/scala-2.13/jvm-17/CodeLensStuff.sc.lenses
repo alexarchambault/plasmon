@@ -1,0 +1,78 @@
+[
+  {
+    "range": {
+      "start": {
+        "line": 4,
+        "character": 8
+      },
+      "end": {
+        "line": 4,
+        "character": 15
+      }
+    },
+    "command": {
+      "title": "$(arrow-up) hasNext",
+      "command": "goto",
+      "arguments": [
+        {
+          "symbol": "scala/collection/Iterator#hasNext().",
+          "module": "buildTarget:file:/workspace/.scala-build/?id\u003dtest-project_41e103cfb2"
+        }
+      ]
+    }
+  },
+  {
+    "range": {
+      "start": {
+        "line": 5,
+        "character": 8
+      },
+      "end": {
+        "line": 5,
+        "character": 12
+      }
+    },
+    "command": {
+      "title": "$(arrow-up) next",
+      "command": "goto",
+      "arguments": [
+        {
+          "symbol": "scala/collection/Iterator#next().",
+          "module": "buildTarget:file:/workspace/.scala-build/?id\u003dtest-project_41e103cfb2"
+        }
+      ]
+    }
+  },
+  {
+    "range": {
+      "start": {
+        "line": 8,
+        "character": 0
+      },
+      "end": {
+        "line": 8,
+        "character": 0
+      }
+    },
+    "command": {
+      "title": "$(arrow-left) Go to compiled source",
+      "command": "plasmon-goto-location",
+      "arguments": [
+        {
+          "uri": "file:///workspace/.scala-build/test-project_41e103cfb2/src_generated/main/CodeLensStuff.scala",
+          "range": {
+            "start": {
+              "line": 5,
+              "character": 0
+            },
+            "end": {
+              "line": 5,
+              "character": 0
+            }
+          },
+          "otherWindow": false
+        }
+      ]
+    }
+  }
+]
