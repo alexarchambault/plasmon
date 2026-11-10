@@ -220,6 +220,20 @@ object `remote-pc` extends Module {
     def moduleDeps = Seq(submodules.metals.`mtags-interfaces`)
     def mvnDeps    = Seq(Deps.lsp4j)
   }
+
+  /** Process running Scala 2 presentation compilers, that the server fetches and starts when it
+    * needs one
+    */
+  object `scala2-host` extends ScalaModule with PlasmonPublishModule {
+    def scalaVersion = Versions.scala2
+    def moduleDeps   = Seq(protocol, submodules.metals.mtags)
+    def mainClass    = Some("plasmon.remotepc.host.Scala2PcHost")
+
+    object test extends ScalaTests {
+      def mvnDeps       = Seq(Deps.munit)
+      def testFramework = "munit.Framework"
+    }
+  }
 }
 
 object shared extends Module {
