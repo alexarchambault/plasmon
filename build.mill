@@ -210,6 +210,18 @@ object submodules extends Module {
   }
 }
 
+/** Presentation compilers running in processes of their own, that the server talks to with JSON-RPC
+  * over their standard input and output
+  */
+object `remote-pc` extends Module {
+
+  /** The JSON-RPC interfaces and messages, shared by the server and the host processes */
+  object protocol extends JavaModule with PlasmonPublishModule {
+    def moduleDeps = Seq(submodules.metals.`mtags-interfaces`)
+    def mvnDeps    = Seq(Deps.lsp4j)
+  }
+}
+
 object shared extends Module {
   def publishVersion = Task.Input(PlasmonPublishModule.computeBuildVersion())
 
