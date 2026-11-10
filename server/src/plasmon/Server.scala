@@ -676,8 +676,8 @@ final class Server(
     */
   def autoCompile: Boolean = sourcepath.isEmpty
 
-  /** The targets whose presentation compilers read `targetId` from its sources, with a source
-    * path: `targetId`'s own, and those of the targets depending on it.
+  /** The targets whose presentation compilers read `targetId` from its sources, with a source path:
+    * `targetId`'s own, and those of the targets depending on it.
     */
   private def sourcepathReaders(targetId: b.BuildTargetIdentifier): Set[b.BuildTargetIdentifier] =
     bspData.allInverseDependencies(targetId).toSet + targetId
@@ -691,8 +691,8 @@ final class Server(
       for (id <- sourcepathReaders(targetId))
         presentationCompilers.reset(id)
 
-  /** With a source path, has the presentation compilers reading `path`'s target pick up what
-    * `path` now holds on disk, having been saved or otherwise changed.
+  /** With a source path, has the presentation compilers reading `path`'s target pick up what `path`
+    * now holds on disk, having been saved or otherwise changed.
     *
     * Each loaded compiler reads the file afresh and re-enters what it defines, in place. One that
     * can't get away with that - a definition it used to know is gone, or the file is not on its
@@ -710,7 +710,9 @@ final class Server(
             .traverse(sourcepathReaders(targetId).toSeq) { id =>
               presentationCompilers.reloadSourcepathFile(id, path).map { needsReset =>
                 if (needsReset) {
-                  scribe.info(s"Starting presentation compiler of ${id.getUri} over after $path changed")
+                  scribe.info(
+                    s"Starting presentation compiler of ${id.getUri} over after $path changed"
+                  )
                   presentationCompilers.reset(id)
                 }
               }
