@@ -1,0 +1,16 @@
+{
+  "items": [
+    {
+      "target": {
+        "uri": "file:/$WORKSPACE$/.scala-build/?id\u003dtest-project_41e103cfb2"
+      },
+      "sources": []
+    },
+    {
+      "target": {
+        "uri": "file:/$WORKSPACE$/.scala-build/?id\u003dtest-project_41e103cfb2-test"
+      },
+      "sources": []
+    }
+  ]
+}

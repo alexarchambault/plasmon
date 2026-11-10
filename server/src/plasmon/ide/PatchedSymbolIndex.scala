@@ -125,9 +125,30 @@ final class PatchedSymbolIndex(
         symbol
     }
 
-    index
+    val definitions = index
       .definitions(module, Symbol(symbol0))
       .filter(_.path.exists())
+
+    // The same file can be found in several source JARs of a module, like the sources of the
+    // build's scala-library and those of the one the presentation compiler uses (see
+    // IndexerActor.postProcessDependencySourcesResult). Keep the first one only, like a class path
+    // lookup would.
+    val dedupedDefinitions = definitions
+      .foldLeft((List.empty[SymbolDefinition], Set.empty[(String, String)])) {
+        case ((acc, seen), defn) =>
+          defn.path match {
+            case z: SourcePath.ZipEntry =>
+              val key = (defn.definitionSymbol.value, z.pathInZip)
+              if (seen.contains(key)) (acc, seen)
+              else (defn :: acc, seen + key)
+            case _ =>
+              (defn :: acc, seen)
+          }
+      }
+      ._1
+      .reverse
+
+    dedupedDefinitions
       .flatMap { defn =>
         val destinationPath =
           if (saveDefFileToDisk) defn.path.toFileOnDisk(workspace)
