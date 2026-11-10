@@ -35,7 +35,11 @@ object ProjectOps {
       -value.compare(that.value)
   }
 
-  /** A build target that a file belongs to, and could be loaded from. */
+  /** A build target that a file belongs to, and could be loaded from.
+    *
+    * `label` is the plain module name: editors decorate it themselves (see
+    * `PlasmonCommands.listModules`), from `recommended` and `supported`.
+    */
   final case class ModuleInfo(
     workspace: String,
     server: String,
@@ -43,7 +47,9 @@ object ProjectOps {
     label: String,
     detail: String,
     description: String,
-    alreadyLoaded: Boolean
+    alreadyLoaded: Boolean,
+    recommended: Boolean,
+    supported: Boolean
   )
 
   object ModuleInfo {
@@ -117,23 +123,22 @@ object ProjectOps {
       .filter(tool => !alreadyAdded.contains(tool.buildTool))
   }
 
-  /** The not-yet-loaded modules a file belongs to, best candidate first. */
+  /** The modules a file belongs to: those not loaded yet, best candidate first, then the loaded
+    * ones.
+    */
   def listModules(
     file: os.Path,
     server: Server
   ): Seq[ModuleInfo] = {
     val loadedTargetIds = server.bspData.allTargetData
       .flatMap { targetData =>
-        scribe.info(s"targetData.sourceBuildTargets($file)=" + pprint.apply(
-          targetData.sourceBuildTargets(file)
-        ))
         targetData.sourceBuildTargets(file)
           .toSeq
           .flatMap(_.toVector.sortBy(_.getUri))
       }
       .toSet
     server.bspServers.list.flatMap(_._2).flatMap { server0 =>
-      scribe.info(s"server0.name=" + pprint.apply(server0.name))
+      scribe.debug(s"Looking for the modules of $file in ${server0.name}")
       val workspaceBuildTargetsRes = server0.conn.workspaceBuildTargets().get()
       val targetMap = workspaceBuildTargetsRes.getTargets.asScala.map(t => t.getId -> t).toMap
       val targets =
@@ -144,7 +149,6 @@ object ProjectOps {
               new b.SourcesParams(workspaceBuildTargetsRes.getTargets.asScala.map(_.getId).asJava)
             )
             .get()
-          scribe.info("sourcesRes=" + pprint.apply(sourcesRes))
           sourcesRes
             .getItems
             .asScala
@@ -219,7 +223,7 @@ object ProjectOps {
                 }
             }
 
-          scribe.info(s"Looking for ${file.toNIO.toUri.toASCIIString} in $wrappedSourcesRes")
+          scribe.debug(s"Looking for ${file.toNIO.toUri.toASCIIString} in $wrappedSourcesRes")
 
           wrappedSourcesRes.getItems.asScala.iterator
             .filter(_.getSources.asScala.exists(_.getUri == file.toNIO.toUri.toASCIIString))
@@ -228,13 +232,7 @@ object ProjectOps {
         }
         else targets
       val retainedTargets = {
-        val l = targets0
-          .collect {
-            case id if !loadedTargetIds.contains(id) =>
-              id
-          }
-          .toVector
-        val l0 = l.sortBy { id =>
+        val l0 = targets0.distinct.toVector.sortBy { id =>
           val scalaTargetOpt = targetMap.get(id)
             .orElse {
               server.bspData.targetData(server0.info).flatMap(_.buildTargetInfo.get(id))
@@ -262,8 +260,12 @@ object ProjectOps {
             (targetId = id, recommended = recommended)
         }
       }
-      retainedTargets.map {
+      // The ones that could still be loaded first, then those already loaded - which editors list
+      // too, to offer unloading them, and which `module load` reports rather than loading another
+      // module for the same file (another cross version, say) over them
+      retainedTargets.sortBy(t => loadedTargetIds.contains(t.targetId)).map {
         case (id, recommended) =>
+          val alreadyLoaded = loadedTargetIds.contains(id)
           val targetOpt = targetMap.get(id).orElse {
             server.bspData.targetData(server0.info).flatMap(_.buildTargetInfo.get(id))
           }
@@ -290,10 +292,15 @@ object ProjectOps {
             workspace = server0.info.workspace.toNIO.toUri.toASCIIString,
             server = server0.name,
             uri = id.getUri,
-            label = (if (supported) if (recommended) "$(tag) " else "" else "$(warning) ") + name,
-            detail = if (supported) "Load module" else "Unsupported Scala version",
+            label = name,
+            detail =
+              if (alreadyLoaded) "Unload module"
+              else if (supported) "Load module"
+              else "Unsupported Scala version",
             description = (Seq(server0.enhancedName) ++ commentOpt.map(_._2)).mkString(", "),
-            alreadyLoaded = false
+            alreadyLoaded = alreadyLoaded,
+            recommended = recommended,
+            supported = supported
           )
       }
     }
@@ -371,27 +378,49 @@ object ProjectOps {
           scribe.warn(s"No build target found for $file, nothing to compile")
           Future.successful(None)
         case Some(f) =>
-          val recovered = f.recover {
-            case ex
-                if Iterator
-                  .iterate(Option(ex))(_.flatMap(e => Option(e.getCause)))
-                  .takeWhile(_.nonEmpty)
-                  .flatten
-                  .exists(e =>
-                    e.isInstanceOf[ResponseErrorException] &&
-                    Option(e.getMessage).exists(_.contains("Compilation failed"))
-                  ) =>
-              new b.CompileResult(b.StatusCode.ERROR)
-          }(using server.pools.compilationEc)
-          recovered.onComplete {
-            case Success(_) =>
-            case Failure(ex) =>
-              scribe.error(s"Compiling $file failed", ex)
-          }(using server.pools.compilationEc)
-          recovered.map(Some(_))(using server.pools.dummyEc)
+          reportingFailures(server, file.toString, f).map(Some(_))(using server.pools.dummyEc)
       }
     }(using server.pools.requestsEces)
 
     f.flatten
   }
+
+  /** Compiles a loaded module - and, the build tool being asked to compile it, its dependencies. */
+  def compileModule(
+    server: Server,
+    targetId: b.BuildTargetIdentifier
+  ): Future[b.CompileResult] = {
+    val f = Future {
+      reportingFailures(server, targetId.getUri, server.compilations.compileTarget(targetId))
+    }(using server.pools.requestsEces)
+
+    f.flatten
+  }
+
+  /** A failed build as an `ERROR` result rather than an exception, anything else logged. */
+  private def reportingFailures(
+    server: Server,
+    what: String,
+    f: Future[b.CompileResult]
+  ): Future[b.CompileResult] = {
+    val recovered = f.recover {
+      case ex
+          if Iterator
+            .iterate(Option(ex))(_.flatMap(e => Option(e.getCause)))
+            .takeWhile(_.nonEmpty)
+            .flatten
+            .exists(e =>
+              e.isInstanceOf[ResponseErrorException] &&
+              Option(e.getMessage).exists(_.contains("Compilation failed"))
+            ) =>
+        new b.CompileResult(b.StatusCode.ERROR)
+    }(using server.pools.compilationEc)
+    recovered.onComplete {
+      case Success(_) =>
+      case Failure(ex) =>
+        scribe.error(s"Compiling $what failed", ex)
+    }(using server.pools.compilationEc)
+    recovered
+  }
+
 }

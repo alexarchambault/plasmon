@@ -15,7 +15,8 @@ import scala.util.Failure
   * tool and a module are loaded long before anyone hovers - the extension asks for them, or the
   * user picks them from a menu. From a terminal there is nobody to have done that, so a first
   * `plasmon lsp hover` on a fresh workspace has nothing to answer with. `--auto` runs what the user
-  * would otherwise have had to type first: [[BuildToolLoad]], then [[ModuleLoad]].
+  * would otherwise have had to type first: [[BuildToolLoad]], then [[ModuleLoad]] - which compiles
+  * the module it loads, see [[CompileAfterLoad]].
   *
   * The step before those two - having a server at all - is taken client-side, before this is ever
   * reached, by [[plasmon.command.AutoServer]].
@@ -32,7 +33,8 @@ object AutoLoad {
     */
   private final case class Out(progress: String => Unit, error: String => Unit)
 
-  /** Loads a build tool and a module for `file` if it has none. Returns once indexing has run.
+  /** Loads a build tool and a module for `file` if it has none. Returns once indexing has run, and
+    * the module just loaded is compiled.
     *
     * `log` is where this goes - stderr for the commands here, so that whatever the request itself
     * prints on stdout stays the only thing on it. `quiet` keeps everything but the errors off it:
@@ -143,7 +145,7 @@ object AutoLoad {
     if (hasModule(server, file))
       out.progress(s"Module already loaded for $file")
     else
-      ProjectOps.listModules(file, server) match {
+      ProjectOps.listModules(file, server).filter(!_.alreadyLoaded) match {
         case Seq() =>
           out.error(s"No module found for $file")
           ServerCommandInstance.exit(1)
@@ -174,5 +176,8 @@ object AutoLoad {
           // asked too early sees a half-built index. Same wait as `index --await`.
           while (indexer.actor.awaitingMessages.nonEmpty)
             Thread.sleep(100L)
+          // What `module load` does too: nothing else builds a module from the command line, and
+          // a request answered from an unbuilt one is quietly wrong (see CompileAfterLoad)
+          CompileAfterLoad(server, module.uri, out.progress, out.error)
       }
 }

@@ -33,10 +33,17 @@ final case class ModuleLoad(
       exit(1)
     }
 
+    val (loaded, notLoaded) = modules.partition(_.alreadyLoaded)
+
+    for (module <- loaded)
+      printLine(s"Module ${module.uri} already loaded", toStderr = true)
+
+    // A file whose module is loaded is taken care of: loading another module it belongs to - another
+    // cross version, typically - would only have that one serve the file instead
     val toLoad =
-      if (options.all) modules
-      else
-        Seq(modules.find(!_.alreadyLoaded).getOrElse(modules.head))
+      if (options.all) notLoaded
+      else if (loaded.isEmpty) notLoaded.take(1) // listModules puts the best candidate first
+      else Nil
 
     for (module <- toLoad) {
       val res = Await.result(
@@ -56,6 +63,14 @@ final case class ModuleLoad(
           exit(1)
         case Right(true) =>
           printLine(s"Loaded module ${module.uri}", toStderr = true)
+          // Nothing else would build it from the command line - see CompileAfterLoad
+          if (options.compile)
+            CompileAfterLoad(
+              server,
+              module.uri,
+              progress = printLine(_, toStderr = true),
+              log = printLine(_, toStderr = true)
+            )
         case Right(false) =>
           printLine(s"Module ${module.uri} already loaded", toStderr = true)
       }

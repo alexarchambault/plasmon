@@ -213,7 +213,10 @@ object PlasmonCommands {
         workspace = module.workspace,
         server = module.server,
         uri = module.uri,
-        label = module.label,
+        // VS Code codicons, which the extension renders and the Neovim plugin turns into markers
+        label =
+          (if (!module.supported) "$(warning) " else if (module.recommended) "$(tag) " else "") +
+            module.label,
         detail = module.detail,
         description = module.description,
         alreadyLoaded = module.alreadyLoaded

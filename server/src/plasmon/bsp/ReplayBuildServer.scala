@@ -2,6 +2,7 @@ package plasmon.bsp
 
 import ch.epfl.scala.bsp4j as b
 import com.google.gson.{GsonBuilder, JsonElement}
+import plasmon.PlasmonEnrichments.StringThingExtensions
 
 import java.util.concurrent.CompletableFuture
 
@@ -145,9 +146,23 @@ final class ReplayBuildServer(
   def buildTargetDependencyModules(params: b.DependencyModulesParams)
     : CompletableFuture[b.DependencyModulesResult] =
     completed(new b.DependencyModulesResult(Nil.asJava))
+  // Worked out from the recorded sources, which list every target's files and directories - what
+  // `module load` asks the build tool to find out which modules a file belongs to
   def buildTargetInverseSources(params: b.InverseSourcesParams)
-    : CompletableFuture[b.InverseSourcesResult] =
-    completed(new b.InverseSourcesResult(Nil.asJava))
+    : CompletableFuture[b.InverseSourcesResult] = {
+    val file = params.getTextDocument.getUri.osPathFromUri
+    val targets = read[b.SourcesResult]("buildTargetSources").toSeq
+      .flatMap(_.getItems.asScala)
+      .filter { item =>
+        item.getSources.asScala.exists { source =>
+          val path = source.getUri.osPathFromUri
+          file == path || (source.getKind == b.SourceItemKind.DIRECTORY && file.startsWith(path))
+        }
+      }
+      .map(_.getTarget)
+      .distinct
+    completed(new b.InverseSourcesResult(targets.asJava))
+  }
   def buildTargetOutputPaths(params: b.OutputPathsParams): CompletableFuture[b.OutputPathsResult] =
     completed(new b.OutputPathsResult(Nil.asJava))
   def buildTargetResources(params: b.ResourcesParams): CompletableFuture[b.ResourcesResult] =
@@ -182,8 +197,8 @@ final class ReplayBuildServer(
 
   def buildShutdown(): CompletableFuture[Object] =
     completed(null)
-  def onBuildExit(): Unit         = ()
-  def onBuildInitialized(): Unit  = ()
+  def onBuildExit(): Unit        = ()
+  def onBuildInitialized(): Unit = ()
   def workspaceReload(): CompletableFuture[Object] =
     completed(null)
   def onRunReadStdin(params: b.ReadParams): Unit = ()
