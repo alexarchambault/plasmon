@@ -855,8 +855,29 @@ object server extends ScalaModule with PlasmonPublishModule {
       Seq(PathRef(resourceDir))
     }
 
+    /** Reflection entries for the messages and interfaces of the protocol we use to talk to
+      * presentation compiler hosts, that Gson maps and lsp4j proxies
+      */
+    def remotePcGraalvmStuff = Task {
+      val resourceDir = Task.dest / "resources"
+      val dir =
+        resourceDir / "META-INF" / "native-image" / "io.github.alexarchambault.plasmon" / "remote-pc-protocol"
+      val classesDir = `remote-pc`.protocol.compile().classes.path
+      val names = os.walk(classesDir)
+        .filter(p => os.isFile(p) && p.last.endsWith(".class"))
+        .map(_.relativeTo(classesDir).segments.mkString(".").stripSuffix(".class"))
+        // the classes implementing the scala.meta.pc interfaces in Messages are never read by Gson
+        .filter(name => !name.endsWith("ParamsImpl") && !name.contains("$$"))
+        .sorted
+      val classPath = `remote-pc`.protocol.runClasspath().map(_.path.toIO)
+      val json      = gsonReflectConfig(classPath, names)
+      os.write(dir / "reflect-config.json", json.render(indent = 2) + "\n", createFolders = true)
+      Seq(PathRef(resourceDir))
+    }
+
     def resources = Task {
-      Seq(native.resources()) ++ lsp4jGraalvmStuff() ++ bsp4jGraalvmStuff()
+      Seq(native.resources()) ++ lsp4jGraalvmStuff() ++ bsp4jGraalvmStuff() ++
+        remotePcGraalvmStuff()
     }
 
     def nativeImageName      = "plasmon"
@@ -1090,6 +1111,13 @@ object integration extends ScalaModule {
         s"-Dplasmon.integration.launcher=${server.native.nativeImage().path}",
         "-Dplasmon.integration.launcher-kind=native"
       )
+    }
+    // Native launchers can't be given the class path of the (unpublished) Scala 2 presentation
+    // compiler host like JVM ones are, see server.launcher
+    def forkEnv = Task {
+      val scala2PcHostClassPath =
+        `remote-pc`.`scala2-host`.jarClassPath().map(_.path.toString).mkString(File.pathSeparator)
+      super.forkEnv() ++ Map("PLASMON_SCALA2_PC_HOST_CLASS_PATH" -> scala2PcHostClassPath)
     }
     def compileMvnDeps = integration.test.compileMvnDeps()
     def sources = Task {
