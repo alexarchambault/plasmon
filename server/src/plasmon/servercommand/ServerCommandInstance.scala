@@ -48,6 +48,20 @@ abstract class ServerCommandInstance[T](client: CommandClient)(implicit
           printLine(s"[${channel.label}] $msg", toStderr = true)
       }
       .create("request", "Request")
+
+  /** Exits with an error unless there is something to look at in `file`.
+    *
+    * Language features answer for a file's content: the one the editor sent (`lsp did-open`), or
+    * else the one on disk. With neither - a mistyped path, say - the request handlers have nothing
+    * to say, and report that the way an editor expects, with an empty response (and, for a file
+    * that belongs to no module, a log line at most). From a terminal, that reads as a success.
+    */
+  protected def ensureFileContent(server: plasmon.Server, file: os.Path): Unit =
+    if (!server.editorState.buffers.contains(file) && !os.isFile(file))
+      ServerCommandInstance.usageError(
+        if (os.exists(file)) s"$file: not a file"
+        else s"$file: no such file"
+      )
 }
 
 object ServerCommandInstance {
