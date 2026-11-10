@@ -134,17 +134,25 @@ final class RemotePcHost(
       }
     }
 
+  private lazy val javaVersion = plasmon.bsp.BspDataPortability.majorFromJdkFiles(javaHome)
+
   private def start(): Connection = {
     val cp = classPathOrError.fold(e => throw e, identity)
+    val id = connectionIds.incrementAndGet()
+    val loggingOptions =
+      // The JVM logs warnings to its standard output, which is our JSON-RPC channel
+      if (javaVersion.exists(_ >= 9))
+        Seq("-Xlog:disable", "-Xlog:all=warning:stderr")
+      else Nil
     val command = Seq(
       (javaHome / "bin" / (if (scala.util.Properties.isWin) "java.exe" else "java")).toString,
       // like Metals does for its presentation compilers, that can recurse deeply
-      "-Xss4m",
+      "-Xss4m"
+    ) ++ loggingOptions ++ Seq(
       "-cp",
       cp.map(_.toString).mkString(File.pathSeparator),
       mainClass
     )
-    val id = connectionIds.incrementAndGet()
     scribe.info(s"Starting $name presentation compiler host #$id")
     scribe.debug(s"$name presentation compiler host #$id command: ${command.mkString(" ")}")
     val process = new ProcessBuilder(command*)
