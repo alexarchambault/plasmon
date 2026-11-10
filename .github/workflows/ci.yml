@@ -172,18 +172,18 @@ jobs:
         node-version: 24
     - uses: pnpm/action-setup@v6
       with:
-        package_json_file: extension/package.json
+        package_json_file: editors/vscode/package.json
     - name: Install Playwright system dependencies
       run: pnpm dlx playwright@1.64.1 install-deps chromium
     - name: Test
-      run: ./mill -i extension.e2e.test
+      run: ./mill -i editors.vscode.e2e.test
     - uses: actions/upload-artifact@v7
       if: failure()
       with:
         name: vscode-e2e-results
         path: |
-          extension/e2e/test-results
-          extension/e2e/playwright-report
+          editors/vscode/e2e/test-results
+          editors/vscode/e2e/playwright-report
 
   format:
     needs: tags

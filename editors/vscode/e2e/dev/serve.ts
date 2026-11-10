@@ -2,7 +2,7 @@
 // workbench that dev/drive.ts connects to, and keeps them running until interrupted.
 //
 // Usage (via Mill, which builds and passes the extension, launcher, and code-server):
-//   ./mill extension.e2e.serve [--state-dir <dir>] [--port <port>] [workspace]
+//   ./mill editors.vscode.e2e.serve [--state-dir <dir>] [--port <port>] [workspace]
 // Without a workspace, a sample Mill project is written to <state-dir>/workspace.
 
 import { chromium } from '@playwright/test'

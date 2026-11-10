@@ -472,7 +472,7 @@ object server extends ScalaModule with PlasmonPublishModule {
 
     val vsixDir = {
       val dir      = Task.dest / "vsix"
-      val vsixFile = extension.vsix().path
+      val vsixFile = editors.vscode.vsix().path
       os.copy(vsixFile, dir / "plasmon" / "plasmon.vsix", createFolders = true)
       dir
     }
@@ -1046,243 +1046,97 @@ object integration extends ScalaModule {
   }
 }
 
-object extension extends Module {
-  def packageJson = Task.Sources(os.sub / "package.json")
-  def jsSources   = Task.Sources(os.sub / "src")
-  // Other files that pnpm or vsce read when building the VSIX
-  def buildFiles = Task.Sources(
-    os.sub / "pnpm-lock.yaml",
-    os.sub / "pnpm-workspace.yaml",
-    os.sub / "tsconfig.json",
-    os.sub / ".vscodeignore"
-  )
+/** The VSCode extension, under editors/vscode/. */
+object editors extends Module {
+  object vscode extends Module {
+    def packageJson = Task.Sources(os.sub / "package.json")
+    def jsSources   = Task.Sources(os.sub / "src")
+    // Other files that pnpm or vsce read when building the VSIX
+    def buildFiles = Task.Sources(
+      os.sub / "pnpm-lock.yaml",
+      os.sub / "pnpm-workspace.yaml",
+      os.sub / "tsconfig.json",
+      os.sub / ".vscodeignore"
+    )
 
-  // from https://github.com/VirtusLab/scala-cli/blob/b92d86a02e741a3cea9cc943f59712a5fb385617/modules/build/src/main/scala/scala/build/internal/Runner.scala#L175-L202
-  private def endsWithCaseInsensitive(s: String, suffix: String): Boolean =
-    s.length >= suffix.length &&
-    s.regionMatches(true, s.length - suffix.length, suffix, 0, suffix.length)
+    // from https://github.com/VirtusLab/scala-cli/blob/b92d86a02e741a3cea9cc943f59712a5fb385617/modules/build/src/main/scala/scala/build/internal/Runner.scala#L175-L202
+    private def endsWithCaseInsensitive(s: String, suffix: String): Boolean =
+      s.length >= suffix.length &&
+      s.regionMatches(true, s.length - suffix.length, suffix, 0, suffix.length)
 
-  def findInPath(app: String): Option[String] =
-    if (os.FilePath(app).toNIO.getNameCount >= 2) Some(app)
-    else {
-      def pathEntries =
-        Option(System.getenv("PATH"))
-          .iterator
-          .flatMap(_.split(File.pathSeparator).iterator)
-      def pathSep =
-        if (Properties.isWin)
-          Option(System.getenv("PATHEXT"))
+    def findInPath(app: String): Option[String] =
+      if (os.FilePath(app).toNIO.getNameCount >= 2) Some(app)
+      else {
+        def pathEntries =
+          Option(System.getenv("PATH"))
             .iterator
             .flatMap(_.split(File.pathSeparator).iterator)
-        else Iterator("")
-      def matches = for {
-        dir <- pathEntries
-        if dir.nonEmpty
-        ext <- pathSep
-        app0 = if (endsWithCaseInsensitive(app, ext)) app else app + ext
-        path = os.Path(dir) / app0
-        if java.nio.file.Files.isExecutable(path.toNIO)
-      } yield path.toString
-      matches.find(_ => true)
-    }
+        def pathSep =
+          if (Properties.isWin)
+            Option(System.getenv("PATHEXT"))
+              .iterator
+              .flatMap(_.split(File.pathSeparator).iterator)
+          else Iterator("")
+        def matches = for {
+          dir <- pathEntries
+          if dir.nonEmpty
+          ext <- pathSep
+          app0 = if (endsWithCaseInsensitive(app, ext)) app else app + ext
+          path = os.Path(dir) / app0
+          if java.nio.file.Files.isExecutable(path.toNIO)
+        } yield path.toString
+        matches.find(_ => true)
+      }
 
-  /** Command running pnpm
-    *
-    * pnpm from PATH if it's there, else the version pinned by `packageManager` in
-    * extension/package.json, via npx (that only needs Node, which CI runners have by default)
-    */
-  lazy val pnpm: Seq[String] =
-    findInPath("pnpm") match {
-      case Some(path) => Seq(path)
-      case None =>
-        val packageManager = BuildCtx.withFilesystemCheckerDisabled {
-          ujson.read(os.read(BuildCtx.workspaceRoot / "extension/package.json"))
-            .obj.get("packageManager").map(_.str)
-        }
-        val spec = packageManager
-          .map(_.takeWhile(_ != '+')) // strip the optional "+sha512.…" suffix
-          .filter(_.startsWith("pnpm@"))
-          .getOrElse("pnpm")
-        val npx = findInPath("npx").getOrElse("npx")
-        Seq(npx, "--yes", spec)
-    }
-
-  def sources = Task {
-    packageJson() ++ jsSources() ++ buildFiles()
-  }
-
-  def version = Task {
-    val packageJsonPath = packageJson().head.path
-    val content         = os.read(packageJsonPath)
-    ujson.read(content).apply("version").str
-  }
-
-  def vsix = Task {
-    sources()
-    val version0 = version()
-    os.proc(pnpm, "install", "--frozen-lockfile")
-      .call(cwd = BuildCtx.workspaceRoot / "extension", stdin = os.Inherit, stdout = os.Inherit)
-    os.proc(pnpm, "run", "package")
-      .call(cwd = BuildCtx.workspaceRoot / "extension", stdin = os.Inherit, stdout = os.Inherit)
-    val dest = Task.dest / s"plasmon-$version0.vsix"
-    BuildCtx.withFilesystemCheckerDisabled {
-      os.move(
-        BuildCtx.workspaceRoot / "extension" / s"plasmon-$version0.vsix",
-        dest,
-        createFolders = true
-      )
-    }
-    PathRef(dest)
-  }
-
-  def userDataDir = Task(persistent = true) {
-    val dir = Task.dest
-    dir.toString // no PathRef, no need to look into what changed in that directory
-  }
-  def extensionsDir = Task(persistent = true) {
-    val dir = Task.dest
-    dir.toString // no PathRef, no need to look into what changed in that directory
-  }
-
-  object code extends Module {
-    private lazy val code =
-      if (Properties.isWin) extension.findInPath("code").getOrElse("code") else "code"
-
-    def clean() = Task.Command[Unit] {
-      val userDataDir0   = os.Path(userDataDir())
-      val extensionsDir0 = os.Path(extensionsDir())
-      os.remove.all(userDataDir0)
-      os.remove.all(extensionsDir0)
-      os.makeDir.all(userDataDir0)
-      os.makeDir.all(extensionsDir0)
-    }
-    private def runCode(
-      sharedArgs: Seq[os.Shellable],
-      args: Seq[String],
-      env: Map[String, String],
-      cwd: os.Path
-    ): Int = {
-      val proc0 = os.proc(code, sharedArgs, "--wait", args)
-      val proc = proc0.spawn(
-        cwd = cwd,
-        stdin = os.InheritRaw,
-        stdout = os.InheritRaw,
-        env = env
-      )
-      val dirOpt = args.filter(!_.startsWith("-")).lastOption
-        .flatMap { s =>
-          try Some(os.Path(s, cwd))
-          catch {
-            case e: InvalidPathException =>
-              None
+    /** Command running pnpm
+      *
+      * pnpm from PATH if it's there, else the version pinned by `packageManager` in
+      * editors/vscode/package.json, via npx (that only needs Node, which CI runners have by
+      * default)
+      */
+    lazy val pnpm: Seq[String] =
+      findInPath("pnpm") match {
+        case Some(path) => Seq(path)
+        case None =>
+          val packageManager = BuildCtx.withFilesystemCheckerDisabled {
+            ujson.read(os.read(moduleDir / "package.json"))
+              .obj.get("packageManager").map(_.str)
           }
-        }
-        .filter(os.isDir)
-      val tailerOpt = dirOpt.map { dir =>
-        val logFile = dir / ".plasmon" / "log"
-        if (!os.exists(logFile))
-          os.write(logFile, Array.emptyByteArray, createFolders = true)
-        val err = SystemStreams.original.err
-        Tailer.builder()
-          .setStartThread(true)
-          .setTailFromEnd(true)
-          .setReOpen(true)
-          .setPath(logFile.toNIO)
-          .setTailerListener(
-            new TailerListener {
-              override def fileNotFound(): Unit = ()
-              override def fileRotated(): Unit  = ()
-              override def handle(ex: Exception): Unit = {
-                err.println(s"Error tailing $logFile:")
-                ex.printStackTrace(err)
-              }
-              override def handle(line: String): Unit =
-                err.println(line)
-              override def init(tailer: Tailer): Unit = ()
-            }
-          )
-          .get()
-      }
-      try {
-        proc.waitFor()
-        proc.exitCode()
-      }
-      finally
-        tailerOpt.foreach(_.close())
-    }
-    def install() = Task.Command {
-      val vsix0 = vsix().path
-      os.proc(code, "--install-extension", vsix0, "--force")
-        .call(cwd = BuildCtx.workspaceRoot, stdin = os.Inherit, stdout = os.Inherit)
-    }
-    def jvm(args: String*) = Task.Command(exclusive = true) {
-      val vsix0 = vsix().path
-      val sharedArgs = Seq[os.Shellable](
-        "--user-data-dir",
-        os.Path(userDataDir()),
-        "--extensions-dir",
-        os.Path(extensionsDir())
-      )
-      os.proc(code, sharedArgs, "--install-extension", vsix0, "--force")
-        .call(cwd = BuildCtx.workspaceRoot, stdin = os.InheritRaw, stdout = os.InheritRaw)
-
-      val ver = shared.publishVersion()
-
-      val coursierRepoEnv = {
-        val currentOpt = Option(System.getenv("COURSIER_REPOSITORIES")).filter(_.trim.nonEmpty)
-        s"${`local-repo`.localRepo().path.toNIO.toUri.toASCIIString}|${currentOpt.getOrElse("ivy2Local|central")}"
+          val spec = packageManager
+            .map(_.takeWhile(_ != '+')) // strip the optional "+sha512.…" suffix
+            .filter(_.startsWith("pnpm@"))
+            .getOrElse("pnpm")
+          val npx = findInPath("npx").getOrElse("npx")
+          Seq(npx, "--yes", spec)
       }
 
-      runCode(
-        sharedArgs,
-        args,
-        Map(
-          "COURSIER_REPOSITORIES"  -> coursierRepoEnv,
-          "PLASMON_FORCED_VERSION" -> ver,
-          "PLASMON_DEBUG"          -> "false"
-        ),
-        BuildCtx.workspaceRoot
-      )
+    def sources = Task {
+      packageJson() ++ jsSources() ++ buildFiles()
     }
-    def native(args: String*) = Task.Command(exclusive = true) {
-      val vsix0 = vsix().path
-      val sharedArgs = Seq[os.Shellable](
-        "--user-data-dir",
-        os.Path(userDataDir()),
-        "--extensions-dir",
-        os.Path(extensionsDir())
-      )
-      os.proc(code, sharedArgs, "--install-extension", vsix0, "--force")
-        .call(cwd = BuildCtx.workspaceRoot, stdin = os.Inherit, stdout = os.Inherit)
 
-      server.native.validatedNativeImage()
-      val nativeLauncher = server.native.nativeImage().path
-
-      runCode(
-        sharedArgs,
-        args,
-        Map(
-          "PLASMON_FORCED_BINARY" -> nativeLauncher.toString,
-          "PLASMON_DEBUG"         -> "false"
-        ),
-        BuildCtx.workspaceRoot
-      )
+    def version = Task {
+      val packageJsonPath = packageJson().head.path
+      val content         = os.read(packageJsonPath)
+      ujson.read(content).apply("version").str
     }
-  }
 
-  /** Runs code-server, with the extension and the server built from sources.
-    *
-    * The `cmd` command installs the extension, publishes the server in a local repository, and
-    * prints a shell command running code-server against those (rather than running code-server
-    * itself, so that the Mill daemon isn't kept busy while code-server runs):
-    * {{{
-    * eval "exec $(./mill show extension.codeServer.cmd --port=8080 | jq -r .)"
-    * }}}
-    */
-  object codeServer extends Module {
-    private lazy val codeServer =
-      if (Properties.isWin) extension.findInPath("code-server").getOrElse("code-server")
-      else "code-server"
+    def vsix = Task {
+      sources()
+      val version0 = version()
+      os.proc(pnpm, "install", "--frozen-lockfile")
+        .call(cwd = moduleDir, stdin = os.Inherit, stdout = os.Inherit)
+      os.proc(pnpm, "run", "package")
+        .call(cwd = moduleDir, stdin = os.Inherit, stdout = os.Inherit)
+      val dest = Task.dest / s"plasmon-$version0.vsix"
+      BuildCtx.withFilesystemCheckerDisabled {
+        os.move(
+          moduleDir / s"plasmon-$version0.vsix",
+          dest,
+          createFolders = true
+        )
+      }
+      PathRef(dest)
+    }
 
     def userDataDir = Task(persistent = true) {
       val dir = Task.dest
@@ -1293,170 +1147,320 @@ object extension extends Module {
       dir.toString // no PathRef, no need to look into what changed in that directory
     }
 
-    private def shellQuote(s: String): String =
-      if (s.nonEmpty && s.forall(c => c.isLetterOrDigit || "-_./:=@,+".contains(c))) s
-      else "'" + s.replace("'", "'\"'\"'") + "'"
+    object code extends Module {
+      private lazy val code =
+        if (Properties.isWin) editors.vscode.findInPath("code").getOrElse("code") else "code"
 
-    /** @param host
-      *   address code-server binds to
-      * @param port
-      *   port code-server binds to
-      * @param baseAddress
-      *   external URL code-server is reached through, when it sits behind a proxy (the proxy is
-      *   expected to strip any path prefix, code-server only uses relative paths)
-      * @param folder
-      *   directory to open, the workspace root by default
+      def clean() = Task.Command[Unit] {
+        val userDataDir0   = os.Path(userDataDir())
+        val extensionsDir0 = os.Path(extensionsDir())
+        os.remove.all(userDataDir0)
+        os.remove.all(extensionsDir0)
+        os.makeDir.all(userDataDir0)
+        os.makeDir.all(extensionsDir0)
+      }
+      private def runCode(
+        sharedArgs: Seq[os.Shellable],
+        args: Seq[String],
+        env: Map[String, String],
+        cwd: os.Path
+      ): Int = {
+        val proc0 = os.proc(code, sharedArgs, "--wait", args)
+        val proc = proc0.spawn(
+          cwd = cwd,
+          stdin = os.InheritRaw,
+          stdout = os.InheritRaw,
+          env = env
+        )
+        val dirOpt = args.filter(!_.startsWith("-")).lastOption
+          .flatMap { s =>
+            try Some(os.Path(s, cwd))
+            catch {
+              case e: InvalidPathException =>
+                None
+            }
+          }
+          .filter(os.isDir)
+        val tailerOpt = dirOpt.map { dir =>
+          val logFile = dir / ".plasmon" / "log"
+          if (!os.exists(logFile))
+            os.write(logFile, Array.emptyByteArray, createFolders = true)
+          val err = SystemStreams.original.err
+          Tailer.builder()
+            .setStartThread(true)
+            .setTailFromEnd(true)
+            .setReOpen(true)
+            .setPath(logFile.toNIO)
+            .setTailerListener(
+              new TailerListener {
+                override def fileNotFound(): Unit = ()
+                override def fileRotated(): Unit  = ()
+                override def handle(ex: Exception): Unit = {
+                  err.println(s"Error tailing $logFile:")
+                  ex.printStackTrace(err)
+                }
+                override def handle(line: String): Unit =
+                  err.println(line)
+                override def init(tailer: Tailer): Unit = ()
+              }
+            )
+            .get()
+        }
+        try {
+          proc.waitFor()
+          proc.exitCode()
+        }
+        finally
+          tailerOpt.foreach(_.close())
+      }
+      def install() = Task.Command {
+        val vsix0 = vsix().path
+        os.proc(code, "--install-extension", vsix0, "--force")
+          .call(cwd = BuildCtx.workspaceRoot, stdin = os.Inherit, stdout = os.Inherit)
+      }
+      def jvm(args: String*) = Task.Command(exclusive = true) {
+        val vsix0 = vsix().path
+        val sharedArgs = Seq[os.Shellable](
+          "--user-data-dir",
+          os.Path(userDataDir()),
+          "--extensions-dir",
+          os.Path(extensionsDir())
+        )
+        os.proc(code, sharedArgs, "--install-extension", vsix0, "--force")
+          .call(cwd = BuildCtx.workspaceRoot, stdin = os.InheritRaw, stdout = os.InheritRaw)
+
+        val ver = shared.publishVersion()
+
+        val coursierRepoEnv = {
+          val currentOpt = Option(System.getenv("COURSIER_REPOSITORIES")).filter(_.trim.nonEmpty)
+          s"${`local-repo`.localRepo().path.toNIO.toUri.toASCIIString}|${currentOpt.getOrElse("ivy2Local|central")}"
+        }
+
+        runCode(
+          sharedArgs,
+          args,
+          Map(
+            "COURSIER_REPOSITORIES"  -> coursierRepoEnv,
+            "PLASMON_FORCED_VERSION" -> ver,
+            "PLASMON_DEBUG"          -> "false"
+          ),
+          BuildCtx.workspaceRoot
+        )
+      }
+      def native(args: String*) = Task.Command(exclusive = true) {
+        val vsix0 = vsix().path
+        val sharedArgs = Seq[os.Shellable](
+          "--user-data-dir",
+          os.Path(userDataDir()),
+          "--extensions-dir",
+          os.Path(extensionsDir())
+        )
+        os.proc(code, sharedArgs, "--install-extension", vsix0, "--force")
+          .call(cwd = BuildCtx.workspaceRoot, stdin = os.Inherit, stdout = os.Inherit)
+
+        server.native.validatedNativeImage()
+        val nativeLauncher = server.native.nativeImage().path
+
+        runCode(
+          sharedArgs,
+          args,
+          Map(
+            "PLASMON_FORCED_BINARY" -> nativeLauncher.toString,
+            "PLASMON_DEBUG"         -> "false"
+          ),
+          BuildCtx.workspaceRoot
+        )
+      }
+    }
+
+    /** Runs code-server, with the extension and the server built from sources.
+      *
+      * The `cmd` command installs the extension, publishes the server in a local repository, and
+      * prints a shell command running code-server against those (rather than running code-server
+      * itself, so that the Mill daemon isn't kept busy while code-server runs):
+      * {{{
+      * eval "exec $(./mill show editors.vscode.codeServer.cmd --port=8080 | jq -r .)"
+      * }}}
       */
-    def cmd(
-      host: String = "127.0.0.1",
-      port: Int = 8080,
-      baseAddress: String = "",
-      folder: String = ""
-    ) = Task.Command[String] {
-      val vsix0 = vsix().path
-      val sharedArgs = Seq(
-        "--user-data-dir",
-        os.Path(userDataDir()).toString,
-        "--extensions-dir",
-        os.Path(extensionsDir()).toString
+    object codeServer extends Module {
+      private lazy val codeServer =
+        if (Properties.isWin) editors.vscode.findInPath("code-server").getOrElse("code-server")
+        else "code-server"
+
+      def userDataDir = Task(persistent = true) {
+        val dir = Task.dest
+        dir.toString // no PathRef, no need to look into what changed in that directory
+      }
+      def extensionsDir = Task(persistent = true) {
+        val dir = Task.dest
+        dir.toString // no PathRef, no need to look into what changed in that directory
+      }
+
+      private def shellQuote(s: String): String =
+        if (s.nonEmpty && s.forall(c => c.isLetterOrDigit || "-_./:=@,+".contains(c))) s
+        else "'" + s.replace("'", "'\"'\"'") + "'"
+
+      /** @param host
+        *   address code-server binds to
+        * @param port
+        *   port code-server binds to
+        * @param baseAddress
+        *   external URL code-server is reached through, when it sits behind a proxy (the proxy is
+        *   expected to strip any path prefix, code-server only uses relative paths)
+        * @param folder
+        *   directory to open, the workspace root by default
+        */
+      def cmd(
+        host: String = "127.0.0.1",
+        port: Int = 8080,
+        baseAddress: String = "",
+        folder: String = ""
+      ) = Task.Command[String] {
+        val vsix0 = vsix().path
+        val sharedArgs = Seq(
+          "--user-data-dir",
+          os.Path(userDataDir()).toString,
+          "--extensions-dir",
+          os.Path(extensionsDir()).toString
+        )
+        os.proc(codeServer, sharedArgs, "--install-extension", vsix0, "--force")
+          .call(cwd = BuildCtx.workspaceRoot, stdin = os.Inherit, stdout = os.Inherit)
+
+        val ver = shared.publishVersion()
+
+        val coursierRepoEnv = {
+          val currentOpt = Option(System.getenv("COURSIER_REPOSITORIES")).filter(_.trim.nonEmpty)
+          s"${`local-repo`.localRepo().path.toNIO.toUri.toASCIIString}|${currentOpt.getOrElse("ivy2Local|central")}"
+        }
+
+        // code-server rejects WebSocket connections whose origin doesn't match the host header,
+        // which proxies may rewrite
+        val trustedOriginArgs = Option(baseAddress).filter(_.trim.nonEmpty).toSeq.flatMap {
+          address =>
+            Seq("--trusted-origins", new java.net.URI(address.trim).getAuthority)
+        }
+
+        val folder0 =
+          if (folder.trim.isEmpty) BuildCtx.workspaceRoot
+          else os.Path(folder, BuildCtx.workspaceRoot)
+
+        val env = Seq(
+          "COURSIER_REPOSITORIES"  -> coursierRepoEnv,
+          "PLASMON_FORCED_VERSION" -> ver,
+          "PLASMON_DEBUG"          -> "false"
+        )
+        val command = Seq("env") ++
+          env.map { case (k, v) => s"$k=$v" } ++
+          Seq(codeServer) ++
+          sharedArgs ++
+          Seq(
+            "--bind-addr",
+            s"$host:$port",
+            "--auth",
+            "none",
+            "--disable-telemetry",
+            "--disable-update-check",
+            "--disable-workspace-trust"
+          ) ++
+          trustedOriginArgs ++
+          Seq(folder0.toString)
+        command.map(shellQuote).mkString(" ")
+      }
+    }
+
+    /** End-to-end tests of the extension and server, driving code-server with Playwright.
+      *
+      *   - `./mill editors.vscode.e2e.test [playwright test args]` runs the specs under
+      *     `editors/vscode/e2e/tests`
+      *   - `./mill editors.vscode.e2e.serve [workspace]` starts code-server and a headless Chromium
+      *     on it, for `node editors/vscode/e2e/dev/drive.ts` to drive interactively (see
+      *     `editors/vscode/e2e/README.md`)
+      *
+      * Both use the JVM launcher of the server (`server.launcher`), and the extension from `vsix`.
+      */
+    object e2e extends Module {
+      def pnpmSources = Task.Sources(
+        os.sub / "package.json",
+        os.sub / "pnpm-lock.yaml",
+        os.sub / "pnpm-workspace.yaml"
       )
-      os.proc(codeServer, sharedArgs, "--install-extension", vsix0, "--force")
-        .call(cwd = BuildCtx.workspaceRoot, stdin = os.Inherit, stdout = os.Inherit)
 
-      val ver = shared.publishVersion()
-
-      val coursierRepoEnv = {
-        val currentOpt = Option(System.getenv("COURSIER_REPOSITORIES")).filter(_.trim.nonEmpty)
-        s"${`local-repo`.localRepo().path.toNIO.toUri.toASCIIString}|${currentOpt.getOrElse("ivy2Local|central")}"
+      // node_modules and the Chromium of Playwright
+      def pnpmInstall = Task {
+        pnpmSources()
+        BuildCtx.withFilesystemCheckerDisabled {
+          os.proc(pnpm, "install", "--frozen-lockfile")
+            .call(cwd = moduleDir, stdin = os.Inherit, stdout = os.Inherit)
+          os.proc(pnpm, "exec", "playwright", "install", "chromium")
+            .call(cwd = moduleDir, stdin = os.Inherit, stdout = os.Inherit)
+        }
+        ()
       }
 
-      // code-server rejects WebSocket connections whose origin doesn't match the host header,
-      // which proxies may rewrite
-      val trustedOriginArgs = Option(baseAddress).filter(_.trim.nonEmpty).toSeq.flatMap {
-        address =>
-          Seq("--trusted-origins", new java.net.URI(address.trim).getAuthority)
+      // code-server, from its GitHub releases
+      def codeServer = Task {
+        val platform = (Properties.isMac, System.getProperty("os.arch")) match {
+          case (true, "aarch64")           => "macos-arm64"
+          case (true, _)                   => "macos-amd64"
+          case (false, "aarch64")          => "linux-arm64"
+          case (false, "amd64" | "x86_64") => "linux-amd64"
+          case (_, arch) =>
+            sys.error(s"code-server isn't available for ${Properties.osName} / $arch")
+        }
+        val ver  = Versions.Test.codeServer
+        val name = s"code-server-$ver-$platform"
+        val url  = s"https://github.com/coder/code-server/releases/download/v$ver/$name.tar.gz"
+        val dir = coursier.cache.ArchiveCache()
+          .get(coursier.util.Artifact(url))
+          .unsafeRun()(scala.concurrent.ExecutionContext.global)
+          .fold(err => throw new Exception(err), os.Path(_))
+        (dir / name / "bin" / "code-server").toString
       }
 
-      val folder0 =
-        if (folder.trim.isEmpty) BuildCtx.workspaceRoot
-        else os.Path(folder, BuildCtx.workspaceRoot)
-
-      val env = Seq(
-        "COURSIER_REPOSITORIES"  -> coursierRepoEnv,
-        "PLASMON_FORCED_VERSION" -> ver,
-        "PLASMON_DEBUG"          -> "false"
-      )
-      val command = Seq("env") ++
-        env.map { case (k, v) => s"$k=$v" } ++
-        Seq(codeServer) ++
-        sharedArgs ++
-        Seq(
-          "--bind-addr",
-          s"$host:$port",
-          "--auth",
-          "none",
-          "--disable-telemetry",
-          "--disable-update-check",
-          "--disable-workspace-trust"
-        ) ++
-        trustedOriginArgs ++
-        Seq(folder0.toString)
-      command.map(shellQuote).mkString(" ")
-    }
-  }
-
-  /** End-to-end tests of the extension and server, driving code-server with Playwright.
-    *
-    *   - `./mill extension.e2e.test [playwright test args]` runs the specs under
-    *     `extension/e2e/tests`
-    *   - `./mill extension.e2e.serve [workspace]` starts code-server and a headless Chromium on it,
-    *     for `node extension/e2e/dev/drive.ts` to drive interactively (see
-    *     `extension/e2e/README.md`)
-    *
-    * Both use the JVM launcher of the server (`server.launcher`), and the extension from `vsix`.
-    */
-  object e2e extends Module {
-    def pnpmSources = Task.Sources(
-      os.sub / "package.json",
-      os.sub / "pnpm-lock.yaml",
-      os.sub / "pnpm-workspace.yaml"
-    )
-
-    // node_modules and the Chromium of Playwright
-    def pnpmInstall = Task {
-      pnpmSources()
-      BuildCtx.withFilesystemCheckerDisabled {
-        os.proc(pnpm, "install", "--frozen-lockfile")
-          .call(cwd = moduleDir, stdin = os.Inherit, stdout = os.Inherit)
-        os.proc(pnpm, "exec", "playwright", "install", "chromium")
-          .call(cwd = moduleDir, stdin = os.Inherit, stdout = os.Inherit)
-      }
-      ()
-    }
-
-    // code-server, from its GitHub releases
-    def codeServer = Task {
-      val platform = (Properties.isMac, System.getProperty("os.arch")) match {
-        case (true, "aarch64")           => "macos-arm64"
-        case (true, _)                   => "macos-amd64"
-        case (false, "aarch64")          => "linux-arm64"
-        case (false, "amd64" | "x86_64") => "linux-amd64"
-        case (_, arch) =>
-          sys.error(s"code-server isn't available for ${Properties.osName} / $arch")
-      }
-      val ver  = Versions.Test.codeServer
-      val name = s"code-server-$ver-$platform"
-      val url  = s"https://github.com/coder/code-server/releases/download/v$ver/$name.tar.gz"
-      val dir = coursier.cache.ArchiveCache()
-        .get(coursier.util.Artifact(url))
-        .unsafeRun()(scala.concurrent.ExecutionContext.global)
-        .fold(err => throw new Exception(err), os.Path(_))
-      (dir / name / "bin" / "code-server").toString
-    }
-
-    def env = Task {
-      Map(
-        "PLASMON_E2E_CODE_SERVER"  -> codeServer(),
-        "PLASMON_E2E_VSIX"         -> vsix().path.toString,
-        "PLASMON_E2E_LAUNCHER"     -> server.launcher().path.toString,
-        "PLASMON_E2E_MILL_VERSION" -> Versions.Test.mill
-      )
-    }
-
-    // The launcher runs the server with the java found in PATH / JAVA_HOME,
-    // use the JVM running Mill if there's none
-    private def javaEnv(): Map[String, String] =
-      if (findInPath("java").nonEmpty) Map.empty
-      else {
-        val javaHome = sys.props("java.home")
+      def env = Task {
         Map(
-          "JAVA_HOME" -> javaHome,
-          "PATH"      -> s"$javaHome${File.separator}bin${File.pathSeparator}${sys.env("PATH")}"
+          "PLASMON_E2E_CODE_SERVER"  -> codeServer(),
+          "PLASMON_E2E_VSIX"         -> vsix().path.toString,
+          "PLASMON_E2E_LAUNCHER"     -> server.launcher().path.toString,
+          "PLASMON_E2E_MILL_VERSION" -> Versions.Test.mill
         )
       }
 
-    def test(args: String*) = Task.Command(exclusive = true) {
-      pnpmInstall()
-      os.proc(pnpm, "exec", "playwright", "test", args)
-        .call(
-          cwd = moduleDir,
-          env = env() ++ javaEnv(),
-          stdin = os.InheritRaw,
-          stdout = os.InheritRaw
-        )
-      ()
-    }
+      // The launcher runs the server with the java found in PATH / JAVA_HOME,
+      // use the JVM running Mill if there's none
+      private def javaEnv(): Map[String, String] =
+        if (findInPath("java").nonEmpty) Map.empty
+        else {
+          val javaHome = sys.props("java.home")
+          Map(
+            "JAVA_HOME" -> javaHome,
+            "PATH"      -> s"$javaHome${File.separator}bin${File.pathSeparator}${sys.env("PATH")}"
+          )
+        }
 
-    def serve(args: String*) = Task.Command(exclusive = true) {
-      pnpmInstall()
-      os.proc("node", "dev/serve.ts", args)
-        .call(
-          cwd = moduleDir,
-          env = env() ++ javaEnv(),
-          stdin = os.InheritRaw,
-          stdout = os.InheritRaw
-        )
-      ()
+      def test(args: String*) = Task.Command(exclusive = true) {
+        pnpmInstall()
+        os.proc(pnpm, "exec", "playwright", "test", args)
+          .call(
+            cwd = moduleDir,
+            env = env() ++ javaEnv(),
+            stdin = os.InheritRaw,
+            stdout = os.InheritRaw
+          )
+        ()
+      }
+
+      def serve(args: String*) = Task.Command(exclusive = true) {
+        pnpmInstall()
+        os.proc("node", "dev/serve.ts", args)
+          .call(
+            cwd = moduleDir,
+            env = env() ++ javaEnv(),
+            stdin = os.InheritRaw,
+            stdout = os.InheritRaw
+          )
+        ()
+      }
     }
   }
 }
@@ -1623,9 +1627,9 @@ object `settings-edit` extends ScalaJSModule {
   def packageJson = Task.Source(os.sub / "package.json")
 
   private lazy val yarn =
-    if (Properties.isWin) extension.findInPath("yarn").getOrElse("yarn") else "yarn"
+    if (Properties.isWin) editors.vscode.findInPath("yarn").getOrElse("yarn") else "yarn"
   private lazy val node =
-    if (Properties.isWin) extension.findInPath("node").getOrElse("node") else "node"
+    if (Properties.isWin) editors.vscode.findInPath("node").getOrElse("node") else "node"
 
   def bundle = Task(persistent = true) {
     val baseDir             = BuildCtx.workspaceRoot / "settings-edit"
