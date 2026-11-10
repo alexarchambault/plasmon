@@ -86,15 +86,15 @@ class RemotePcHostTests extends munit.FunSuite {
       val pc = newPc(host)
       assert(hoverText(pc).contains("def head: Int"))
 
-      val conn = host.connection()
+      val conn     = host.connection()
+      val inFlight = pc.hover(hoverParams)
       conn.destroy()
       // Either answered before the host went away, or failed: shouldn't hang in any case
-      val inFlight = pc.hover(hoverParams)
       try inFlight.get(1, TimeUnit.MINUTES)
       catch {
         case _: ExecutionException =>
       }
-      while (conn.isAlive) Thread.sleep(10L)
+      assert(!conn.isAlive)
       assert(!pc.isLoaded())
 
       assert(hoverText(pc).contains("def head: Int"))

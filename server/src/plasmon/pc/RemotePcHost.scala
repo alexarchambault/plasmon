@@ -14,7 +14,8 @@ import java.util.concurrent.{
   ConcurrentHashMap,
   ExecutionException,
   ExecutorService,
-  Executors
+  Executors,
+  TimeUnit
 }
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -82,14 +83,23 @@ final class RemotePcHost(
     remote: RemotePcServer
   ) {
     @volatile var isAlive = true
-    private val pending   = ConcurrentHashMap.newKeySet[CompletableFuture[?]]()
+
+    /** Completed once we're done handling the exit of the host */
+    val exitHandled     = new CompletableFuture[Unit]
+    private val pending = ConcurrentHashMap.newKeySet[CompletableFuture[?]]()
 
     /** Presentation compilers created on this host, and the outcome of their creation */
     val created = new ConcurrentHashMap[String, CompletableFuture[Messages.CreateResult]]
 
     def call[T](f: RemotePcServer => CompletableFuture[T]): CompletableFuture[T] =
       if (isAlive) {
-        val future = f(remote)
+        val future =
+          try f(remote)
+          catch {
+            // sending fails if the host exited and we weren't notified yet
+            case NonFatal(e) =>
+              CompletableFuture.failedFuture(new HostExitedException(name, e))
+          }
         pending.add(future)
         future.whenComplete((_, _) => pending.remove(future))
         // the host might have exited while we were adding it
@@ -114,9 +124,28 @@ final class RemotePcHost(
         future.completeExceptionally(new HostExitedException(name))
     }
 
+    /** Asks the host to exit, and waits for it to do so
+      *
+      * Things like shutdown hooks of the host run when it exits, so we give it some time before
+      * killing it.
+      */
     def destroy(): Unit = {
       notify(_.exit())
-      process.destroy()
+      try process.getOutputStream.close()
+      catch {
+        case NonFatal(_) =>
+      }
+      if (!process.waitFor(gracefulExitTimeoutSeconds, TimeUnit.SECONDS)) {
+        scribe.warn(s"$name presentation compiler host #$id didn't exit, killing it")
+        process.destroy()
+        if (!process.waitFor(5L, TimeUnit.SECONDS))
+          process.destroyForcibly()
+      }
+      try exitHandled.get(10L, TimeUnit.SECONDS)
+      catch {
+        case NonFatal(e) =>
+          scribe.warn(s"Error waiting for $name presentation compiler host #$id to be done", e)
+      }
     }
   }
 
@@ -195,9 +224,12 @@ final class RemotePcHost(
       val exitCode = process.exitValue()
       if (exitCode == 0) scribe.info(s"$name presentation compiler host #$id exited")
       else scribe.warn(s"$name presentation compiler host #$id exited with code $exitCode")
-      conn.onExit()
-      for (pc <- instances.values().asScala)
-        pc.hostExited(conn)
+      try {
+        conn.onExit()
+        for (pc <- instances.values().asScala)
+          pc.hostExited(conn)
+      }
+      finally conn.exitHandled.complete(())
     }
 
     conn
@@ -365,8 +397,11 @@ final class RemotePcHost(
 
 object RemotePcHost {
 
-  final class HostExitedException(name: String)
-      extends Exception(s"The $name presentation compiler host exited")
+  final class HostExitedException(name: String, cause: Throwable = null)
+      extends Exception(s"The $name presentation compiler host exited", cause)
+
+  /** How long we let hosts exit by themselves */
+  private def gracefulExitTimeoutSeconds = 30L
 
   private def daemonThreadFactory(prefix: String): java.util.concurrent.ThreadFactory = {
     val count = new AtomicInteger
