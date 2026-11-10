@@ -1,0 +1,14 @@
+[
+  {
+    "uri": "file:///$WORKSPACE$/launcher"
+  },
+  {
+    "uri": "file:///$WORKSPACE$/mill-build"
+  },
+  {
+    "uri": "file:///$WORKSPACE$/mill-synthetic-root-target"
+  },
+  {
+    "uri": "file:///$WORKSPACE$/paths"
+  }
+]

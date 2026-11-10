@@ -1,0 +1,11 @@
+[
+  {
+    "path": "launcher/src/launcher/Download.java",
+    "line": 2,
+    "colRange": [
+      12,
+      20
+    ],
+    "content": "Download"
+  }
+]

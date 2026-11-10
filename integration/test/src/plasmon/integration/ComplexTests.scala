@@ -332,4 +332,98 @@ class ComplexTests extends PlasmonSuite {
         }
     }
   }
+
+  for {
+    jvm  <- jvmValues
+    mode <- modes
+  }
+    test(s"Java classes in other files and modules Mill Java ${jvm.label}" + mode.testNameSuffix) {
+      javaOtherFilesTest(mode, jvm)
+    }
+
+  def javaOtherFilesTest(
+    mode: TestMode,
+    jvm: Labelled[String]
+  ): Unit = {
+    val mainFile = os.sub / "launcher/src/launcher/Launcher.java"
+
+    val files = Seq(
+      os.sub / "build.mill" ->
+        """import mill._
+          |import mill.javalib._
+          |
+          |object paths extends JavaModule
+          |
+          |object launcher extends JavaModule {
+          |  def moduleDeps = Seq(paths)
+          |}
+          |""".stripMargin,
+      os.sub / "paths/src/paths/Util.java" ->
+        """package paths;
+          |
+          |public final class Util {
+          |  public static String createDirectories(String path) {
+          |    return path;
+          |  }
+          |}
+          |""".stripMargin,
+      os.sub / "launcher/src/launcher/Download.java" ->
+        """package launcher;
+          |
+          |final class Download {
+          |  static String getLocalURLs(String url) {
+          |    return url;
+          |  }
+          |}
+          |""".stripMargin,
+      mainFile ->
+        """package launcher;
+          |
+          |import paths.U<1>til;
+          |
+          |public class Launcher {
+          |  public static void main(String[] args) {
+          |    String a = Downl<2>oad.getLoc<3>alURLs("a");
+          |    String b = Ut<4>il.createDir<5>ectories(a);
+          |    String c = paths.Ut<6>il.create<7>Directories(b);
+          |  }
+          |}
+          |""".stripMargin
+    )
+
+    val testFixtureDir =
+      fixtureDir / "plasmon/integration/complex-tests/other/java-other-files" /
+        s"jvm-${jvm.label}"
+    withWorkspaceServerPositions(
+      mode = mode,
+      extraServerOpts = Seq("--jvm", jvm.value),
+      timeout = Some(SingleModuleBuildTool.Mill.defaultTimeout)
+    )(files*) {
+      (workspace, driver, positions, osOpt) =>
+        // Not compiling: javac should find the other workspace classes in their sources
+        SingleModuleBuildTool.Replayed(
+          SingleModuleBuildTool.Mill,
+          os.sub / "complex-tests/java-other-files" / s"jvm-${jvm.label}"
+        ).setup(
+          workspace,
+          driver,
+          osOpt,
+          readOnlyToplevelSymbolsCache = false,
+          compiles = false
+        )
+
+        for (i <- 1 to 7)
+          checkJsoniterFixture(
+            testFixtureDir / s"definition-$i.txt",
+            goToDefs(
+              driver,
+              workspace,
+              workspace / mainFile,
+              positions.lspPos(mainFile, i)
+            ),
+            osOpt
+          )
+    }
+  }
+
 }

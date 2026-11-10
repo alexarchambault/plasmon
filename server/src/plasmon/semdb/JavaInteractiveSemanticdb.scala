@@ -58,19 +58,30 @@ object JavaInteractiveSemanticdb {
         val targetRoot = workDir / "target"
         os.makeDir(targetRoot)
 
-        val targetClasspath = targetId match {
-          case None =>
-            bspData
-              .inferBuildTarget(SourcePath.Standard(source.toNIO))
-              .flatMap(bspData.targetJarClasspath)
-              .getOrElse(Nil)
+        val targetIdOpt = targetId.orElse {
+          bspData.inferBuildTarget(SourcePath.Standard(source.toNIO))
+        }
+        val targetClasspath = targetIdOpt match {
+          case None => Nil
           case Some(targetId0) =>
             bspData
               .targetJarClasspath(targetId0)
               .getOrElse {
-                sys.error(s"Build target ${targetId0.getUri} not loaded")
+                if (targetId.isEmpty) Nil
+                else sys.error(s"Build target ${targetId0.getUri} not loaded")
               }
         }
+
+        // Workspace classes, from the module itself and from the modules it depends on:
+        // javac finds them in their sources (so that this works even if nothing was compiled,
+        // or if the class directories are stale), or in their class directories (classes
+        // that don't come from Java sources in directories, like Scala classes)
+        val workspaceClassDirs = targetIdOpt.toList
+          .flatMap(bspData.targetTransitiveClassDirectories)
+          .filter(os.isDir)
+        val workspaceSourcePath = targetIdOpt.toList
+          .flatMap(bspData.targetTransitiveSourceItems)
+          .filter(os.isDir)
 
         val filteredTargetClassPath = targetClasspath.filter { elem =>
           !os.isFile(elem) || {
@@ -93,11 +104,17 @@ object JavaInteractiveSemanticdb {
         val mainOptions =
           List(
             "-cp",
-            (pluginJars ++ filteredTargetClassPath).mkString(File.pathSeparator),
+            (pluginJars ++ workspaceClassDirs ++ filteredTargetClassPath)
+              .mkString(File.pathSeparator),
             "-d",
-            targetRoot.toString
+            targetRoot.toString,
+            // Don't write class files for the sources found via -sourcepath
+            "-implicit:none"
             // "-verbose"
-          )
+          ) ++ {
+            if (workspaceSourcePath.isEmpty) Nil
+            else List("-sourcepath", workspaceSourcePath.mkString(File.pathSeparator))
+          }
         val pluginOption =
           s"-Xplugin:semanticdb -sourceroot:$workspace -targetroot:$targetRoot"
         val allOptions =
@@ -105,6 +122,7 @@ object JavaInteractiveSemanticdb {
 
         val writer      = new StringWriter
         val printWriter = new PrintWriter(writer)
+        val fileManager = javaFileManager()
         val successOpt =
           try {
             // JavacFileManager#getLocationForModule specifically tests that JavaFileObject is instanceof PathFileObject when using Patch-Module
@@ -126,7 +144,7 @@ object JavaInteractiveSemanticdb {
             val javacTask = JavaMetalsGlobal.COMPILER
               .getTask(
                 printWriter,
-                javaFileManager(),
+                fileManager,
                 diagnosticListener,
                 allOptions.asJava,
                 null,
@@ -144,6 +162,8 @@ object JavaInteractiveSemanticdb {
               )
               None
           }
+          finally
+            fileManager.close()
         for (success <- successOpt if !success) {
           printWriter.flush()
           val log = writer.getBuffer

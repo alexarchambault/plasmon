@@ -1,0 +1,22 @@
+{
+  "items": [
+    {
+      "target": {
+        "uri": "file:///$WORKSPACE$/launcher"
+      },
+      "sources": []
+    },
+    {
+      "target": {
+        "uri": "file:///$WORKSPACE$/mill-build"
+      },
+      "sources": []
+    },
+    {
+      "target": {
+        "uri": "file:///$WORKSPACE$/paths"
+      },
+      "sources": []
+    }
+  ]
+}
