@@ -8,21 +8,18 @@ import scala.jdk.CollectionConverters.*
 import scala.meta.internal.metals.CompilerOffsetParams
 import scala.meta.internal.mtags.GlobalSymbolIndex
 
-/** Runs a real Scala 2 presentation compiler host, whose class path the build passes us */
+/** Runs real Scala 2 presentation compiler hosts, whose class paths the build passes us */
 class RemotePcHostTests extends munit.FunSuite {
 
   override def munitTimeout = scala.concurrent.duration.Duration(2, "min")
 
   private def javaHome = os.Path(sys.props("java.home"))
 
-  private lazy val scala213Library: os.Path = {
+  private def scalaLibrary(scalaVersion: String): os.Path = {
     val files = coursierapi.Fetch.create()
       .addDependencies(
-        coursierapi.Dependency.of(
-          "org.scala-lang",
-          "scala-library",
-          plasmon.internal.Constants.scala2Version
-        ).withTransitive(false)
+        coursierapi.Dependency.of("org.scala-lang", "scala-library", scalaVersion)
+          .withTransitive(false)
       )
       .fetch()
       .asScala
@@ -30,13 +27,8 @@ class RemotePcHostTests extends munit.FunSuite {
     os.Path(files.head)
   }
 
-  private def withHost[T](f: RemotePcHost => T): T = {
-    val host = new RemotePcHost(
-      "Scala 2",
-      () => RemotePcHost.scala2ClassPath(),
-      RemotePcHost.scala2MainClass,
-      javaHome
-    )
+  private def withHost[T](scalaBinaryVersion: String)(f: RemotePcHost => T): T = {
+    val host = RemotePcHost.scala2Hosts(javaHome)(scalaBinaryVersion)
     try f(host)
     finally host.close()
   }
@@ -50,7 +42,7 @@ class RemotePcHostTests extends munit.FunSuite {
     )
     pc.newInstance(
       "buildTarget:file:///test/?id=test",
-      Seq(scala213Library, javaHome / "jmods/java.base.jmod").map(_.toNIO).asJava,
+      Seq(scalaLibrary(host.scalaVersion), javaHome / "jmods/java.base.jmod").map(_.toNIO).asJava,
       Nil.asJava
     )
     pc
@@ -71,18 +63,19 @@ class RemotePcHostTests extends munit.FunSuite {
     hover.get.toLsp().getContents.getRight.asInstanceOf[l.MarkupContent].getValue
   }
 
-  test("hover") {
-    withHost { host =>
-      val pc = newPc(host)
-      assert(hoverText(pc).contains("def head: Int"))
-      assert(pc.isLoaded())
-      assert(pc.scalaVersion().startsWith("2.13."))
-      assert(pc.supportedCodeActions().asScala.contains("ExtractMethod"))
+  for ((scalaBinaryVersion, scalaVersion) <- RemotePcHost.scala2Versions.toSeq.sorted)
+    test(s"hover with Scala $scalaBinaryVersion") {
+      withHost(scalaBinaryVersion) { host =>
+        val pc = newPc(host)
+        assert(hoverText(pc).contains("def head: Int"))
+        assert(pc.isLoaded())
+        assertEquals(pc.scalaVersion(), scalaVersion)
+        assert(pc.supportedCodeActions().asScala.contains("ExtractMethod"))
+      }
     }
-  }
 
   test("host gets started again after it exits") {
-    withHost { host =>
+    withHost("2.13") { host =>
       val pc = newPc(host)
       assert(hoverText(pc).contains("def head: Int"))
 

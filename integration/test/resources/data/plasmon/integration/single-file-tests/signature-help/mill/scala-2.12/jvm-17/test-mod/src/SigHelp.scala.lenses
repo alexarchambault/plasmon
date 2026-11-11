@@ -1,0 +1,39 @@
+{
+  "signatures": [
+    {
+      "label": "apply[A](xs: A*): List[A]",
+      "documentation": {
+        "right": {
+          "kind": "markdown",
+          "value": "$factoryInfo"
+        }
+      },
+      "parameters": [
+        {
+          "label": {
+            "left": "A"
+          },
+          "documentation": {
+            "right": {
+              "kind": "markdown",
+              "value": ""
+            }
+          }
+        },
+        {
+          "label": {
+            "left": "xs: A*"
+          },
+          "documentation": {
+            "right": {
+              "kind": "markdown",
+              "value": ""
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "activeSignature": 0,
+  "activeParameter": 1
+}

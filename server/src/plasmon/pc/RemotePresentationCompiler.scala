@@ -1,7 +1,6 @@
 package plasmon.pc
 
 import org.eclipse.lsp4j as l
-import plasmon.internal.Constants
 import plasmon.remotepc.{Messages, RemotePcServer}
 
 import java.net.URI
@@ -447,7 +446,7 @@ final class RemotePresentationCompiler(
       .flatMap(conn => Option(conn.created.get(pcId)))
       .filter(f => f.isDone && !f.isCompletedExceptionally)
       .map(_.join().scalaVersion)
-      .getOrElse(Constants.scala2Version)
+      .getOrElse(host.scalaVersion)
 
   override def buildTargetId(): String = module.targetId
 

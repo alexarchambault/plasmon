@@ -32,7 +32,13 @@ object Versions {
   def scalaCli          = "1.18.0"
 
   def scala213 = scala2
+  def scala212 = "2.12.21"
   def scala    = "3.10.0"
+
+  /** Scala 2 versions we have presentation compilers for, run in processes of their own */
+  def scala2PcVersions = Seq(scala213, scala212)
+
+  def binary(scalaVersion: String) = scalaVersion.split('.').take(2).mkString(".")
 
   def sbtBloop = "2.0.13"
   def sbt      = "1.9.9"
@@ -123,31 +129,37 @@ object submodules extends Module {
     }
 
     trait MtagsScalaModule extends ScalaModule with MetalsPublishModule {
-      def scalaVersion  = Versions.scala2
       def scalacOptions = super.scalacOptions() ++ Seq("-Yrangepos")
     }
 
-    object `mtags-shared` extends MtagsScalaModule {
-      def sources = Task.Sources(
-        "src/main/scala",
-        "src/main/scala-2.13"
-      )
+    /** Modules built for all the Scala 2 versions we have presentation compilers for */
+    trait MtagsCrossModule extends MtagsScalaModule with CrossScalaModule {
+      def scalaBinaryVersionDir =
+        os.sub / "src" / "main" / s"scala-${Versions.binary(crossScalaVersion)}"
+      // scribe isn't published for Scala 2.12 anymore after 3.15.2
+      def scribeVersion = if (crossScalaVersion.startsWith("2.12.")) "3.15.2" else "3.19.0"
+    }
+
+    object `mtags-shared` extends Cross[MtagsSharedModule](Versions.scala2PcVersions)
+    trait MtagsSharedModule extends MtagsCrossModule {
+      def sources    = Task.Sources(os.sub / "src" / "main" / "scala", scalaBinaryVersionDir)
       def moduleDeps = Seq(`mtags-interfaces`)
       def mvnDeps = Seq(
         mvn"org.lz4:lz4-java:1.8.1",
         mvn"com.google.protobuf:protobuf-java:4.36.1",
         mvn"com.google.guava:guava:33.7.1-jre",
         mvn"io.get-coursier:interface:1.0.29-M2",
-        excludeScalaCompiler(mvn"com.outr::scribe:3.19.0"),
+        excludeScalaCompiler(mvn"com.outr::scribe:$scribeVersion"),
         excludeScalaCompiler(mvn"com.lihaoyi::pprint:0.9.6")
       )
     }
 
-    object mtags extends MtagsScalaModule {
+    object mtags extends Cross[MtagsModule](Versions.scala2PcVersions)
+    trait MtagsModule extends MtagsCrossModule {
       def sources = Task.Sources(
-        "src/main/scala",
-        "src/main/scala-2",
-        "src/main/scala-2.13"
+        os.sub / "src" / "main" / "scala",
+        os.sub / "src" / "main" / "scala-2",
+        scalaBinaryVersionDir
       )
       def resources =
         Task.Sources(BuildCtx.workspaceRoot / "submodules/metals/mtags/src/main/resources")
@@ -159,11 +171,11 @@ object submodules extends Module {
           s"""package scala.meta.internal.mtags
              |
              |object BuildInfo {
-             |  def scalaCompilerVersion = "${Versions.scala2}"
+             |  def scalaCompilerVersion = "$crossScalaVersion"
              |  def deprecatedScalaVersions = Seq.empty[String]
-             |  def supportedScalaVersions = Seq("${Versions.scala2}", "2.13.16", "2.13.17")
-             |  def supportedScalaBinaryVersions = Seq("3", "2.13")
-             |  def scala212 = "2.12.21"
+             |  def supportedScalaVersions = Seq("${Versions.scala2}", "2.13.16", "2.13.17", "${Versions.scala212}")
+             |  def supportedScalaBinaryVersions = Seq("3", "2.13", "2.12")
+             |  def scala212 = "${Versions.scala212}"
              |  def scala213 = "${Versions.scala2}"
              |  def scala3 = "3.3.8"
              |}
@@ -171,23 +183,24 @@ object submodules extends Module {
         os.write.over(dest, code, createFolders = true)
         PathRef(dir)
       }
-      def moduleDeps = Seq(`mtags-shared`)
+      def moduleDeps = Seq(`mtags-shared`(crossScalaVersion))
       def mvnDeps = Seq(
         excludeScalaCompiler(mvn"com.lihaoyi::geny:1.1.1"),
         mvn"org.scala-lang.modules::scala-java8-compat:1.0.2",
         mvn"org.jsoup:jsoup:1.23.2",
         mvn"io.get-coursier:interface:1.0.29-M2",
         mvn"org.lz4:lz4-java:1.8.1",
-        excludeScalaCompiler(mvn"com.outr::scribe:3.19.0"),
+        excludeScalaCompiler(mvn"com.outr::scribe:$scribeVersion"),
         mvn"com.googlecode.java-diff-utils:diffutils:1.3.0",
-        mvn"org.scalameta:semanticdb-scalac-core_${Versions.scala2}:4.17.4",
-        mvn"org.scala-lang:scala-compiler:${Versions.scala2}"
+        mvn"org.scalameta:semanticdb-scalac-core_$crossScalaVersion:4.17.4",
+        mvn"org.scala-lang:scala-compiler:$crossScalaVersion"
       )
     }
 
     object `mtags-java` extends MtagsScalaModule {
-      def sources    = Task.Sources("src/main/scala")
-      def moduleDeps = Seq(`mtags-interfaces`, `mtags-shared`)
+      def scalaVersion = Versions.scala2
+      def sources      = Task.Sources("src/main/scala")
+      def moduleDeps   = Seq(`mtags-interfaces`, `mtags-shared`(Versions.scala2))
       def mvnDeps = Seq(
         mvn"org.scala-lang.modules::scala-java8-compat:1.0.2"
       )
@@ -199,7 +212,11 @@ object submodules extends Module {
       def plasmonOrg   = "io.github.alexarchambault.plasmon.scala3"
       def scalaVersion = Versions.scala
       def sources      = Task.Sources("src/main")
-      def moduleDeps   = Seq(metals.`mtags-interfaces`, metals.`mtags-shared`, metals.mtags)
+      def moduleDeps = Seq(
+        metals.`mtags-interfaces`,
+        metals.`mtags-shared`(Versions.scala2),
+        metals.mtags(Versions.scala2)
+      )
       def mvnDeps = Seq(
         mvn"org.scala-lang:scala3-compiler_3:${Versions.scala}",
         mvn"org.lz4:lz4-java:1.8.0",
@@ -221,13 +238,13 @@ object `remote-pc` extends Module {
     def mvnDeps    = Seq(Deps.lsp4j)
   }
 
-  /** Process running Scala 2 presentation compilers, that the server fetches and starts when it
-    * needs one
+  /** Processes running Scala 2 presentation compilers, one per Scala 2 binary version, that the
+    * server fetches and starts when it needs one
     */
-  object `scala2-host` extends ScalaModule with PlasmonPublishModule {
-    def scalaVersion = Versions.scala2
-    def moduleDeps   = Seq(protocol, submodules.metals.mtags)
-    def mainClass    = Some("plasmon.remotepc.host.Scala2PcHost")
+  object `scala2-host` extends Cross[Scala2HostModule](Versions.scala2PcVersions)
+  trait Scala2HostModule extends CrossScalaModule with PlasmonPublishModule {
+    def moduleDeps = Seq(protocol, submodules.metals.mtags(crossScalaVersion))
+    def mainClass  = Some("plasmon.remotepc.host.Scala2PcHost")
 
     /** The class path of the host, made of JARs only (no class directories) */
     def jarClassPath = Task {
@@ -239,6 +256,32 @@ object `remote-pc` extends Module {
       def mvnDeps       = Seq(Deps.munit)
       def testFramework = "munit.Framework"
     }
+  }
+
+  /** The class paths of the Scala 2 presentation compiler hosts, per Scala binary version
+    *
+    * The hosts aren't published when we run from sources, so we pass these to the server, see
+    * `plasmon.pc.RemotePcHost.scala2ClassPath`.
+    */
+  def scala2HostClassPaths: T[Seq[(String, String)]] = Task {
+    val classPaths = Task.traverse(Versions.scala2PcVersions)(`scala2-host`(_).jarClassPath)()
+    Versions.scala2PcVersions.map(Versions.binary).zip {
+      classPaths.map(_.map(_.path.toString).mkString(File.pathSeparator))
+    }
+  }
+
+  /** Java properties passing [[scala2HostClassPaths]] to the server */
+  def scala2HostClassPathProperties: T[Seq[(String, String)]] = Task {
+    scala2HostClassPaths().map {
+      case (sbv, cp) => s"plasmon.scala${sbv.filter(_ != '.')}PcHost.classPath" -> cp
+    }
+  }
+
+  /** Environment variables passing [[scala2HostClassPaths]] to the server */
+  def scala2HostClassPathEnv: T[Map[String, String]] = Task {
+    scala2HostClassPaths().map {
+      case (sbv, cp) => s"PLASMON_SCALA${sbv.filter(_ != '.')}_PC_HOST_CLASS_PATH" -> cp
+    }.toMap
   }
 }
 
@@ -331,7 +374,7 @@ def enableTestParallelism =
 object server extends ScalaModule with PlasmonPublishModule {
   def scalaVersion = Versions.scala
   def moduleDeps = Seq(
-    submodules.metals.mtags,
+    submodules.metals.mtags(Versions.scala2),
     submodules.metals.`mtags-java`,
     submodules.scala3.`presentation-compiler`,
     `remote-pc`.protocol
@@ -380,6 +423,8 @@ object server extends ScalaModule with PlasmonPublishModule {
   def constantsFile = Task(persistent = true) {
     val dir  = Task.dest / "constants"
     val dest = dir / "Constants.scala"
+    def mapEntries(entries: Seq[(String, String)]) =
+      entries.map { case (k, v) => s"""    "$k" -> "$v"""" }.mkString(",\n")
     val code =
       s"""package plasmon.internal
          |
@@ -397,7 +442,12 @@ object server extends ScalaModule with PlasmonPublishModule {
          |  def sbtBloopVersion = "${Versions.sbtBloop}"
          |  def defaultSbtVersion = "${Versions.sbt}"
          |  def neovimVersion = "${editors.neovim.nvimVersion}"
-         |  def scala2PcHostModuleName = "${`remote-pc`.`scala2-host`.artifactId()}"
+         |  def scala2PcVersions = Map(
+         |${mapEntries(Versions.scala2PcVersions.map(v => Versions.binary(v) -> v))}
+         |  )
+         |  def scala2PcHostModuleNames = Map(
+         |${mapEntries(scala2PcHostModuleNames())}
+         |  )
          |}
          |""".stripMargin
     if (!os.isFile(dest) || os.read(dest) != code) {
@@ -405,6 +455,12 @@ object server extends ScalaModule with PlasmonPublishModule {
       os.write.over(dest, code, createFolders = true)
     }
     PathRef(dir)
+  }
+
+  /** Artifact names of the Scala 2 presentation compiler hosts, per Scala binary version */
+  def scala2PcHostModuleNames = Task {
+    val names = Task.traverse(Versions.scala2PcVersions)(`remote-pc`.`scala2-host`(_).artifactId)()
+    Versions.scala2PcVersions.map(Versions.binary).zip(names)
   }
 
   def transitiveJars0: Task[Seq[PathRef]] = {
@@ -451,13 +507,11 @@ object server extends ScalaModule with PlasmonPublishModule {
       .callsItself(isWin)
     val entries       = cp.map(path => ClassPathEntry.Url(path.toNIO.toUri.toASCIIString))
     val loaderContent = coursier.launcher.ClassLoaderContent(entries)
-    // Not published, the Scala 2 presentation compiler host can't be fetched by the server
-    val scala2PcHostClassPath =
-      `remote-pc`.`scala2-host`.jarClassPath().map(_.path.toString).mkString(File.pathSeparator)
+    // Not published, the Scala 2 presentation compiler hosts can't be fetched by the server
     val params = Parameters.Bootstrap(Seq(loaderContent), mainClass0)
       .withDeterministic(true)
       .withPreamble(preamble)
-      .withJavaProperties(Seq("plasmon.scala2PcHost.classPath" -> scala2PcHostClassPath))
+      .withJavaProperties(`remote-pc`.scala2HostClassPathProperties())
 
     BootstrapGenerator.generate(params, dest.toNIO)
 
@@ -473,10 +527,8 @@ object server extends ScalaModule with PlasmonPublishModule {
       Deps.munit
     )
     def testFramework = "munit.Framework"
-    def forkArgs = super.forkArgs() ++ Seq(
-      "-Dplasmon.scala2PcHost.classPath=" +
-        `remote-pc`.`scala2-host`.jarClassPath().map(_.path.toString).mkString(File.pathSeparator)
-    )
+    def forkArgs = super.forkArgs() ++
+      `remote-pc`.scala2HostClassPathProperties().map { case (k, v) => s"-D$k=$v" }
   }
 
   def settingsEditDir = Task(persistent = true) {
@@ -1081,6 +1133,7 @@ object integration extends ScalaModule {
            |object IntegrationConstants {
            |  def scalaCliVersion = "${Versions.scalaCli}"
            |  def defaultScalaVersion = "${Versions.scala}"
+           |  def scala212 = "${Versions.scala212}"
            |  def scala213 = "${Versions.scala213}"
            |  def scala3 = "${Versions.scala}"
            |
@@ -1110,12 +1163,10 @@ object integration extends ScalaModule {
         "-Dplasmon.integration.launcher-kind=native"
       )
     }
-    // Native launchers can't be given the class path of the (unpublished) Scala 2 presentation
-    // compiler host like JVM ones are, see server.launcher
+    // Native launchers can't be given the class paths of the (unpublished) Scala 2 presentation
+    // compiler hosts like JVM ones are, see server.launcher
     def forkEnv = Task {
-      val scala2PcHostClassPath =
-        `remote-pc`.`scala2-host`.jarClassPath().map(_.path.toString).mkString(File.pathSeparator)
-      super.forkEnv() ++ Map("PLASMON_SCALA2_PC_HOST_CLASS_PATH" -> scala2PcHostClassPath)
+      super.forkEnv() ++ `remote-pc`.scala2HostClassPathEnv()
     }
     def compileMvnDeps = integration.test.compileMvnDeps()
     def sources = Task {

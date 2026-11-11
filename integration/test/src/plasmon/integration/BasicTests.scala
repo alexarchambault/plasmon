@@ -17,6 +17,10 @@ class BasicTests extends PlasmonSuite {
 
   private def fileContentFor(jvm: String, scalaVersionOpt: Option[String]): String = {
     val scalaVersion = scalaVersionOpt.getOrElse(defaultScalaVersion.value)
+    // scala.jdk.CollectionConverters doesn't exist in Scala 2.12
+    val collectionConverters =
+      if (scalaVersion.startsWith("2.12.")) "sc<21>ala.colle<22>ction.Jav<23>aConverters"
+      else "sc<21>ala.jd<22>k.Col<23>lectionConverters"
     if (scalaVersion.startsWith("2."))
       s"""//> using scala "$scalaVersion"
          |//> using jvm "$jvm"
@@ -33,7 +37,7 @@ class BasicTests extends PlasmonSuite {
          |}
          |
          |object Thi<20>ng {
-         |  import sc<21>ala.jd<22>k.Col<23>lectionConverters._
+         |  import $collectionConverters._
          |  Th<24>read.cur<25>rentThread().get<26>ContextClassLoader().get<27>Resources("").as<28>Scala.to<29>Vector
          |    .ma<30>p(_.to<31>URI.to<32>ASCIIString)
          |  Runt<33>ime.get<34>Runtime().avai<35>lableProcessors()

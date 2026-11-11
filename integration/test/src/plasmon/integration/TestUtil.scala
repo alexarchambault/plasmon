@@ -707,6 +707,7 @@ object TestUtil {
       testNameSuffix = s" ${buildTool.displayName} Java ${jvm.label}"
     } yield (buildTool, jvm, testNameSuffix)
 
+  val scala212        = Labelled("2.12", IntegrationConstants.scala212)
   val scala213        = Labelled("2.13", IntegrationConstants.scala213)
   val scala213Compat  = Labelled(scala213.label + "-compat", scala213.value)
   val compatServerOpt = Seq("--scala2-compat=true")
@@ -734,6 +735,7 @@ object TestUtil {
         else Nil
       }
       (scalaVersion, serverOpt) <- Seq(
+        (scala212, Nil),
         (scala213, Nil),
         (scala213Compat, compatServerOpt),
         (Labelled("3", IntegrationConstants.scala3), Nil)

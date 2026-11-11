@@ -1,0 +1,9 @@
+{
+  "path": "test-mod/src/main/scala/foo/Definitions.scala",
+  "line": 2,
+  "colRange": [
+    7,
+    18
+  ],
+  "content": "Definitions"
+}

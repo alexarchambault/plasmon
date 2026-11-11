@@ -129,7 +129,10 @@ class HostServerTests extends munit.FunSuite {
   test("hover") {
     withHost { (server, client) =>
       val created = create(server, "pc-1")
-      assert(created.scalaVersion.startsWith("2.13."))
+      assert(
+        created.scalaVersion == scala.util.Properties.versionNumberString,
+        created.scalaVersion
+      )
       assert(created.supportedCodeActions.contains("ExtractMethod"))
 
       val req = new Messages.PcRequest("pc-1")

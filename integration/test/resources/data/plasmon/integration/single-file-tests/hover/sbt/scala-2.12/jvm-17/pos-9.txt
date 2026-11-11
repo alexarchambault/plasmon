@@ -1,0 +1,7 @@
+```scala
+object scala.collection.mutable.ListBuffer
+```
+
+***
+
+$factoryInfo

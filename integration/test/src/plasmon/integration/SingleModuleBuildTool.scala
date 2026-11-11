@@ -110,8 +110,9 @@ object SingleModuleBuildTool {
   }
 
   private def sourceFile(workspace: os.Path): os.Path =
-    // skipping things like .scala-build, whose generated sources aren't part of any module
-    os.walk(workspace, skip = _.last.startsWith("."))
+    // skipping things like .scala-build, whose generated sources aren't part of any module, and
+    // Mill's out directory, where it unpacks the sources of the compiler bridge of Scala 2.12
+    os.walk(workspace, skip = p => p.last.startsWith(".") || p == workspace / "out")
       .filter(os.isFile)
       .filter(path =>
         path.last.endsWith(".scala") ||

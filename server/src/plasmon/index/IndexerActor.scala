@@ -693,9 +693,12 @@ class IndexerActor(
           if (mayRead && os.exists(f)) {
             logger.log(s"BSP cache: reading $f")
             val elem =
-              BspDataPortability.mapStrings(gson.fromJson(os.read(f), classOf[JsonElement]))(
-                portabilityRoots.denormalize
-              )
+              BspDataPortability.mapStrings(gson.fromJson(os.read(f), classOf[JsonElement])) {
+                str =>
+                  portabilityRoots.denormalize(
+                    ReplayArtifacts.substituteSbtBootJars(str, portabilityRoots)
+                  )
+              }
             gson.fromJson(elem, implicitly[ClassTag[T]].runtimeClass.asInstanceOf[Class[T]])
           }
           else {

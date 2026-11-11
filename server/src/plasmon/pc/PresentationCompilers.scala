@@ -112,7 +112,7 @@ class PresentationCompilers(
   languageClient: PlasmonLanguageClient,
   scala2Compat: Boolean,
   sourcepath: Option[SourcepathMode],
-  scala2PcHost: RemotePcHost,
+  scala2PcHosts: Map[String, RemotePcHost],
   emitDiagnostics: (
     Scala3PresentationCompiler,
     GlobalSymbolIndex.Module,
@@ -1106,14 +1106,25 @@ class PresentationCompilers(
 
   private val diagnosticSource = s"Scala ${Properties.versionNumberString} presentation compiler"
 
+  /** The host running the presentation compilers of the build targets of a Scala version, if they
+    * get a Scala 2 one
+    *
+    * Scala 2 build targets get one, run in [[scala2PcHosts]], unless we're asked not to, we have no
+    * host for their Scala binary version (Scala 2.11, say), or we can't run that host.
+    */
+  private def scala2PcHost(scalaVersion: String): Option[RemotePcHost] =
+    if (scala2Compat || !scalaVersion.startsWith("2.")) None
+    else
+      scala2PcHosts
+        .get(RemotePcHost.scalaBinaryVersion(scalaVersion))
+        .filter(_.classPathOrError.isRight)
+
   /** Whether the build targets of a Scala version get the Scala 3 presentation compiler
     *
-    * Scala 2 build targets get it if we're asked to, or if we can't run the Scala 2 presentation
-    * compiler. Else, they get the Scala 2 one, run in [[scala2PcHost]].
+    * Scala 3 build targets do, and Scala 2 ones that don't get a Scala 2 one, see [[scala2PcHost]].
     */
   def usesScala3Pc(scalaVersion: String): Boolean =
-    scalaVersion.startsWith("3.") ||
-    (scalaVersion.startsWith("2.") && (scala2Compat || scala2PcHost.classPathOrError.isLeft))
+    scala2PcHost(scalaVersion).isEmpty
 
   private def resolve(
     targetId: b.BuildTargetIdentifier,
@@ -1165,75 +1176,75 @@ class PresentationCompilers(
         )
       }
     }
-    if (usesScala3Pc(scalaVersion)) {
-      val makeCompiler = MakeCompiler { javaHome =>
-        scribe.info("Loading Scala 3 PC")
-        lazy val pc: Scala3PresentationCompiler = new Scala3PresentationCompiler(
-          javaHome.toNIO,
-          () => logger().consumer,
-          emitDiagnostics = (uri, diags) => {
-            val logger0 = logger()
-            val path    = uri.toOsPath
-            bspData.mappedTo(targetId, path) match {
-              case Some(_) =>
-                logger0.log(s"Got wrongful diagnostics for wrapped source $path, ignoring them")
-              case None =>
-                val mappedSourceOpt = bspData.mappedFrom(targetId, path)
-                val updateLine: Int => Int = mappedSourceOpt match {
-                  case Some(mappedSource) =>
-                    line => mappedSource.toUserLine(line).getOrElse(0)
-                  case None =>
-                    identity
-                }
-                for (diag <- diags if !diag.pos.span.exists)
-                  logger0.log(s"No span diagnostic: $diag")
-                val diags0 = diags.collect {
-                  case diag if diag.pos.span.exists =>
-                    scribe.info(s"raw diag in ${uri.toOsPath.relativeTo(workspace)}: $diag")
-                    new l.Diagnostic(
-                      new l.Range(
-                        new l.Position(updateLine(diag.pos.startLine), diag.pos.startColumn),
-                        new l.Position(updateLine(diag.pos.endLine), diag.pos.endColumn)
-                      ),
-                      diag.message,
-                      diag.level match {
-                        case dotty.tools.dotc.interfaces.Diagnostic.WARNING =>
-                          l.DiagnosticSeverity.Warning
-                        case dotty.tools.dotc.interfaces.Diagnostic.ERROR =>
-                          l.DiagnosticSeverity.Error
-                        case _ =>
-                          l.DiagnosticSeverity.Information
-                      },
-                      diagnosticSource
-                    )
-                }
-                emitDiagnostics(pc, targetId.module, uri, diags0, logger0)
-            }
-          },
-          module = targetId.module
-        )
-        setupPc(pc, PcAccessHooks(pc.compilerAccess))
-        pc.preferSymbolSearch = PatchedSymbolIndex.millBuildPackagePattern.matches
-        pc
-      }.copy(adaptScala2Options = scalaVersion.startsWith("2."))
-      val extraCp =
-        if (scalaVersion.startsWith("2.")) Seq(scala3Library)
-        else Nil
-      (makeCompiler, extraCp)
-    }
-    else {
-      val makeCompiler = MakeCompiler { javaHome =>
-        scribe.info(s"Using the Scala 2 presentation compiler host for Scala $scalaVersion")
-        val pc0 = new RemotePresentationCompiler(
-          scala2PcHost,
-          javaHome,
-          () => logger().consumer,
-          targetId.module
-        )
-        setupPc(pc0, pc0)
-        pc0
-      }
-      (makeCompiler, Nil)
+    scala2PcHost(scalaVersion) match {
+      case None =>
+        val makeCompiler = MakeCompiler { javaHome =>
+          scribe.info("Loading Scala 3 PC")
+          lazy val pc: Scala3PresentationCompiler = new Scala3PresentationCompiler(
+            javaHome.toNIO,
+            () => logger().consumer,
+            emitDiagnostics = (uri, diags) => {
+              val logger0 = logger()
+              val path    = uri.toOsPath
+              bspData.mappedTo(targetId, path) match {
+                case Some(_) =>
+                  logger0.log(s"Got wrongful diagnostics for wrapped source $path, ignoring them")
+                case None =>
+                  val mappedSourceOpt = bspData.mappedFrom(targetId, path)
+                  val updateLine: Int => Int = mappedSourceOpt match {
+                    case Some(mappedSource) =>
+                      line => mappedSource.toUserLine(line).getOrElse(0)
+                    case None =>
+                      identity
+                  }
+                  for (diag <- diags if !diag.pos.span.exists)
+                    logger0.log(s"No span diagnostic: $diag")
+                  val diags0 = diags.collect {
+                    case diag if diag.pos.span.exists =>
+                      scribe.info(s"raw diag in ${uri.toOsPath.relativeTo(workspace)}: $diag")
+                      new l.Diagnostic(
+                        new l.Range(
+                          new l.Position(updateLine(diag.pos.startLine), diag.pos.startColumn),
+                          new l.Position(updateLine(diag.pos.endLine), diag.pos.endColumn)
+                        ),
+                        diag.message,
+                        diag.level match {
+                          case dotty.tools.dotc.interfaces.Diagnostic.WARNING =>
+                            l.DiagnosticSeverity.Warning
+                          case dotty.tools.dotc.interfaces.Diagnostic.ERROR =>
+                            l.DiagnosticSeverity.Error
+                          case _ =>
+                            l.DiagnosticSeverity.Information
+                        },
+                        diagnosticSource
+                      )
+                  }
+                  emitDiagnostics(pc, targetId.module, uri, diags0, logger0)
+              }
+            },
+            module = targetId.module
+          )
+          setupPc(pc, PcAccessHooks(pc.compilerAccess))
+          pc.preferSymbolSearch = PatchedSymbolIndex.millBuildPackagePattern.matches
+          pc
+        }.copy(adaptScala2Options = scalaVersion.startsWith("2."))
+        val extraCp =
+          if (scalaVersion.startsWith("2.")) Seq(scala3Library)
+          else Nil
+        (makeCompiler, extraCp)
+      case Some(host) =>
+        val makeCompiler = MakeCompiler { javaHome =>
+          scribe.info(s"Using the Scala 2 presentation compiler host for Scala $scalaVersion")
+          val pc0 = new RemotePresentationCompiler(
+            host,
+            javaHome,
+            () => logger().consumer,
+            targetId.module
+          )
+          setupPc(pc0, pc0)
+          pc0
+        }
+        (makeCompiler, Nil)
     }
   }
 

@@ -30,9 +30,9 @@ final class ReplayBuildServer(
     val f = dataDir / s"$name.json"
     if (os.exists(f)) {
       val elem =
-        BspDataPortability.mapStrings(gson.fromJson(os.read(f), classOf[JsonElement]))(
-          roots.denormalize
-        )
+        BspDataPortability.mapStrings(gson.fromJson(os.read(f), classOf[JsonElement])) {
+          str => roots.denormalize(ReplayArtifacts.substituteSbtBootJars(str, roots))
+        }
       Some(gson.fromJson(elem, implicitly[ClassTag[T]].runtimeClass.asInstanceOf[Class[T]]))
     }
     else

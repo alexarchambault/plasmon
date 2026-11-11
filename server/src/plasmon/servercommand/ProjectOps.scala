@@ -10,7 +10,7 @@ import plasmon.Server
 import plasmon.PlasmonEnrichments.*
 import plasmon.command.ServerCommandThreadPools
 import plasmon.index.Indexer
-import plasmon.internal.Constants
+import plasmon.pc.SupportedScalaVersions
 
 import java.util.concurrent.ExecutionException
 
@@ -252,10 +252,7 @@ object ProjectOps {
                 }
                 .flatMap(_.asScalaBuildTarget)
               val scalaVerOpt = scalaTargetOpt.map(_.getScalaVersion)
-              scalaVerOpt.forall { sv =>
-                sv.startsWith("2.13.") && Version(sv) <= Version(Constants.scala2Version) ||
-                sv.startsWith("3.") && Version(sv) <= Version(Constants.scalaVersion)
-              }
+              scalaVerOpt.forall(SupportedScalaVersions.isSupported)
             }
             (targetId = id, recommended = recommended)
         }
@@ -280,10 +277,7 @@ object ProjectOps {
               case b.ScalaPlatform.JS     => "Scala.js"
               case b.ScalaPlatform.NATIVE => "Scala Native"
             }
-            // TODO Factor that somewhere
-            val supported =
-              sv.startsWith("2.13.") && Version(sv) <= Version(Constants.scala2Version) ||
-              sv.startsWith("3.") && Version(sv) <= Version(Constants.scalaVersion)
+            val supported = SupportedScalaVersions.isSupported(sv)
             (supported, s"Scala $sv, $platform")
           }
 

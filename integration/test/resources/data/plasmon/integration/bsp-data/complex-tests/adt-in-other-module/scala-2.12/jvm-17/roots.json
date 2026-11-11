@@ -1,0 +1,14 @@
+[
+  {
+    "uri": "file:///$WORKSPACE$/bar"
+  },
+  {
+    "uri": "file:///$WORKSPACE$/foo"
+  },
+  {
+    "uri": "file:///$WORKSPACE$/mill-build"
+  },
+  {
+    "uri": "file:///$WORKSPACE$/mill-synthetic-root-target"
+  }
+]

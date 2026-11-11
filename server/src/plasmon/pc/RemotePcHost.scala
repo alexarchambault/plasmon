@@ -38,6 +38,8 @@ import scala.util.control.NonFatal
   *
   * @param name
   *   name of the host, for logging
+  * @param scalaVersion
+  *   version of the presentation compilers of the host
   * @param classPath
   *   class path of the host, computed when it's first needed
   * @param mainClass
@@ -45,6 +47,7 @@ import scala.util.control.NonFatal
   */
 final class RemotePcHost(
   name: String,
+  val scalaVersion: String,
   classPath: () => Seq[os.Path],
   mainClass: String,
   javaHome: os.Path
@@ -423,25 +426,50 @@ object RemotePcHost {
       case other => other
     }
 
-  /** Name of the Java property and environment variable that can force the class path of the Scala
-    * 2 presentation compiler host
+  def scalaBinaryVersion(scalaVersion: String): String =
+    scalaVersion.split('.').take(2).mkString(".")
+
+  /** Scala 2 presentation compiler hosts we have, as Scala binary version -> Scala version */
+  def scala2Versions: Map[String, String] = Constants.scala2PcVersions
+
+  /** Name of the Java property and environment variable that can force the class path of a Scala 2
+    * presentation compiler host, like `plasmon.scala213PcHost.classPath` and
+    * `PLASMON_SCALA213_PC_HOST_CLASS_PATH`
     *
-    * Mostly meant for development, where the host isn't published.
+    * Mostly meant for development, where the hosts aren't published.
     */
-  def scala2ClassPathProperty = "plasmon.scala2PcHost.classPath"
-  def scala2ClassPathEnvVar   = "PLASMON_SCALA2_PC_HOST_CLASS_PATH"
+  def scala2ClassPathProperty(scalaBinaryVersion: String) =
+    s"plasmon.scala${scalaBinaryVersion.filter(_ != '.')}PcHost.classPath"
+  def scala2ClassPathEnvVar(scalaBinaryVersion: String) =
+    s"PLASMON_SCALA${scalaBinaryVersion.filter(_ != '.')}_PC_HOST_CLASS_PATH"
 
   def scala2MainClass = "plasmon.remotepc.host.Scala2PcHost"
+
+  /** The Scala 2 presentation compiler hosts, per Scala binary version
+    *
+    * Creating them is cheap, they only fetch and start something when they're first needed.
+    */
+  def scala2Hosts(javaHome: os.Path): Map[String, RemotePcHost] =
+    scala2Versions.map {
+      case (sbv, sv) =>
+        sbv -> new RemotePcHost(
+          s"Scala $sbv",
+          sv,
+          () => scala2ClassPath(sbv),
+          scala2MainClass,
+          javaHome
+        )
+    }
 
   private def snapshotsRepository =
     "https://central.sonatype.com/repository/maven-snapshots"
 
-  /** Class path of the Scala 2 presentation compiler host, fetched with coursier unless forced via
-    * [[scala2ClassPathProperty]] or [[scala2ClassPathEnvVar]]
+  /** Class path of the Scala 2 presentation compiler host of a Scala binary version, fetched with
+    * coursier unless forced via [[scala2ClassPathProperty]] or [[scala2ClassPathEnvVar]]
     */
-  def scala2ClassPath(): Seq[os.Path] = {
-    val forced = sys.props.get(scala2ClassPathProperty)
-      .orElse(sys.env.get(scala2ClassPathEnvVar))
+  def scala2ClassPath(scalaBinaryVersion: String): Seq[os.Path] = {
+    val forced = sys.props.get(scala2ClassPathProperty(scalaBinaryVersion))
+      .orElse(sys.env.get(scala2ClassPathEnvVar(scalaBinaryVersion)))
       .map(_.trim)
       .filter(_.nonEmpty)
     forced match {
@@ -451,15 +479,17 @@ object RemotePcHost {
         val version = BuildVersion.version
         if (version == "unknown")
           sys.error(
-            "Unknown Plasmon version, cannot fetch the Scala 2 presentation compiler host " +
-              s"(set $scala2ClassPathEnvVar to its class path)"
+            s"Unknown Plasmon version, cannot fetch the Scala $scalaBinaryVersion presentation " +
+              s"compiler host (set ${scala2ClassPathEnvVar(scalaBinaryVersion)} to its class path)"
           )
-        val dependency = coursierapi.Dependency.of(
-          Constants.organization,
-          Constants.scala2PcHostModuleName,
-          version
+        val moduleName = Constants.scala2PcHostModuleNames.getOrElse(
+          scalaBinaryVersion,
+          sys.error(s"No presentation compiler host for Scala $scalaBinaryVersion")
         )
-        scribe.info(s"Fetching the Scala 2 presentation compiler host ($dependency)")
+        val dependency = coursierapi.Dependency.of(Constants.organization, moduleName, version)
+        scribe.info(
+          s"Fetching the Scala $scalaBinaryVersion presentation compiler host ($dependency)"
+        )
         val fetch = coursierapi.Fetch.create().addDependencies(dependency)
         if (!BuildVersion.isStable)
           fetch.addRepositories(coursierapi.MavenRepository.of(snapshotsRepository))
