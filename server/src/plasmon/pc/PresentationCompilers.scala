@@ -193,8 +193,8 @@ class PresentationCompilers(
   private val cache           = jcache.asScala
   private val completionCache = jCompletionCache.asScala
 
-  /** Has the loaded presentation compilers of `targetId` read `path` afresh, `path` being on
-    * their source path. `true` when one of them can't take the change in on the fly - see
+  /** Has the loaded presentation compilers of `targetId` read `path` afresh, `path` being on their
+    * source path. `true` when one of them can't take the change in on the fly - see
     * [[dotty.tools.pc.SourcePathReload]] - and `targetId`'s compilers are to be started over.
     * Compilers not loaded yet are left alone: they read the file when they get created.
     */
@@ -206,7 +206,7 @@ class PresentationCompilers(
       pc     <- lazyPc.compilerOpt.toSeq
       pc3 <- pc match {
         case pc0: Scala3PresentationCompiler if pc0.isLoaded() => Seq(pc0)
-        case _                                                  => Nil
+        case _                                                 => Nil
       }
     } yield pc3
     Future
