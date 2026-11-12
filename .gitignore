@@ -3,5 +3,5 @@ out/
 .plasmon/
 .bloop/
 .scala-build/
-/neovim/doc/tags
+/editors/neovim/doc/tags
 .pnpm-store/

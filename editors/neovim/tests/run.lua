@@ -1,8 +1,8 @@
 -- Minimal test runner, with no dependency beyond Neovim itself.
 --
--- nvim --clean --headless -l neovim/tests/run.lua [spec...] [--filter <pattern>]
+-- nvim --clean --headless -l editors/neovim/tests/run.lua [spec...] [--filter <pattern>]
 --
--- Specs are files under neovim/tests/ named <name>_spec.lua, passed by name ("unit",
+-- Specs are files under editors/neovim/tests/ named <name>_spec.lua, passed by name ("unit",
 -- "integration"). Each spec calls describe() / it() / before_each() / after_each(), all
 -- globals set up here. Exits with a non-zero code if any test fails.
 
