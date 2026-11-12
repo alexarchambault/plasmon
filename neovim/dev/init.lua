@@ -1,10 +1,12 @@
--- Minimal Neovim config to try the plugin, used by `./mill -i neovim.run <path>`.
+-- Minimal Neovim config with the Plasmon plugin, and no other plugin. Used by
+-- `plasmon nvim --lazyvim=false`, and by `./mill -i neovim.run <path> --config minimal`.
 --
 --   nvim --clean -u neovim/dev/init.lua [file...]
 --
--- Loads the plugin from this checkout, rather than any installed copy. The server command comes
--- from PLASMON_NVIM_SERVER_CMD (JSON array, set by `neovim.run` to the server built from
--- sources), else `plasmon server` is used.
+-- Loads the Plasmon plugin from the parent directory of this file's directory, rather than any
+-- installed copy. The server command comes from PLASMON_NVIM_SERVER_CMD (JSON array), else
+-- `plasmon server` is used, and PLASMON_NVIM_SERVER_ENV (JSON object) adds environment variables
+-- to it.
 
 local dev_dir = vim.fs.dirname(vim.fs.normalize(vim.fn.fnamemodify(debug.getinfo(1, "S").source:sub(2), ":p")))
 local plugin_dir = vim.fs.dirname(dev_dir)
@@ -27,6 +29,10 @@ local server_cmd = vim.env.PLASMON_NVIM_SERVER_CMD
 local opts = {}
 if server_cmd and server_cmd ~= "" then
   opts.cmd = vim.json.decode(server_cmd)
+end
+local server_env = vim.env.PLASMON_NVIM_SERVER_ENV
+if server_env and server_env ~= "" then
+  opts.cmd_env = vim.json.decode(server_env)
 end
 require("plasmon").setup(opts)
 

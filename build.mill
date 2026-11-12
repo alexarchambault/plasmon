@@ -365,6 +365,7 @@ object server extends ScalaModule with PlasmonPublishModule {
          |  def scalametaVersion = "${Deps.semanticDbScalac.dep.versionConstraint.asString}"
          |  def sbtBloopVersion = "${Versions.sbtBloop}"
          |  def defaultSbtVersion = "${Versions.sbt}"
+         |  def neovimVersion = "${neovim.nvimVersion}"
          |
          |  def disableScala2Pc = $disableScala2Pc
          |}
@@ -477,7 +478,26 @@ object server extends ScalaModule with PlasmonPublishModule {
       dir
     }
 
-    super.resources() ++ Seq(PathRef(vsixDir)) ++ settingsEditDir() ++ versionResourcesDir()
+    super.resources() ++ Seq(PathRef(vsixDir)) ++ settingsEditDir() ++ versionResourcesDir() ++
+      Seq(neovimResourcesDir())
+  }
+
+  /** The Neovim plugin and the configs `plasmon nvim` runs, under plasmon/neovim/, along with the
+    * list of their files (plasmon/neovim/files.txt)
+    */
+  def neovimResourcesDir = Task {
+    val dest = Task.dest / "resources" / "plasmon" / "neovim"
+    val files =
+      for {
+        (src, sub) <- neovim.pluginSources().map(_.path).flatMap { dir =>
+          os.walk(dir).filter(os.isFile).map(f => f -> (os.sub / dir.last / f.relativeTo(dir)))
+        } ++ neovim.configSources().map(_.path).map(f => f -> (os.sub / "config" / f.last))
+      } yield {
+        os.copy(src, dest / sub, createFolders = true)
+        sub.toString
+      }
+    os.write(dest / "files.txt", files.sorted.mkString("", "\n", "\n"))
+    PathRef(Task.dest / "resources")
   }
 
   trait PlasmonNativeImage extends ScalaModule with NativeImage with FormatNativeImageConf {
@@ -1478,6 +1498,12 @@ object editors extends Module {
 object neovim extends Module {
   def nvimVersion = "0.12.6"
 
+  /** Directories of the plugin, bundled in the server (for `plasmon nvim`) */
+  def pluginSources = Task.Sources("plugin", "lua", "lsp", "doc")
+
+  /** Neovim configs `plasmon nvim` runs, bundled in the server */
+  def configSources = Task.Sources("dev/lazyvim.lua", "dev/init.lua", "dev/lazy-lock.json")
+
   private def nvimArchiveName: String = {
     val isArm = Option(System.getProperty("os.arch")).exists(arch =>
       arch == "aarch64" || arch == "arm64"
@@ -1577,11 +1603,32 @@ object neovim extends Module {
 
   /** Runs Neovim, with the plugin and the server built from sources, in a directory or on a file
     *
-    * Uses a minimal config (neovim/dev/init.lua), not the user's one. Extra arguments are passed to
-    * nvim. Needs `./mill -i`, so that nvim gets the terminal.
+    * Doesn't use the user's config, but either
+    *   - `--config lazyvim` (default): LazyVim (neovim/dev/lazyvim.lua), with a file tree, a
+    *     statusline, etc. Plugins are downloaded on the first run, under
+    *     ~/.local/share/plasmon-dev-lazyvim (NVIM_APPNAME=plasmon-dev-lazyvim), and pinned by
+    *     neovim/dev/lazy-lock.json.
+    *   - `--config minimal`: a minimal config (neovim/dev/init.lua), with no other plugin.
+    *
+    * Extra arguments are passed to nvim. Needs `./mill -i`, so that nvim gets the terminal.
     */
-  def run(@mainargs.arg(positional = true) path: String, args: String*) =
+  def run(
+    @mainargs.arg(positional = true) path: String,
+    @mainargs.arg(doc = "Neovim config: lazyvim (default) or minimal") config: String = "lazyvim",
+    args: String*
+  ) =
     Task.Command(exclusive = true) {
+      val (configArgs, configEnv) = config match {
+        case "lazyvim" =>
+          (
+            Seq("-u", (moduleDir / "dev/lazyvim.lua").toString),
+            Map("NVIM_APPNAME" -> "plasmon-dev-lazyvim")
+          )
+        case "minimal" =>
+          (Seq("--clean", "-u", (moduleDir / "dev/init.lua").toString), Map.empty[String, String])
+        case other =>
+          sys.error(s"Unknown config '$other' (expected lazyvim or minimal)")
+      }
       val target = os.Path(path, BuildCtx.workspaceRoot)
       if (!os.exists(target))
         sys.error(s"$target not found")
@@ -1600,14 +1647,12 @@ object neovim extends Module {
       val serverCmdJson0 = serverCmdJson(server.launcher())
       val res = os.proc(
         nvim0,
-        "--clean",
-        "-u",
-        moduleDir / "dev/init.lua",
+        configArgs,
         args,
         files
       ).call(
         cwd = cwd,
-        env = Map("PLASMON_NVIM_SERVER_CMD" -> serverCmdJson0),
+        env = configEnv + ("PLASMON_NVIM_SERVER_CMD" -> serverCmdJson0),
         stdin = os.InheritRaw,
         stdout = os.InheritRaw,
         stderr = os.InheritRaw,

@@ -17,6 +17,29 @@ completions, diagnostics, etc. on its own. This plugin adds what Plasmon needs o
 - tells the server which file is being looked at (Plasmon's status and several commands rely on
   it), and a warning when another Plasmon server already runs in the same workspace.
 
+## Try it with `plasmon nvim`
+
+```
+plasmon nvim [directory] [nvim arguments…]
+```
+
+runs Neovim on the current directory (or the one passed), with this plugin set up to use the
+`plasmon` binary you ran. It doesn't touch your own Neovim set-up: Neovim's config, data, state
+and cache directories (the `XDG_*` variables) point to Plasmon's own directories (under
+`~/.local/share/plasmon/neovim` and `~/.cache/plasmon/neovim` on Linux). The Plasmon server
+gets your actual `XDG_*` directories back.
+
+- By default, Neovim runs with [LazyVim](https://www.lazyvim.org) (file explorer with
+  `<leader>e`, statusline with Plasmon's status, pickers, completion, …). Its plugins are
+  downloaded on the first run (that needs `git`), at the versions Plasmon was tested with.
+  `--lazyvim=false` runs Neovim with a minimal config instead, with this plugin alone.
+- Neovim itself is downloaded (the version Plasmon was tested with, cached by coursier).
+  `--neovim=system` uses the `nvim` on your `PATH` instead, `--neovim=<path>` a given
+  binary, and `--neovim=<version>` downloads that version.
+
+Programs started from that Neovim (`:terminal`, `git`, …) see Plasmon's `XDG_*` directories
+rather than yours.
+
 ## Install
 
 You need the `plasmon` launcher on your `PATH` (or pass its path, see below).
@@ -134,12 +157,23 @@ nvim --clean --headless -l neovim/tests/run.lua unit
 To try the plugin and the server built from sources:
 
 ```
-./mill -i neovim.run <directory or file> [nvim arguments…]
+./mill -i neovim.run <directory or file> [--config lazyvim|minimal] [nvim arguments…]
 ```
 
 This builds the server, then runs Neovim (the version the tests use) in that directory, or on
-that file. It runs with a minimal config, [`dev/init.lua`](dev/init.lua), rather than yours:
-the plugin from this checkout, a Plasmon statusline, diagnostics as virtual text, completion
-as you type, and `gd`, `<leader>cl` (run a code lens) and `<leader>f` (format) on top of
-Neovim's default LSP mappings (`:help lsp-defaults`). `-i` is needed so that Neovim gets the
-terminal. Relative paths are relative to the repository root.
+that file, with the plugin from this checkout, and a config of this repository rather than
+yours:
+
+- `--config lazyvim` (the default): [LazyVim](https://www.lazyvim.org), set up in
+  [`dev/lazyvim.lua`](dev/lazyvim.lua), for an IDE-like set-up: file explorer (`<leader>e`),
+  statusline (with Plasmon's status), buffer tabs, pickers, completion, LazyVim's LSP
+  mappings, etc. The first run downloads LazyVim and its plugins, at the versions of
+  [`dev/lazy-lock.json`](dev/lazy-lock.json), under `~/.local/share/plasmon-dev-lazyvim` (it
+  runs with `NVIM_APPNAME=plasmon-dev-lazyvim`, so it doesn't touch your own Neovim set-up).
+- `--config minimal`: a minimal config, [`dev/init.lua`](dev/init.lua), with no other plugin:
+  a Plasmon statusline, diagnostics as virtual text, completion as you type, and `gd`,
+  `<leader>cl` (run a code lens) and `<leader>f` (format) on top of Neovim's default LSP
+  mappings (`:help lsp-defaults`).
+
+`-i` is needed so that Neovim gets the terminal. Relative paths are relative to the
+repository root.

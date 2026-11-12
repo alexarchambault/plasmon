@@ -160,7 +160,7 @@ object Code extends caseapp.Command[CodeOptions] {
   private def endsWithCaseInsensitive(s: String, suffix: String): Boolean =
     s.length >= suffix.length &&
     s.regionMatches(true, s.length - suffix.length, suffix, 0, suffix.length)
-  private def findInPath(app: String): Option[Path] = {
+  private[command] def findInPath(app: String): Option[Path] = {
     val asIs = Paths.get(app)
     if (Paths.get(app).getNameCount >= 2) Some(asIs)
     else {
