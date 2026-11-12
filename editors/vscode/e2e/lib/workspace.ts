@@ -6,7 +6,7 @@ import path from 'node:path'
 export type WorkspaceFiles = Record<string, string>
 
 // Root of the plasmon repository
-export const repoRoot = path.resolve(import.meta.dirname, '..', '..', '..')
+export const repoRoot = path.resolve(import.meta.dirname, '..', '..', '..', '..')
 
 export function writeWorkspace(dir: string, files: WorkspaceFiles): void {
   for (const [relPath, content] of Object.entries(files)) {
@@ -23,7 +23,7 @@ export function writeWorkspace(dir: string, files: WorkspaceFiles): void {
 export function millVersion(): string {
   const version = process.env.PLASMON_E2E_MILL_VERSION
   if (!version)
-    throw new Error('PLASMON_E2E_MILL_VERSION not set (run via ./mill extension.e2e.test)')
+    throw new Error('PLASMON_E2E_MILL_VERSION not set (run via ./mill editors.vscode.e2e.test)')
   return version
 }
 

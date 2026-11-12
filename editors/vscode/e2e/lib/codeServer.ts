@@ -31,13 +31,13 @@ export type CodeServer = {
   stop(): Promise<void>
 }
 
-// Inputs passed by Mill (see extension.e2e in build.mill)
+// Inputs passed by Mill (see editors.vscode.e2e in build.mill)
 export function requiredEnv(name: string): string {
   const value = process.env[name]
   if (!value)
     throw new Error(
-      `${name} not set. Run these via './mill extension.e2e.test' or './mill extension.e2e.serve', ` +
-        'which build what they need and set it.'
+      `${name} not set. Run these via './mill editors.vscode.e2e.test' or ` +
+        `'./mill editors.vscode.e2e.serve', which build what they need and set it.`
     )
   return value
 }

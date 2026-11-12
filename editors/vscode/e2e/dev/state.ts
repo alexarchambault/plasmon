@@ -16,6 +16,6 @@ export const defaultStateDir = path.resolve(import.meta.dirname, '..', '.serve')
 export function readState(stateDir: string): ServeState {
   const file = path.join(stateDir, 'state.json')
   if (!fs.existsSync(file))
-    throw new Error(`${file} not found, start code-server first with './mill extension.e2e.serve'`)
+    throw new Error(`${file} not found, start code-server first with './mill editors.vscode.e2e.serve'`)
   return JSON.parse(fs.readFileSync(file, 'utf8'))
 }

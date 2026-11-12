@@ -2,13 +2,13 @@
 // between runs, like in an interactive session.
 //
 // Usage:
-//   node extension/e2e/dev/drive.ts [--state-dir <dir>] '<async JS function body>'
-//   node extension/e2e/dev/drive.ts [--state-dir <dir>] --file <script.js>
+//   node editors/vscode/e2e/dev/drive.ts [--state-dir <dir>] '<async JS function body>'
+//   node editors/vscode/e2e/dev/drive.ts [--state-dir <dir>] --file <script.js>
 //
 // In scope: `vscode` (lib/vscode.ts), `page` (Playwright Page), `state` (dev/state.ts), and
 // `screenshot(name?)`, which saves a PNG under <state-dir>/screenshots and returns its path.
 // A returned value is printed (as JSON unless it's a string). Example:
-//   node extension/e2e/dev/drive.ts 'await vscode.openFile("Main.scala"); return vscode.hover(10, 16)'
+//   node editors/vscode/e2e/dev/drive.ts 'await vscode.openFile("Main.scala"); return vscode.hover(10, 16)'
 
 import { chromium } from '@playwright/test'
 import fs from 'node:fs'
