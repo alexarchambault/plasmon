@@ -44,7 +44,7 @@ rather than yours.
 
 You need the `plasmon` launcher on your `PATH` (or pass its path, see below).
 
-The plugin lives in the `neovim/` directory of the Plasmon repository. With
+The plugin lives in the `editors/neovim/` directory of the Plasmon repository. With
 [lazy.nvim](https://github.com/folke/lazy.nvim):
 
 ```lua
@@ -142,8 +142,8 @@ vim.o.statusline = "%f %= %{v:lua.require'plasmon'.statusline()} "
 Tests run in headless Neovim, with no dependency beyond Neovim itself:
 
 ```
-./mill -i neovim.test             # against a fake server (neovim/tests/fake_server.lua)
-./mill -i neovim.integrationTest  # against the server built from sources, on a Scala CLI project
+./mill -i editors.neovim.test             # against a fake server (editors/neovim/tests/fake_server.lua)
+./mill -i editors.neovim.integrationTest  # against the server built from sources, on a Scala CLI project
 ```
 
 Both download Neovim, unless `PLASMON_NVIM` points to an `nvim` binary, and accept
@@ -151,13 +151,13 @@ Both download Neovim, unless `PLASMON_NVIM` points to an `nvim` binary, and acce
 tests with a given Neovim directly:
 
 ```
-nvim --clean --headless -l neovim/tests/run.lua unit
+nvim --clean --headless -l editors/neovim/tests/run.lua unit
 ```
 
 To try the plugin and the server built from sources:
 
 ```
-./mill -i neovim.run <directory or file> [--config lazyvim|minimal] [nvim arguments…]
+./mill -i editors.neovim.run <directory or file> [--config lazyvim|minimal] [nvim arguments…]
 ```
 
 This builds the server, then runs Neovim (the version the tests use) in that directory, or on

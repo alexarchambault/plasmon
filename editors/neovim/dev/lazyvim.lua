@@ -1,10 +1,10 @@
--- LazyVim config with the Plasmon plugin. Used by `plasmon nvim`, and by `./mill -i neovim.run <path>`
+-- LazyVim config with the Plasmon plugin. Used by `plasmon nvim`, and by `./mill -i editors.neovim.run <path>`
 -- (the default `--config lazyvim`; `--config minimal` uses init.lua, next to this file).
 --
---   NVIM_APPNAME=plasmon-dev-lazyvim nvim -u neovim/dev/lazyvim.lua [file...]
+--   NVIM_APPNAME=plasmon-dev-lazyvim nvim -u editors/neovim/dev/lazyvim.lua [file...]
 --
 -- Neither touches the user's own Neovim set-up: `plasmon nvim` points the XDG_* directories to
--- Plasmon's own directories, `neovim.run` sets NVIM_APPNAME (LazyVim, its plugins and their state
+-- Plasmon's own directories, `editors.neovim.run` sets NVIM_APPNAME (LazyVim, its plugins and their state
 -- then go under ~/.local/share/plasmon-dev-lazyvim, ~/.local/state/plasmon-dev-lazyvim, …).
 -- Plugin versions are pinned by lazy-lock.json, next to this file (`:Lazy update` updates it).
 --

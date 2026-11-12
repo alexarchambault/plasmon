@@ -1,7 +1,7 @@
 -- Minimal Neovim config with the Plasmon plugin, and no other plugin. Used by
--- `plasmon nvim --lazyvim=false`, and by `./mill -i neovim.run <path> --config minimal`.
+-- `plasmon nvim --lazyvim=false`, and by `./mill -i editors.neovim.run <path> --config minimal`.
 --
---   nvim --clean -u neovim/dev/init.lua [file...]
+--   nvim --clean -u editors/neovim/dev/init.lua [file...]
 --
 -- Loads the Plasmon plugin from the parent directory of this file's directory, rather than any
 -- installed copy. The server command comes from PLASMON_NVIM_SERVER_CMD (JSON array), else

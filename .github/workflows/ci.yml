@@ -145,11 +145,11 @@ jobs:
       with:
         apps: scala-cli
         jvm: 17
-    # Neovim itself is downloaded by Mill (neovim.nvim), into the coursier cache
+    # Neovim itself is downloaded by Mill (editors.neovim.nvim), into the coursier cache
     - name: Plugin tests
-      run: ./mill -i neovim.test
+      run: ./mill -i editors.neovim.test
     - name: Plugin tests against the server
-      run: ./mill -i neovim.integrationTest
+      run: ./mill -i editors.neovim.integrationTest
 
   vscode-e2e:
     needs: tags
