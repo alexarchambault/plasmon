@@ -1588,8 +1588,7 @@ object editors extends Module {
       ujson.write(ujson.Arr.from(serverCmd))
     }
 
-    /** Runs the plugin tests against the server built from sources (`integration` spec by
-      * default)
+    /** Runs the plugin tests against the server built from sources (`integration` spec by default)
       */
     def integrationTest(args: String*) = Task.Command(exclusive = true) {
       runTests(
