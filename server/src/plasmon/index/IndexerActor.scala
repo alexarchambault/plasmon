@@ -329,7 +329,7 @@ class IndexerActor(
     if (interruptIndexing()) return Nil
 
     val openedFiles = server.editorState.buffers.open.toVector
-    if (openedFiles.nonEmpty) {
+    if (openedFiles.nonEmpty && server.autoCompile) {
       logger.log(s"Compiling ${openedFiles.length} file(s)")
       server.compilations.compileFiles(openedFiles).onComplete {
         case Success(()) =>

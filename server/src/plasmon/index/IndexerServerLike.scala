@@ -32,6 +32,10 @@ trait IndexerServerLike {
   def presentationCompilers: PresentationCompilers
   def compilations: Compilations
 
+  /** Whether modules get built on their own accord - after indexing, say. See `Server.autoCompile`.
+    */
+  def autoCompile: Boolean
+
   def editorState: EditorState
   def fileWatcher: FileWatcher
 

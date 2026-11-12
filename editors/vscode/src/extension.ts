@@ -992,19 +992,28 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.workspace.registerTextDocumentContentProvider(RO_SCHEME, provider)
   )
 
-  const plasmonConfig = vscode.workspace.getConfiguration("plasmon")
-
   setupLanguageConfig()
 
-  let serverArgs = ["server"]
+  // Settings are read again each time the server is started, so that changes
+  // made while a server was running are picked up when it's restarted.
+  function serverArgs(plasmonConfig: vscode.WorkspaceConfiguration): string[] {
+    let args = ["server"]
+    if (plasmonConfig.get<boolean>("sourcepath") ?? false) {
+      args.push("--sourcepath")
+      let mode = plasmonConfig.get<string>("sourcepathMode")
+      if (mode)
+        args.push(`--sourcepath-mode=${mode}`)
+    }
+    return args
+  }
 
-  function binaryServerOptions(binary: string, shell: boolean | undefined = undefined): ServerOptions {
+  function binaryServerOptions(binary: string, args: string[], shell: boolean | undefined = undefined): ServerOptions {
     let shell0 = shell
     if (process.platform === "win32" && shell0 === undefined)
       shell0 = true
     return {
       command: binary,
-      args: serverArgs,
+      args: args,
       options: {
         // cwd: "",
         // env: {},
@@ -1014,18 +1023,18 @@ export function activate(context: vscode.ExtensionContext) {
     }
   }
 
-  function jvmServerOptions(version: string): ServerOptions {
+  function jvmServerOptions(version: string, args: string[]): ServerOptions {
     return {
       command: "cs",
-      args: ["launch", `io.github.alexarchambault.plasmon:server_3:${version}`, "--jvm", "24", "--"].concat(serverArgs),
+      args: ["launch", `io.github.alexarchambault.plasmon:server_3:${version}`, "--jvm", "24", "--"].concat(args),
       options: {}
     }
   }
 
-  // A full command line (JSON array of strings) starting the plasmon CLI, the `server`
-  // argument being appended to it. Set by `plasmon code` when it runs on the JVM, so that
+  // A full command line (JSON array of strings) starting the plasmon CLI, the server
+  // arguments being appended to it. Set by `plasmon code` when it runs on the JVM, so that
   // we use the very plasmon that started VSCode.
-  function forcedCommandServerOptions(value: string): ServerOptions | undefined {
+  function forcedCommandServerOptions(value: string, args: string[]): ServerOptions | undefined {
     let parsed: unknown
     try {
       parsed = JSON.parse(value)
@@ -1041,40 +1050,44 @@ export function activate(context: vscode.ExtensionContext) {
     let command = parsed as string[]
     return {
       command: command[0],
-      args: command.slice(1).concat(serverArgs),
+      args: command.slice(1).concat(args),
       options: {}
     }
   }
 
-  let serverOptions: ServerOptions
+  function serverOptions(): ServerOptions {
+    const plasmonConfig = vscode.workspace.getConfiguration("plasmon")
+    const args = serverArgs(plasmonConfig)
+    console.log(`Plasmon server arguments: ${args.join(" ")}`)
 
-  let forcedCommandOptions = env["PLASMON_FORCED_COMMAND"] ? forcedCommandServerOptions(env["PLASMON_FORCED_COMMAND"]) : undefined
+    let forcedCommandOptions = env["PLASMON_FORCED_COMMAND"] ? forcedCommandServerOptions(env["PLASMON_FORCED_COMMAND"], args) : undefined
 
-  if (forcedCommandOptions !== undefined) {
-    console.log(`Using plasmon command from PLASMON_FORCED_COMMAND`)
-    serverOptions = forcedCommandOptions
-  }
-  else if (env["PLASMON_FORCED_BINARY"]) {
-    console.log(`Using plasmon binary from PLASMON_FORCED_BINARY`)
-    serverOptions = binaryServerOptions(env["PLASMON_FORCED_BINARY"])
-  }
-  else if (env["PLASMON_FORCED_VERSION"]) {
-    console.log(`Using plasmon version from PLASMON_FORCED_VERSION`)
-    serverOptions = jvmServerOptions(env["PLASMON_FORCED_VERSION"])
-  }
-  else {
-    let binaryFromConfig = plasmonConfig.get<string>("binary")
-    if (binaryFromConfig !== undefined) {
-      console.log(`Using plasmon binary from config`)
-      serverOptions = binaryServerOptions(binaryFromConfig)
+    if (forcedCommandOptions !== undefined) {
+      console.log(`Using plasmon command from PLASMON_FORCED_COMMAND`)
+      return forcedCommandOptions
     }
-    else if (plasmonConfig.get<boolean>("useJvm") ?? false) {
-      console.log(`Using plasmon JVM per config`)
-      serverOptions = jvmServerOptions("0.1.0-SNAPSHOT")
+    else if (env["PLASMON_FORCED_BINARY"]) {
+      console.log(`Using plasmon binary from PLASMON_FORCED_BINARY`)
+      return binaryServerOptions(env["PLASMON_FORCED_BINARY"], args)
+    }
+    else if (env["PLASMON_FORCED_VERSION"]) {
+      console.log(`Using plasmon version from PLASMON_FORCED_VERSION`)
+      return jvmServerOptions(env["PLASMON_FORCED_VERSION"], args)
     }
     else {
-      console.log(`Using default plasmon: binary`)
-      serverOptions = binaryServerOptions('plasmon')
+      let binaryFromConfig = plasmonConfig.get<string>("binary")
+      if (binaryFromConfig) {
+        console.log(`Using plasmon binary from config`)
+        return binaryServerOptions(binaryFromConfig, args)
+      }
+      else if (plasmonConfig.get<boolean>("useJvm") ?? false) {
+        console.log(`Using plasmon JVM per config`)
+        return jvmServerOptions("0.1.0-SNAPSHOT", args)
+      }
+      else {
+        console.log(`Using default plasmon: binary`)
+        return binaryServerOptions('plasmon', args)
+      }
     }
   }
 
@@ -1087,7 +1100,26 @@ export function activate(context: vscode.ExtensionContext) {
     initializationOptions
   }
 
-  createClient(context, serverOptions, clientOptions, false)
+  createClient(context, serverOptions(), clientOptions, false)
+
+  context.subscriptions.push(
+    vscode.workspace.onDidChangeConfiguration(async (event) => {
+      const affectsServerArgs =
+        event.affectsConfiguration("plasmon.sourcepath") ||
+        event.affectsConfiguration("plasmon.sourcepathMode")
+      if (affectsServerArgs && client != null) {
+        const restart = "Restart server"
+        const choice = await vscode.window.showInformationMessage(
+          "Plasmon server settings changed, restart the server for them to take effect?",
+          restart
+        )
+        if (choice === restart) {
+          await stopClient(context)
+          createClient(context, serverOptions(), clientOptions, false)
+        }
+      }
+    })
+  )
 
   statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 50)
   statusBarItem.text = 'Plasmon starting $(loading~spin)'
@@ -2163,7 +2195,7 @@ export function activate(context: vscode.ExtensionContext) {
 
   context.subscriptions.push(
     vscode.commands.registerCommand("plasmon.start-server", () => {
-      let created = createClient(context, serverOptions, clientOptions, false)
+      let created = createClient(context, serverOptions(), clientOptions, false)
       if (created)
         vscode.window.showInformationMessage(`Plasmon LSP server started`)
       else
@@ -2179,7 +2211,7 @@ export function activate(context: vscode.ExtensionContext) {
       }
       let created = createClient(
         context,
-        serverOptions,
+        serverOptions(),
         {
           ...clientOptions,
           traceOutputChannel: traceChannel

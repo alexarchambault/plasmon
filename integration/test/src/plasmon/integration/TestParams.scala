@@ -33,4 +33,23 @@ object TestParams {
 
   def cleanUpAfterTests = true
 
+  /** Whether to start servers with `--sourcepath`, so that presentation compilers read the
+    * workspace's modules from their sources rather than from built output.
+    *
+    * Set `PLASMON_SOURCEPATH=true`. Build tools are then only asked to set up the project (BSP
+    * details, dependencies), never to compile it, and no `compile` command is sent to the server.
+    * `PLASMON_SOURCEPATH_MODE` picks the `--sourcepath-mode`, when set.
+    */
+  def sourcepath =
+    Option(System.getenv("PLASMON_SOURCEPATH")).exists(_.toBoolean)
+  def sourcepathMode =
+    Option(System.getenv("PLASMON_SOURCEPATH_MODE")).map(_.trim).filter(_.nonEmpty)
+
+  /** Server options that go with [[sourcepath]]. */
+  def sourcepathServerOpts: Seq[String] =
+    if (sourcepath)
+      Seq("--sourcepath") ++ sourcepathMode.map(mode => s"--sourcepath-mode=$mode").toSeq
+    else
+      Nil
+
 }

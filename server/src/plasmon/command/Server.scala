@@ -17,7 +17,7 @@ import plasmon.jsonrpc.{
   RequestHandler
 }
 import plasmon.languageclient.PlasmonLanguageClient
-import plasmon.pc.Scala2PresentationCompilerHandler
+import plasmon.pc.{Scala2PresentationCompilerHandler, SourcepathMode}
 import plasmon.servercommand.*
 import plasmon.util.{ThreadUtil, TimerThreadsHack}
 import plasmon.watch.WatchEvent
@@ -264,6 +264,23 @@ object Server extends caseapp.Command[ServerOptions] {
           true
         }
 
+      val sourcepathMode: Option[SourcepathMode] =
+        if (options.sourcepath.getOrElse(false)) {
+          val mode = options.sourcepathMode match {
+            case None => SourcepathMode.Logical
+            case Some(id) =>
+              SourcepathMode.parse(id).getOrElse {
+                sys.error(
+                  s"Unrecognized source path mode '$id' " +
+                    s"(expected one of ${SourcepathMode.all.map(_.id).mkString(", ")})"
+                )
+              }
+          }
+          scribe.info(s"Reading workspace modules from their sources (${mode.id} source path)")
+          Some(mode)
+        }
+        else None
+
       var indexer: Indexer = null
       lazy val server: plasmon.Server = new plasmon.Server(
         javaHome,
@@ -288,7 +305,8 @@ object Server extends caseapp.Command[ServerOptions] {
         tools = tools,
         enableBestEffortMode = options.bestEffort.getOrElse(true),
         reindexSource = indexer.reindexWorkspaceSource(_),
-        scala2Compat = scala2Compat
+        scala2Compat = scala2Compat,
+        sourcepath = sourcepathMode
       )
 
       indexer = new Indexer(server)

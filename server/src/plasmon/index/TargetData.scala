@@ -263,6 +263,14 @@ final class TargetData {
     sourceBuildTargetsCache.clear()
   }
 
+  /** The source items - files or directories - the build tool reported for `id`. */
+  def sourceItemsOf(id: b.BuildTargetIdentifier): Iterator[os.Path] =
+    sourceItemsToBuildTarget
+      .iterator
+      .collect {
+        case (sourceItem, targets) if targets.contains(id) => sourceItem
+      }
+
   def linkSourceFile(id: b.BuildTargetIdentifier, source: os.Path): Unit = {
     val set = buildTargetSources.getOrElseUpdate(id, concurrentHashSet())
     set.add(source)

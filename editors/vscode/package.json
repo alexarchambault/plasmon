@@ -21,19 +21,32 @@
     "workspaceContains:.scala-build"
   ],
   "main": "./out/extension.js",
-  "configuration": {
-    "type": "object",
-    "title": "Example configuration",
-    "properties": {
-      "plasmon.binary": {
+  "contributes": {
+    "configuration": {
+      "type": "object",
+      "title": "Plasmon",
+      "properties": {
+        "plasmon.binary": {
           "scope": "resource",
           "type": "string",
           "default": "",
           "description": "Plasmon binary path (optional)"
+        },
+        "plasmon.sourcepath": {
+          "scope": "resource",
+          "type": "boolean",
+          "default": false,
+          "markdownDescription": "Have presentation compilers read the workspace's own modules from their sources (Scala 3 `-sourcepath`), rather than from the class directories the build tool reports. Nothing needs to be built for a module to see the ones it depends on. Starts the server with `--sourcepath`; a running server must be restarted for a change to take effect."
+        },
+        "plasmon.sourcepathMode": {
+          "scope": "resource",
+          "type": "string",
+          "enum": ["logical", "classic"],
+          "default": "logical",
+          "markdownDescription": "How sources are handed to the compiler when `#plasmon.sourcepath#` is enabled: `logical` lists files one by one and reads packages from their package clauses, `classic` passes source roots laid out by package. Advanced setting."
+        }
       }
-    }
-  },
-  "contributes": {
+    },
     "commands": [
       {
         "command": "plasmon.debug-pc-enable",

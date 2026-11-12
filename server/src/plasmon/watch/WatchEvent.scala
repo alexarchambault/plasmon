@@ -24,6 +24,12 @@ object WatchEvent {
   case class ComputeInteractiveSemanticdb(targetId: GlobalSymbolIndex.BuildTarget, path: os.Path)
       extends WatchEvent
 
+  /** A source of `targetId` changed on disk, for presentation compilers reading that target from
+    * its sources to pick up. The counterpart of [[Compile]] with a source path.
+    */
+  case class ReloadSource(targetId: GlobalSymbolIndex.BuildTarget, path: os.Path)
+      extends WatchEvent
+
   def normalize(events: Seq[WatchEvent]): Seq[WatchEvent] =
     if (events.contains(Reindex)) Seq(Reindex)
     else {
@@ -42,7 +48,10 @@ object WatchEvent {
           case c: ComputeInteractiveSemanticdb => c
         }
       )
-      fileEvents ++ targetEvents ++ computeSemdbEvents
+      val reloadSourceEvents = events.collect {
+        case r: ReloadSource => r
+      }.distinct
+      fileEvents ++ targetEvents ++ computeSemdbEvents ++ reloadSourceEvents
     }
 
   private def normalizeFileEvents(events: Seq[FileWatchEvent]): Seq[FileWatchEvent] = {

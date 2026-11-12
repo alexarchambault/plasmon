@@ -74,8 +74,10 @@ object DocumentChange {
           List(
             server.presentationCompilers.load(List(path)),
             publishSynthetics
-          ) ++
-            server.compilations.compileFile(path).toSeq
+          ) ++ {
+            if (server.autoCompile) server.compilations.compileFile(path).toSeq
+            else Nil
+          }
         )
         .onComplete {
           case Success(_) =>
@@ -153,10 +155,16 @@ object DocumentChange {
       buildClient <- server.bspData.buildClientOf(targetId).toSeq
       dialect     <- server.bspData.getDialect(path.ext, path.isMill, targetId).toSeq
     } yield server.parserQueue.check(targetId.module, path, buildClient, dialect)
+    val compileOrReset =
+      if (server.autoCompile) server.compilations.compileFiles(Seq(path))
+      else
+        // The saved file is on the source path of the modules depending on its own: their
+        // presentation compilers, and its own module's, get to read the new version
+        server.onSourcepathFileChanged(path)
     Future
       .sequence(
         checks ++ List(
-          server.compilations.compileFiles(Seq(path)),
+          compileOrReset,
           // onBuildChanged(paths).ignoreValue,
           // Future.sequence(paths.map(onBuildToolAdded)),
           server.bspData

@@ -182,6 +182,7 @@ object TestUtil {
         // Nothing will connect to it over LSP: it initializes itself on its working directory,
         // which is the workspace, and answers on its command socket alone
         if (mode == TestMode.Cli) Seq("--lsp=false") else Nil,
+        TestParams.sourcepathServerOpts,
         extraServerOpts
       ),
       timeout = timeout.map(_ * mode.timeoutFactor),
@@ -687,11 +688,28 @@ object TestUtil {
       Labelled("17", "temurin:17.0.7")
     )
 
-  private def buildTools = Seq(
-    SingleModuleBuildTool.ScalaCli(),
-    SingleModuleBuildTool.Mill,
-    SingleModuleBuildTool.Sbt
+  /** The build tools single-module tests run on, from `PLASMON_TEST_BUILD_TOOLS` (comma-separated
+    * ids, such as `scala-cli,mill`) - all of them by default.
+    */
+  private def buildTools = selectedBuildTools(
+    Seq(
+      SingleModuleBuildTool.ScalaCli(),
+      SingleModuleBuildTool.Mill,
+      SingleModuleBuildTool.Sbt
+    )
   )
+
+  private lazy val selectedBuildToolIds: Option[Set[String]] =
+    Option(System.getenv("PLASMON_TEST_BUILD_TOOLS"))
+      .map(_.split(',').toSeq.map(_.trim).filter(_.nonEmpty).toSet)
+
+  private def selectedBuildTools(
+    tools: Seq[SingleModuleBuildTool]
+  ): Seq[SingleModuleBuildTool] =
+    selectedBuildToolIds match {
+      case None      => tools
+      case Some(ids) => tools.filter(tool => ids.contains(tool.id))
+    }
 
   def buildToolJvmValues: Seq[(SingleModuleBuildTool, Labelled[String], String)] =
     for {
@@ -723,7 +741,7 @@ object TestUtil {
       String
     )] =
     for {
-      buildTool <- buildTools ++ {
+      buildTool <- buildTools ++ selectedBuildTools {
         if (scripting) Seq(SingleModuleBuildTool.ScalaCli(scriptMode = true))
         else Nil
       }
