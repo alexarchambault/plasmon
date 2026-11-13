@@ -35,6 +35,9 @@ object DocumentChange {
   ): Reactions = {
 
     server.editorState.updateFocusedDocument(path, os.read(path), content)
+    // Opening a document focuses it, as far as automatic mode is concerned
+    for (autoMode <- server.autoModeOpt)
+      autoMode.focused(path)
     server.refreshStatus()
 
     def interactive =

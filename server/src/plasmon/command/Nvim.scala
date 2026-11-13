@@ -54,13 +54,16 @@ object Nvim extends caseapp.Command[NvimOptions] {
     }
 
     val config = if (options.lazyvim) "lazyvim" else "init"
-    val env = sys.env ++ xdgDirs.map { case (k, v) => k -> v.toString } ++ Seq(
-      "NVIM_APPNAME"            -> (if (options.lazyvim) "lazyvim" else "minimal"),
-      "PLASMON_NVIM_SERVER_CMD" -> ujson.write(ujson.Arr.from(serverCmd)),
-      "PLASMON_NVIM_SERVER_ENV" -> ujson.write(ujson.Obj.from(serverEnv.map {
-        case (k, v) => k -> ujson.Str(v)
-      }))
-    )
+    // Not inherited from whoever started us: a Neovim started with --auto passes it on to its
+    // terminals, where a `plasmon nvim` without --auto doesn't want it
+    val env = sys.env - AutoModeEnv.name ++ AutoModeEnv(options.auto) ++
+      xdgDirs.map { case (k, v) => k -> v.toString } ++ Seq(
+        "NVIM_APPNAME"            -> (if (options.lazyvim) "lazyvim" else "minimal"),
+        "PLASMON_NVIM_SERVER_CMD" -> ujson.write(ujson.Arr.from(serverCmd)),
+        "PLASMON_NVIM_SERVER_ENV" -> ujson.write(ujson.Obj.from(serverEnv.map {
+          case (k, v) => k -> ujson.Str(v)
+        }))
+      )
     // With execve, nvim starts in our working directory: have it change directory first thing
     // (the plugin picks the workspace from it)
     val cdArgs =

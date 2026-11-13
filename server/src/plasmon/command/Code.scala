@@ -87,8 +87,12 @@ object Code extends caseapp.Command[CodeOptions] {
 
     val env = {
       val selfEnv0 = selfEnv()
-      if (selfEnv0.isEmpty) sys.env
-      else sys.env -- forcedEnvVars ++ selfEnv0
+      val baseEnv =
+        if (selfEnv0.isEmpty) sys.env
+        else sys.env -- forcedEnvVars ++ selfEnv0
+      // Not inherited from whoever started us: an editor started with --auto passes it on to its
+      // terminals, where a `plasmon code` without --auto doesn't want it
+      baseEnv - AutoModeEnv.name ++ AutoModeEnv(options.auto)
     }
 
     if (Execve.available()) {

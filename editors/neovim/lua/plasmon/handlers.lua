@@ -325,6 +325,12 @@ M.client_commands = {
   ["plasmon.build-tool-restart"] = function(_, ctx)
     require("plasmon.commands").build_tool_restart({ client_id = ctx.client_id })
   end,
+  ["plasmon.switch-to-automatic-mode"] = function(_, ctx)
+    require("plasmon.commands").set_mode("automatic", { client_id = ctx.client_id })
+  end,
+  ["plasmon.switch-to-manual-mode"] = function(_, ctx)
+    require("plasmon.commands").set_mode("manual", { client_id = ctx.client_id })
+  end,
   ["plasmon.toggle-pc-diagnostics"] = function(_, ctx)
     require("plasmon").execute("plasmon/togglePcDiagnostics", {}, { client_id = ctx.client_id })
   end,

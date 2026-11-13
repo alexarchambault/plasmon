@@ -55,7 +55,11 @@ local commands = {
   "plasmon/togglePcDiagnostics",
   "plasmon/clientHeartBeat",
   "plasmon/debugServerState",
+  "plasmon/mode",
+  "plasmon/setMode",
 }
+
+local mode = "manual"
 
 local root_uri
 
@@ -96,6 +100,11 @@ local function command_result(command, args)
     return { success = true }
   elseif command == "plasmon/organizeImports" then
     return { fileChanged = false }
+  elseif command == "plasmon/mode" then
+    return { mode = mode }
+  elseif command == "plasmon/setMode" then
+    mode = args[1]
+    return { mode = mode }
   elseif command == "plasmon/debugServerState" then
     return { id = "1", text = '{ "state": "fake" }' }
   end
@@ -132,7 +141,9 @@ while true do
     elseif method == "fake/received" then
       result = received
     elseif method == "fake/info" then
-      result = { cwd = vim.uv.cwd(), args = _G.arg }
+      -- _G.arg also has the script and the interpreter at indices <= 0, which would make it a JSON
+      -- object rather than an array
+      result = { cwd = vim.uv.cwd(), args = { unpack(_G.arg) } }
     elseif method == "fake/notify" then
       send({ method = params.method, params = params.params })
     end

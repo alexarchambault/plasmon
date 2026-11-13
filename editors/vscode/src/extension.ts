@@ -546,6 +546,8 @@ function createClient(
             lastFocusedDocument = uriStr
           client.sendNotification("metals/didFocusTextDocument", lastFocusedDocument)
         }
+
+        refreshMode()
       }
     }).catch((err) => {
       console.log(`Error setting up Plasmon LSP client: ${err}`)
@@ -557,6 +559,68 @@ function createClient(
   else
     return false
 
+}
+
+// The two modes of the server: manual (users pick build tools and modules themselves) and
+// automatic (the server loads a build tool and a module for each file users focus). The server
+// keeps track of it, and persists it under .plasmon/.
+type Mode = "automatic" | "manual"
+
+// Mirrors the mode of the server, for the `when` clauses of the commands switching modes
+function setModeContext(mode: Mode | undefined): void {
+  vscode.commands.executeCommand("setContext", "plasmon.mode", mode).then(
+    () => {},
+    (err) => console.log(`Error setting plasmon.mode context: ${err}`)
+  )
+}
+
+function refreshMode(): void {
+  client?.sendRequest(ExecuteCommandRequest.type, { command: "plasmon/mode", arguments: [] }).then(
+    (resp: { mode?: Mode }) => setModeContext(resp?.mode),
+    (err) => console.log(`Error getting Plasmon mode: ${err}`)
+  )
+}
+
+function switchMode(mode: Mode): void {
+  if (!client) {
+    vscode.window.showWarningMessage("Plasmon server not running")
+    return
+  }
+  client.sendRequest(ExecuteCommandRequest.type, { command: "plasmon/setMode", arguments: [mode] }).then(
+    (resp: { mode?: Mode }) => {
+      setModeContext(resp?.mode)
+      if (resp?.mode === "automatic")
+        vscode.window.showInformationMessage(
+          "Plasmon: automatic mode, build tools and modules now get loaded for the files you open"
+        )
+      else if (resp?.mode === "manual")
+        vscode.window.showInformationMessage(
+          "Plasmon: manual mode, pick build tools and modules to load with \"Plasmon: Load or unload build tool or module\""
+        )
+    },
+    (err) => {
+      console.log(`Error switching Plasmon to ${mode} mode: ${err}`)
+      vscode.window.showErrorMessage(`Error switching Plasmon to ${mode} mode: ${err}`, { modal: false })
+    }
+  )
+}
+
+// `plasmon code --auto` (or `--auto=false`) sets PLASMON_AUTO_MODE, for the mode the server starts
+// in. It only applies to the first server started here: users may switch modes afterwards, which
+// the server persists, and a restarted server should keep the mode they picked.
+let autoModeFromEnvPending = true
+function autoModeArgs(): string[] {
+  if (!autoModeFromEnvPending)
+    return []
+  autoModeFromEnvPending = false
+  const value = env["PLASMON_AUTO_MODE"]?.trim().toLowerCase()
+  if (value === "true" || value === "1")
+    return ["--auto"]
+  if (value === "false" || value === "0")
+    return ["--auto=false"]
+  if (value)
+    console.log(`Ignoring unrecognized PLASMON_AUTO_MODE value: ${value}`)
+  return []
 }
 
 function reIndex(): void {
@@ -595,6 +659,7 @@ async function stopClient(context: vscode.ExtensionContext): Promise<void> {
         inProgressTasks[elem].resolve()
       }
       inProgressTasks = {}
+      setModeContext(undefined)
       if (client === client0)
         client = null
     }
@@ -1004,6 +1069,7 @@ export function activate(context: vscode.ExtensionContext) {
       if (mode)
         args.push(`--sourcepath-mode=${mode}`)
     }
+    args.push(...autoModeArgs())
     return args
   }
 
@@ -1849,6 +1915,18 @@ export function activate(context: vscode.ExtensionContext) {
           vscode.window.showErrorMessage(`Error restarting / reconnecting to build server: ${err}`, { modal: false })
         }
       )
+    })
+  )
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand(`plasmon.switch-to-automatic-mode`, () => {
+      switchMode("automatic")
+    })
+  )
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand(`plasmon.switch-to-manual-mode`, () => {
+      switchMode("manual")
     })
   )
 

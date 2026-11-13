@@ -96,7 +96,7 @@ object ServerDriver {
       lsp.exit()
     }
 
-    private def executeCommand(command: String, arguments: Object*): Object = {
+    def executeCommand(command: String, arguments: Object*): Object = {
       val params = new l.ExecuteCommandParams
       params.setCommand(command)
       params.setArguments(arguments.toList.asJava)
