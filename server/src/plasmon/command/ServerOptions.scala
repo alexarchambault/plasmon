@@ -9,6 +9,8 @@ final case class ServerOptions(
   logToStderr: Option[Boolean] = None,
   logJsonrpcInput: Option[Boolean] = None,
   socket: Option[String] = None,
+  @HelpMessage("Directory where the server keeps its state, relative to the working directory (default: .plasmon) - commands only find the server on their own with the default")
+    stateDir: Option[String] = None,
   javaHome: Option[String] = None,
   bloopJavaHome: Option[String] = None,
   jvm: Option[String] = None,
@@ -37,6 +39,8 @@ final case class ServerOptions(
   @HelpMessage("Connect on start-up to the BSP server listening on this UNIX domain socket, and add it as a build tool. Can be repeated. Such build tools aren't persisted under .plasmon/: pass --bsp again on the next start")
   @ValueDescription("/path/to/bsp/socket")
     bsp: List[String] = Nil,
+  @HelpMessage("Once `--auto` loaded a build tool and a module, stop the build tool, and answer from the BSP data it left in the cache (.plasmon/cache/bsp by default) instead (default: false)")
+    stopBuildToolAfterLoad: Boolean = false,
   @Hidden
   @HelpMessage("How sources are handed to the compiler with --sourcepath: logical (default, files listed one by one, packages read from package clauses) or classic (source roots laid out by package)")
     sourcepathMode: Option[String] = None

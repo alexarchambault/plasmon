@@ -109,6 +109,9 @@ object JavacInternals {
   def javaOptions = addExports ++ openedPackages.map { pkg =>
     s"--add-opens=jdk.compiler/com.sun.tools.javac.$pkg=ALL-UNNAMED"
   }
+
+  /** What a JVM running the server needs: these, and an opened java.util */
+  def serverJavaOptions = Seq("--add-opens=java.base/java.util=ALL-UNNAMED") ++ javaOptions
 }
 
 object submodules extends Module {
@@ -506,9 +509,11 @@ object server extends ScalaModule with PlasmonPublishModule {
 
     val dest = Task.dest / (if (isWin) "launcher.bat" else "launcher")
 
+    // When it's run as a script (`./launcher …`) rather than with `java -jar`
     val preamble = Preamble()
       .withOsKind(isWin)
       .callsItself(isWin)
+      .withJavaOpts(JavacInternals.serverJavaOptions)
     val entries       = cp.map(path => ClassPathEntry.Url(path.toNIO.toUri.toASCIIString))
     val loaderContent = coursier.launcher.ClassLoaderContent(entries)
     // Not published, the Scala 2 presentation compiler hosts can't be fetched by the server
@@ -523,6 +528,11 @@ object server extends ScalaModule with PlasmonPublishModule {
   }
 
   def mainClass = Some("plasmon.Plasmon")
+
+  // For `server.run` / `server.runBackground`: what the launchers pass too (see serverCmdJson
+  // in editors.neovim). Without the jdk.compiler ones, Java sources can't be indexed (JavacMtags):
+  // no Javadoc in hovers, no definitions of Java symbols.
+  def forkArgs = super.forkArgs() ++ JavacInternals.serverJavaOptions
 
   // In-process tests, for what the integration tests can't reach reliably (connections
   // going away, handlers throwing, …)

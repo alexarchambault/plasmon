@@ -4,6 +4,7 @@ import org.eclipse.lsp4j as l
 import plasmon.PlasmonEnrichments.*
 import plasmon.bsp.BuildTool
 import plasmon.command.ServerCommandThreadPools
+import plasmon.ide.Directories
 import plasmon.index.Indexer
 import plasmon.servercommand.AutoLoad
 
@@ -115,6 +116,7 @@ final class AutoMode(
       path.startsWith(workspace) &&
       !path.startsWith(workspace / ".plasmon") &&
       !path.startsWith(server.workingDir / ".plasmon") &&
+      !path.startsWith(server.workingDir / Directories.state) &&
       path.isScalaOrJava
     }
   }
@@ -164,6 +166,10 @@ final class AutoMode(
             case f: AutoLoad.Failure.ModuleLoad =>
               val isNew = failedModules.putIfAbsent(f.moduleUri, f.error) == null
               report(failure.message, isNew)
+            case _: AutoLoad.Failure.ReplayLoad =>
+              // --stop-build-tool-after-load only: the build tool was stopped, and nothing stands
+              // for it now. The next file focused starts it again.
+              report(failure.message, isNew = true)
             case _: AutoLoad.Failure.NoBuildTool | _: AutoLoad.Failure.NoModule =>
               // Nothing went wrong as such - the file is one no build tool knows about, which the
               // status already says. Not worth more than a line in the log.
@@ -200,7 +206,7 @@ object AutoMode {
     }
 
   def stateFile(workingDir: os.Path): os.Path =
-    workingDir / ".plasmon/mode.json"
+    workingDir / Directories.state / "mode.json"
 
   private def readState(file: os.Path): Option[Boolean] =
     if (os.isFile(file))

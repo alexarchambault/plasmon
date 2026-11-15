@@ -1,5 +1,6 @@
 package plasmon.index
 
+import plasmon.ide.Directories
 import ch.epfl.scala.bsp4j as b
 import plasmon.{HasState, Server}
 import plasmon.PlasmonEnrichments.*
@@ -41,7 +42,7 @@ class Indexer(server: Server) extends HasState.Delegate[String] {
     }
   }
 
-  private def buildTargetsFile = server.workingDir / ".plasmon/build-targets.json"
+  private def buildTargetsFile = server.workingDir / Directories.state / "build-targets.json"
 
   def dontReloadBuildTool(info: BuildServerInfo): Boolean = {
     val formerTargets = targets

@@ -30,8 +30,8 @@ private[command] final class GitAttributes(root: Path) {
       if (Files.isDirectory(dotGit)) dotGit
       else {
         // worktrees and submodules: `gitdir: …` file, info/ is in the common directory
-        val content = Files.readString(dotGit, StandardCharsets.UTF_8).trim
-        val dir     = top.resolve(content.stripPrefix("gitdir:").trim).normalize()
+        val content   = Files.readString(dotGit, StandardCharsets.UTF_8).trim
+        val dir       = top.resolve(content.stripPrefix("gitdir:").trim).normalize()
         val commonDir = dir.resolve("commondir")
         if (Files.isRegularFile(commonDir))
           dir.resolve(Files.readString(commonDir, StandardCharsets.UTF_8).trim).normalize()
@@ -110,10 +110,11 @@ private[command] object GitAttributes {
       else if (c == '?') { b ++= "[^/]"; i += 1 }
       else if (c == '\\' && i + 1 < glob.length) { b ++= Regex.quote(glob(i + 1).toString); i += 2 }
       else if (c == '[' && glob.indexOf(']', i + 2) > 0) {
-        val end   = glob.indexOf(']', i + 2)
-        val inner = glob.substring(i + 1, end)
+        val end     = glob.indexOf(']', i + 2)
+        val inner   = glob.substring(i + 1, end)
         val negated = inner.startsWith("!") || inner.startsWith("^")
-        val chars   = (if (negated) inner.drop(1) else inner).replace("\\", "\\\\").replace("[", "\\[")
+        val chars =
+          (if (negated) inner.drop(1) else inner).replace("\\", "\\\\").replace("[", "\\[")
         b ++= (if (negated) s"[^/$chars]" else s"[$chars]")
         i = end + 1
       }

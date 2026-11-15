@@ -1,5 +1,6 @@
 package plasmon.handlers
 
+import plasmon.ide.Directories
 import ch.epfl.scala.bsp4j as b
 import com.github.plokhotnyuk.jsoniter_scala.core.{
   JsonValueCodec,
@@ -1378,7 +1379,7 @@ object PlasmonCommands {
             val buildTargetOpt = server.bspData.inverseSources(file)
             val contentOrError =
               buildTargetOpt.toRight(s"No build target found for $file").map { targetId =>
-                val dest = server.workspace() / ".plasmon/symbol-index.txt"
+                val dest = server.workspace() / Directories.state / "symbol-index.txt"
                 val nl   = System.lineSeparator()
                 val contentIt = server.symbolIndex.dialectBuckets
                   .iterator
@@ -1610,7 +1611,7 @@ object PlasmonCommands {
       },
       CommandHandler.of("plasmon/debugServerState") { (_, _) =>
         Future {
-          val dest    = server.workspace() / ".plasmon/server-state.json"
+          val dest    = server.workspace() / Directories.state / "server-state.json"
           val tmpDest = os.temp(prefix = "plasmon-server-state", suffix = ".json")
           scribe.info("Getting server state")
           val serverJson = server.serverJson(
