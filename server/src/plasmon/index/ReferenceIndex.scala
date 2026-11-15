@@ -27,12 +27,11 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.jdk.CollectionConverters.*
 import scala.meta.Importee
 import scala.meta.internal.semanticdb as s
-import scala.meta.internal.metals.EmptyCancelToken
 import scala.meta.internal.mtags.{GlobalSymbolIndex, Mtags, SourcePath, Symbol}
 import scala.meta.internal.mtags.DefinitionAlternatives.GlobalSymbol
 import scala.meta.internal.semanticdb.XtensionSemanticdbSymbolInformation
 import scala.meta.internal.semanticdb.Scala.*
-import scala.meta.pc.CompletionItemPriority
+import scala.meta.pc.{CancelToken, CompletionItemPriority}
 import scala.util.control.NonFatal
 
 final class ReferenceIndex(
@@ -177,6 +176,7 @@ final class ReferenceIndex(
   def references(
     module: GlobalSymbolIndex.Module,
     params: l.ReferenceParams,
+    token: CancelToken,
     findRealRange: AdjustRange = AdjustRange.none,
     includeSynthetics: s.Synthetic => Boolean = _ => true
   )(implicit ctx: SourcePath.Context): Future[List[ReferencesResult]] = {
@@ -231,7 +231,8 @@ final class ReferenceIndex(
               params.getContext.isIncludeDeclaration,
               findRealRange,
               includeSynthetics,
-              supportsPcRefs
+              supportsPcRefs,
+              token
             ).map { locations =>
               if (locations.isEmpty && params.getContext.isIncludeDeclaration)
                 scribe.debug {
@@ -261,7 +262,7 @@ final class ReferenceIndex(
         for {
           foundRefs <- presentationCompilers.references(
             params,
-            EmptyCancelToken,
+            token,
             findRealRange
           )
           symbols = foundRefs.map(_.symbol).filterNot(_.isLocal)
@@ -274,7 +275,8 @@ final class ReferenceIndex(
               symbols.toSet,
               includeDeclaration,
               findRealRange,
-              includeSynthetics
+              includeSynthetics,
+              token
             )
             val results =
               ReferencesResult(symbols.head, fromWorkspace) :: foundRefs
@@ -398,6 +400,7 @@ final class ReferenceIndex(
     isIncludeDeclaration: Boolean,
     findRealRange: AdjustRange,
     includeSynthetics: s.Synthetic => Boolean,
+    token: CancelToken,
     sourceContainsDefinition: Boolean = false
   ): Seq[l.Location] = {
     val definitionPaths: Set[SourcePath] =
@@ -420,7 +423,9 @@ final class ReferenceIndex(
     val definitionBuildTargets = definitionPaths.flatMap(bspData.inverseSourcesAll)
 
     val result = for {
+      // Reading the SemanticDB of each candidate file is what takes time: stop once cancelled
       (sourcePath, sourcePathTargetId) <- pathsFor(definitionBuildTargets, isSymbol)
+        .takeWhile(_ => !token.isCancelled)
       semanticdb <- semanticdbs()
         .textDocument(sourcePath, sourcePathTargetId.module)
         .toOption
@@ -461,13 +466,14 @@ final class ReferenceIndex(
     isIncludeDeclaration: Boolean,
     findRealRange: AdjustRange,
     includeSynthetics: s.Synthetic => Boolean,
-    supportsPcRefs: Boolean
+    supportsPcRefs: Boolean,
+    token: CancelToken
   ): Future[Seq[l.Location]] = {
     val isSymbol = alternatives + occ.symbol
     val isLocal  = occ.symbol.isLocal
     if (isLocal && supportsPcRefs)
       presentationCompilers
-        .references(params, EmptyCancelToken, findRealRange)
+        .references(params, token, findRealRange)
         .map(_.flatMap(_.locations))
     else {
       /* search local in the following cases:
@@ -508,6 +514,7 @@ final class ReferenceIndex(
             isIncludeDeclaration,
             findRealRange,
             includeSynthetics,
+            token,
             sourceContainsDefinition
           )
       Future.successful(local ++ workspaceRefs)

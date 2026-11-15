@@ -992,7 +992,9 @@ object PlasmonEnrichments {
         false
       }
       catch {
-        case _: CancellationException =>
+        // lsp4j checkers throw the former, our presentation compiler tokens (FutureCancelToken) the
+        // latter
+        case _: CancellationException | _: InterruptedException =>
           true
       }
   }

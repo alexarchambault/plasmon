@@ -27,12 +27,14 @@ final class Compilations(
 )(implicit ec: ExecutionContext) {
   import Compilations._
 
+  // queues and running are only accessed with queueLock held: they're updated both from callers and
+  // from the callbacks of compile requests, run by the threads of the build server connections
   private var queues = ListMap.empty[b.BuildServer, mutable.Queue[Compilation]]
   private val running =
     new mutable.HashMap[b.BuildServer, (Compilation, CompletableFuture[b.CompileResult])]
   private val queueLock = new Object
 
-  private def checkQueue(): Unit = {
+  private def checkQueue(): Unit = queueLock.synchronized {
     def toProcess(): Iterator[(b.BuildServer, mutable.Queue[Compilation])] =
       queues
         .iterator
@@ -48,55 +50,56 @@ final class Compilations(
             queue.exists(_.promise.isCompleted)
         }
     if (toProcess().nonEmpty)
-      queueLock.synchronized {
-        for {
-          (buildServer, queue) <- toProcess().toVector
-          _ = queue.dequeueAll(_.promise.isCompleted)
-          elem <- queue.dequeueFirst(!_.promise.isCompleted)
-        } {
-          onStartCompilation()
-          val params = new b.CompileParams(elem.targets.asJava)
-          if (bestEffortEnabled)
-            params.setArguments(Seq("--best-effort").asJava)
-          val f         = buildServer.buildTargetCompile(params)
-          val startTime = OffsetDateTime.now()
-          for (target <- elem.targets)
-            updateLatestCompilations(target, startTime)
-          running.put(buildServer, (elem, f))
-          f.whenComplete { (compileRes, ex) =>
-            // Anything thrown from here would be lost, and would leave the queue stuck
-            val res =
-              try {
-                val endTime         = OffsetDateTime.now()
-                val updatedValueOpt = Option(compileRes).map(PastCompilation(startTime, endTime, _))
-                for (target <- elem.targets)
-                  updateLatestCompilationsDone(target, updatedValueOpt)
-                if (ex == null)
-                  afterSuccessfulCompilation(elem.targets)
-                if (ex == null) Success(compileRes) else Failure(ex)
-              }
-              catch {
-                case NonFatal(e) =>
-                  scribe.error(s"Error after compiling ${elem.targets.map(_.getUri)}", e)
-                  Failure(e)
-              }
+      for {
+        (buildServer, queue) <- toProcess().toVector
+        _ = queue.dequeueAll(_.promise.isCompleted)
+        elem <- queue.dequeueFirst(!_.promise.isCompleted)
+      } {
+        onStartCompilation()
+        val params = new b.CompileParams(elem.targets.asJava)
+        if (bestEffortEnabled)
+          params.setArguments(Seq("--best-effort").asJava)
+        val f         = buildServer.buildTargetCompile(params)
+        val startTime = OffsetDateTime.now()
+        for (target <- elem.targets)
+          updateLatestCompilations(target, startTime)
+        running.put(buildServer, (elem, f))
+        f.whenComplete { (compileRes, ex) =>
+          // Anything thrown from here would be lost, and would leave the queue stuck
+          val res =
             try {
-              elem.promise.tryComplete(res)
-              for (elem0 <- queue if !elem0.promise.isCompleted && elem0.targets == elem.targets)
-                elem0.promise.tryComplete(res)
+              val endTime         = OffsetDateTime.now()
+              val updatedValueOpt = Option(compileRes).map(PastCompilation(startTime, endTime, _))
+              for (target <- elem.targets)
+                updateLatestCompilationsDone(target, updatedValueOpt)
+              if (ex == null)
+                afterSuccessfulCompilation(elem.targets)
+              if (ex == null) Success(compileRes) else Failure(ex)
             }
-            finally {
-              running -= buildServer
-              checkQueue() // FIXME Run that on a specific thread pool instead?
+            catch {
+              case NonFatal(e) =>
+                scribe.error(s"Error after compiling ${elem.targets.map(_.getUri)}", e)
+                Failure(e)
             }
-          }
+          try
+            queueLock.synchronized {
+              try {
+                elem.promise.tryComplete(res)
+                for (elem0 <- queue if !elem0.promise.isCompleted && elem0.targets == elem.targets)
+                  elem0.promise.tryComplete(res)
+              }
+              finally
+                // cancelAll may have removed us already, and another compilation may have
+                // started since then
+                if (running.get(buildServer).exists(_._2 eq f))
+                  running -= buildServer
+            }
+          finally checkQueue() // FIXME Run that on a specific thread pool instead?
         }
       }
     else if (needsCleanUp())
-      queueLock.synchronized {
-        for ((_, queue) <- queues)
-          queue.dequeueAll(_.promise.isCompleted)
-      }
+      for ((_, queue) <- queues)
+        queue.dequeueAll(_.promise.isCompleted)
   }
 
   val latestCompilations = TrieMap.empty[
@@ -104,25 +107,34 @@ final class Compilations(
     (Option[PastCompilation], Option[OnGoingCompilation])
   ]
 
-  def cancelAll(): Int =
-    if (queues.isEmpty)
-      0
-    else
-      queueLock.synchronized {
-        var count     = 0
-        val cancelled = new CancellationException("Compilation cancelled")
-        for ((_, queue) <- queues; elem <- queue)
-          elem.promise.tryFailure(cancelled)
-        queues = ListMap.empty
-        for ((_, (_, f)) <- running)
-          if (f.cancel(true))
-            count += 1
-        running.clear()
-        for (target <- latestCompilations.keysIterator.toVector)
-          clearOnGoingCompilations(target)
-
-        count
-      }
+  /** Cancels the running compilations, and drops the queued ones
+    *
+    * @return
+    *   the number of running compilations that got cancelled
+    */
+  def cancelAll(): Int = {
+    val cancelled = new CancellationException("Compilation cancelled")
+    val toCancel = queueLock.synchronized {
+      for ((_, queue) <- queues; elem <- queue)
+        elem.promise.tryFailure(cancelled)
+      queues = ListMap.empty
+      // Cancelling runs the completion callbacks of the compile requests right away, which remove
+      // their entry from running: no cancelling while iterating over it
+      val running0 = running.values.toVector
+      running.clear()
+      running0
+    }
+    // Cancelling the request sends a $/cancelRequest to the build server
+    val count = toCancel.count {
+      case (elem, f) =>
+        val cancelledNow = f.cancel(true)
+        elem.promise.tryFailure(cancelled)
+        cancelledNow
+    }
+    for (target <- latestCompilations.keysIterator.toVector)
+      clearOnGoingCompilations(target)
+    count
+  }
 
   def compileTarget(target: b.BuildTargetIdentifier): Future[b.CompileResult] = {
 
@@ -242,7 +254,7 @@ final class Compilations(
     while (!update()) {}
   }
 
-  def asJson: Compilations.AsJson =
+  def asJson: Compilations.AsJson = queueLock.synchronized {
     Compilations.AsJson(
       queues = queues.map {
         case (k, v) =>
@@ -264,6 +276,7 @@ final class Compilations(
           (k.getUri, v)
       }
     )
+  }
 }
 
 object Compilations {
