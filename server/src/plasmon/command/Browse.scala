@@ -4,7 +4,7 @@ import caseapp.core.RemainingArgs
 import io.undertow.Undertow
 
 import java.nio.charset.StandardCharsets
-import java.nio.file.{Files, LinkOption, Path}
+import java.nio.file.{Files, Path}
 import java.security.{KeyFactory, KeyStore}
 import java.security.cert.{Certificate, CertificateFactory}
 import java.security.spec.PKCS8EncodedKeySpec
@@ -66,7 +66,7 @@ object Browse extends caseapp.Command[BrowseOptions] {
       stateDir = Some(".plasmon/browser")
     )
 
-  private def sslContext(certPath: os.Path, keyPath: os.Path): SSLContext = {
+  private[command] def sslContext(certPath: os.Path, keyPath: os.Path): SSLContext = {
     val certificates = {
       val in = Files.newInputStream(certPath.toNIO)
       try CertificateFactory.getInstance("X.509").generateCertificates(in).asScala.toSeq
@@ -213,10 +213,12 @@ private final class BrowseApp(
 
   private def tree(path: String): cask.Response[String] =
     resolve(path).filter(Files.isDirectory(_)) match {
-      case None => cask.Response("Invalid directory", statusCode = 404)
+      case None      => cask.Response("Invalid directory", statusCode = 404)
       case Some(dir) =>
-        val rules  = attributes.rules(dir)
-        val stream = Files.list(dir)
+        // Paths as asked, rather than real ones: the entries of a linked directory are under it
+        val shownDir = root.relativize(root.resolve(path).normalize())
+        val rules    = attributes.rules(dir)
+        val stream   = Files.list(dir)
         val children =
           try stream.iterator().asScala.toVector
           finally stream.close()
@@ -228,7 +230,7 @@ private final class BrowseApp(
               val isDir = Files.isDirectory(child)
               val obj = ujson.Obj(
                 "name" -> name,
-                "path" -> root.relativize(child).iterator().asScala.mkString("/"),
+                "path" -> shownDir.resolve(name).iterator().asScala.mkString("/"),
                 "dir"  -> isDir
               )
               if (ignored(name)) obj("ignored") = true
@@ -301,12 +303,18 @@ private object BrowseApp {
       if (names.isEmpty) Set.empty[String]
       else
         Try {
-          val res = os.proc("git", "check-ignore", "-z", "--stdin").call(
-            cwd = os.Path(dir),
-            stdin = names.map(_ + "\u0000").mkString,
-            stderr = os.Pipe,
-            check = false
-          )
+          // From a file: git doesn't read its input when it can't run (outside of a repository, …),
+          // and a thread writing it would die of the pipe closing on it
+          val input = os.temp(names.map(_ + "\u0000").mkString, prefix = "plasmon-check-ignore")
+          val res =
+            try
+              os.proc("git", "check-ignore", "-z", "--stdin").call(
+                cwd = os.Path(dir),
+                stdin = input,
+                stderr = os.Pipe,
+                check = false
+              )
+            finally os.remove(input)
           // 0: some paths are ignored, 1: none are, anything else: error (not a repository, …)
           if (res.exitCode == 0) res.out.text().split('\u0000').iterator.filter(_.nonEmpty).toSet
           else Set.empty[String]
