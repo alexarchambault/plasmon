@@ -188,6 +188,39 @@ class Status(
       }
     )
 
+  /** The mode the server is in - with its command switching to the other one - or, while automatic
+    * mode loads something, what it is loading.
+    */
+  private def modeUpdate(autoMode: AutoMode): PlasmonLanguageClient.StatusUpdate = {
+    val enabled    = autoMode.enabled
+    val loadingOpt = autoMode.loading
+    val modeText   = if (enabled) "Automatic mode" else "Manual mode"
+    PlasmonLanguageClient.StatusUpdate(
+      id = "plasmon.mode",
+      text = loadingOpt.getOrElse(modeText),
+      severity = 0,
+      busy = loadingOpt.nonEmpty,
+      detail =
+        if (loadingOpt.nonEmpty) modeText
+        else if (enabled) "Build tools and modules get loaded for the files you open"
+        else "Pick the build tools and modules to load yourself",
+      command =
+        if (loadingOpt.nonEmpty) showLogCommand(autoMode.logger.channel.id)
+        else if (enabled)
+          PlasmonLanguageClient.Command(
+            title = "Switch to manual mode",
+            command = "plasmon.switch-to-manual-mode",
+            tooltip = "Stop loading build tools and modules on their own"
+          )
+        else
+          PlasmonLanguageClient.Command(
+            title = "Switch to automatic mode",
+            command = "plasmon.switch-to-automatic-mode",
+            tooltip = "Load build tools and modules on their own for the files you open"
+          )
+    )
+  }
+
   private def asSummaryUpdate(update: PlasmonLanguageClient.StatusUpdate)
     : PlasmonLanguageClient.StatusUpdate =
     update.copy(
@@ -238,9 +271,15 @@ class Status(
       (update, summaryUpdateOpt)
     }
 
-    val sharedUpdates = Seq(
-      indexerUpdate0
-    )
+    val modeUpdateOpt = server.autoModeOpt.map(modeUpdate)
+
+    // What the summary shows whatever the state of the file: something being worked on that the
+    // file is waiting for
+    val busySummaryUpdateOpt = indexerSummaryUpdateOpt.orElse {
+      modeUpdateOpt.filter(_.busy).map(_.copy(severity = 1))
+    }
+
+    val sharedUpdates = Seq(indexerUpdate0) ++ modeUpdateOpt.toSeq
 
     val fileUpdates =
       if (os.isFile(path) && path.isScalaOrJava) {
@@ -543,7 +582,7 @@ class Status(
               interactiveUpdate0(buildTargetOpt)
 
             val summaryUpdate =
-              indexerSummaryUpdateOpt.getOrElse {
+              busySummaryUpdateOpt.getOrElse {
                 if (buildToolUpdate0.isBusy) buildToolUpdate0
                 else if (compilerUpdate0.isBusy) compilerUpdate0
                 else if (interactiveUpdate1.isBusy) interactiveUpdate1
@@ -564,7 +603,7 @@ class Status(
 
             val (interactiveUpdate, _) = interactiveUpdate0(buildTargetOpt)
 
-            val summaryUpdate = indexerSummaryUpdateOpt.getOrElse(interactiveUpdate)
+            val summaryUpdate = busySummaryUpdateOpt.getOrElse(interactiveUpdate)
 
             Seq(interactiveUpdate, asSummaryUpdate(summaryUpdate))
         }
@@ -580,7 +619,7 @@ class Status(
           busy = false,
           severity = 2
         )
-        val summaryUpdate = indexerSummaryUpdateOpt.getOrElse(buildToolUpdate0)
+        val summaryUpdate = busySummaryUpdateOpt.getOrElse(buildToolUpdate0)
         Seq(buildToolUpdate0, compilerUpdate0, interactiveUpdate0, asSummaryUpdate(summaryUpdate))
       }
 

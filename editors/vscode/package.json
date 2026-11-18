@@ -129,6 +129,14 @@
         "title": "Plasmon: Restart build tool or reconnect to it"
       },
       {
+        "command": "plasmon.switch-to-automatic-mode",
+        "title": "Plasmon: Switch to automatic mode (load build tools and modules for the files you open)"
+      },
+      {
+        "command": "plasmon.switch-to-manual-mode",
+        "title": "Plasmon: Switch to manual mode (pick build tools and modules yourself)"
+      },
+      {
         "command": "plasmon.unload-all-modules",
         "title": "Plasmon: Unload all modules"
       },
@@ -243,6 +251,16 @@
       }
     },
     "menus": {
+      "commandPalette": [
+        {
+          "command": "plasmon.switch-to-automatic-mode",
+          "when": "plasmon.mode != automatic"
+        },
+        {
+          "command": "plasmon.switch-to-manual-mode",
+          "when": "plasmon.mode != manual"
+        }
+      ],
       "explorer/context": [
         {
           "command": "plasmon.addDirAsScalaCliProject",

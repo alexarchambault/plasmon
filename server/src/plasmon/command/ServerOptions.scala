@@ -32,6 +32,8 @@ final case class ServerOptions(
     scala2Compat: Option[Boolean] = None,
   @HelpMessage("Have presentation compilers read the workspace's own modules from their sources, rather than from the class directories the build tool reports: nothing needs to be built for a module to see the ones it depends on (default: false)")
     sourcepath: Option[Boolean] = None,
+  @HelpMessage("Start in automatic mode, where editors get a build tool and a module loaded for each file they focus, rather than having users pick them (--auto=false: start in manual mode). Persisted under .plasmon/, like what is loaded (default: the mode the server in this directory was last left in, else manual)")
+    auto: Option[Boolean] = None,
   @Hidden
   @HelpMessage("How sources are handed to the compiler with --sourcepath: logical (default, files listed one by one, packages read from package clauses) or classic (source roots laid out by package)")
     sourcepathMode: Option[String] = None

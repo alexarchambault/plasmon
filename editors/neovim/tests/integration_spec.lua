@@ -209,6 +209,10 @@ describe("with a Plasmon server", function()
       return plasmon.statusline() ~= "" and plasmon.statusline() ~= "Plasmon"
     end, 30000)
     h.truthy(#plasmon.status() > 0)
+    local mode = vim.tbl_filter(function(item)
+      return item.id == "plasmon.mode"
+    end, plasmon.status())[1]
+    h.eq("Manual mode", mode and mode.text)
     h.truthy(handlers.logs["lsp-requests"] and #handlers.logs["lsp-requests"].lines > 0, "lsp-requests log")
     h.truthy(vim.uv.fs_stat(state.root .. "/.plasmon/log"), "server log in the workspace")
   end)
@@ -226,6 +230,51 @@ describe("with a Plasmon server", function()
         f:close()
       end
       return content == ""
+    end, 30000)
+    h.cleanup()
+  end)
+
+  it("loads what opened files need in automatic mode", function()
+    h.capture_notifications()
+    -- Records any picker shown, picking nothing
+    h.stub_select(function()
+      return nil
+    end)
+    local root = h.tmpdir()
+    local main = root .. "/Main.scala"
+    h.write(main, main_content)
+
+    require("plasmon.config").reset_auto_applied()
+    plasmon.setup({ cmd = server_cmd, on_build_change = "ignore", auto = true })
+    vim.cmd.edit(vim.fn.fnameescape(main))
+    local bufnr = vim.api.nvim_get_current_buf()
+    local client = h.wait_for_client(bufnr, timeout)
+
+    -- No picker this time: opening the file is enough for a build tool and a module to get loaded
+    local text = vim.api.nvim_buf_get_lines(bufnr, println_line, println_line + 1, false)[1]
+    local col = assert(text:find("greeting", 1, true)) - 1
+    local params = { textDocument = { uri = vim.uri_from_bufnr(bufnr) }, position = { line = println_line, character = col + 2 } }
+    local result = h.wait_for("hover", function()
+      local resp = client:request_sync("textDocument/hover", params, 30000, bufnr)
+      return resp and resp.result and resp.result.contents and resp.result
+    end, timeout)
+    h.contains(result.contents.value, "def greeting(name: String): String")
+    h.eq(0, #h.selects, "no picker")
+
+    local persisted = io.open(root .. "/.plasmon/mode.json")
+    h.contains(persisted and persisted:read("*a") or "", '"automatic"')
+    if persisted then
+      persisted:close()
+    end
+
+    vim.cmd("Plasmon mode manual")
+    h.wait_for("manual mode", function()
+      return h.notified("manual mode")
+    end, 30000)
+
+    client:stop()
+    h.wait_for("the client to stop", function()
+      return client:is_stopped()
     end, 30000)
     h.cleanup()
   end)

@@ -285,6 +285,57 @@ function M.build_tool_restart(opts)
 end
 
 ----------------------------------------------------------------------------------------------
+-- Manual and automatic modes
+----------------------------------------------------------------------------------------------
+
+local mode_descriptions = {
+  automatic = "automatic mode: build tools and modules get loaded for the files you open",
+  manual = "manual mode: pick build tools and modules with :Plasmon load",
+}
+
+--- Switches the server to a mode.
+---@param mode "automatic"|"manual"
+---@param opts? { client_id?: integer }
+function M.set_mode(mode, opts)
+  local client = context(opts)
+  if not client then
+    return
+  end
+  exec(client, "plasmon/setMode", { mode }, function(resp)
+    local current = type(resp) == "table" and resp.mode or mode
+    info(mode_descriptions[current] or current)
+  end)
+end
+
+--- `:Plasmon mode`: shows the mode, `:Plasmon mode automatic|manual|toggle` switches it.
+---@param opts { args: string[], client_id?: integer }
+local function mode_command(opts)
+  local arg = opts.args and opts.args[1]
+  if arg == "automatic" or arg == "manual" then
+    M.set_mode(arg, opts)
+    return
+  end
+  if arg and arg ~= "toggle" then
+    err("unknown mode " .. arg .. " (expected automatic, manual or toggle)")
+    return
+  end
+  local client = context(opts)
+  if not client then
+    return
+  end
+  exec(client, "plasmon/mode", {}, function(resp)
+    local current = type(resp) == "table" and resp.mode or nil
+    if arg == "toggle" then
+      M.set_mode(current == "automatic" and "manual" or "automatic", { client_id = client.id })
+    else
+      info(mode_descriptions[current] or tostring(current))
+    end
+  end)
+end
+
+M.modes = { "automatic", "manual", "toggle" }
+
+----------------------------------------------------------------------------------------------
 -- Other commands
 ----------------------------------------------------------------------------------------------
 
@@ -563,6 +614,7 @@ M.subcommands = {
   end, function(e)
     return e.command, e.commandArgs
   end, "Interactive compiler"),
+  ["mode"] = mode_command,
   ["status"] = show_status,
   ["log"] = show_log,
   ["server-log"] = server_log,
@@ -635,6 +687,11 @@ function M.complete(arg_lead, cmd_line, _)
     return vim.tbl_filter(function(name)
       return vim.startswith(name, arg_lead)
     end, M.names())
+  end
+  if words[2] == "mode" and n == 3 then
+    return vim.tbl_filter(function(mode)
+      return vim.startswith(mode, arg_lead)
+    end, M.modes)
   end
   if words[2] == "log" and n == 3 then
     local ids = vim.tbl_keys(handlers.logs)

@@ -37,6 +37,9 @@ gets your actual `XDG_*` directories back.
   `--neovim=system` uses the `nvim` on your `PATH` instead, `--neovim=<path>` a given
   binary, and `--neovim=<version>` downloads that version.
 
+`--auto` starts the Plasmon server in automatic mode (see [Getting started](#getting-started)), so
+that opening a file is all it takes for its build tool and module to get loaded.
+
 Programs started from that Neovim (`:terminal`, `git`, …) see Plasmon's `XDG_*` directories
 rather than yours.
 
@@ -80,6 +83,7 @@ require("plasmon").setup({
   server_args = {},            -- extra arguments, after `plasmon server`
   cmd = nil,                   -- full command, replacing binary / server_args
   cmd_env = nil,               -- extra environment variables for the server
+  auto = nil,                  -- start in automatic (true) or manual (false) mode, see below
   on_build_change = "ask",     -- "ask", "reindex" or "ignore"
   codelens = true,             -- show code lenses
   on_type_formatting = true,   -- on-type formatting (Neovim >= 0.12)
@@ -104,6 +108,18 @@ This lists the build tools Plasmon can load for the current file (Mill, sbt, Sca
 Once one is loaded, a second list offers its modules. Plasmon remembers what's loaded, and
 restores it the next time it starts in that workspace.
 
+Or let Plasmon do it: in automatic mode, each file you open gets a build tool and a module
+loaded for it if it has none (the first build tool found for the file, then the best module it
+belongs to).
+
+```
+:Plasmon mode automatic
+```
+
+`:Plasmon mode manual` switches back (nothing gets unloaded), `:Plasmon mode` shows the current
+mode. The mode is kept along with what's loaded, under `.plasmon/`. The `auto` option (or
+`plasmon nvim --auto`) sets the mode the first server of a workspace starts in.
+
 `:Plasmon` alone shows the current status, and lets you run the actions it offers. To show the
 status in your statusline:
 
@@ -119,6 +135,7 @@ vim.o.statusline = "%f %= %{v:lua.require'plasmon'.statusline()} "
 | Command | |
 | --- | --- |
 | `:Plasmon` / `:Plasmon status` | Show the status, run one of its actions |
+| `:Plasmon mode` / `mode automatic` / `mode manual` / `mode toggle` | Show or switch the mode |
 | `:Plasmon load-build-tool` | Load or unload a build tool, then its modules |
 | `:Plasmon load` | Load or unload a build tool or a module |
 | `:Plasmon load-module` | Load or unload a module of the current file |

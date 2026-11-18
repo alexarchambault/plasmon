@@ -7,6 +7,7 @@ local M = {}
 ---@field server_args? string[] Extra arguments passed after `plasmon server`
 ---@field cmd? string[] Full command starting the server, replacing `binary` / `server_args`
 ---@field cmd_env? table<string, string> Extra environment variables for the server process
+---@field auto? boolean Mode the server starts in: true for automatic (build tools and modules get loaded for the files you open), false for manual (you pick them), nil for the mode the workspace was last left in. Only applies to the first server started for a workspace, switch modes with :Plasmon mode afterwards
 ---@field on_build_change? "ask"|"reindex"|"ignore" What to do when the server detects a build change
 ---@field codelens? boolean Show code lenses (refreshed automatically)
 ---@field on_type_formatting? boolean Enable on-type formatting (Neovim >= 0.12 only)
@@ -20,6 +21,7 @@ M.defaults = {
   server_args = {},
   cmd = nil,
   cmd_env = nil,
+  auto = nil,
   on_build_change = "ask",
   codelens = true,
   on_type_formatting = true,
@@ -211,6 +213,29 @@ function M.lock_holder(root)
   return nil
 end
 
+-- Workspaces we started a server for with the `auto` option applied. The option says which mode
+-- servers start in, not which mode they stay in: users may switch modes afterwards, which the
+-- server persists, and a server restarted later should keep the mode they picked.
+local auto_applied = {} ---@type table<string, boolean>
+
+--- Server arguments for the `auto` option, the first time a server is started for `root`.
+---@param root? string
+---@return string[]
+function M.auto_args(root)
+  local auto = M.options.auto
+  local key = root or ""
+  if auto == nil or auto_applied[key] then
+    return {}
+  end
+  auto_applied[key] = true
+  return { auto and "--auto" or "--auto=false" }
+end
+
+--- Forgets which workspaces the `auto` option was applied to. For tests.
+function M.reset_auto_applied()
+  auto_applied = {}
+end
+
 --- `cmd` function for vim.lsp.config().
 ---
 --- Starts the server in the workspace root: Plasmon keeps its lock file, log, command socket
@@ -232,7 +257,7 @@ function M.cmd(dispatchers, config)
     end
   end
   local env = M.options.cmd_env
-  local cmd = M.server_cmd()
+  local cmd = vim.list_extend(vim.deepcopy(M.server_cmd()), M.auto_args(cwd))
   if vim.fn.executable(cmd[1]) == 0 then
     vim.schedule(function()
       vim.notify(

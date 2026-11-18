@@ -311,6 +311,17 @@ object Server extends caseapp.Command[ServerOptions] {
 
       indexer = new Indexer(server)
       server.indexerLogger = Some(indexer.logger)
+
+      val autoMode = new plasmon.AutoMode(
+        server,
+        indexer,
+        pools,
+        plasmon.AutoMode.stateFile(workingDir)
+      )
+      for (auto <- options.auto)
+        autoMode.set(auto)
+      scribe.info(s"Starting in ${autoMode.modeName} mode")
+      server.autoModeOpt = Some(autoMode)
       indexer.onStateChange { (indexerState, loggerOpt) =>
         server.updateIndexerState(indexerState, loggerOpt)
       }
@@ -485,6 +496,7 @@ object Server extends caseapp.Command[ServerOptions] {
         h.SignatureHelp.handlers(server, pools.cancelTokensEces),
         h.ontypefmt.OnTypeFormatting.handlers(server, server.pools.onTypeFormattingEc),
         h.PlasmonCommands.handlers(server, indexer, pools),
+        h.Mode.handlers(autoMode),
         Handlers(
           Seq(
             NotificationHandler.of[Boolean]("metals/windowStateDidChange") { (focused, logger) =>
@@ -520,8 +532,11 @@ object Server extends caseapp.Command[ServerOptions] {
                   )
                   None
               }
-              for (uri <- uriOpt)
-                server.editorState.focusedDocument = Some(uri.osPathFromUri)
+              for (uri <- uriOpt) {
+                val path = uri.osPathFromUri
+                server.editorState.focusedDocument = Some(path)
+                autoMode.focused(path)
+              }
               server.refreshStatus()
             },
             NotificationHandler.of[l.InitializedParams]("initialized") { (_, _) =>

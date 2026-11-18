@@ -169,6 +169,12 @@ final class Server(
   }
 
   // STATE
+  /** Manual or automatic mode, see [[AutoMode]]. Set right after the indexer is created, which it
+    * needs - `None` before that.
+    */
+  @volatile var autoModeOpt: Option[AutoMode] = None
+
+  // STATE
   lazy val bspServers: BspServers = {
     val instance = new BspServers(
       Some(workingDir / ".plasmon/build-servers.json"),

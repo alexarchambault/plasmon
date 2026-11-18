@@ -6,7 +6,7 @@
 -- Loads the Plasmon plugin from the parent directory of this file's directory, rather than any
 -- installed copy. The server command comes from PLASMON_NVIM_SERVER_CMD (JSON array), else
 -- `plasmon server` is used, and PLASMON_NVIM_SERVER_ENV (JSON object) adds environment variables
--- to it.
+-- to it. PLASMON_AUTO_MODE (`true` or `false`) sets the mode the server starts in.
 
 local dev_dir = vim.fs.dirname(vim.fs.normalize(vim.fn.fnamemodify(debug.getinfo(1, "S").source:sub(2), ":p")))
 local plugin_dir = vim.fs.dirname(dev_dir)
@@ -33,6 +33,11 @@ end
 local server_env = vim.env.PLASMON_NVIM_SERVER_ENV
 if server_env and server_env ~= "" then
   opts.cmd_env = vim.json.decode(server_env)
+end
+-- Set by `plasmon nvim --auto` / `--auto=false`
+local auto_mode = vim.env.PLASMON_AUTO_MODE
+if auto_mode == "true" or auto_mode == "false" then
+  opts.auto = auto_mode == "true"
 end
 require("plasmon").setup(opts)
 

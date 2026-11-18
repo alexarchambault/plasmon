@@ -2,12 +2,12 @@ package plasmon.servercommand
 
 import plasmon.{Logger, Server}
 import plasmon.PlasmonEnrichments.StringThingExtensions
+import plasmon.bsp.BuildTool
 import plasmon.command.ServerCommandThreadPools
 import plasmon.index.Indexer
 
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
-import scala.util.Failure
 
 /** Bringing a file to the point where a language feature can answer for it.
   *
@@ -21,6 +21,9 @@ import scala.util.Failure
   * The step before those two - having a server at all - is taken client-side, before this is ever
   * reached, by [[plasmon.command.AutoServer]].
   *
+  * Editors in automatic mode (see [[plasmon.AutoMode]]) go through [[load]] too, for the files
+  * users focus, rather than having them pick a build tool and a module from a menu.
+  *
   * Nothing is done that isn't needed: a file already covered by a loaded build tool, or already
   * part of a loaded module, is left alone.
   */
@@ -30,8 +33,36 @@ object AutoLoad {
     *
     * `--quiet` is the reason they are told apart: what is being loaded is worth silencing, what
     * went wrong on the way to an exit code isn't.
+    *
+    * `step` gets a short line each time a step that takes a while starts - what an editor shows in
+    * its status while this runs.
     */
-  private final case class Out(progress: String => Unit, error: String => Unit)
+  final case class Out(
+    progress: String => Unit,
+    error: String => Unit,
+    step: String => Unit = _ => ()
+  )
+
+  /** Why [[load]] stopped short of loading a module for a file. */
+  sealed abstract class Failure(val message: String) extends Product with Serializable
+
+  object Failure {
+
+    /** No build tool in the workspace that the file could belong to. */
+    final case class NoBuildTool(file: os.Path, workspace: os.Path)
+        extends Failure(s"No build tool found in $workspace for $file")
+
+    /** The loaded build tools have no module the file belongs to. */
+    final case class NoModule(file: os.Path) extends Failure(s"No module found for $file")
+
+    /** A build tool was found, and failed to load - or was skipped, having failed before. */
+    final case class BuildToolLoad(buildTool: BuildTool, error: String)
+        extends Failure(s"Error loading build tool ${buildTool.id}: $error")
+
+    /** A module was found, and failed to load - or was skipped, having failed before. */
+    final case class ModuleLoad(moduleUri: String, label: String, error: String)
+        extends Failure(s"Error loading module $label: $error")
+  }
 
   /** Loads a build tool and a module for `file` if it has none. Returns once indexing has run, and
     * the module just loaded is compiled.
@@ -59,13 +90,43 @@ object AutoLoad {
     // otherwise: it is teed into a logger that the connection, not the command, keeps
     val echo = Option.when(!quiet)(new Logger.Sink(log))
 
-    try {
-      awaitPersistedImport(server, out)
-      ensureBuildTool(server, pools, file, out, echo)
-      ensureModule(server, indexer, pools, file, out)
+    val res =
+      try load(server, indexer, pools, file, out, echo, compile = true)
+      finally
+        echo.foreach(_.detach())
+
+    for (failure <- res.left) {
+      out.error(failure.message)
+      ServerCommandInstance.exit(1)
     }
-    finally
-      echo.foreach(_.detach())
+  }
+
+  /** Loads a build tool and a module for `file` if it has none, telling why it couldn't otherwise.
+    *
+    * `compile` is whether to build the module just loaded before returning (see
+    * [[CompileAfterLoad]]) - what the command line needs, and an editor doesn't, as it compiles the
+    * files it has open once indexing is done.
+    *
+    * `skipBuildTool` and `skipModule` say which build tools and modules not to try loading, failing
+    * as if they had. Automatic mode uses them not to go through the same failure again and again,
+    * each time a file of a build tool that cannot start is focused.
+    */
+  def load(
+    server: Server,
+    indexer: Indexer,
+    pools: ServerCommandThreadPools,
+    file: os.Path,
+    out: Out,
+    echo: Option[String => Unit],
+    compile: Boolean,
+    skipBuildTool: BuildTool => Option[String] = _ => None,
+    skipModule: String => Option[String] = _ => None
+  ): Either[Failure, Unit] = {
+    awaitPersistedImport(server, out)
+    for {
+      _ <- ensureBuildTool(server, pools, file, out, echo, skipBuildTool)
+      _ <- ensureModule(server, indexer, pools, file, out, compile, skipModule)
+    } yield ()
   }
 
   /** Waits for whatever the server was already restoring when it started.
@@ -78,23 +139,25 @@ object AutoLoad {
     */
   private def awaitPersistedImport(server: Server, out: Out): Unit = {
     val f = server.persistedImport
-    if (!f.isCompleted)
+    if (!f.isCompleted) {
+      out.step("Restoring loaded build tools and modules")
       out.progress("Waiting for the server to finish restoring what it had loaded before")
+    }
     Await.ready(f, Duration.Inf)
     // Not fatal: what follows loads what's needed for the file anyway
-    for (case Failure(ex) <- f.value)
+    for (case scala.util.Failure(ex) <- f.value)
       out.error(s"Warning: error restoring what the server had loaded before: $ex")
   }
 
   /** Whether a loaded build tool covers `file`. */
-  private def hasBuildTool(server: Server, file: os.Path): Boolean =
+  def hasBuildTool(server: Server, file: os.Path): Boolean =
     server.bspServers.list
       .iterator
       .flatMap(_._2)
       .exists(conn => file.startsWith(conn.info.workspace))
 
   /** Whether a loaded module holds `file` - the check [[ProjectOps.listModules]] itself makes. */
-  private def hasModule(server: Server, file: os.Path): Boolean =
+  def hasModule(server: Server, file: os.Path): Boolean =
     server.bspData.allTargetData.exists(_.sourceBuildTargets(file).exists(_.nonEmpty))
 
   private def ensureBuildTool(
@@ -102,36 +165,44 @@ object AutoLoad {
     pools: ServerCommandThreadPools,
     file: os.Path,
     out: Out,
-    echo: Option[String => Unit]
-  ): Unit =
-    if (hasBuildTool(server, file))
+    echo: Option[String => Unit],
+    skip: BuildTool => Option[String]
+  ): Either[Failure, Unit] =
+    if (hasBuildTool(server, file)) {
       out.progress(s"Build tool already loaded for $file")
+      Right(())
+    }
     else
       ProjectOps.discoverBuildTools(server, Some(file)) match {
         case Seq() =>
-          out.error(s"No build tool found in ${server.workspace()} for $file")
-          ServerCommandInstance.exit(1)
+          Left(Failure.NoBuildTool(file, server.workspace()))
         case tool +: _ =>
           // Discovery hands back the tools in the order the extension offers them, the one we'd
           // default to first. Not asking is the whole point of --auto, so take that one rather
           // than bailing out on ambiguity the way `build-tool load` does.
-          out.progress(s"Loading build tool ${tool.buildTool.id}")
-          Await.result(
-            ProjectOps.loadBuildTool(
-              server,
-              pools,
-              tool.discoverId,
-              tool.buildTool.id,
-              Some(file),
-              echo
-            ),
-            Duration.Inf
-          ) match {
-            case Left(err) =>
-              out.error(s"Error loading build tool ${tool.buildTool.id}: $err")
-              ServerCommandInstance.exit(1)
-            case Right(()) =>
-              out.progress(s"Loaded build tool ${tool.buildTool.id}")
+          skip(tool.buildTool) match {
+            case Some(error) =>
+              Left(Failure.BuildToolLoad(tool.buildTool, error))
+            case None =>
+              out.step(s"Loading build tool ${tool.buildTool.id}")
+              out.progress(s"Loading build tool ${tool.buildTool.id}")
+              Await.result(
+                ProjectOps.loadBuildTool(
+                  server,
+                  pools,
+                  tool.discoverId,
+                  tool.buildTool.id,
+                  Some(file),
+                  echo
+                ),
+                Duration.Inf
+              ) match {
+                case Left(err) =>
+                  Left(Failure.BuildToolLoad(tool.buildTool, err))
+                case Right(()) =>
+                  out.progress(s"Loaded build tool ${tool.buildTool.id}")
+                  Right(())
+              }
           }
       }
 
@@ -140,44 +211,56 @@ object AutoLoad {
     indexer: Indexer,
     pools: ServerCommandThreadPools,
     file: os.Path,
-    out: Out
-  ): Unit =
-    if (hasModule(server, file))
+    out: Out,
+    compile: Boolean,
+    skip: String => Option[String]
+  ): Either[Failure, Unit] =
+    if (hasModule(server, file)) {
       out.progress(s"Module already loaded for $file")
+      Right(())
+    }
     else
       ProjectOps.listModules(file, server).filter(!_.alreadyLoaded) match {
         case Seq() =>
-          out.error(s"No module found for $file")
-          ServerCommandInstance.exit(1)
+          Left(Failure.NoModule(file))
         case modules =>
           // listModules sorts the candidates best first - the recommended one, which is also the
           // one `module load` takes
           val module = modules.head
-          out.progress(s"Loading module ${module.uri}")
-          Await.result(
-            ProjectOps.loadModule(
-              server,
-              indexer,
-              pools,
-              module.workspace.osPathFromUri,
-              module.server,
-              module.uri
-            ),
-            Duration.Inf
-          ) match {
-            case Left(err) =>
-              out.error(s"Error loading module ${module.label}: $err")
-              ServerCommandInstance.exit(1)
-            case Right(_) =>
-              out.progress(s"Loaded module ${module.uri}")
+          skip(module.uri) match {
+            case Some(error) =>
+              Left(Failure.ModuleLoad(module.uri, module.label, error))
+            case None =>
+              out.step(s"Loading module ${module.label}")
+              out.progress(s"Loading module ${module.uri}")
+              Await.result(
+                ProjectOps.loadModule(
+                  server,
+                  indexer,
+                  pools,
+                  module.workspace.osPathFromUri,
+                  module.server,
+                  module.uri
+                ),
+                Duration.Inf
+              ) match {
+                case Left(err) =>
+                  Left(Failure.ModuleLoad(module.uri, module.label, err))
+                case Right(_) =>
+                  out.progress(s"Loaded module ${module.uri}")
+                  // Loading waits for the re-index it asks for, but the indexer goes on chewing
+                  // through messages of its own afterwards - workspace source symbols, notably -
+                  // and a request asked too early sees a half-built index. Same wait as
+                  // `index --await`.
+                  while (indexer.actor.awaitingMessages.nonEmpty)
+                    Thread.sleep(100L)
+                  // What `module load` does too: nothing else builds a module from the command
+                  // line, and a request answered from an unbuilt one is quietly wrong (see
+                  // CompileAfterLoad)
+                  if (compile)
+                    CompileAfterLoad(server, module.uri, out.progress, out.error)
+                  Right(())
+              }
           }
-          // Loading waits for the re-index it asks for, but the indexer goes on chewing through
-          // messages of its own afterwards - workspace source symbols, notably - and a request
-          // asked too early sees a half-built index. Same wait as `index --await`.
-          while (indexer.actor.awaitingMessages.nonEmpty)
-            Thread.sleep(100L)
-          // What `module load` does too: nothing else builds a module from the command line, and
-          // a request answered from an unbuilt one is quietly wrong (see CompileAfterLoad)
-          CompileAfterLoad(server, module.uri, out.progress, out.error)
       }
 }

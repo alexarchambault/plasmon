@@ -411,6 +411,55 @@ describe("with a fake server", function()
     local commands = require("plasmon.commands")
     local res = commands.complete("load", "Plasmon load", 0)
     h.eq({ "load", "load-build-tool", "load-build-tool-or-module", "load-module" }, res)
+    h.eq({ "automatic" }, commands.complete("a", "Plasmon mode a", 0))
+  end)
+
+  it("shows and switches modes with :Plasmon mode", function()
+    local _, client = open_project()
+    vim.cmd("Plasmon mode")
+    h.wait_for("manual mode notification", function()
+      return h.notified("manual mode")
+    end)
+
+    vim.cmd("Plasmon mode automatic")
+    h.wait_for("plasmon/setMode", function()
+      return #executed(client, "plasmon/setMode") == 1
+    end)
+    h.eq({ { "automatic" } }, executed(client, "plasmon/setMode"))
+    h.wait_for("automatic mode notification", function()
+      return h.notified("automatic mode")
+    end)
+
+    vim.cmd("Plasmon mode toggle")
+    h.wait_for("plasmon/setMode, toggled", function()
+      return #executed(client, "plasmon/setMode") == 2
+    end)
+    h.eq({ "manual" }, executed(client, "plasmon/setMode")[2])
+
+    -- What the mode status item runs
+    handlers.client_commands["plasmon.switch-to-automatic-mode"]({ command = "plasmon.switch-to-automatic-mode" }, { client_id = client.id })
+    h.wait_for("plasmon/setMode from the status item", function()
+      return #executed(client, "plasmon/setMode") == 3
+    end)
+    h.eq({ "automatic" }, executed(client, "plasmon/setMode")[3])
+  end)
+
+  it("starts the first server of a workspace in the mode of the auto option", function()
+    config.reset_auto_applied()
+    plasmon.setup({ cmd = fake_server_cmd, auto = true })
+    local _, client = open_project()
+    local args = h.request(client, "fake/info").args
+    h.eq("--auto", args[#args])
+
+    -- Restarted, it keeps whatever mode users may have switched to meanwhile
+    local bufnr = vim.api.nvim_get_current_buf()
+    vim.cmd("Plasmon restart")
+    local new_client = h.wait_for("new client", function()
+      local c = vim.lsp.get_clients({ name = "plasmon", bufnr = bufnr })[1]
+      return c and c.id ~= client.id and c.initialized and c
+    end)
+    local new_args = h.request(new_client, "fake/info").args
+    h.truthy(not vim.tbl_contains(new_args, "--auto"), "no --auto after a restart")
   end)
 
   it("restarts the server", function()
