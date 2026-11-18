@@ -931,6 +931,7 @@ object server extends ScalaModule with PlasmonPublishModule {
       Seq(native.resources()) ++ lsp4jGraalvmStuff() ++ bsp4jGraalvmStuff() ++
         remotePcGraalvmStuff()
     }
+    def nativeImageConfResources = Task(Seq(native.resources()))
 
     def nativeImageName      = "plasmon"
     def nativeImageMainClass = Task(server.mainClass().get)
@@ -1933,8 +1934,14 @@ trait FormatNativeImageConf extends JavaModule {
     needsFormatting
   }
 
+  /** The resource directories whose native-image config the commands below check or format: the
+    * checked-in ones, not those generated into `Task.dest` (formatting those makes no sense, and
+    * generating them can mean compiling much of the build)
+    */
+  def nativeImageConfResources: T[Seq[PathRef]] = Task(resources())
+
   def nativeImageConfDirs = Task {
-    resources()
+    nativeImageConfResources()
       .map(_.path / "META-INF" / "native-image")
       .filter(os.exists(_))
       .flatMap { path =>
