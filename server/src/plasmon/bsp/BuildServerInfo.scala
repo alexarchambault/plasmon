@@ -54,7 +54,7 @@ object BuildServerInfo {
   final case class Bloop(
     workspace: os.Path
   ) extends BuildServerInfo {
-    def `type`                           = "Bloop"
+    def `type` = "Bloop"
 
     def id    = "bloop"
     def label = "Bloop"
@@ -113,9 +113,9 @@ object BuildServerInfo {
     paths: Seq[os.Path],
     scalaCliCommand: Seq[String]
   ) extends BuildServerInfo {
-    def `type`                           = "Scala CLI"
-    def id                               = "scala-cli"
-    def label                            = "Scala CLI"
+    def `type` = "Scala CLI"
+    def id     = "scala-cli"
+    def label  = "Scala CLI"
 
     // Several Scala CLI build servers can be loaded in one workspace, one per source set
     override def cacheKey =

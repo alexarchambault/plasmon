@@ -24,7 +24,8 @@ import scala.meta.internal.metals.PositionSyntax.*
 import scala.meta.internal.mtags.GlobalSymbolIndex
 import scala.util.Try
 
-/** (Original Metals doc) Converts diagnostics from the build server and Scalameta parser into LSP diagnostics.
+/** (Original Metals doc) Converts diagnostics from the build server and Scalameta parser into LSP
+  * diagnostics.
   *
   * BSP diagnostics have different semantics from LSP diagnostics with regards to how they are
   * published. BSP diagnostics can be accumulated when `reset=false`, meaning the client (Metals) is
@@ -44,10 +45,10 @@ private final class Diagnostics(
 ) extends AutoCloseable {
   import Diagnostics.*
 
-  val diagnostics           = TrieMap.empty[os.Path, JQueue[(GlobalSymbolIndex.Module, l.Diagnostic)]]
-  private val syntaxError   = TrieMap.empty[os.Path, Seq[(GlobalSymbolIndex.Module, l.Diagnostic)]]
-  val pcDiagnostics = TrieMap.empty[os.Path, Seq[(GlobalSymbolIndex.Module, l.Diagnostic)]]
-  private val snapshots     = TrieMap.empty[os.Path, Input.VirtualFile]
+  val diagnostics         = TrieMap.empty[os.Path, JQueue[(GlobalSymbolIndex.Module, l.Diagnostic)]]
+  private val syntaxError = TrieMap.empty[os.Path, Seq[(GlobalSymbolIndex.Module, l.Diagnostic)]]
+  val pcDiagnostics       = TrieMap.empty[os.Path, Seq[(GlobalSymbolIndex.Module, l.Diagnostic)]]
+  private val snapshots   = TrieMap.empty[os.Path, Input.VirtualFile]
   private val lastPublished = new AtomicReference[os.Path]
   private val diagnosticsBuffer =
     new ConcurrentLinkedQueue[(GlobalSymbolIndex.Module, os.Path)]
@@ -96,7 +97,11 @@ private final class Diagnostics(
     }
 
   def onClose(module: GlobalSymbolIndex.Module, path: os.Path): Unit =
-    if (syntaxError.remove(path).exists(_.exists(_._1 == module)) || pcDiagnostics.remove(path).exists(_.exists(_._1 == module)))
+    if (
+      syntaxError.remove(path).exists(
+        _.exists(_._1 == module)
+      ) || pcDiagnostics.remove(path).exists(_.exists(_._1 == module))
+    )
       publishDiagnostics(path, None) // Remove old syntax error
 
   def didDelete(path: os.Path): Unit = {
@@ -195,11 +200,12 @@ private final class Diagnostics(
   ): Unit =
     if (os.isFile(path)) {
       val uri = path.toNIO.toUri.toASCIIString
-      val all = new ArrayList[l.Diagnostic]((if (enabledTypes(Type.Compilation)) queue.size() else 0) + 1)
+      val all =
+        new ArrayList[l.Diagnostic]((if (enabledTypes(Type.Compilation)) queue.size() else 0) + 1)
       if (enabledTypes(Type.Compilation))
         for {
           (module0, diagnostic) <- queue.asScala
-          freshDiagnostic <- toFreshDiagnostic(module0, path, diagnostic)
+          freshDiagnostic       <- toFreshDiagnostic(module0, path, diagnostic)
         }
           all.add(freshDiagnostic)
       if (enabledTypes(Type.Syntax))
@@ -210,7 +216,10 @@ private final class Diagnostics(
             diag.getRange == d.getRange && diag.getMessage == d.getMessage
           )
           isDuplicate =
-            d.getMessage.asScala.fold(identity, _.getValue).replace("`", "").startsWith("identifier expected but") &&
+            d.getMessage.asScala.fold(
+              identity,
+              _.getValue
+            ).replace("`", "").startsWith("identifier expected but") &&
               all.asScala.exists { other =>
                 other.getMessage
                   .asScala
@@ -330,7 +339,10 @@ private final class Diagnostics(
     diagnostic.getSource == "scala-cli"
 
   def clear(): Unit = {
-    val paths = diagnostics.keySet ++ syntaxError.keySet ++ pcDiagnostics.keySet ++ snapshots.keySet ++ diagnosticsBuffer.asScala.map(_._2)
+    val paths =
+      diagnostics.keySet ++ syntaxError.keySet ++ pcDiagnostics.keySet ++ snapshots.keySet ++ diagnosticsBuffer.asScala.map(
+        _._2
+      )
     for (path <- paths)
       languageClient.publishDiagnostics(
         new l.PublishDiagnosticsParams(

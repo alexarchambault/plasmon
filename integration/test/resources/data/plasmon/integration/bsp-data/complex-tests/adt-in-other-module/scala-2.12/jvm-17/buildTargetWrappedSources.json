@@ -1,0 +1,22 @@
+{
+  "items": [
+    {
+      "target": {
+        "uri": "file:///$WORKSPACE$/bar"
+      },
+      "sources": []
+    },
+    {
+      "target": {
+        "uri": "file:///$WORKSPACE$/foo"
+      },
+      "sources": []
+    },
+    {
+      "target": {
+        "uri": "file:///$WORKSPACE$/mill-build"
+      },
+      "sources": []
+    }
+  ]
+}

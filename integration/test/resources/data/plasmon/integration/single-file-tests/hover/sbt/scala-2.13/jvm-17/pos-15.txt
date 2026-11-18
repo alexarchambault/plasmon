@@ -67,3 +67,34 @@ method goes awry by, for example, corrupting internal data structures or
 attempting to access nonexistent memory.  If the virtual machine aborts
 then no guarantee can be made about whether or not any shutdown hooks
 will be run.
+
+
+
+***
+
+**Parameters**
+- `hook`: 
+An initialized but unstarted [Thread](Thread) object
+
+
+***
+
+**Throws**
+- `IllegalArgumentException`: 
+If the specified hook has already been registered,
+or if it can be determined that the hook is already running or
+has already been run
+- `IllegalStateException`: 
+If the virtual machine is already in the process
+of shutting down
+- `SecurityException`: 
+If a security manager is present and it denies
+[RuntimePermission](RuntimePermission)`("shutdownHooks")`
+
+
+***
+
+**See**
+- [#removeShutdownHook](#removeShutdownHook)
+- [#halt(int)](#halt(int))
+- [#exit(int)](#exit(int))

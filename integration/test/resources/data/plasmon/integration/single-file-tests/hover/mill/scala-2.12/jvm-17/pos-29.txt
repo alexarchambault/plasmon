@@ -1,0 +1,10 @@
+```scala
+def toVector: Vector[URL]
+```
+
+***
+
+Converts this collection or iterator to a Vector.
+ Note: will not terminate for infinite-sized collections.
+
+**Returns** a vector containing all elements of this collection or iterator.

@@ -31,6 +31,9 @@
       "type": "plasmon.command.CommandServerImpl"
     },
     {
+      "type": "plasmon.pc.RemotePcHost$Client"
+    },
+    {
       "type": "java.lang.AutoCloseable"
     },
     {
@@ -85,6 +88,14 @@
       "type": {
         "proxy": [
           "plasmon.protocol.CommandClient",
+          "org.eclipse.lsp4j.jsonrpc.Endpoint"
+        ]
+      }
+    },
+    {
+      "type": {
+        "proxy": [
+          "plasmon.remotepc.RemotePcServer",
           "org.eclipse.lsp4j.jsonrpc.Endpoint"
         ]
       }

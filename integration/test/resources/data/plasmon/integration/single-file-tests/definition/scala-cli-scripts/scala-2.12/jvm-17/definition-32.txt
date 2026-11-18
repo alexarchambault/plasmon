@@ -1,0 +1,9 @@
+{
+  "path": ".plasmon/readonly/dependencies/src.zip/java.base/java/net/URI.java",
+  "line": 1761,
+  "colRange": [
+    18,
+    31
+  ],
+  "content": "toASCIIString"
+}

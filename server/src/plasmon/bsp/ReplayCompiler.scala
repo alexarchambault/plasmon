@@ -14,9 +14,9 @@ import scala.jdk.CollectionConverters.*
   *
   * A recording describes a build completely enough to redo it: which targets depend on which, the
   * sources of each, the class path to compile against, the compiler options, the output directory,
-  * and - via the target's Scala data - the compiler jars themselves. So rather than storing compiled
-  * output alongside the recording, we recreate it, which keeps `.class`, `.tasty` and any semanticdb
-  * output genuine instead of round-tripped through some other representation.
+  * and - via the target's Scala data - the compiler jars themselves. So rather than storing
+  * compiled output alongside the recording, we recreate it, which keeps `.class`, `.tasty` and any
+  * semanticdb output genuine instead of round-tripped through some other representation.
   *
   * Still far cheaper than the build tool it stands in for: one compiler invocation per target, no
   * build tool JVM, no BSP, no dependency resolution beyond what is already in the coursier cache.
@@ -42,10 +42,10 @@ final class ReplayCompiler(
     sources: Seq[b.SourcesItem]
   ): b.StatusCode = {
 
-    val targetById    = allTargets.map(t => t.getId -> t).toMap
-    val scalacById    = scalacOptions.map(i => i.getTarget -> i).toMap
-    val javacById     = javacOptions.map(i => i.getTarget -> i).toMap
-    val sourcesById   = sources.map(i => i.getTarget -> i).toMap
+    val targetById  = allTargets.map(t => t.getId -> t).toMap
+    val scalacById  = scalacOptions.map(i => i.getTarget -> i).toMap
+    val javacById   = javacOptions.map(i => i.getTarget -> i).toMap
+    val sourcesById = sources.map(i => i.getTarget -> i).toMap
 
     // Dependencies first, so that a target compiles against class directories that already exist
     val ordered = {

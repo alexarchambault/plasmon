@@ -10,3 +10,7 @@ Returns the content of this URI as a US-ASCII string.
 category then an invocation of this method will return the same value as
 an invocation of the [toString](#toString()) method.  Otherwise
 this method works as if by invoking that method and then [encoding]() the result.
+
+**Returns** The string form of this URI, encoded as needed
+so that it only contains characters in the US-ASCII
+charset

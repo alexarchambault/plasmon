@@ -1,0 +1,9 @@
+```scala
+case def apply(): Second
+```
+
+***
+
+Apply the body of this function to the arguments.
+
+**Returns** the result of function application.

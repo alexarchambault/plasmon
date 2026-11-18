@@ -25,7 +25,7 @@
         },
         "data": {
           "symbol": "scala/Predef.print().",
-          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_41e103cfb2",
           "kind": 0
         }
       },
@@ -51,7 +51,7 @@
         },
         "data": {
           "symbol": "scala/Predef.printf().",
-          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_41e103cfb2",
           "kind": 0
         }
       },
@@ -77,7 +77,7 @@
         },
         "data": {
           "symbol": "scala/Predef.println().",
-          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_41e103cfb2",
           "kind": 0
         }
       },
@@ -103,7 +103,7 @@
         },
         "data": {
           "symbol": "scala/Predef.println(+1).",
-          "target": "file:/workspace/.scala-build/?id\u003dtest-project_d5c0a6989e",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_41e103cfb2",
           "kind": 0
         }
       }

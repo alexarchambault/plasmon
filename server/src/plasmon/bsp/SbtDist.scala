@@ -7,11 +7,11 @@ import scala.util.Properties
 object SbtDist {
 
   lazy val sbtLauncher: os.Path = {
-    val archiveCache = coursierapi.ArchiveCache.create()
-    val sbtVer = Constants.defaultSbtVersion
+    val archiveCache  = coursierapi.ArchiveCache.create()
+    val sbtVer        = Constants.defaultSbtVersion
     val sbtArchiveUrl = s"https://github.com/sbt/sbt/releases/download/v$sbtVer/sbt-$sbtVer.zip"
-    val archiveRoot = os.Path(archiveCache.get(coursierapi.Artifact.of(sbtArchiveUrl)))
-    val scriptName = if (Properties.isWin) "sbt.bat" else "sbt"
+    val archiveRoot   = os.Path(archiveCache.get(coursierapi.Artifact.of(sbtArchiveUrl)))
+    val scriptName    = if (Properties.isWin) "sbt.bat" else "sbt"
     archiveRoot / "sbt/bin" / scriptName
   }
 
@@ -24,9 +24,9 @@ object SbtDist {
     * same script (via `-Dsbt.script=…`) with arguments of its own, so the JDK has to be somewhere
     * that fork will find it too. Putting it first on `PATH` reaches both.
     *
-    * `PATH` is left alone on Windows on purpose. Its real name there is `Path`, so replacing
-    * `PATH` wholesale drops the system directories from the child's environment - `sbt.bat` then
-    * can't find `findstr`, mis-detects the Java version and refuses to start.
+    * `PATH` is left alone on Windows on purpose. Its real name there is `Path`, so replacing `PATH`
+    * wholesale drops the system directories from the child's environment - `sbt.bat` then can't
+    * find `findstr`, mis-detects the Java version and refuses to start.
     *
     * Without this, sbt runs on whatever `java` happens to be first on `PATH`, and reports that JDK
     * as the `javaHome` of every target it describes - so `--jvm` would mean something for Mill and

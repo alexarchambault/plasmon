@@ -1,0 +1,7 @@
+```scala
+def asScala: Iterator[URL]
+```
+
+***
+
+Converts a Java collection to the corresponding Scala collection

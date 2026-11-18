@@ -1,0 +1,9 @@
+{
+  "path": ".plasmon/readonly/dependencies/src.zip/java.base/java/lang/ClassLoader.java",
+  "line": 1458,
+  "colRange": [
+    28,
+    40
+  ],
+  "content": "getResources"
+}

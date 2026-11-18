@@ -24,7 +24,7 @@ import plasmon.index.{
   SymbolSearchIndex
 }
 import plasmon.languageclient.*
-import plasmon.pc.{NopReportContext, PresentationCompilers, SourcepathMode}
+import plasmon.pc.{NopReportContext, PresentationCompilers, RemotePcHost, SourcepathMode}
 import plasmon.render.JsonCodecs.given
 import plasmon.semdb.{
   InteractiveSemanticdbs,
@@ -120,8 +120,14 @@ final class Server(
   var onShutdown = Seq.empty[() => Unit]
   var onExit     = Seq.empty[() => Unit]
 
+  /** Run Scala 2 presentation compilers, per Scala binary version, started when one is first needed
+    */
+  lazy val scala2PcHosts: Map[String, RemotePcHost] =
+    RemotePcHost.scala2Hosts(javaHome)
+
   def shutdown(): CompletableFuture[Unit] = {
     bspServers.close()
+    scala2PcHosts.values.foreach(_.close())
     onShutdown.foreach(_())
     var exited = false
     onExit = onExit :+ { () =>
@@ -330,6 +336,7 @@ final class Server(
     languageClient = languageClient,
     scala2Compat = scala2Compat,
     sourcepath = sourcepath,
+    scala2PcHosts = scala2PcHosts,
     emitDiagnostics = { (_, module, uri, diags, _) =>
       val path = uri.toOsPath
       bspData.inverseSources(path) match {
@@ -527,6 +534,7 @@ final class Server(
   def close(): Unit = {
     scribe.info(s"Closing $this")
     bspServers.close()
+    scala2PcHosts.values.foreach(_.close())
   }
 
   lazy val fileWatcher: FileWatcher =

@@ -28,7 +28,7 @@ final case class ServerOptions(
   scalaCli: Option[String] = None,
   bestEffort: Option[Boolean] = None,
   suspendWatcher: Boolean = true,
-  @HelpMessage("Handle Scala 2 using the Scala 3 PC - might be enabled by default and with no possibility of deactivation")
+  @HelpMessage("Handle Scala 2 using the Scala 3 PC, rather than with the Scala 2 PC, run in a process of its own (default: false)")
     scala2Compat: Option[Boolean] = None,
   @HelpMessage("Have presentation compilers read the workspace's own modules from their sources, rather than from the class directories the build tool reports: nothing needs to be built for a module to see the ones it depends on (default: false)")
     sourcepath: Option[Boolean] = None,

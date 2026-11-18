@@ -1,0 +1,3 @@
+```scala
+def thing[T](name: String = "", counts: List[Int]): Unit
+```

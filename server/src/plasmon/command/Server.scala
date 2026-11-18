@@ -8,7 +8,7 @@ import plasmon.handlers as h
 import plasmon.PlasmonEnrichments.*
 import plasmon.bsp.BuildTool
 import plasmon.index.Indexer
-import plasmon.internal.{BinaryName, BuildVersion, Constants, DebugInput, DisableScala2Pc}
+import plasmon.internal.{BinaryName, BuildVersion, DebugInput}
 import plasmon.jsonrpc.{
   CommandHandler,
   Handlers,
@@ -17,7 +17,7 @@ import plasmon.jsonrpc.{
   RequestHandler
 }
 import plasmon.languageclient.PlasmonLanguageClient
-import plasmon.pc.{Scala2PresentationCompilerHandler, SourcepathMode}
+import plasmon.pc.SourcepathMode
 import plasmon.servercommand.*
 import plasmon.util.{ThreadUtil, TimerThreadsHack}
 import plasmon.watch.WatchEvent
@@ -238,31 +238,11 @@ object Server extends caseapp.Command[ServerOptions] {
         )
       )
 
-      val scala2Compat =
-        if (!Constants.disableScala2Pc || new Scala2PresentationCompilerHandler().available()) {
-          scribe.info("Scala 2 PC available")
-          options.scala2Compat match {
-            case Some(value) =>
-              scribe.info(
-                if (value) "Scala 2 PC enabled via command-line"
-                else "Scala 2 PC disabled via command-line"
-              )
-              value
-            case None =>
-              val compat = Constants.disableScala2Pc || (new DisableScala2Pc()).getAsBoolean
-              scribe.info(
-                if (compat) "Disabling Scala 2 PC use"
-                else "Enabling Scala 2 PC use"
-              )
-              compat
-          }
-        }
-        else {
-          scribe.info("Scala 2 PC not available")
-          if (options.scala2Compat.contains(false))
-            scribe.warn("Scala 2 PC use requested on command-line, but Scala 2 PC not available")
-          true
-        }
+      val scala2Compat = options.scala2Compat.getOrElse(false)
+      scribe.info(
+        if (scala2Compat) "Using the Scala 3 presentation compiler for Scala 2"
+        else "Using the Scala 2 presentation compiler for Scala 2, if it can be fetched"
+      )
 
       val sourcepathMode: Option[SourcepathMode] =
         if (options.sourcepath.getOrElse(false)) {

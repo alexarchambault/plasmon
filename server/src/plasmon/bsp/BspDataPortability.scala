@@ -387,7 +387,7 @@ object BspDataPortability {
     * Looks at `javaHome/release` and `javaHome/../release` - the latter is what a JRE-inside-JDK
     * layout (and macOS `Contents/Home` vs. the bundle root) needs.
     */
-  private def majorFromJdkFiles(javaHome: os.Path): Option[Int] =
+  private[plasmon] def majorFromJdkFiles(javaHome: os.Path): Option[Int] =
     Iterator(javaHome / "release", javaHome / os.up / "release")
       .filter(os.isFile)
       .flatMap(versionFromReleaseFile)

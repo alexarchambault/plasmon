@@ -1,0 +1,9 @@
+{
+  "path": ".plasmon/readonly/dependencies/src.zip/java.base/java/lang/Runtime.java",
+  "line": 608,
+  "colRange": [
+    22,
+    41
+  ],
+  "content": "availableProcessors"
+}
