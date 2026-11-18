@@ -26,7 +26,7 @@ object BuildServerProcess {
     stringCodec.bimap(
       _ => ???,
       p => {
-        var extra = Seq.empty[(String, String)]
+        var extra   = Seq.empty[(String, String)]
         val isAlive = p.isAlive()
         extra = extra :+ ("isAlive" -> isAlive.toString)
         if (isAlive)
@@ -83,6 +83,7 @@ object BuildServerProcess {
       t
     }
   }
+
   /** No process at all - used by the replay build server, which answers from recorded data. */
   case object NoProcess extends BuildServerProcess {
     def managedProcess = false

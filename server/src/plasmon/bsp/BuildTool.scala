@@ -214,7 +214,7 @@ object BuildTool {
                 env = SbtDist.env(tools.javaHome),
                 mergeErrIntoOut = true
               )
-          }
+        }
       )
   }
 
