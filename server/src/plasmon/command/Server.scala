@@ -475,6 +475,7 @@ object Server extends caseapp.Command[ServerOptions] {
         ),
         h.ref.Reference.handlers(
           server,
+          pools.cancelTokensEces,
           pools.definitionStuffEc
         ),
         h.Completion.handlers(server, pools.cancelTokensEces),

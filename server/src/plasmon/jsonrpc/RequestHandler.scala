@@ -7,6 +7,13 @@ import java.util.concurrent.CompletableFuture
 
 import scala.reflect.ClassTag
 
+/** Handles a JSON-RPC request
+  *
+  * lsp4j cancels the future `call` returns when the client sends `$/cancelRequest`. Only that very
+  * future gets cancelled: futures it was derived from (via `thenApply`, `thenCompose`, `asJava`, …)
+  * are left alone. Handlers whose work can be interrupted should return the future of
+  * [[plasmon.ide.CancelTokens.future]], and do all their work inside it.
+  */
 final case class RequestHandler[A, B](
   name: String,
   call: (A, Logger) => CompletableFuture[B],
@@ -18,15 +25,6 @@ final case class RequestHandler[A, B](
 
   def inputType: Type  = inputClass
   def returnType: Type = outputClass
-
-  def ifNull(other: RequestHandler[A, B]): RequestHandler[A, B] =
-    copy(
-      call = (a, logger) =>
-        call(a, logger).thenCompose { bOrNull =>
-          if (bOrNull == null) other.call(a, logger)
-          else CompletableFuture.completedFuture(bOrNull)
-        }
-    )
 }
 
 object RequestHandler {

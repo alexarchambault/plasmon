@@ -23,18 +23,24 @@ object CancelTokens {
   def future[T](
     fn: CancelToken => Future[T]
   )(implicit ec: ExecutionContextExecutorService): CompletableFuture[T] = {
-    val token = Promise[Unit]()
+    // true once cancelled, false once done without having been cancelled
+    val token = Promise[Boolean]()
     val result = new CompletableFuture[T]() {
       override def cancel(mayInterruptIfRunning: Boolean): Boolean = {
-        token.trySuccess(())
+        token.trySuccess(true)
         super.cancel(mayInterruptIfRunning)
       }
     }
-    fn(FutureCancelToken.fromUnit(token.future)).onComplete {
-      case Failure(exception) =>
-        result.completeExceptionally(exception)
-      case Success(value) =>
-        result.complete(value)
+    fn(FutureCancelToken(token.future)).onComplete { res =>
+      res match {
+        case Failure(exception) =>
+          result.completeExceptionally(exception)
+        case Success(value) =>
+          result.complete(value)
+      }
+      // As the CancelToken.onCancel contract asks: what waits for a cancellation (the
+      // presentation compilers register callbacks on it) gets released
+      token.trySuccess(false)
     }
     // NOTE(olafur): we cannot use `Future.asJava` or `CompletableFuture.handleAsync`
     // since those methods return a `CompletableFuture` that doesn't contain the

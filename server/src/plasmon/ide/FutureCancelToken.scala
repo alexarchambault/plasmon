@@ -14,14 +14,17 @@ import scala.util.{Failure, Success}
   */
 case class FutureCancelToken(f: Future[Boolean])(implicit ec: ExecutionContext)
     extends CancelToken {
-  var isCancelled: Boolean = false
-  f.onComplete {
-    case Failure(_) =>
-      isCancelled = true
-    case Success(cancel) =>
-      isCancelled = cancel
-  }
+  // Read from f rather than set by a callback of it, which runs some time after f completes:
+  // checkCanceled throws as soon as the request is cancelled
+  def isCancelled: Boolean =
+    f.value match {
+      case Some(Success(cancel)) => cancel
+      case Some(Failure(_))      => true
+      case None                  => false
+    }
 
+  // InterruptedException rather than the CancellationException of the CancelChecker contract: the
+  // presentation compilers handle the former as an interruption, but report the latter as a crash
   override def checkCanceled(): Unit = {
     if (isCancelled)
       throw new InterruptedException()
@@ -29,11 +32,4 @@ case class FutureCancelToken(f: Future[Boolean])(implicit ec: ExecutionContext)
 
   override def onCancel(): CompletionStage[lang.Boolean] =
     f.map(cancel => java.lang.Boolean.valueOf(cancel)).toJava
-}
-
-object FutureCancelToken {
-  def fromUnit(
-    f: Future[Unit]
-  )(implicit ec: ExecutionContext): FutureCancelToken =
-    FutureCancelToken(f.map(_ => true))
 }

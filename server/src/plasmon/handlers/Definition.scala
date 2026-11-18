@@ -17,7 +17,6 @@ import plasmon.pc.PresentationCompilers
 import plasmon.semdb.{Semanticdbs, TextDocumentLookup}
 
 import java.util.List as JList
-import java.util.concurrent.CompletableFuture
 
 import scala.concurrent.{
   ExecutionContext,
@@ -272,28 +271,28 @@ object Definition {
   ) =
     RequestHandler.of[l.DefinitionParams, JList[l.Location]]("textDocument/definition") {
       (params, logger) =>
-        val f = Future {
-          val path = params.getTextDocument.getUri.osPathFromUri
-          server.bspData.inverseSources(path) match {
-            case Some(targetId) =>
-              logger.log(s"Build target: ${targetId.getUri}")
-              val source = params.getTextDocument.getUri.osPathFromUri
-              if (source.isScalaFilename || source.isJavaFilename)
-                CancelTokens.future { token =>
+        // The future of CancelTokens.future is the one lsp4j gets, so that cancelling the request
+        // cancels the token passed to the presentation compiler (a future derived from it, like
+        // with thenCompose, wouldn't pass cancellation on)
+        CancelTokens.future { token =>
+          Future[Future[JList[l.Location]]] {
+            val path = params.getTextDocument.getUri.osPathFromUri
+            server.bspData.inverseSources(path) match {
+              case Some(targetId) =>
+                logger.log(s"Build target: ${targetId.getUri}")
+                if (path.isScalaFilename || path.isJavaFilename)
                   definitionResult(targetId.module, server, params, logger, token)
                     // The presentation compiler can return the same location several times,
                     // like for a Java class in an import, both a class and an object for Scala
                     .map(_.distinct.asJava)(using definitionStuffEc)
-                }(using cancelTokensEces)
-              else
-                CompletableFuture.completedFuture(Nil.asJava)
-            case None =>
-              logger.log(s"No build target found for $path")
-              CompletableFuture.completedFuture(Nil.asJava)
-          }
-        }(using server.pools.requestsEces)
-
-        f.asJava.thenCompose(x => x)
+                else
+                  Future.successful(Nil.asJava)
+              case None =>
+                logger.log(s"No build target found for $path")
+                Future.successful(Nil.asJava)
+            }
+          }(using server.pools.requestsEces).flatten
+        }(using cancelTokensEces)
     }
 
   def handlers(

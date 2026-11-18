@@ -5,7 +5,7 @@ import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import plasmon.PlasmonEnrichments.XtensionStringDoc
 import plasmon.bsp.PlasmonBuildClientImpl
 
-import java.util.concurrent.{LinkedBlockingQueue, TimeUnit}
+import java.util.concurrent.{CancellationException, LinkedBlockingQueue, TimeUnit}
 
 import scala.concurrent.{Future, Promise}
 import scala.meta.Dialect
@@ -19,7 +19,15 @@ class ParserQueue(
 
   import ParserQueue.*
 
-  private val queue = new LinkedBlockingQueue[Element]
+  private val queue             = new LinkedBlockingQueue[Element]
+  @volatile private var stopped = false
+
+  /** Fails the checks nobody is going to run anymore, once the parser thread is gone */
+  private def failPending(): Unit = {
+    lazy val ex = new CancellationException("Parser queue closed")
+    Iterator.continually(queue.poll()).takeWhile(_ != null).foreach(_.promise.tryFailure(ex))
+  }
+
   private val parserThread: Thread =
     new Thread("parser") {
       setDaemon(true)
@@ -27,15 +35,22 @@ class ParserQueue(
         try
           while (true)
             for (elem <- Option(queue.poll(1L, TimeUnit.SECONDS)))
-              elem.promise.complete {
-                Try {
-                  if (buffers.contains(elem.path))
-                    elem.buildClient.onSyntaxError(
-                      elem.module,
-                      elem.path,
-                      trees.didChange(elem.dialect, elem.path)
-                    )
+              try
+                elem.promise.complete {
+                  Try {
+                    if (buffers.contains(elem.path))
+                      elem.buildClient.onSyntaxError(
+                        elem.module,
+                        elem.path,
+                        trees.didChange(elem.dialect, elem.path)
+                      )
+                  }
                 }
+              catch {
+                // Try lets InterruptedException-s through
+                case t: Throwable =>
+                  elem.promise.tryFailure(t)
+                  throw t
               }
         catch {
           case _: InterruptedException =>
@@ -43,8 +58,11 @@ class ParserQueue(
           case t: Throwable =>
             scribe.error("Exception caught in parser thread", t)
         }
-        finally
+        finally {
+          stopped = true
+          failPending()
           scribe.info("Parser thread exiting")
+        }
     }
 
   parserThread.start()
@@ -58,6 +76,9 @@ class ParserQueue(
     if (path.last.isScalaFilename) {
       val promise = Promise[Unit]()
       queue.offer(Element(module, path, promise, buildClient, dialect))
+      // the parser thread may have drained the queue for the last time before we added to it
+      if (stopped)
+        failPending()
       promise.future
     }
     else

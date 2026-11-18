@@ -93,6 +93,46 @@ class CompilationsTests extends munit.FunSuite {
       }
   }
 
+  test("cancelAll cancels the running compilations of all build servers") {
+    val (requests1, requests2) =
+      (new LinkedBlockingQueue[CompileRequest], new LinkedBlockingQueue[CompileRequest])
+    val (t1, t2) = (target("a"), target("b"))
+    val compiler = {
+      def targetData(buildServer: PlasmonBuildServer, t: b.BuildTargetIdentifier) = {
+        val data = new TargetData
+        data.buildServerOpt = Some(buildServer)
+        data.targetToWorkspace(t) = os.root / "workspace"
+        data
+      }
+      val bspData = new BspData(os.root / "workspace", null)
+      bspData.data = BspData.DataSeq(List(
+        targetData(fakeBuildServer(requests1), t1),
+        targetData(fakeBuildServer(requests2), t2)
+      ))
+      new Compilations(bspData, _ => (), () => (), bestEffortEnabled = false)
+    }
+    val compilations = Seq(compiler.compileTarget(t1), compiler.compileTarget(t2))
+    val reqs         = Seq(nextRequest(requests1), nextRequest(requests2))
+
+    assertEquals(compiler.cancelAll(), 2)
+
+    for (req <- reqs)
+      assert(req.result.isCancelled, s"Compile request of ${req.targets} not cancelled")
+    for (f <- compilations)
+      result(f) match {
+        case Failure(_: CancellationException) =>
+        case other                             => fail(s"Expected a cancellation, got $other")
+      }
+
+    // nothing left running: new compilations get sent right away
+    val next = compiler.compileTarget(t1)
+    val req  = nextRequest(requests1)
+    assertEquals(req.targets, Seq(t1))
+    val compileRes = new b.CompileResult(b.StatusCode.OK)
+    req.result.complete(compileRes)
+    assertEquals(result(next).get, compileRes)
+  }
+
   test("an exception after a compilation fails it, and the next compilation still runs") {
     val requests = new LinkedBlockingQueue[CompileRequest]
     val (t1, t2) = (target("a"), target("b"))

@@ -65,11 +65,12 @@ class IndexerActor(
   protected def progressName = "Indexer"
 
   private def interruptIndexing(): Boolean =
-    awaitingMessages.exists {
+    isAwaiting {
       case _: Message.Index => true
       case _                => false
     }
-  private var interruptIndexingPromiseOpt = Option.empty[Promise[Unit]]
+  // set by the actor thread, completed from the threads sending messages
+  @volatile private var interruptIndexingPromiseOpt = Option.empty[Promise[Unit]]
   private def resetInterruptIndexingPromise(): Unit = {
     interruptIndexingPromiseOpt.foreach(_.trySuccess(()))
     interruptIndexingPromiseOpt = None
@@ -524,6 +525,9 @@ class IndexerActor(
             if (files.nonEmpty && !interruptIndexing()) {
               val interruptIndexingPromise = Promise[Unit]()
               interruptIndexingPromiseOpt = Some(interruptIndexingPromise)
+              // An Index message sent since the check above may not have seen the promise
+              if (interruptIndexing())
+                interruptIndexingPromise.trySuccess(())
               val f = indexWorkspaceSources(files, targetData, interruptIndexingPromise.future)
               Await.result(f, Duration.Inf)
             }
