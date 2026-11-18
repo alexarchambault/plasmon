@@ -72,7 +72,8 @@ object TestUtil {
     clientCapabilities: l.ClientCapabilities = new l.ClientCapabilities,
     timeout: Option[FiniteDuration] = Some(baseTimeout),
     extraServerOpts: Seq[String] = Nil,
-    count: Int = 1
+    count: Int = 1,
+    beforeServer: os.Path => Unit = _ => ()
   )(
     content: (os.SubPath, String)*
   )(f: (os.Path, ServerDriver, Positions, Option[OutputStream], Int) => T): T = {
@@ -90,7 +91,8 @@ object TestUtil {
       clientCapabilities,
       timeout = timeout,
       extraServerOpts = extraServerOpts,
-      count = count
+      count = count,
+      beforeServer = beforeServer
     )(updatedContent*) {
       (workspace, driver, osOpt, runCount) =>
         f(workspace, driver, pos, osOpt, runCount)
@@ -104,7 +106,8 @@ object TestUtil {
     clientCapabilities: l.ClientCapabilities = new l.ClientCapabilities,
     timeout: Option[FiniteDuration] = Some(baseTimeout),
     extraServerOpts: Seq[String] = Nil,
-    count: Int = 1
+    count: Int = 1,
+    beforeServer: os.Path => Unit = _ => ()
   )(
     content: (os.SubPath, String)*
   )(f: (os.Path, ServerDriver, Positions, Option[OutputStream]) => T): T =
@@ -115,7 +118,8 @@ object TestUtil {
       clientCapabilities,
       timeout,
       extraServerOpts,
-      count
+      count,
+      beforeServer
     )(content*) {
       (workspace, driver, pos, osOpt, _) =>
         f(workspace, driver, pos, osOpt)
@@ -139,7 +143,9 @@ object TestUtil {
     shutdownServer: Boolean = true,
     timeout: Option[FiniteDuration] = Some(baseTimeout),
     extraServerOpts: Seq[String] = Nil,
-    count: Int = 1
+    count: Int = 1,
+    // Called with the workspace, its files written, right before the server is started in it
+    beforeServer: os.Path => Unit = _ => ()
   )(
     content: (os.SubPath, os.Source)*
   )(f: (os.Path, ServerDriver, Option[OutputStream], Int) => T): T = {
@@ -179,6 +185,7 @@ object TestUtil {
       runProcIn = tmpDir => {
         val dir = tmpDir / workingDir
         os.makeDir.all(dir)
+        beforeServer(dir)
         dir
       },
       enableOutputFrame = TestParams.enableOutputFrame,

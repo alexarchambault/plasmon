@@ -104,8 +104,13 @@ class BspServers(
     p.future
   }
 
+  /** Build servers listening on a socket are left out: they're passed to the server via `--bsp` on
+    * each start, and whatever was listening last time may well be gone the next.
+    */
   def json: Array[Byte] = {
-    val seq = actor.connections.map(c => BuildTool.BuildToolJson(c._1))
+    val seq = actor.connections
+      .filter(!_._2.exists(_.info.isInstanceOf[BuildServerInfo.Socket]))
+      .map(c => BuildTool.BuildToolJson(c._1))
     writeToArray(seq)(using BuildTool.BuildToolJson.seqCodec)
   }
 

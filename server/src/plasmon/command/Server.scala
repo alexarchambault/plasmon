@@ -6,7 +6,7 @@ import org.eclipse.lsp4j as l
 import org.eclipse.lsp4j.jsonrpc.Launcher
 import plasmon.handlers as h
 import plasmon.PlasmonEnrichments.*
-import plasmon.bsp.BuildTool
+import plasmon.bsp.{BuildServerInfo, BuildTool}
 import plasmon.index.Indexer
 import plasmon.internal.{BinaryName, BuildVersion, DebugInput}
 import plasmon.jsonrpc.{
@@ -177,6 +177,8 @@ object Server extends caseapp.Command[ServerOptions] {
       scribe.info(s"Default locale: ${Locale.getDefault}")
 
       var workspaceOpt = Option.empty[os.Path]
+
+      val bspSockets = options.bsp.map(_.trim).filter(_.nonEmpty).map(os.Path(_, os.pwd))
 
       val pools = ServerCommandThreadPools.noobNaiveDontUsePools()
 
@@ -372,21 +374,65 @@ object Server extends caseapp.Command[ServerOptions] {
 
         server.refreshStatus()
 
-        if (options.importPersistedTargets) {
-          val loadBsp = server.bspServers.loadFromDisk(
-            scribe.info(_),
-            pools.bspEces,
-            () => pools.bloopThreads
-          )
-          def loadModules = indexer.loadFromDisk(
-            toplevelCacheOnly = false,
-            ignoreToplevelSymbolsErrors = true,
-            mayReadFromBspCache = true
-          )
+        if (options.importPersistedTargets || bspSockets.nonEmpty) {
+          val loadBsp =
+            if (options.importPersistedTargets)
+              server.bspServers.loadFromDisk(
+                scribe.info(_),
+                pools.bspEces,
+                () => pools.bloopThreads
+              )
+            else
+              Future.successful(())
+          // Before the modules, so that those persisted for these build servers get loaded too
+          def addBspSockets(): Future[Unit] = {
+            implicit val ec: ExecutionContext = pools.dummyEc
+            bspSockets.foldLeft(Future.successful(())) { (acc, socket) =>
+              acc.flatMap { _ =>
+                val buildTool =
+                  BuildTool.Bsp(BuildServerInfo.Socket(workingDir, socket))
+                server.bspServers
+                  .add(
+                    buildTool,
+                    scribe.info(_),
+                    pools.bspEces,
+                    () => pools.bloopThreads,
+                    tools
+                  )
+                  .transform { res =>
+                    val errorOpt = res match {
+                      case Success(Right(())) => None
+                      case Success(Left(err)) => Some(err)
+                      case Failure(ex)        => Some(ex.toString)
+                    }
+                    for (err <- errorOpt) {
+                      scribe.error(s"Error adding BSP server listening on $socket: $err")
+                      server.languageClient.showMessage(
+                        new l.MessageParams(
+                          l.MessageType.Error,
+                          s"Error adding BSP server listening on $socket: $err"
+                        )
+                      )
+                    }
+                    Success(())
+                  }
+              }
+            }
+          }
+          def loadModules =
+            if (options.importPersistedTargets)
+              indexer.loadFromDisk(
+                toplevelCacheOnly = false,
+                ignoreToplevelSymbolsErrors = true,
+                mayReadFromBspCache = true
+              )
+            else
+              Future.successful(())
           val init = {
             implicit val ec: ExecutionContext = pools.dummyEc
             for {
               _ <- loadBsp
+              _ <- addBspSockets()
               _ <- loadModules
               _ <- Future {
                 server.refreshStatus()

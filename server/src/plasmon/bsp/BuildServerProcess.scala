@@ -4,10 +4,11 @@ import bloop.rifle.BspConnection
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import plasmon.Logger
-import plasmon.render.JsonCodecs.*
+import plasmon.render.JsonCodecs.{*, given}
 import plasmon.servercommand.BspUtil
 
 import java.io.{ByteArrayOutputStream, PrintStream}
+import java.nio.channels.SocketChannel
 import java.nio.charset.StandardCharsets
 
 import scala.annotation.nowarn
@@ -37,6 +38,8 @@ object BuildServerProcess {
   given JsonValueCodec[Thread] =
     stringCodec.bimap(_ => ???, _.toString)
   given JsonValueCodec[BspConnection] =
+    stringCodec.bimap(_ => ???, _.toString)
+  given JsonValueCodec[SocketChannel] =
     stringCodec.bimap(_ => ???, _.toString)
 
   given JsonValueCodec[BuildServerProcess] =
@@ -88,6 +91,13 @@ object BuildServerProcess {
   case object NoProcess extends BuildServerProcess {
     def managedProcess = false
     def close(): Unit  = ()
+  }
+
+  /** A connection to a BSP server we didn't start, so that closing it leaves that server alone */
+  final case class Socket(path: os.Path, channel: SocketChannel) extends BuildServerProcess {
+    def managedProcess = false
+    def close(): Unit =
+      channel.close()
   }
   final case class BloopConnection(conn: BspConnection) extends BuildServerProcess {
     def managedProcess = false
