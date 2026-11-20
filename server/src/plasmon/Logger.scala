@@ -84,7 +84,7 @@ trait Logger {
   final def consumer: java.util.function.Consumer[String] =
     line => log(line)
 
-  final def logCommand(proc: os.proc): proc.type = {
+  final def logCommand(proc: os.proc): os.proc = {
     log("Running")
     log("")
     log(proc.command.flatMap(_.value).mkString("  ", " ", ""))

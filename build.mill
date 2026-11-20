@@ -23,11 +23,11 @@ import scala.util.{Properties, Using}
 
 object Versions {
   def scala2  = "2.13.18"
-  def scalaJs = "1.22.0"
+  def scalaJs = "1.23.0"
 
-  def coursier          = "2.1.25-M24"
-  def coursierDocker    = "2.1.25-M24"
-  def coursierInterface = "1.0.29-M3"
+  def coursier          = "2.1.27"
+  def coursierDocker    = "2.1.27"
+  def coursierInterface = "1.0.29-M4"
   def mtags             = "1.6.7-1"
   def scalaCli          = "1.18.0"
 
@@ -40,12 +40,12 @@ object Versions {
 
   def binary(scalaVersion: String) = scalaVersion.split('.').take(2).mkString(".")
 
-  def sbtBloop = "2.0.13"
+  def sbtBloop = "2.1.3"
   def sbt      = "1.9.9"
 
   object Test {
     def mill            = "1.3.0"
-    def codeServer      = "4.141.0"
+    def codeServer      = "4.145.2"
     def millwCommit     = "1.3.0"
     def sbt             = "1.12.4"
     def sbtExtrasCommit = "c28642dc97914b82f5e5a1cdfd39710c1c5e95ce"
@@ -59,26 +59,26 @@ object Deps {
     mvn"io.github.alexarchambault.bleep:bloop-rifle_2.13:1.5.17-sc-2"
       .exclude(("ch.epfl.scala", "bsp4j"))
   def bsp4j             = mvn"io.github.plasmon-scala:bsp4j:2.2.0-M3"
-  def caseApp           = mvn"com.github.alexarchambault::case-app:2.1.0-M26"
+  def caseApp           = mvn"com.github.alexarchambault::case-app:2.2.0"
   def cask              = mvn"com.lihaoyi::cask:0.11.3"
   def coursierCache     = mvn"io.get-coursier:coursier-cache_2.13:${Versions.coursier}"
   def coursierJvm       = mvn"io.get-coursier:coursier-jvm_2.13:${Versions.coursier}"
   def coursierInterface = mvn"io.get-coursier:interface:${Versions.coursierInterface}"
   def coursierInterfaceNoShading =
     mvn"io.get-coursier:interface-no-shading_2.13:${Versions.coursierInterface}"
-  def expecty          = mvn"com.eed3si9n.expecty::expecty:0.16.0"
+  def expecty          = mvn"com.eed3si9n.expecty::expecty:0.17.1"
   def jniUtils         = mvn"io.get-coursier.jniutils:windows-jni-utils:0.3.4"
-  def jsoniterCore     = mvn"com.github.plokhotnyuk.jsoniter-scala::jsoniter-scala-core:2.24.2"
-  def jsoniterMacros   = mvn"com.github.plokhotnyuk.jsoniter-scala::jsoniter-scala-macros:2.24.2"
+  def jsoniterCore     = mvn"com.github.plokhotnyuk.jsoniter-scala::jsoniter-scala-core:2.43.0"
+  def jsoniterMacros   = mvn"com.github.plokhotnyuk.jsoniter-scala::jsoniter-scala-macros:2.43.0"
   def libdaemonjvm     = mvn"io.github.alexarchambault.libdaemon::libdaemon:0.0.11"
   def lsp4j            = mvn"org.eclipse.lsp4j:org.eclipse.lsp4j:1.0.0"
-  def lz4Java          = mvn"org.lz4:lz4-java:1.8.0"
-  def munit            = mvn"org.scalameta::munit:1.1.0"
-  def osLib            = mvn"com.lihaoyi::os-lib:0.10.7"
-  def pprint           = mvn"com.lihaoyi::pprint:0.8.1"
-  def semanticdbJavac  = mvn"com.sourcegraph:semanticdb-javac:0.11.1"
+  def lz4Java          = mvn"org.lz4:lz4-java:1.8.1"
+  def munit            = mvn"org.scalameta::munit:1.3.6"
+  def osLib            = mvn"com.lihaoyi::os-lib:0.11.10"
+  def pprint           = mvn"com.lihaoyi::pprint:0.9.6"
+  def semanticdbJavac  = mvn"com.sourcegraph:semanticdb-javac:0.12.3"
   def scalatags        = mvn"com.lihaoyi::scalatags:0.13.1"
-  def semanticDbScalac = mvn"org.scalameta:::semanticdb-scalac:4.13.3"
+  def semanticDbScalac = mvn"org.scalameta:::semanticdb-scalac:4.17.4"
   def svm              = mvn"org.graalvm.nativeimage:svm:24.0.2"
 }
 
@@ -408,14 +408,14 @@ object server extends ScalaModule with PlasmonPublishModule {
     mvn"io.github.alexarchambault::test-util:0.1.7",
     mvn"org.wildfly.common:wildfly-common:1.7.0.Final", // bump this one (pulled by Metals, GraalVM issues with 1.5.4.Final and 1.6.0.Final)
     // mvn"com.lihaoyi:::ammonite-sshd:3.0.0-M0-60-73894704c"
-    mvn"com.lihaoyi::castor:0.3.0",
-    mvn"com.outr:scribe_2.13:3.16.1",
-    mvn"com.lihaoyi:ujson_2.13:4.1.0",
+    mvn"com.lihaoyi::castor:0.3.2",
+    mvn"com.outr:scribe_2.13:3.19.1",
+    mvn"com.lihaoyi:ujson_2.13:4.4.3",
     mvn"org.eclipse.jdt:org.eclipse.jdt.core:3.25.0",
-    mvn"org.virtuslab.scala-cli:scala-cli-bsp:1.8.0".exclude(("ch.epfl.scala", "bsp4j")),
+    mvn"org.virtuslab.scala-cli:scala-cli-bsp:1.19.0".exclude(("ch.epfl.scala", "bsp4j")),
     mvn"com.swoval:file-tree-views:2.1.12",
-    mvn"org.eclipse.lsp4j:org.eclipse.lsp4j.debug:0.24.0",
-    mvn"com.outr::scribe-file:3.16.1",
+    mvn"org.eclipse.lsp4j:org.eclipse.lsp4j.debug:1.0.0",
+    mvn"com.outr::scribe-file:3.19.1",
     mvn"com.google.code.findbugs:jsr305:3.0.2"
   )
   def scalacOptions = super.scalacOptions() ++ Seq(
@@ -1104,9 +1104,9 @@ object integration extends ScalaModule {
     Deps.osLib,
     Deps.pprint,
     mvn"io.github.alexarchambault::test-util:0.1.7",
-    mvn"org.virtuslab:using_directives:1.1.1",
-    mvn"io.get-coursier::dependency:0.2.3",
-    mvn"com.lihaoyi::upickle:4.0.2",
+    mvn"org.virtuslab:using_directives:1.1.4",
+    mvn"io.get-coursier::dependency:0.3.4",
+    mvn"com.lihaoyi::upickle:4.4.3",
     mvn"io.github.alexarchambault:is-terminal:0.1.2"
   )
 
