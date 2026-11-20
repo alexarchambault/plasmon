@@ -1,6 +1,6 @@
 package plasmon.command
 
-import caseapp.{HelpMessage, Hidden, Name}
+import caseapp.{HelpMessage, Hidden, Name, ValueDescription}
 import caseapp.core.help.Help
 import caseapp.core.parser.Parser
 
@@ -34,6 +34,9 @@ final case class ServerOptions(
     sourcepath: Option[Boolean] = None,
   @HelpMessage("Start in automatic mode, where editors get a build tool and a module loaded for each file they focus, rather than having users pick them (--auto=false: start in manual mode). Persisted under .plasmon/, like what is loaded (default: the mode the server in this directory was last left in, else manual)")
     auto: Option[Boolean] = None,
+  @HelpMessage("Connect on start-up to the BSP server listening on this UNIX domain socket, and add it as a build tool. Can be repeated. Such build tools aren't persisted under .plasmon/: pass --bsp again on the next start")
+  @ValueDescription("/path/to/bsp/socket")
+    bsp: List[String] = Nil,
   @Hidden
   @HelpMessage("How sources are handed to the compiler with --sourcepath: logical (default, files listed one by one, packages read from package clauses) or classic (source roots laid out by package)")
     sourcepathMode: Option[String] = None

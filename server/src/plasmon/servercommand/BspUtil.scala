@@ -40,10 +40,13 @@ import plasmon.languageclient.PlasmonLanguageClient
 
 import java.io.{
   ByteArrayOutputStream,
+  IOException,
   InputStream,
   OutputStream,
   PrintStream
 }
+import java.net.{StandardProtocolFamily, UnixDomainSocketAddress}
+import java.nio.channels.SocketChannel
 import java.nio.charset.StandardCharsets
 import java.util.concurrent.{CancellationException, ExecutionException, ExecutorService}
 
@@ -261,6 +264,56 @@ object BspUtil {
           launcher,
           buildServer,
           proc0,
+          Some(remoteEndpoint),
+          buildClient0,
+          logger
+        )
+
+      case s: BuildServerInfo.Socket =>
+        logger.log(s"Connecting to BSP server listening on ${s.socket}")
+        val channel = SocketChannel.open(StandardProtocolFamily.UNIX)
+        val socket =
+          try {
+            channel.connect(UnixDomainSocketAddress.of(s.socket.toNIO))
+            channel.finishConnect()
+            // Rather than Channels.newInputStream / newOutputStream, whose reads and writes
+            // share a lock - a read waiting for the server would block our requests to it
+            libdaemonjvm.Util.socketFromChannel(channel)
+          }
+          catch {
+            case e: IOException =>
+              channel.close()
+              throw new Exception(s"Cannot connect to BSP server at ${s.socket}", e)
+          }
+        val (server, initRes, remoteEndpoint, buildClient0) =
+          try
+            bspServerFromStreams(
+              socket.getInputStream,
+              socket.getOutputStream,
+              s.workspace,
+              log,
+              buildClient,
+              languageClient,
+              buildToolId,
+              buildToolName,
+              bspPool,
+              logJsonrpcInput,
+              null,
+              fakeMetals = true,
+              logger
+            )
+          catch {
+            case t: Throwable =>
+              channel.close()
+              throw t
+          }
+        buildClient0.setLogger(logger)
+
+        BspConnection(
+          initRes,
+          launcher,
+          server,
+          BuildServerProcess.Socket(s.socket, channel),
           Some(remoteEndpoint),
           buildClient0,
           logger

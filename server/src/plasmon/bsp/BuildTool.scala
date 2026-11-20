@@ -371,11 +371,15 @@ object BuildTool {
       s"${Bsp.id}-${info.id}-$sum"
     }
     def workspace = info.workspace
-    def description(serverWorkspace: os.Path) = {
-      val relPath = workspace.relativeTo(serverWorkspace)
-      if (relPath == os.rel) "BSP connection in this workspace"
-      else s"BSP connection in $relPath"
-    }
+    def description(serverWorkspace: os.Path) =
+      info match {
+        case s: BuildServerInfo.Socket =>
+          s"BSP server listening on ${s.socket}"
+        case _ =>
+          val relPath = workspace.relativeTo(serverWorkspace)
+          if (relPath == os.rel) "BSP connection in this workspace"
+          else s"BSP connection in $relPath"
+      }
     def launcher(tools: Tools) =
       BuildServerLauncher(info, "BSP", None)
   }

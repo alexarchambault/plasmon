@@ -15,6 +15,10 @@ object ConnectionInfoJson {
     def toConnectionInfo(tools: BuildTool.Tools): BuildServerInfo.Bsp =
       BuildServerInfo.Bsp(os.Path(workspace), os.Path(bspFile))
   }
+  final case class Socket(workspace: String, socket: String) extends ConnectionInfoJson {
+    def toConnectionInfo(tools: BuildTool.Tools): BuildServerInfo.Socket =
+      BuildServerInfo.Socket(os.Path(workspace), os.Path(socket))
+  }
   final case class Bloop(workspace: String) extends ConnectionInfoJson {
     def toConnectionInfo(tools: BuildTool.Tools): BuildServerInfo.Bloop =
       BuildServerInfo.Bloop(os.Path(workspace))
@@ -49,6 +53,8 @@ object ConnectionInfoJson {
           b.workspace.toString,
           b.bspFile.map(b.workspace / _).merge.toString
         )
+      case s: BuildServerInfo.Socket =>
+        Socket(s.workspace.toString, s.socket.toString)
       case b: BuildServerInfo.Bloop =>
         Bloop(b.workspace.toString)
       case m: BuildServerInfo.Mill =>

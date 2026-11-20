@@ -51,6 +51,20 @@ object BuildServerInfo {
       )
   }
 
+  /** A BSP server someone else started, listening on a UNIX domain socket.
+    *
+    * Nothing to launch and nothing to prepare: we connect to the socket, and the server goes on
+    * living after we disconnect.
+    */
+  final case class Socket(
+    workspace: os.Path,
+    socket: os.Path
+  ) extends BuildServerInfo {
+    def `type` = "BSP socket"
+    def id     = "bsp-socket"
+    def label  = "BSP socket"
+  }
+
   final case class Bloop(
     workspace: os.Path
   ) extends BuildServerInfo {
