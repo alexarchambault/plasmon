@@ -81,12 +81,13 @@ object AutoServer {
     if (verbosity >= 1)
       System.err.println(s"Server command: ${command.mkString(" ")}")
 
-    // Nothing ties it to us: os-lib doesn't destroy what it spawned when we exit, and we are
-    // about to - leaving the server up for the next command is the whole point
+    // Nothing ties it to us: we are about to exit, and leaving the server up for the next command
+    // is the whole point - hence destroyOnExit = false, os-lib destroys what it spawns otherwise
     val proc = os.proc(command).spawn(
       cwd = workingDir,
       stdout = os.PathAppendRedirect(output),
-      stderr = os.PathAppendRedirect(output)
+      stderr = os.PathAppendRedirect(output),
+      destroyOnExit = false
     )
 
     val deadline    = System.currentTimeMillis() + startTimeout.toMillis
@@ -107,7 +108,8 @@ object AutoServer {
             System.err.println("Another plasmon server answered first")
             if (proc.isAlive()) {
               System.err.println("Stopping the one we started")
-              proc.destroy()
+              // A plain SIGTERM - os-lib's destroy() would SIGKILL it 100ms later
+              proc.wrapped.destroy()
             }
           }
           channelOpt = Some(channel)
