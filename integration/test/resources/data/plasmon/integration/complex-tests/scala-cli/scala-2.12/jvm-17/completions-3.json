@@ -25,7 +25,7 @@
         },
         "data": {
           "symbol": "scala/collection/mutable/LinearSeq.",
-          "target": "file:/workspace/.scala-build/?id\u003dtest-project_41e103cfb2",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_a3543771e5",
           "kind": 0
         }
       },
@@ -51,7 +51,7 @@
         },
         "data": {
           "symbol": "scala/collection/mutable/LinkedHashMap.",
-          "target": "file:/workspace/.scala-build/?id\u003dtest-project_41e103cfb2",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_a3543771e5",
           "kind": 0
         }
       },
@@ -77,7 +77,7 @@
         },
         "data": {
           "symbol": "scala/collection/mutable/LinkedHashSet.",
-          "target": "file:/workspace/.scala-build/?id\u003dtest-project_41e103cfb2",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_a3543771e5",
           "kind": 0
         }
       },
@@ -103,7 +103,7 @@
         },
         "data": {
           "symbol": "scala/collection/mutable/ListBuffer.",
-          "target": "file:/workspace/.scala-build/?id\u003dtest-project_41e103cfb2",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_a3543771e5",
           "kind": 0
         }
       },
@@ -129,7 +129,7 @@
         },
         "data": {
           "symbol": "scala/collection/mutable/ListMap.",
-          "target": "file:/workspace/.scala-build/?id\u003dtest-project_41e103cfb2",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_a3543771e5",
           "kind": 0
         }
       },
@@ -155,7 +155,7 @@
         },
         "data": {
           "symbol": "scala/collection/mutable/MutableList.",
-          "target": "file:/workspace/.scala-build/?id\u003dtest-project_41e103cfb2",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_a3543771e5",
           "kind": 0
         }
       },
@@ -184,7 +184,7 @@
         },
         "data": {
           "symbol": "scala/collection/mutable/LinkedList.",
-          "target": "file:/workspace/.scala-build/?id\u003dtest-project_41e103cfb2",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_a3543771e5",
           "kind": 0
         }
       },
@@ -213,7 +213,7 @@
         },
         "data": {
           "symbol": "scala/collection/mutable/DoubleLinkedList.",
-          "target": "file:/workspace/.scala-build/?id\u003dtest-project_41e103cfb2",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_a3543771e5",
           "kind": 0
         }
       }

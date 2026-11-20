@@ -29,7 +29,7 @@ object Versions {
   def coursierDocker    = "2.1.27"
   def coursierInterface = "1.0.29-M4"
   def mtags             = "1.6.7-1"
-  def scalaCli          = "1.18.0"
+  def scalaCli          = "1.19.0"
 
   def scala213 = scala2
   def scala212 = "2.12.21"
@@ -44,9 +44,9 @@ object Versions {
   def sbt      = "1.9.9"
 
   object Test {
-    def mill            = "1.3.0"
+    def mill            = "1.4.0-M2"
     def codeServer      = "4.145.2"
-    def millwCommit     = "1.3.0"
+    def millwCommit     = "1.4.0-M2"
     def sbt             = "1.12.4"
     def sbtExtrasCommit = "c28642dc97914b82f5e5a1cdfd39710c1c5e95ce"
   }
