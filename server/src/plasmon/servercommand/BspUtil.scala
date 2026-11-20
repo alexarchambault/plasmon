@@ -559,10 +559,13 @@ object BspUtil {
 
     scribe.info("command=" + pprint.apply(command))
 
+    // destroyOnExit = false: os-lib would otherwise destroy the build server and everything it
+    // started (like Mill daemons) when we exit - shutting it down is up to BuildServerProcess
     val proc = outputLogger.logCommand(os.proc(command)).spawn(
       cwd = workspace,
       stderr = outputLogger.processOutput,
-      env = extraEnv
+      env = extraEnv,
+      destroyOnExit = false
     )
     val proc0 = BuildServerProcess.Process(
       proc,

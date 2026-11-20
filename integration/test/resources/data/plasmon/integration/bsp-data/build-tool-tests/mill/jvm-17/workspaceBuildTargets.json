@@ -47,7 +47,7 @@
         ],
         "jvmBuildTarget": {
           "javaHome": "$JAVA_HOME_URI:17$",
-          "javaVersion": "$JAVA_VERSION:25$"
+          "javaVersion": "$JAVA_VERSION:17$"
         }
       }
     },
@@ -100,7 +100,7 @@
         ],
         "jvmBuildTarget": {
           "javaHome": "$JAVA_HOME_URI:17$",
-          "javaVersion": "$JAVA_VERSION:25$"
+          "javaVersion": "$JAVA_VERSION:17$"
         }
       }
     },
@@ -147,7 +147,7 @@
         ],
         "jvmBuildTarget": {
           "javaHome": "$JAVA_HOME_URI:17$",
-          "javaVersion": "$JAVA_VERSION:25$"
+          "javaVersion": "$JAVA_VERSION:17$"
         }
       }
     },

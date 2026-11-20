@@ -40,7 +40,7 @@
         ],
         "data": {
           "symbol": "scala/collection/IterableFactory#apply().",
-          "target": "file:/workspace/.scala-build/?id\u003dtest-project_41e103cfb2",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_a3543771e5",
           "kind": 6
         }
       },
@@ -82,7 +82,7 @@
         ],
         "data": {
           "symbol": "scala/collection/mutable/ListBuffer#`\u003cinit\u003e`().",
-          "target": "file:/workspace/.scala-build/?id\u003dtest-project_41e103cfb2",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_a3543771e5",
           "kind": 6
         }
       },
@@ -124,7 +124,7 @@
         ],
         "data": {
           "symbol": "scala/collection/mutable/ListBuffer.",
-          "target": "file:/workspace/.scala-build/?id\u003dtest-project_41e103cfb2",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_a3543771e5",
           "kind": 6
         }
       }

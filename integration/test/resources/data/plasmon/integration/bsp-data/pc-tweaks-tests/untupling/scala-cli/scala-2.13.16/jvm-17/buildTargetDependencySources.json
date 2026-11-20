@@ -2,7 +2,7 @@
   "items": [
     {
       "target": {
-        "uri": "file:/$WORKSPACE$/.scala-build/?id\u003dtest-project_41e103cfb2"
+        "uri": "file:/$WORKSPACE$/.scala-build/?id\u003dtest-project_a3543771e5"
       },
       "sources": [
         "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/org/scala-lang/scala-library/2.13.16/scala-library-2.13.16-sources.jar"
@@ -10,7 +10,7 @@
     },
     {
       "target": {
-        "uri": "file:/$WORKSPACE$/.scala-build/?id\u003dtest-project_41e103cfb2-test"
+        "uri": "file:/$WORKSPACE$/.scala-build/?id\u003dtest-project_a3543771e5-test"
       },
       "sources": [
         "file:///$COURSIER_CACHE$/https/repo1.maven.org/maven2/org/scala-lang/scala-library/2.13.16/scala-library-2.13.16-sources.jar"
