@@ -15,6 +15,7 @@ import java.util.concurrent.{
   ExecutorService
 }
 
+import scala.util.Try
 import scala.util.control.NonFatal
 
 /** Runs the commands sent over one command connection, printing their output to [[client]].
@@ -106,7 +107,9 @@ object CommandServerImpl {
       case e: ServerCommandInstance.UsageError =>
         Some(e.getMessage)
       case e: NoSuchFileException =>
-        Some(s"${e.getFile}: no such file")
+        // Rendered like the os.Path-s of other messages (forward slashes on Windows too)
+        val file = Try(os.Path(e.getFile).toString).getOrElse(e.getFile)
+        Some(s"$file: no such file")
       case _: ExecutionException | _: CompletionException if e.getCause != null =>
         userError(e.getCause)
       case _ =>

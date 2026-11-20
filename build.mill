@@ -720,7 +720,9 @@ object server extends ScalaModule with PlasmonPublishModule {
 
       val patchedClassPath = baseClassPath
         .filter { ref =>
-          !ref.path.last.startsWith("jna-") &&
+          // JNA stays: like coursier does for its own native launchers, the GraalVM
+          // substitutions of coursier-exec replace its JNA calls, but native-image still needs
+          // to load the classes they target (coursier.exec.Libc, which references JNA types)
           ! {
             ref.path.last.startsWith("interface-") &&
             !ref.path.last.startsWith("interface-no-shading_") &&
@@ -1058,7 +1060,8 @@ object server extends ScalaModule with PlasmonPublishModule {
     object `linux-docker-image` extends PlasmonNativeImage {
       def nativeImageDockerParams = Some(
         NativeImage.DockerParams(
-          imageName = "ubuntu:20.04",
+          // Lowest Ubuntu LTS whose glibc (2.35) runs the cs launcher (2.1.27 needs >= 2.34)
+          imageName = "ubuntu:22.04",
           prepareCommand =
             """apt-get update -q -y &&\
               |apt-get install -q -y build-essential libz-dev zlib1g-dev git python3-pip curl zip locales
