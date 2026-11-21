@@ -125,6 +125,23 @@ class PlasmonBuildClientImpl(
   private val tasksProgress          = new ConcurrentHashMap[String, TaskDetails]
   private val tasksProgressIdFromUri = new ConcurrentHashMap[String, String]
 
+  // Tasks whose start was reported to the client, and not their end yet: they're reported done
+  // when closing, so that clients don't show them in progress forever when the build tool goes
+  // away in the middle of them
+  private val openTasks = ConcurrentHashMap.newKeySet[String]()
+
+  private def taskDone(taskId: String, message: String): Unit =
+    languageClient.progress(
+      ProgressDetails(
+        buildToolId = buildToolId,
+        buildToolName = initialBuildToolName,
+        requestId = s"task-$taskId",
+        request = message,
+        done = true,
+        progress = null
+      )
+    )
+
   def buildTaskStart(params: b.TaskStartParams): Unit = {
 
     for (logger <- loggerOpt) {
@@ -153,6 +170,7 @@ class PlasmonBuildClientImpl(
         f(uri)
     }
 
+    openTasks.add(params.getTaskId.getId)
     languageClient.progress(
       ProgressDetails(
         buildToolId = buildToolId,
@@ -223,16 +241,8 @@ class PlasmonBuildClientImpl(
 
     scribe.info("build/taskFinish: " + pprint.apply(params))
 
-    languageClient.progress(
-      ProgressDetails(
-        buildToolId = buildToolId,
-        buildToolName = initialBuildToolName,
-        requestId = s"task-${params.getTaskId.getId}",
-        request = params.getMessage,
-        done = true,
-        progress = null
-      )
-    )
+    openTasks.remove(params.getTaskId.getId)
+    taskDone(params.getTaskId.getId, params.getMessage)
 
     for (details <- Option(tasksProgress.get(params.getTaskId.getId))) {
       val success = tasksProgress.remove(details.id) != null
@@ -293,6 +303,8 @@ class PlasmonBuildClientImpl(
     diagnostics.onPcDiagnostics(module, path, diags)
 
   def close(): Unit = {
+    for (taskId <- openTasks.asScala.toVector if openTasks.remove(taskId))
+      taskDone(taskId, "")
     diagnostics.close()
   }
 

@@ -82,11 +82,45 @@ private[command] object BrowsePage {
               div(id := "message"),
               div(id := "hoverbox", attr("hidden") := "")
             ),
-            div(id := "log", attr("hidden") := "")
+            div(id := "log", attr("hidden") := "")(
+              div(id := "log-header")(
+                tag("select")(
+                  id                 := "log-channel",
+                  attr("title")      := "Log to show",
+                  attr("aria-label") := "Log to show"
+                ),
+                span(id := "log-info"),
+                button(
+                  id                 := "log-follow",
+                  cls                := "on",
+                  attr("title")      := "Follow new lines",
+                  attr("aria-label") := "Follow new lines"
+                )(raw(followIcon)),
+                button(
+                  id                 := "log-expand",
+                  attr("title")      := "Expand / shrink the log",
+                  attr("aria-label") := "Expand / shrink the log"
+                )(raw(expandIcon)),
+                button(
+                  id                 := "log-close",
+                  attr("title")      := "Hide the log",
+                  attr("aria-label") := "Hide the log"
+                )("✕")
+              ),
+              pre(id := "log-lines")
+            )
           ),
-          div(id := "statusbar", attr("title") := "Show / hide the log")(
-            span(id := "spinner"),
-            span(id := "status-text", "Ready")
+          div(id := "statusbar")(
+            button(id := "status-main", attr("title") := "Show / hide the log")(
+              span(cls := "spinner"),
+              span(id  := "status-text", "Ready")
+            ),
+            div(id := "status-items"),
+            button(
+              id                 := "log-toggle",
+              attr("title")      := "Show / hide the logs",
+              attr("aria-label") := "Show / hide the logs"
+            )(raw(logIcon))
           ),
           script(src := s"$codeMirror/codemirror.min.js"),
           script(src := s"$codeMirror/mode/meta.min.js"),
@@ -101,6 +135,13 @@ private[command] object BrowsePage {
 
   private def sidebarIcon =
     """<svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="1.5" y="2.5" width="13" height="11" rx="1.5"/><line x1="6" y1="2.5" x2="6" y2="13.5"/></svg>"""
+
+  private def logIcon =
+    """<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="1.5" y="2" width="13" height="12" rx="1.5"/><line x1="4" y1="5.5" x2="12" y2="5.5"/><line x1="4" y1="8" x2="12" y2="8"/><line x1="4" y1="10.5" x2="9" y2="10.5"/></svg>"""
+  private def followIcon =
+    """<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><line x1="8" y1="2" x2="8" y2="11"/><polyline points="4,7.5 8,11.5 12,7.5"/><line x1="3" y1="14" x2="13" y2="14"/></svg>"""
+  private def expandIcon =
+    """<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><polyline points="4,7 8,3 12,7"/><polyline points="4,13 8,9 12,13"/></svg>"""
 
   private def css =
     """
@@ -194,15 +235,35 @@ button.font-size:disabled { opacity: .35; cursor: default; background: none }
 #hoverbox .locations button { justify-content: flex-start; width: 100%; color: var(--fg); background: none; font-family: var(--mono); text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block }
 #hoverbox .locations button:hover { background: var(--selected) }
 
-#statusbar { display: flex; flex: none; align-items: center; gap: 8px; height: 24px; padding: 0 10px; color: var(--muted); background: var(--side); border-top: 1px solid var(--border); font-size: 12px; white-space: nowrap; cursor: pointer; user-select: none }
-#statusbar:hover { color: var(--fg); background: var(--hover) }
-#statusbar.error { color: #f48771 }
-#status-text { overflow: hidden; text-overflow: ellipsis }
-#spinner { display: none; flex: none; width: 11px; height: 11px; border: 2px solid rgba(128, 128, 128, .35); border-top-color: currentColor; border-radius: 50%; animation: spin .8s linear infinite }
-#statusbar.busy #spinner { display: block }
+/* the status bar: what's going on on the left, the status items of the server on the right */
+#statusbar { display: flex; flex: none; align-items: stretch; height: 24px; color: var(--muted); background: var(--side); border-top: 1px solid var(--border); font-size: 12px; white-space: nowrap; user-select: none }
+#statusbar button { width: auto; height: auto; gap: 6px; padding: 0 8px; border-radius: 0; font-size: 12px }
+#status-main { flex: 1 1 0; min-width: 0; justify-content: flex-start; padding-left: 10px !important }
+#status-main.error { color: #f48771 }
+#status-text, .item-text { overflow: hidden; text-overflow: ellipsis }
+#status-items { display: flex; flex: 0 1 auto; min-width: 0; max-width: 65%; justify-content: flex-end; overflow: hidden }
+#status-items button { flex: 0 1 auto; min-width: 0 }
+#status-items .label { color: #6f6f6f }
+#status-items button:hover .label { color: var(--muted) }
+#status-items .warning { color: #cca700 } #status-items .error { color: #f48771 }
+#log-toggle { flex: none; padding: 0 10px !important }
+body.log-open #log-toggle { color: var(--fg); background: var(--selected) }
+.spinner { display: none; flex: none; width: 11px; height: 11px; border: 2px solid rgba(128, 128, 128, .35); border-top-color: currentColor; border-radius: 50%; animation: spin .8s linear infinite }
+.busy > .spinner { display: block }
 @keyframes spin { to { transform: rotate(360deg) } }
-#log { position: absolute; z-index: 30; left: 0; right: 0; bottom: 0; height: min(45%, 360px); overflow: auto; margin: 0; padding: 6px 10px; color: #bbb; background: #181818; border-top: 1px solid var(--border); font: 12px/1.45 var(--mono); white-space: pre-wrap; overflow-wrap: anywhere }
+@media (prefers-reduced-motion: reduce) { .spinner { animation-duration: 2.4s } }
+
+/* the logs, one at a time, like the output channels of VS Code */
+#log { position: absolute; z-index: 30; left: 0; right: 0; bottom: 0; height: min(45%, 360px); display: flex; flex-direction: column; background: #181818; border-top: 1px solid var(--border); box-shadow: 0 -4px 16px rgba(0, 0, 0, .35) }
+#log.expanded { height: 100% }
 #log[hidden] { display: none }
+#log-header { display: flex; flex: none; align-items: center; gap: 4px; height: 32px; padding: 0 4px 0 8px; border-bottom: 1px solid var(--border) }
+#log-header button { flex: none; width: 26px; height: 26px }
+#log-follow.on { color: var(--fg); background: var(--selected) }
+#log-channel { min-width: 0; max-width: 60%; height: 24px; padding: 0 6px; color: var(--fg); background: #252526; border: 1px solid #3c3c3c; border-radius: 4px; font: 12px system-ui, -apple-system, "Segoe UI", sans-serif }
+#log-info { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); font-size: 11px }
+#log-lines { flex: 1; min-height: 0; overflow: auto; margin: 0; padding: 6px 10px; color: #bbb; font: 12px/1.45 var(--mono); white-space: pre-wrap; overflow-wrap: anywhere; -webkit-user-select: text; user-select: text }
+#log-lines .gap { color: var(--muted); font-style: italic }
 
 /* phones: the unfolded file tree goes over the file */
 @media (max-width: 700px) {
@@ -213,6 +274,10 @@ button.font-size:disabled { opacity: .35; cursor: default; background: none }
   /* below the file header, so that its button can fold the tree back */
   :root { --sidebar-width: 100vw }
   body.file-open #sidebar { position: absolute; z-index: 10; top: 38px; bottom: 0; left: 0; border-top: 1px solid var(--border); box-shadow: 0 6px 16px rgba(0, 0, 0, .5) }
+  /* room for what's going on: the status items keep their spinner and their color only */
+  #status-items .label { display: none }
+  #statusbar { height: 28px }
+  #log { height: 60% }
 }
 """
 
@@ -414,6 +479,8 @@ async function openFile(path) {
   editor.scrollTo(0, 0);
   refreshEditor();
   shownFile = path;
+  // The status items about it, if the server sent them already
+  if (lastStatus) showStatus(lastStatus);
   // Load the build tool and module of the file, like `--auto` does on the command line
   fetch('api/load?path=' + encodeURIComponent(path)).catch(() => {});
   // Then compile it with the presentation compiler (run after the load, on the server side)
@@ -556,9 +623,8 @@ function renderMarkdown(markdown) {
   return div;
 }
 // While a hover waits for what the server is doing (loading a module, typically), what that is
-let lastStatus = null;
 function pendingHoverText() {
-  return lastStatus && lastStatus.busy ? `Waiting: ${lastStatus.text}` : 'Loading…';
+  return lastSummary.busy ? `Waiting: ${lastSummary.text}` : 'Loading…';
 }
 function pendingHoverMessage() {
   const div = hoverMessage(pendingHoverText());
@@ -687,38 +753,198 @@ document.addEventListener('pointerdown', e => {
   if (!hoverbox.hidden && !hoverbox.contains(e.target) && !editor.getWrapperElement().contains(e.target)) closeHover();
 });
 
-// The status bar, from what the server says it's up to (long-polling)
-const statusbar = $('statusbar'), log = $('log');
-statusbar.onclick = () => {
-  log.hidden = !log.hidden;
-  if (!log.hidden) log.scrollTop = log.scrollHeight;
-};
+// The status bar and the logs, from what the server says it's up to (long-polling)
+const log = $('log'), logLines = $('log-lines'), logChannel = $('log-channel');
+// The log shown, its next line, and a count of what was asked of the server since it changed
+let shownLog = 'browse', nextLine = 0, logGeneration = 0, follow = true, logNodes = [];
+try { shownLog = localStorage.getItem('plasmon-browse-log') || 'browse'; } catch {}
+// Changing what to show asks for the status right away, without waiting for it to change
+let pollAbort = null, pollSeq = -1;
+function repoll() {
+  pollSeq = -1;
+  if (pollAbort) pollAbort.abort();
+}
+function showLog(id) {
+  if (id && id !== shownLog) {
+    shownLog = id;
+    try { localStorage.setItem('plasmon-browse-log', id); } catch {}
+    logChannel.value = id;
+    resetLog();
+  }
+  if (log.hidden) {
+    log.hidden = false;
+    body.classList.add('log-open');
+    resetLog();
+  }
+}
+function hideLog() {
+  log.hidden = true;
+  body.classList.remove('log-open');
+  repoll();
+}
+function toggleLog() { log.hidden ? showLog() : hideLog(); }
+function resetLog() {
+  logGeneration++;
+  nextLine = 0;
+  logNodes = [];
+  logLines.replaceChildren();
+  repoll();
+}
+function setFollow(value) {
+  follow = value;
+  $('log-follow').classList.toggle('on', follow);
+  if (follow) logLines.scrollTop = logLines.scrollHeight;
+}
+function appendLines(fromLine, lines) {
+  if (fromLine > nextLine && nextLine > 0) {
+    const gap = document.createElement('span');
+    gap.className = 'gap';
+    gap.textContent = `… ${fromLine - nextLine} lines dropped\n`;
+    logLines.append(gap);
+    logNodes.push({ node: gap, count: 1 });
+  }
+  if (!lines.length) return;
+  const node = document.createTextNode(lines.join('\n') + '\n');
+  logLines.append(node);
+  logNodes.push({ node, count: lines.length });
+  // Only the last lines, so that the page stays light
+  let total = logNodes.reduce((n, e) => n + e.count, 0);
+  while (total > 20000 && logNodes.length > 1) {
+    const first = logNodes.shift();
+    first.node.remove();
+    total -= first.count;
+  }
+  if (follow) logLines.scrollTop = logLines.scrollHeight;
+}
+logLines.addEventListener('scroll', () => {
+  const atBottom = logLines.scrollTop + logLines.clientHeight >= logLines.scrollHeight - 4;
+  if (atBottom !== follow) setFollow(atBottom);
+});
+logChannel.onchange = () => showLog(logChannel.value);
+$('log-follow').onclick = () => setFollow(!follow);
+$('log-expand').onclick = () => log.classList.toggle('expanded');
+$('log-close').onclick = hideLog;
+$('log-toggle').onclick = toggleLog;
+$('status-main').onclick = toggleLog;
+
+function updateChannels(channels) {
+  const known = [...logChannel.options].map(o => o.value + '\u0000' + o.textContent).join('\u0001');
+  if (known !== channels.map(c => c.id + '\u0000' + c.label).join('\u0001')) {
+    logChannel.replaceChildren(...channels.map(c => {
+      const option = document.createElement('option');
+      option.value = c.id; option.textContent = c.label;
+      return option;
+    }));
+  }
+  if (!channels.some(c => c.id === shownLog)) shownLog = 'browse';
+  logChannel.value = shownLog;
+}
+
+// What the status items of the server say, for the file shown. The ones about the file only when
+// the server's focused file is that one (it's the last file opened, from any page).
+const fileItems = new Set(['plasmon.build-tool', 'plasmon.compiler', 'plasmon.interactive']);
+// What tells what an item is about, when its text doesn't: the presentation compiler ("Idle", …)
+function itemLabel(item) {
+  if (item.id !== 'plasmon.interactive') return null;
+  return (item.detail || '').replace(/ Interactive$/, '') || 'Interactive';
+}
+const severities = ['', 'warning', 'error'];
+function visibleItems(status) {
+  return status.items.filter(item => {
+    if (item.id === 'plasmon.summary' || !item.text) return false;
+    if (fileItems.has(item.id) && status.file !== shownFile) return false;
+    // Modules are read from their sources, nothing gets compiled
+    if (item.id === 'plasmon.compiler') return false;
+    // Build tools are stopped once they said what the modules are (their data is replayed): the
+    // errors that follow aren't worth showing, while loading or after
+    if (item.id === 'plasmon.build-tool') return item.busy || !item.severity;
+    // Nothing to say before it's needed
+    if (item.id === 'plasmon.interactive') return item.text !== 'Not instantiated';
+    // Automatic mode isn't what loads things here: only when it's loading something
+    if (item.id === 'plasmon.mode') return item.busy;
+    return true;
+  });
+}
+function itemButton(item, channels) {
+  const button = document.createElement('button');
+  button.className = [severities[item.severity] || '', item.busy ? 'busy' : ''].join(' ');
+  const spinner = document.createElement('span');
+  spinner.className = 'spinner';
+  const text = document.createElement('span');
+  text.className = 'item-text';
+  const label = itemLabel(item);
+  if (label) {
+    const l = document.createElement('span');
+    l.className = 'label';
+    l.textContent = label + ' ';
+    text.append(l);
+  }
+  text.append(item.text);
+  button.append(spinner, text);
+  const channel = item.log && channels.find(c => c.id === item.log);
+  button.title = [label ? `${label}: ${item.text}` : item.text, label ? '' : item.detail, channel ? `Click to show the ${channel.label} log` : ''].filter(Boolean).join('\n');
+  button.onclick = () => channel ? showLog(channel.id) : toggleLog();
+  return button;
+}
+// What the status bar shows on its left, and hovers waiting for the server
+let lastSummary = { busy: false, text: 'Ready', error: false };
+function summaryOf(status, items) {
+  const serverBusy = items.find(item => item.busy);
+  if (status.busy) return { busy: true, text: status.text, error: false };
+  if (status.tasks.length) return { busy: true, text: status.tasks[status.tasks.length - 1] + '…', error: false };
+  if (serverBusy) return { busy: true, text: serverBusy.text, error: false };
+  return { busy: false, text: status.text, error: status.error };
+}
+let lastStatus = null, shownItems = null;
+function showStatus(status) {
+  lastStatus = status;
+  const items = visibleItems(status);
+  const summary = lastSummary = summaryOf(status, items);
+  const main = $('status-main');
+  main.classList.toggle('busy', summary.busy);
+  main.classList.toggle('error', summary.error);
+  $('status-text').textContent = summary.text;
+  main.title = summary.text + (status.tasks.length > 1 ? '\n' + status.tasks.join('\n') : '') + '\n(click to show / hide the log)';
+  // Only when they changed, not to get in the way of clicks and tooltips
+  const key = JSON.stringify([items, status.channels.map(c => c.id)]);
+  if (key !== shownItems) {
+    shownItems = key;
+    $('status-items').replaceChildren(...items.map(item => itemButton(item, status.channels)));
+  }
+  updateChannels(status.channels);
+  const pending = hoverbox.querySelector('.pending');
+  if (pending) pending.textContent = pendingHoverText();
+}
 (async () => {
-  let seq = -1, nextLine = 0;
   for (;;) {
+    const abort = pollAbort = new AbortController();
+    const channel = log.hidden ? '' : shownLog, generation = logGeneration;
     try {
-      const response = await fetch(`api/status?since=${seq}&fromLine=${nextLine}`);
+      const query = `since=${pollSeq}&log=${encodeURIComponent(channel)}&fromLine=${nextLine}`;
+      const response = await fetch('api/status?' + query, { signal: abort.signal });
       if (!response.ok) throw new Error(await response.text());
       const status = await response.json();
-      seq = status.seq;
-      lastStatus = status;
-      const pending = hoverbox.querySelector('.pending');
-      if (pending) pending.textContent = pendingHoverText();
-      statusbar.classList.toggle('busy', status.busy);
-      statusbar.classList.toggle('error', status.error);
-      $('status-text').textContent = status.text;
-      statusbar.title = status.text + ' (click to show / hide the log)';
-      if (status.lines.length) {
-        const atBottom = log.scrollTop + log.clientHeight >= log.scrollHeight - 4;
-        log.append(status.lines.join('\n') + '\n');
-        if (atBottom) log.scrollTop = log.scrollHeight;
+      if (!abort.signal.aborted) pollSeq = status.seq;
+      showStatus(status);
+      if (channel && status.log === channel && generation === logGeneration) {
+        appendLines(status.fromLine, status.lines);
+        nextLine = status.fromLine + status.lines.length;
       }
-      nextLine = status.fromLine + status.lines.length;
+      // A breather, for the logs of a busy server not to have the page poll non-stop
+      await sleep(100);
     } catch (e) {
-      await sleep(3000);
+      // Something else to show: right away
+      if (!abort.signal.aborted) await sleep(3000);
     }
   }
 })();
+// Editors tell the server about the file they show: so does this page, when it's back in front
+function focusShownFile() {
+  if (shownFile && document.visibilityState === 'visible')
+    fetch('api/focus?path=' + encodeURIComponent(shownFile)).catch(() => {});
+}
+document.addEventListener('visibilitychange', focusShownFile);
+window.addEventListener('focus', focusShownFile);
 
 const phone = matchMedia('(max-width: 700px)');
 function route() {
@@ -726,15 +952,16 @@ function route() {
   if (!path) {
     generation++;
     shownFile = null;
+    if (lastStatus) showStatus(lastStatus);
     closeHover();
-    body.className = 'no-file';
+    body.className = 'no-file' + (log.hidden ? '' : ' log-open');
     document.title = rootName;
     select(null);
     return;
   }
   // The file tree stays where it is when opening a file, except on phones, where it covers the file
   const folded = phone.matches || (body.classList.contains('file-open') && body.classList.contains('folded'));
-  body.className = 'file-open' + (folded ? ' folded' : '');
+  body.className = 'file-open' + (folded ? ' folded' : '') + (log.hidden ? '' : ' log-open');
   if (path === shownFile) {
     closeHover();
     if (pos) showPosition(pos);
@@ -765,6 +992,7 @@ setFontSize(fontSize);
 $('sidebar').addEventListener('transitionend', e => { if (e.propertyName === 'width') editor.refresh(); });
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape' && !hoverbox.hidden) closeHover();
+  else if (e.key === 'Escape' && !log.hidden) hideLog();
   else if (e.key === 'Escape' && body.classList.contains('file-open')) {
     if (!body.classList.contains('folded')) body.classList.add('folded');
     else navigate('');

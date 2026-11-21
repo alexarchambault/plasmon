@@ -156,12 +156,13 @@ class Status(
                     PresentationCompilers.PresentationCompilerKey.ScalaBuildTarget(id),
                     Some(Right(sv))
                   ) =>
-                Some(s"plasmon-interactive-$sv-${BspUtil.targetShortId(server.bspData, id)}")
+                // the ids of the log channels, that clients show
+                Some(server.presentationCompilers.loggerIdName(id, sv)._1)
               case (
                     PresentationCompilers.PresentationCompilerKey.ScalaBuildTarget(id),
                     Some(Left(_))
                   ) =>
-                Some(s"plasmon-java-presentation-compiler-$id")
+                Some(s"java-presentation-compiler-$id")
               case (
                     PresentationCompilers.PresentationCompilerKey.JavaBuildTarget(_),
                     Some(Right(_))

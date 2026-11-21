@@ -128,6 +128,32 @@ class BrowseTests extends PlasmonSuite {
           expect(status("text").str.startsWith("Foo.scala: ready"))
           expect(!status("error").bool)
 
+          // What the server would tell an editor: its logs, the status of the file
+          val channels = status("channels").arr.map(c => c("id").str -> c("label").str).toMap
+          expect(channels.get("browse").contains("Browse"))
+          expect(channels.get("indexer").contains("Indexer"))
+          expect(channels.keys.exists(_.startsWith("bsp-")))
+          expect(json("/api/status?since=-1&log=server")("lines").arr.nonEmpty)
+          expect(json("/api/status?since=-1&log=indexer")("lines").arr.nonEmpty)
+          // Focused like the page does, the server sends status items for it
+          json(s"/api/focus?path=${enc(fooFile.toString)}")
+          val serverStatus = {
+            // The status actor sends updates on its own time
+            val deadline = System.currentTimeMillis() + 10000L
+            var res      = json("/api/status?since=-1&log=")
+            while (
+              !res("items").arr.exists(_("id").str == "plasmon.interactive") &&
+              System.currentTimeMillis() < deadline
+            ) {
+              Thread.sleep(100L)
+              res = json("/api/status?since=-1&log=")
+            }
+            res
+          }
+          expect(serverStatus("file").str == "Foo.scala")
+          val interactive = serverStatus("items").arr.find(_("id").str == "plasmon.interactive")
+          expect(interactive.exists(_("detail").str.contains(scalaVersion)))
+
           val locations = json(s"/api/definition?$position")("locations").arr
           expect(locations.length == 1)
           expect(locations(0)("path").str == "Foo.scala")
