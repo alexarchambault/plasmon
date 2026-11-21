@@ -3,10 +3,22 @@
 package plasmon.ide
 
 object Directories {
+
+  @volatile private var state0: os.SubPath = os.sub / ".plasmon"
+
+  /** Where the server keeps its state (build tools and modules loaded, caches, logs, dependency
+    * sources…), relative to its working directory: `.plasmon` unless `--state-dir` says otherwise.
+    *
+    * Process-wide, as there's one server per process: helpers with no server at hand read it.
+    */
+  def state: os.SubPath = state0
+  def setState(dir: os.SubPath): Unit =
+    state0 = dir
+
   def readonly0: os.SubPath =
-    os.sub / ".plasmon/readonly"
+    state / "readonly"
   def readonly: os.SubPath =
-    os.sub / ".plasmon/readonly"
+    state / "readonly"
   def dependencies: os.SubPath =
     readonly0 / dependenciesName
   def semanticdb: os.SubPath =

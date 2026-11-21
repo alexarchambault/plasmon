@@ -60,6 +60,7 @@ object Deps {
       .exclude(("ch.epfl.scala", "bsp4j"))
   def bsp4j             = mvn"io.github.plasmon-scala:bsp4j:2.2.0-M3"
   def caseApp           = mvn"com.github.alexarchambault::case-app:2.1.0-M26"
+  def cask              = mvn"com.lihaoyi::cask:0.11.3"
   def coursierCache     = mvn"io.get-coursier:coursier-cache_2.13:${Versions.coursier}"
   def coursierJvm       = mvn"io.get-coursier:coursier-jvm_2.13:${Versions.coursier}"
   def coursierInterface = mvn"io.get-coursier:interface:${Versions.coursierInterface}"
@@ -76,6 +77,7 @@ object Deps {
   def osLib            = mvn"com.lihaoyi::os-lib:0.10.7"
   def pprint           = mvn"com.lihaoyi::pprint:0.8.1"
   def semanticdbJavac  = mvn"com.sourcegraph:semanticdb-javac:0.11.1"
+  def scalatags        = mvn"com.lihaoyi::scalatags:0.13.1"
   def semanticDbScalac = mvn"org.scalameta:::semanticdb-scalac:4.13.3"
   def svm              = mvn"org.graalvm.nativeimage:svm:24.0.2"
 }
@@ -107,6 +109,9 @@ object JavacInternals {
   def javaOptions = addExports ++ openedPackages.map { pkg =>
     s"--add-opens=jdk.compiler/com.sun.tools.javac.$pkg=ALL-UNNAMED"
   }
+
+  /** What a JVM running the server needs: these, and an opened java.util */
+  def serverJavaOptions = Seq("--add-opens=java.base/java.util=ALL-UNNAMED") ++ javaOptions
 }
 
 object submodules extends Module {
@@ -388,6 +393,7 @@ object server extends ScalaModule with PlasmonPublishModule {
   }
   def mvnDeps = Seq(
     Deps.bloopRifle,
+    Deps.cask,
     Deps.caseApp,
     Deps.coursierInterface,
     Deps.coursierJvm,
@@ -398,6 +404,7 @@ object server extends ScalaModule with PlasmonPublishModule {
     Deps.lz4Java,
     Deps.bsp4j,
     Deps.osLib,
+    Deps.scalatags,
     mvn"io.github.alexarchambault::test-util:0.1.7",
     mvn"org.wildfly.common:wildfly-common:1.7.0.Final", // bump this one (pulled by Metals, GraalVM issues with 1.5.4.Final and 1.6.0.Final)
     // mvn"com.lihaoyi:::ammonite-sshd:3.0.0-M0-60-73894704c"
@@ -502,9 +509,11 @@ object server extends ScalaModule with PlasmonPublishModule {
 
     val dest = Task.dest / (if (isWin) "launcher.bat" else "launcher")
 
+    // When it's run as a script (`./launcher …`) rather than with `java -jar`
     val preamble = Preamble()
       .withOsKind(isWin)
       .callsItself(isWin)
+      .withJavaOpts(JavacInternals.serverJavaOptions)
     val entries       = cp.map(path => ClassPathEntry.Url(path.toNIO.toUri.toASCIIString))
     val loaderContent = coursier.launcher.ClassLoaderContent(entries)
     // Not published, the Scala 2 presentation compiler hosts can't be fetched by the server
@@ -519,6 +528,11 @@ object server extends ScalaModule with PlasmonPublishModule {
   }
 
   def mainClass = Some("plasmon.Plasmon")
+
+  // For `server.run` / `server.runBackground`: what the launchers pass too (see serverCmdJson
+  // in editors.neovim). Without the jdk.compiler ones, Java sources can't be indexed (JavacMtags):
+  // no Javadoc in hovers, no definitions of Java symbols.
+  def forkArgs = super.forkArgs() ++ JavacInternals.serverJavaOptions
 
   // In-process tests, for what the integration tests can't reach reliably (connections
   // going away, handlers throwing, …)

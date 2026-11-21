@@ -1,13 +1,14 @@
 package plasmon.servercommand
 
 import plasmon.{Logger, Server}
-import plasmon.PlasmonEnrichments.StringThingExtensions
-import plasmon.bsp.BuildTool
+import plasmon.PlasmonEnrichments.{StringThingExtensions, XtensionOsPath}
+import plasmon.bsp.{BuildServerInfo, BuildTool}
 import plasmon.command.ServerCommandThreadPools
-import plasmon.index.Indexer
+import plasmon.index.{Indexer, IndexerActor}
 
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
+import scala.jdk.CollectionConverters.*
 
 /** Bringing a file to the point where a language feature can answer for it.
   *
@@ -62,6 +63,12 @@ object AutoLoad {
     /** A module was found, and failed to load - or was skipped, having failed before. */
     final case class ModuleLoad(moduleUri: String, label: String, error: String)
         extends Failure(s"Error loading module $label: $error")
+
+    /** The BSP data a build tool left in the cache couldn't stand in for it (see
+      * `--stop-build-tool-after-load`).
+      */
+    final case class ReplayLoad(label: String, error: String)
+        extends Failure(s"Error loading the cached build data of $label: $error")
   }
 
   /** Loads a build tool and a module for `file` if it has none. Returns once indexing has run, and
@@ -123,10 +130,33 @@ object AutoLoad {
     skipModule: String => Option[String] = _ => None
   ): Either[Failure, Unit] = {
     awaitPersistedImport(server, out)
-    for {
-      _ <- ensureBuildTool(server, pools, file, out, echo, skipBuildTool)
-      _ <- ensureModule(server, indexer, pools, file, out, compile, skipModule)
-    } yield ()
+    if (file.isDependencySource(server.workingDir)) {
+      // Looked at from the modules that depend on it (see BspData.inferBuildTargets): there's
+      // nothing to load for it. Build tools may offer one (Mill makes a script module of any
+      // stray Scala file), which only gets in the way.
+      out.progress(s"$file is a dependency source, nothing to load for it")
+      Right(())
+    }
+    else
+      for {
+        _ <- ensureBuildTool(server, pools, file, out, echo, skipBuildTool)
+        _ <- ensureModule(
+          server,
+          indexer,
+          pools,
+          file,
+          out,
+          echo,
+          compile,
+          skipBuildTool,
+          skipModule
+        )
+        _ <-
+          if (server.stopBuildToolAfterLoad)
+            replaceBuildToolByReplay(server, indexer, pools, file, out)
+          else
+            Right(())
+      } yield ()
   }
 
   /** Waits for whatever the server was already restoring when it started.
@@ -212,7 +242,9 @@ object AutoLoad {
     pools: ServerCommandThreadPools,
     file: os.Path,
     out: Out,
+    echo: Option[String => Unit],
     compile: Boolean,
+    skipBuildTool: BuildTool => Option[String],
     skip: String => Option[String]
   ): Either[Failure, Unit] =
     if (hasModule(server, file)) {
@@ -222,7 +254,30 @@ object AutoLoad {
     else
       ProjectOps.listModules(file, server).filter(!_.alreadyLoaded) match {
         case Seq() =>
-          Left(Failure.NoModule(file))
+          val restored =
+            if (server.stopBuildToolAfterLoad)
+              restoreBuildTool(server, indexer, pools, file, out, echo, skipBuildTool)
+            else
+              None
+          restored match {
+            case Some(res) =>
+              // The build tool is back, it knows about all the modules
+              res.flatMap { _ =>
+                ensureModule(
+                  server,
+                  indexer,
+                  pools,
+                  file,
+                  out,
+                  echo,
+                  compile,
+                  skipBuildTool,
+                  skip
+                )
+              }
+            case None =>
+              Left(Failure.NoModule(file))
+          }
         case modules =>
           // listModules sorts the candidates best first - the recommended one, which is also the
           // one `module load` takes
@@ -256,11 +311,120 @@ object AutoLoad {
                     Thread.sleep(100L)
                   // What `module load` does too: nothing else builds a module from the command
                   // line, and a request answered from an unbuilt one is quietly wrong (see
-                  // CompileAfterLoad)
-                  if (compile)
+                  // CompileAfterLoad). Except with --sourcepath, where presentation compilers
+                  // read modules from their sources, and nothing needs to be built.
+                  if (compile && server.sourcepath.isEmpty)
                     CompileAfterLoad(server, module.uri, out.progress, out.error)
                   Right(())
               }
           }
       }
+
+  /** Brings back the build tool a replay of `file` stands for (see [[replaceBuildToolByReplay]]).
+    *
+    * A replay knows the sources of the modules that were loaded when it was recorded only. For a
+    * file of another module, the build tool needs to run again. The modules loaded from the replay
+    * are loaded from it then. Returns how loading the build tool went if there was such a replay.
+    */
+  private def restoreBuildTool(
+    server: Server,
+    indexer: Indexer,
+    pools: ServerCommandThreadPools,
+    file: os.Path,
+    out: Out,
+    echo: Option[String => Unit],
+    skipBuildTool: BuildTool => Option[String]
+  ): Option[Either[Failure, Unit]] =
+    server.bspServers.list.iterator.flatMap(_._2)
+      .find { conn =>
+        file.startsWith(conn.info.workspace) && conn.info.isInstanceOf[BuildServerInfo.Replay]
+      }
+      .map { conn =>
+        val info    = conn.info
+        val modules = indexer.targets.getOrElse(info, Nil)
+        out.progress(s"No module for $file in the cached build data, starting the build tool again")
+        indexer.dontReloadBuildTool(info)
+        Await.result(server.bspServers.remove(info), Duration.Inf)
+        server.bspServers.persist()
+        ensureBuildTool(server, pools, file, out, echo, skipBuildTool).map { _ =>
+          for {
+            live <- server.bspServers.list.iterator.flatMap(_._2)
+              .find(conn0 => file.startsWith(conn0.info.workspace))
+            if modules.nonEmpty
+          } {
+            indexer.addTargets(live.info, modules)
+            indexer.persist()
+          }
+        }
+      }
+
+  /** Stops the build tool that loaded the module of `file`, and has a replay of the BSP data it
+    * left in the cache take its place (`plasmon server --stop-build-tool-after-load`).
+    *
+    * With `--sourcepath`, presentation compilers don't need anything built, so once a build tool
+    * told us about the modules, it can go away. The modules it loaded are loaded again from the
+    * replay, which answers like it did, from what it said when it was indexed.
+    */
+  private def replaceBuildToolByReplay(
+    server: Server,
+    indexer: Indexer,
+    pools: ServerCommandThreadPools,
+    file: os.Path,
+    out: Out
+  ): Either[Failure, Unit] =
+    server.bspServers.list.iterator.flatMap(_._2)
+      .find(conn => file.startsWith(conn.info.workspace))
+      .filter(conn => !conn.info.isInstanceOf[BuildServerInfo.Replay]) match {
+      case None => Right(())
+      case Some(conn) =>
+        val info = conn.info
+        val dataDirOpt = IndexerActor
+          .bspDataCacheDir(IndexerActor.bspDataCache(server.workingDir), server.workingDir, info)
+          .filter { dir =>
+            os.isFile(dir / "initializeBuildResult.json") &&
+            os.isFile(dir / "workspaceBuildTargets.json")
+          }
+        dataDirOpt match {
+          case None =>
+            out.progress(s"No cached build data for ${info.label}, leaving it running")
+            Right(())
+          case Some(dataDir) =>
+            out.progress(
+              s"Stopping build tool ${info.label}, " +
+                s"using the build data it left in ${dataDir.relativeTo(server.workingDir)}"
+            )
+            val modules = indexer.targets.getOrElse(info, Nil)
+            indexer.dontReloadBuildTool(info)
+            Await.result(server.bspServers.remove(info), Duration.Inf)
+            val replay = BuildTool.Replay(info.workspace, dataDir)
+            Await.result(
+              server.bspServers.tryAdd(
+                replay,
+                replay.launcher(server.tools) +: replay.extraLaunchers,
+                line => scribe.info("BSP: " + line),
+                pools.bspEces,
+                () => pools.bloopThreads
+              ),
+              Duration.Inf
+            ) match {
+              case Left(err) =>
+                Left(Failure.ReplayLoad(info.label, err))
+              case Right(()) =>
+                server.bspServers.persist()
+                val replayInfo = BuildServerInfo.Replay(info.workspace, dataDir)
+                // Modules the build tool didn't report itself (for dependency sources, say) aren't
+                // in the replay: they're loaded again when needed
+                val known = server.bspServers.get(replayInfo).toSeq
+                  .flatMap(_.conn.workspaceBuildTargets.get().getTargets.asScala.map(_.getId))
+                  .toSet
+                indexer.addTargets(replayInfo, modules.filter(known))
+                indexer.persist()
+                Await.result(indexer.reIndex(), Duration.Inf)
+                while (indexer.actor.awaitingMessages.nonEmpty)
+                  Thread.sleep(100L)
+                out.progress(s"Stopped build tool ${info.label}")
+                Right(())
+            }
+        }
+    }
 }

@@ -7,6 +7,7 @@ import org.eclipse.lsp4j.jsonrpc.Launcher
 import plasmon.handlers as h
 import plasmon.PlasmonEnrichments.*
 import plasmon.bsp.{BuildServerInfo, BuildTool}
+import plasmon.ide.Directories
 import plasmon.index.Indexer
 import plasmon.internal.{BinaryName, BuildVersion, DebugInput}
 import plasmon.jsonrpc.{
@@ -17,6 +18,8 @@ import plasmon.jsonrpc.{
   RequestHandler
 }
 import plasmon.languageclient.PlasmonLanguageClient
+import plasmon.protocol
+import plasmon.protocol.CommandClient
 import plasmon.pc.SourcepathMode
 import plasmon.servercommand.*
 import plasmon.util.{ThreadUtil, TimerThreadsHack}
@@ -72,6 +75,7 @@ object Server extends caseapp.Command[ServerOptions] {
     LspCodeLens,
     LspCompletion,
     LspDefinition,
+    LspDiagnostics,
     LspDidChange,
     LspDidOpen,
     LspHover,
@@ -126,6 +130,25 @@ object Server extends caseapp.Command[ServerOptions] {
     else
       "system|17"
 
+  /** A server running in this process, for whoever started it with [[start]].
+    *
+    * Commands run the way they do when sent over the command socket, with their output going to the
+    * client passed along them.
+    */
+  final class InProcess(
+    val server: plasmon.Server,
+    runCommand0: (protocol.Command, CommandClient) => protocol.CommandResult,
+    awaitExit0: () => Unit
+  ) {
+
+    /** Runs a command, returns its exit code */
+    def runCommand(request: protocol.Command, client: CommandClient): Int =
+      runCommand0(request, client).getExitCode
+
+    /** Returns once the server is asked to exit (`plasmon exit`) */
+    def awaitExit(): Unit = awaitExit0()
+  }
+
   def run(options: ServerOptions, remainingArgs: RemainingArgs): Unit = {
 
     if (remainingArgs.all.nonEmpty) {
@@ -134,6 +157,17 @@ object Server extends caseapp.Command[ServerOptions] {
       )
       sys.exit(1)
     }
+
+    start(options, None)
+  }
+
+  /** Sets a server up and serves LSP and / or commands until it exits.
+    *
+    * With `inProcess`, the server is handed to it rather than serving LSP or waiting for `plasmon
+    * exit`: it serves the server however it likes, for as long as it runs. The command socket is up
+    * either way.
+    */
+  def start(options: ServerOptions, inProcess: Option[InProcess => Unit]): Unit = {
 
     // Without LSP there is no client to tell us what to work on, so the working directory it is
     val autoInit = options.autoInit.getOrElse(!options.lsp)
@@ -148,7 +182,11 @@ object Server extends caseapp.Command[ServerOptions] {
       .map(os.Path(_, os.pwd))
       .getOrElse(os.pwd)
 
-    withLockFile(workingDir / ".plasmon/lock") {
+    for (dir <- options.stateDir.map(_.trim).filter(_.nonEmpty))
+      Directories.setState(os.SubPath(dir))
+    val stateDir = workingDir / Directories.state
+
+    withLockFile(stateDir / "lock") {
 
       // Sending something to stderr, so that an output channel for the server output gets created in vscode
       System.err.println(s"Plasmon ${BuildVersion.fullVersion} starting")
@@ -167,7 +205,7 @@ object Server extends caseapp.Command[ServerOptions] {
 
       initLogging {
         if (options.logToStderr.getOrElse(autoInit)) None
-        else Some(workingDir / ".plasmon/log")
+        else Some(stateDir / "log")
       }
 
       scribe.info("Starting from scribe")
@@ -288,7 +326,8 @@ object Server extends caseapp.Command[ServerOptions] {
         enableBestEffortMode = options.bestEffort.getOrElse(true),
         reindexSource = indexer.reindexWorkspaceSource(_),
         scala2Compat = scala2Compat,
-        sourcepath = sourcepathMode
+        sourcepath = sourcepathMode,
+        stopBuildToolAfterLoad = options.stopBuildToolAfterLoad
       )
 
       indexer = new Indexer(server)
@@ -619,7 +658,7 @@ object Server extends caseapp.Command[ServerOptions] {
       val commandSocketPath =
         options.socket.filter(_.trim.nonEmpty)
           .map(os.Path(_, os.pwd))
-          .getOrElse(workingDir / Command.socketPath)
+          .getOrElse(stateDir / "socket")
 
       scribe.info(s"commandSocketPath=$commandSocketPath")
       val actualCommandSocketPath = Command.actualSocket(commandSocketPath, isServer = true)
@@ -789,11 +828,35 @@ object Server extends caseapp.Command[ServerOptions] {
           server.close()
         }
 
+      def serveInProcess(f: InProcess => Unit): Unit =
+        ThreadUtil.withCachedThreadPool("plasmon-in-process-commands") { commandPool =>
+          val instance = new InProcess(
+            server,
+            (request, client) => {
+              val connectionClient = new ConnectionCommandClient
+              connectionClient.connect(client)
+              new CommandServerImpl(
+                connectionClient,
+                client0 =>
+                  remoteCommands.map(_.instance(server, indexer, client0, lspServer, pools)),
+                commandPool
+              ).runCommand(request).get()
+            },
+            () => done.await()
+          )
+          f(instance)
+          server.close()
+        }
+
       Console.withOut(System.err) {
         try {
           System.setOut(System.err)
-          if (options.lsp) serveLsp()
-          else serveCommandsOnly()
+          inProcess match {
+            case Some(f) => serveInProcess(f)
+            case None =>
+              if (options.lsp) serveLsp()
+              else serveCommandsOnly()
+          }
         }
         finally
           System.setOut(currentOut)

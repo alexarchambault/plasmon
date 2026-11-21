@@ -16,6 +16,7 @@ import plasmon.bsp.{
   ReplayArtifacts
 }
 import plasmon.ide.{AdjustLspData, AdjustedLspData}
+import plasmon.ide.Directories
 import plasmon.index.TargetData
 import plasmon.pc.NopReportContext
 import plasmon.servercommand.BspUtil
@@ -210,7 +211,7 @@ class IndexerActor(
     if (interruptIndexing()) return Nil
 
     val toplevelSymbolsCache = new ToplevelSymbolsCache(
-      server.workingDir / ".plasmon/cache/toplevel",
+      server.workingDir / Directories.state / "cache/toplevel",
       os.Path(coursierapi.Cache.create().getLocation, os.pwd),
       os.Path(coursierapi.ArchiveCache.create().getLocation, os.pwd),
       readOnly = message.toplevelCacheOnly.getOrElse(latestToplevelCacheOnly)
@@ -263,7 +264,7 @@ class IndexerActor(
           stateName,
           message,
           toplevelSymbolsCache,
-          server.workingDir / ".plasmon/cache/bsp",
+          IndexerActor.bspDataCache(server.workingDir),
           mayReadFromCache = message.mayReadFromBspCache,
           interruptIndexing
         ).toSeq
@@ -373,13 +374,9 @@ class IndexerActor(
     // elsewhere (see BuildServerInfo.Replay).
     val portabilityRoots = BspDataPortability.Roots.default(info.workspace)
     val cacheDirOpt =
-      if (info.workspace.startsWith(server.workingDir)) {
-        val cacheDir =
-          bspDataCache / info.cacheKey / info.workspace.subRelativeTo(server.workingDir)
-        Some((cacheDir, mayReadFromCache && bspCacheIsUsable(cacheDir, portabilityRoots)))
+      IndexerActor.bspDataCacheDir(bspDataCache, server.workingDir, info).map { cacheDir =>
+        (cacheDir, mayReadFromCache && bspCacheIsUsable(cacheDir, portabilityRoots))
       }
-      else
-        None
 
     // Recorded so that a replay can answer the handshake the same way the real build tool did.
     // The display name matters beyond cosmetics: "mill-bsp" turns on millHack below.
@@ -1397,6 +1394,22 @@ class IndexerActor(
 }
 
 object IndexerActor {
+
+  /** Where the BSP data of the build servers of `workingDir` is cached */
+  def bspDataCache(workingDir: os.Path): os.Path =
+    workingDir / Directories.state / "cache/bsp"
+
+  /** Where the BSP data of `info` is cached, in the layout [[plasmon.bsp.ReplayBuildServer]] reads.
+    * `None` for build servers outside of `workingDir`, whose data isn't cached.
+    */
+  def bspDataCacheDir(
+    bspDataCache: os.Path,
+    workingDir: os.Path,
+    info: BuildServerInfo
+  ): Option[os.Path] =
+    Option.when(info.workspace.startsWith(workingDir)) {
+      bspDataCache / info.cacheKey / info.workspace.subRelativeTo(workingDir)
+    }
   final class IndexingInterruptedException extends Exception("Indexing interrupted")
 
   sealed abstract class Message extends Product with Serializable

@@ -26,6 +26,7 @@ import plasmon.ide.{
   ScalaTarget,
   SourceMapper
 }
+import plasmon.ide.Directories
 import plasmon.index.{BspData, SymbolSearchImpl, SymbolSearchIndex}
 import plasmon.languageclient.PlasmonLanguageClient
 import plasmon.render.JsonCodecs.given
@@ -2099,7 +2100,7 @@ object PresentationCompilers {
       .withConfiguration(config0)
 
   def logDest(workspace: os.Path): os.Path =
-    workspace / ".plasmon/pc.log"
+    workspace / Directories.state / "pc.log"
 
   private def log(workspace: os.Path): List[String] = {
     val logDest0 = logDest(workspace)

@@ -91,7 +91,8 @@ final class Server(
   val enableBestEffortMode: Boolean,
   val reindexSource: os.Path => Unit,
   scala2Compat: Boolean,
-  val sourcepath: Option[SourcepathMode]
+  val sourcepath: Option[SourcepathMode],
+  val stopBuildToolAfterLoad: Boolean = false
 ) extends IndexerServerLike with BspServersServerLike with AutoCloseable {
 
   private var initializeParamsOpt0 = Option.empty[l.InitializeParams]
@@ -183,7 +184,7 @@ final class Server(
   // STATE
   lazy val bspServers: BspServers = {
     val instance = new BspServers(
-      Some(workingDir / ".plasmon/build-servers.json"),
+      Some(workingDir / Directories.state / "build-servers.json"),
       this,
       pools.bspServersActorContext
     )
@@ -195,7 +196,7 @@ final class Server(
 
   // STATE
   // can't use workspace value here?
-  val bspData: BspData = new BspData(os.pwd, bspServers)
+  val bspData: BspData = new BspData(workingDir, bspServers)
 
   // stateful
   private[plasmon] var isLanguageClientInstantiated = false
