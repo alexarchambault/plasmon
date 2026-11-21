@@ -270,19 +270,13 @@ final class Server(
   )(using pools.compilationEc)
 
   lazy val jdkCp = {
-    val rtJar = javaHome / "jre/lib/rt.jar"
-    if (os.exists(rtJar)) Seq(rtJar)
-    else {
-      val jmodsDir = javaHome / "jmods"
-      if (os.isDir(jmodsDir))
-        os.list(jmodsDir)
-          .filter(_.last.endsWith(".jmod"))
-          .filter(os.isFile(_))
-      else {
-        scribe.warn(s"No rt.jar or jmods directory found in Java home dir $javaHome")
-        Nil
-      }
-    }
+    val cp = Server.jdkClassPath(javaHome)
+    if (cp.isEmpty)
+      scribe.warn(
+        s"No rt.jar or .jmod files found in Java home dir $javaHome, " +
+          "presentation compilers won't find JDK classes"
+      )
+    cp
   }
 
   lazy val jdkSources =
@@ -796,6 +790,27 @@ final class Server(
 }
 
 object Server {
+
+  /** The files the JDK classes of `javaHome` are read from, by the presentation compilers and the
+    * indexer: `rt.jar` for Java 8, the `.jmod` files under `jmods/` for later versions.
+    *
+    * Empty for JDKs that don't ship `jmods/`, like Temurin 24 and later (JEP 493): their classes
+    * are only in `lib/modules`, which the presentation compilers don't read.
+    */
+  def jdkClassPath(javaHome: os.Path): Seq[os.Path] = {
+    val rtJar = javaHome / "jre/lib/rt.jar"
+    if (os.exists(rtJar)) Seq(rtJar)
+    else {
+      val jmodsDir = javaHome / "jmods"
+      if (os.isDir(jmodsDir))
+        os.list(jmodsDir)
+          .filter(_.last.endsWith(".jmod"))
+          .filter(os.isFile(_))
+      else
+        Nil
+    }
+  }
+
   sealed abstract class WatchEvent extends Product with Serializable {
     def process(server: Server): Unit
   }
