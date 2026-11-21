@@ -887,17 +887,19 @@ class IndexerActor(
               val updatedContent =
                 sourceItem.getTopWrapper + actualContent + sourceItem.getBottomWrapper
 
+              val inputPath =
+                if (
+                  generatedPath.last.endsWith(".scala") &&
+                  !generatedPath.last.endsWith(".sc.scala")
+                )
+                  generatedPath / os.up / (generatedPath.last.stripSuffix(".scala") + ".sc.scala")
+                else
+                  generatedPath
+
               (
-                Input.VirtualFile(
-                  if (
-                    generatedPath.last.endsWith(".scala") &&
-                    !generatedPath.last.endsWith(".sc.scala")
-                  )
-                    generatedPath.toString.stripSuffix(".scala") + ".sc.scala"
-                  else
-                    generatedPath.toString,
-                  updatedContent
-                ),
+                // A URI, like other inputs handed to the presentation compiler - it gets passed
+                // as is to it (see PresentationCompilers.compile), that fails on a bare path
+                Input.VirtualFile(inputPath.toNIO.toUri.toASCIIString, updatedContent),
                 toScala,
                 adjustLspData
               )

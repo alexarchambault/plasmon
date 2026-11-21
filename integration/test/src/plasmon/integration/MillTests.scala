@@ -1,5 +1,8 @@
 package plasmon.integration
 
+import com.eed3si9n.expecty.Expecty.expect
+import com.google.gson.Gson
+import org.eclipse.lsp4j as l
 import plasmon.integration.TestUtil.*
 
 import scala.concurrent.duration.*
@@ -118,6 +121,23 @@ class MillTests extends PlasmonSuite {
           goToDefAt(os.sub / "thing/package.mill", i)
         for (i <- 1 to 16)
           goToDefAt(os.sub / "dash-thing/package.mill", i)
+
+        // The presentation compiler compiles the wrapped build file, its diagnostics land back
+        // in the build file, on its own lines
+        val buildContent = os.read(buildFile)
+        val errorLine    = buildContent.linesIterator.size
+        driver.didOpen(buildFile, 1, buildContent + "val nope: Int = \"not an int\"\n")
+        val diagsOutput =
+          serverCommandOutput(workspace, osOpt)("lsp", "diagnostics", "--json", buildFile)
+        val diags = new Gson().fromJson(diagsOutput, classOf[Array[l.Diagnostic]]).toSeq
+        expect(diags.length == 1)
+        // Java enum values out of expect: Expecty fails to load them
+        val diagSeverity = diags.head.getSeverity
+        val error        = l.DiagnosticSeverity.Error
+        expect(diagSeverity == error)
+        expect(diags.head.getRange.getStart.getLine == errorLine)
+        val diagMessage = diags.head.getMessage.getLeft
+        expect(diagMessage.contains("Required: Int"))
     }
 
   }
