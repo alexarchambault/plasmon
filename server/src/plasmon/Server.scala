@@ -24,7 +24,13 @@ import plasmon.index.{
   SymbolSearchIndex
 }
 import plasmon.languageclient.*
-import plasmon.pc.{NopReportContext, PresentationCompilers, RemotePcHost, SourcepathMode}
+import plasmon.pc.{
+  JdkClasses,
+  NopReportContext,
+  PresentationCompilers,
+  RemotePcHost,
+  SourcepathMode
+}
 import plasmon.render.JsonCodecs.given
 import plasmon.semdb.{
   InteractiveSemanticdbs,
@@ -89,7 +95,8 @@ final class Server(
   val reindexSource: os.Path => Unit,
   scala2Compat: Boolean,
   val sourcepath: Option[SourcepathMode],
-  val stopBuildToolAfterLoad: Boolean = false
+  val stopBuildToolAfterLoad: Boolean = false,
+  val jdkClasses: JdkClasses = JdkClasses.default
 ) extends IndexerServerLike with BspServersServerLike with AutoCloseable {
 
   private var initializeParamsOpt0 = Option.empty[l.InitializeParams]
@@ -269,12 +276,16 @@ final class Server(
     bestEffortEnabled = enableBestEffortMode
   )(using pools.compilationEc)
 
-  lazy val jdkCp = {
-    val cp = Server.jdkClassPath(javaHome)
+  lazy val jdkCp: Seq[os.Path] = {
+    val cp = jdkClasses.classPath(javaHome)
     if (cp.isEmpty)
       scribe.warn(
-        s"No rt.jar or .jmod files found in Java home dir $javaHome, " +
+        s"No ${jdkClasses.description} found in Java home dir $javaHome, " +
           "presentation compilers won't find JDK classes"
+      )
+    else
+      scribe.info(
+        s"Reading JDK classes from ${cp.map(_.relativeTo(javaHome)).mkString(", ")} in $javaHome"
       )
     cp
   }
@@ -294,7 +305,7 @@ final class Server(
 
   private def newJavaFileManager(): CustomFileManager =
     new CustomFileManager(
-      javaHome.toNIO,
+      jdkCp.map(_.toNIO),
       JavaMetalsCompiler.COMPILER.getStandardFileManager(null, null, null),
       jdkContext
     )
@@ -790,27 +801,6 @@ final class Server(
 }
 
 object Server {
-
-  /** The files the JDK classes of `javaHome` are read from, by the presentation compilers and the
-    * indexer: `rt.jar` for Java 8, the `.jmod` files under `jmods/` for later versions.
-    *
-    * Empty for JDKs that don't ship `jmods/`, like Temurin 24 and later (JEP 493): their classes
-    * are only in `lib/modules`, which the presentation compilers don't read.
-    */
-  def jdkClassPath(javaHome: os.Path): Seq[os.Path] = {
-    val rtJar = javaHome / "jre/lib/rt.jar"
-    if (os.exists(rtJar)) Seq(rtJar)
-    else {
-      val jmodsDir = javaHome / "jmods"
-      if (os.isDir(jmodsDir))
-        os.list(jmodsDir)
-          .filter(_.last.endsWith(".jmod"))
-          .filter(os.isFile(_))
-      else
-        Nil
-    }
-  }
-
   sealed abstract class WatchEvent extends Product with Serializable {
     def process(server: Server): Unit
   }

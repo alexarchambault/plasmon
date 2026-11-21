@@ -33,7 +33,10 @@ class RemotePcHostTests extends munit.FunSuite {
     finally host.close()
   }
 
-  private def newPc(host: RemotePcHost): RemotePresentationCompiler = {
+  private def newPc(
+    host: RemotePcHost,
+    jdkCp: Seq[os.Path] = Seq(javaHome / "jmods/java.base.jmod")
+  ): RemotePresentationCompiler = {
     val pc = new RemotePresentationCompiler(
       host,
       javaHome,
@@ -42,7 +45,7 @@ class RemotePcHostTests extends munit.FunSuite {
     )
     pc.newInstance(
       "buildTarget:file:///test/?id=test",
-      Seq(scalaLibrary(host.scalaVersion), javaHome / "jmods/java.base.jmod").map(_.toNIO).asJava,
+      (scalaLibrary(host.scalaVersion) +: jdkCp).map(_.toNIO).asJava,
       Nil.asJava
     )
     pc
@@ -71,6 +74,31 @@ class RemotePcHostTests extends munit.FunSuite {
         assert(pc.isLoaded())
         assertEquals(pc.scalaVersion(), scalaVersion)
         assert(pc.supportedCodeActions().asScala.contains("ExtractMethod"))
+      }
+    }
+
+  for {
+    (scalaBinaryVersion, _) <- RemotePcHost.scala2Versions.toSeq.sorted
+    jdkFiles                <- TestJdkFiles.all
+  }
+    test(s"JDK classes from ${jdkFiles.id} with Scala $scalaBinaryVersion") {
+      withHost(scalaBinaryVersion) { host =>
+        val pc = newPc(host, jdkFiles.files(javaHome))
+        val code =
+          "package a\nobject A { val s = \"a\".trim; def c: java.sql.Connection = ??? }\n"
+        def hover(word: String) = {
+          val res = pc.hover(
+            CompilerOffsetParams(
+              java.net.URI.create("file:///test/A.scala"),
+              code,
+              code.indexOf(word) + 1
+            )
+          ).get(1, TimeUnit.MINUTES)
+          assert(res.isPresent, s"No hover for $word")
+          res.get.toLsp().getContents.getRight.asInstanceOf[l.MarkupContent].getValue
+        }
+        assert(hover("trim").contains("def trim(): String"), clue(hover("trim")))
+        assert(hover("Connection").contains("Connection"), clue(hover("Connection")))
       }
     }
 

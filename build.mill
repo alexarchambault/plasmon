@@ -666,7 +666,8 @@ object server extends ScalaModule with PlasmonPublishModule {
       Deps.munit
     )
     def testFramework = "munit.Framework"
-    def forkArgs = super.forkArgs() ++
+    // the jdk.compiler exports and opens, for the Java presentation compiler (JdkClassesTests)
+    def forkArgs = super.forkArgs() ++ JavacInternals.serverJavaOptions ++
       `remote-pc`.scala2HostClassPathProperties().map { case (k, v) => s"-D$k=$v" }
   }
 
