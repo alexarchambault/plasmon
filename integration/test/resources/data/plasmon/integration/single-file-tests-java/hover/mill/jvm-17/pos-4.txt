@@ -1,5 +1,5 @@
 ```java
-public void println(java.lang.String arg0)
+public void println(java.lang.String x)
 ```
 
 ***

@@ -2031,7 +2031,8 @@ object PresentationCompilers {
         javaUserLoggerMaker(module.targetId),
         buildTargetId = module.asString,
         ec = ec,
-        javaFileManagerFactory = (_, _) => javaFileManager()
+        javaFileManagerFactory = (_, _) => javaFileManager(),
+        embedded = new PlasmonEmbeddedClient(workspace, module.asString)
       )
       val configured =
         configure(pc, search, completionItemPriority, workspace, ec, sh, config0)

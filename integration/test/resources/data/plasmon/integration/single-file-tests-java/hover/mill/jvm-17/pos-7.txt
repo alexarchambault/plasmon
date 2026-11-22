@@ -1,5 +1,5 @@
 ```java
-public void addShutdownHook(java.lang.Thread arg0)
+public void addShutdownHook(java.lang.Thread hook)
 ```
 
 ***

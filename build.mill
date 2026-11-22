@@ -210,6 +210,29 @@ object submodules extends Module {
       def resources    = Task.Sources() // resources-packaged is only for the published JAR
     }
 
+    /** javac plugin the Java presentation compiler uses to strip method bodies from the sources it
+      * reads besides the one it's asked about. Not a dependency of anything: its JAR is embedded in
+      * the server resources (see `server.javaHeaderCompilerResourcesDir`), like Metals does.
+      */
+    object `java-header-compiler` extends JavaModule {
+      // Like the server: what a JDK 17 runs must be compiled by it (the plugin runs in the javac
+      // of the JVM running the server)
+      def jvmId        = "17"
+      def sources      = Task.Sources("src/main/java")
+      def javacOptions = super.javacOptions() ++ JavacInternals.addModulesAndExports
+      // Zinc loads the compiled classes, that extend javac internal ones, in the compiler JVM
+      def jvmOptions = super.jvmOptions() ++ JavacInternals.addExports
+      // The plugin service file only goes in the JAR: javac would try to load the plugin while
+      // compiling it otherwise
+      def packagedResources = Task.Sources("src/main/resources-packaged")
+      def jar = Task {
+        val dest   = Task.dest / "out.jar"
+        val inputs = (localClasspath() ++ packagedResources()).map(_.path)
+        mill.util.Jvm.createJar(dest, inputs.filter(os.exists(_)))
+        PathRef(dest)
+      }
+    }
+
     object turbine extends ProtobufJavaModule with MetalsPublishModule {
       def moduleDir = super.moduleDir / os.up / "vendor" / "turbine"
       def sources   = Task.Sources("src/main/java")
@@ -683,7 +706,20 @@ object server extends ScalaModule with PlasmonPublishModule {
     }
 
     super.resources() ++ Seq(PathRef(vsixDir)) ++ settingsEditDir() ++ versionResourcesDir() ++
-      Seq(neovimResourcesDir())
+      Seq(neovimResourcesDir(), javaHeaderCompilerResourcesDir())
+  }
+
+  /** The javac plugin the Java presentation compiler needs, as plasmon/java-header-compiler.jar
+    * (extracted at run time, see plasmon.pc.PlasmonEmbeddedClient)
+    */
+  def javaHeaderCompilerResourcesDir = Task {
+    val dir = Task.dest / "resources"
+    os.copy(
+      submodules.metals.`java-header-compiler`.jar().path,
+      dir / "plasmon" / "java-header-compiler.jar",
+      createFolders = true
+    )
+    PathRef(dir)
   }
 
   /** The Neovim plugin and the configs `plasmon nvim` runs, under plasmon/neovim/, along with the
