@@ -1,0 +1,10 @@
+```java
+public static native java.lang.Thread currentThread()
+```
+
+***
+
+Returns a reference to the currently executing thread object.
+
+
+**Returns** the currently executing thread.

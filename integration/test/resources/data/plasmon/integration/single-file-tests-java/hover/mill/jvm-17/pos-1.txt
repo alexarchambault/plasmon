@@ -1,0 +1,3 @@
+```java
+public class foo.Foo
+```
