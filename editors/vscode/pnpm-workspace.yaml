@@ -4,3 +4,5 @@ nodeLinker: hoisted
 allowBuilds:
   # Optional dependency of vsce, only used to store publishing tokens
   keytar: false
+  # Optional dependency of vsce, fetches a binary to sign / verify extensions, which we don't do
+  "@vscode/vsce-sign": false

@@ -52,7 +52,7 @@ object BuildServerProcess {
       proc.close()
       if (proc.isAlive() && !proc.waitFor(5000L)) {
         scribe.info(s"Forcibly destroying PID ${proc.wrapped.pid()}")
-        proc.destroyForcibly()
+        proc.wrapped.destroyForcibly()
       }
     }
   }

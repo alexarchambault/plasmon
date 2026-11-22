@@ -25,7 +25,7 @@
         },
         "data": {
           "symbol": "scala/collection/immutable/LazyList.",
-          "target": "file:/workspace/.scala-build/?id\u003dtest-project_41e103cfb2",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_a3543771e5",
           "kind": 0
         }
       },
@@ -51,7 +51,7 @@
         },
         "data": {
           "symbol": "scala/collection/immutable/LinearSeq.",
-          "target": "file:/workspace/.scala-build/?id\u003dtest-project_41e103cfb2",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_a3543771e5",
           "kind": 0
         }
       },
@@ -77,7 +77,7 @@
         },
         "data": {
           "symbol": "scala/collection/immutable/List.",
-          "target": "file:/workspace/.scala-build/?id\u003dtest-project_41e103cfb2",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_a3543771e5",
           "kind": 0
         }
       },
@@ -103,7 +103,7 @@
         },
         "data": {
           "symbol": "scala/collection/immutable/ListMap.",
-          "target": "file:/workspace/.scala-build/?id\u003dtest-project_41e103cfb2",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_a3543771e5",
           "kind": 0
         }
       },
@@ -129,7 +129,7 @@
         },
         "data": {
           "symbol": "scala/collection/immutable/ListSet.",
-          "target": "file:/workspace/.scala-build/?id\u003dtest-project_41e103cfb2",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_a3543771e5",
           "kind": 0
         }
       },
@@ -155,7 +155,7 @@
         },
         "data": {
           "symbol": "scala/collection/immutable/LongMap.",
-          "target": "file:/workspace/.scala-build/?id\u003dtest-project_41e103cfb2",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_a3543771e5",
           "kind": 0
         }
       },
@@ -181,7 +181,7 @@
         },
         "data": {
           "symbol": "scala/collection/immutable/IndexedSeqDefaults.",
-          "target": "file:/workspace/.scala-build/?id\u003dtest-project_41e103cfb2",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_a3543771e5",
           "kind": 0
         }
       },
@@ -207,7 +207,7 @@
         },
         "data": {
           "symbol": "scala/collection/immutable/Iterable.",
-          "target": "file:/workspace/.scala-build/?id\u003dtest-project_41e103cfb2",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_a3543771e5",
           "kind": 0
         }
       },
@@ -233,7 +233,7 @@
         },
         "data": {
           "symbol": "scala/collection/immutable/Nil.",
-          "target": "file:/workspace/.scala-build/?id\u003dtest-project_41e103cfb2",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_a3543771e5",
           "kind": 0
         }
       },
@@ -262,7 +262,7 @@
         },
         "data": {
           "symbol": "scala/collection/immutable/package.Traversable.",
-          "target": "file:/workspace/.scala-build/?id\u003dtest-project_41e103cfb2",
+          "target": "file:/workspace/.scala-build/?id\u003dtest-project_a3543771e5",
           "kind": 0
         }
       }

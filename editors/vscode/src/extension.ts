@@ -4,12 +4,12 @@ import * as os from 'os'
 import * as fs from 'fs'
 import * as path from 'path'
 
-import { CloseAction, DocumentSelector, ErrorAction, ErrorHandler, ExecuteCommandParams, ExecuteCommandRequest, ExitNotification, LanguageClient, LanguageClientOptions, Location, ServerOptions, Trace, integer } from 'vscode-languageclient/node'
+import { CloseAction, CloseHandlerResult, ErrorAction, ErrorHandler, ExecuteCommandParams, ExecuteCommandRequest, LanguageClient, LanguageClientOptions, Location, ServerOptions, Trace, integer } from 'vscode-languageclient/node'
 
 // Many things here inspired by https://github.com/scalameta/metals-vscode/tree/423de8a8355a37d983b143508b66fa2ee5a10db0
 // and earlier versions of it
 
-let documentSelector: DocumentSelector = [
+let documentSelector: { scheme: string, language: string }[] = [
   {
     scheme: "file",
     language: "scala"
@@ -131,8 +131,8 @@ let logOutputChannels: { [key: string]: vscode.OutputChannel } = {}
 let statusItems: { [key: string]: vscode.LanguageStatusItem } = {}
 let statusBarItem: vscode.StatusBarItem | null = null
 
-let plasmonServerChannel: vscode.OutputChannel | undefined = undefined
-let traceChannel: vscode.OutputChannel | undefined = undefined
+let plasmonServerChannel: vscode.LogOutputChannel | undefined = undefined
+let traceChannel: vscode.LogOutputChannel | undefined = undefined
 
 class Deferred<T> {
   promise: Promise<T>
@@ -249,9 +249,9 @@ function createClient(
         if (defaultErrorHandler)
           return defaultErrorHandler.error(error, message, count)
         else
-          return ErrorAction.Continue
+          return { action: ErrorAction.Continue }
       },
-      closed() {
+      async closed(): Promise<CloseHandlerResult> {
         // TODO Clear status stuff
         for (const [id, statusItem] of Object.entries(statusItems)) {
           let index = context.subscriptions.indexOf(statusItem)
@@ -260,19 +260,19 @@ function createClient(
           statusItem.dispose()
         }
         statusItems = {}
-        let action = defaultErrorHandler ? defaultErrorHandler.closed() : CloseAction.Restart
-        if (action == CloseAction.Restart)
+        let result = defaultErrorHandler ? await defaultErrorHandler.closed() : { action: CloseAction.Restart }
+        if (result.action == CloseAction.Restart)
           plasmonStartingStatus(true)
-        else if (action == CloseAction.DoNotRestart)
+        else if (result.action == CloseAction.DoNotRestart)
           plasmonFailedToStartStatus()
-        return action
+        return result
       }
     }
 
     checkConcurrentServer()
 
     if (!plasmonServerChannel) {
-      plasmonServerChannel = vscode.window.createOutputChannel("Plasmon process")
+      plasmonServerChannel = vscode.window.createOutputChannel("Plasmon process", { log: true })
       context.subscriptions.push(plasmonServerChannel)
     }
 
@@ -286,18 +286,16 @@ function createClient(
     )
     defaultErrorHandler = client0.createDefaultErrorHandler(5 /* ??? */)
     client = client0
-    clientSubscription(
-      client.start()
-    )
+    clientSubscription(client0)
 
     plasmonStartingStatus(false)
 
-    client.onReady().then(() => {
+    client0.start().then(() => {
 
       if (client === client0) {
 
         if (trace)
-          client0.trace = Trace.Verbose
+          client0.setTrace(Trace.Verbose)
 
         interface LogMessage {
           channelId: string
@@ -549,7 +547,7 @@ function createClient(
 
         refreshMode()
       }
-    }).catch((err) => {
+    }).catch((err: unknown) => {
       console.log(`Error setting up Plasmon LSP client: ${err}`)
       vscode.window.showErrorMessage(`Error setting up Plasmon LSP client: ${err}`)
     })
@@ -646,15 +644,6 @@ async function stopClient(context: vscode.ExtensionContext): Promise<void> {
           context.subscriptions.splice(index, 1)
       })
       clientSubscriptions.splice(0, clientSubscriptions.length)
-      console.log(`Notifying ${ExitNotification.type.method} to ${client0}`)
-      // not sure why this doesn't get sent by stop…
-      try {
-        client0.sendNotification(ExitNotification.type)
-      }
-      catch (err) {
-        if (!(err instanceof Error) || !err.message.includes("Language client is not ready yet"))
-          throw err
-      }
       for (const elem in inProgressTasks) {
         inProgressTasks[elem].resolve()
       }
@@ -2284,7 +2273,7 @@ export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(
     vscode.commands.registerCommand("plasmon.start-server-with-traces", () => {
       if (!traceChannel) {
-        traceChannel = vscode.window.createOutputChannel("Plasmon JSON-RPC trace")
+        traceChannel = vscode.window.createOutputChannel("Plasmon JSON-RPC trace", { log: true })
         context.subscriptions.push(traceChannel)
       }
       let created = createClient(
