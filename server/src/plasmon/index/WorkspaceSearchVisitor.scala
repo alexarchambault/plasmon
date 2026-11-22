@@ -17,7 +17,7 @@ import scala.meta.internal.metals.{
   SemanticdbDefinition,
   WorkspaceSymbolQuery
 }
-import scala.meta.internal.mtags.{GlobalSymbolIndex, SourcePath, Symbol}
+import scala.meta.internal.mtags.{GlobalSymbolIndex, Mtags, SourcePath, Symbol}
 import scala.meta.internal.mtags.ScalametaCommonEnrichments.XtensionWorkspaceSymbolQuery
 import scala.meta.internal.semanticdb.Scala.{Descriptor, Symbols}
 import scala.meta.pc.SymbolSearchVisitor
@@ -120,6 +120,7 @@ private class WorkspaceSearchVisitor(
       isVisited += path
       val input = path.toInput
       SemanticdbDefinition.foreach(
+        new Mtags()(using NopReportContext),
         input,
         dialect,
         includeMembers = false

@@ -5,6 +5,7 @@ package plasmon.index
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import org.eclipse.lsp4j as l
+import plasmon.pc.NopReportContext
 import plasmon.PlasmonEnrichments.{StringThingExtensions, XtensionOsPath}
 import plasmon.ide.PatchedSymbolIndex
 import plasmon.index.SymbolSearchIndex
@@ -96,9 +97,11 @@ class SymbolSearchImpl(
       .map { path =>
         dependencySourceCache.getOrElseUpdate(
           path,
-          Mtags.topLevelSymbols(
-            path.toAbsPath // FIXME Dialect
-          ).asJava
+          new Mtags()(using NopReportContext)
+            .topLevelSymbols(
+              path.toAbsPath // FIXME Dialect
+            )
+            .asJava
         )
       }
       .getOrElse(Collections.emptyList())

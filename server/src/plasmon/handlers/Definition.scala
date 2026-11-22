@@ -13,7 +13,7 @@ import plasmon.ide.{
 }
 import plasmon.index.BspData
 import plasmon.jsonrpc.{Handlers, RequestHandler}
-import plasmon.pc.PresentationCompilers
+import plasmon.pc.{NopReportContext, PresentationCompilers}
 import plasmon.semdb.{Semanticdbs, TextDocumentLookup}
 
 import java.util.List as JList
@@ -96,7 +96,7 @@ object Definition {
         }
       logger.log(s"Using dialect ${dialectOpt.fold("none")(_.toString)}")
       dialectOpt.flatMap { dialect =>
-        val occurrences = Mtags
+        val occurrences = new Mtags()(using NopReportContext)
           .allToplevels(path.toInput, dialect)
           .occurrences
         logger.log(s"Found ${occurrences.length} top-level symbols")

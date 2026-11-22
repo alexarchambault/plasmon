@@ -28,7 +28,7 @@ object Versions {
   def coursier          = "2.1.27"
   def coursierDocker    = "2.1.27"
   def coursierInterface = "1.0.29-M4"
-  def mtags             = "1.6.7-1"
+  def mtags             = "2.0.0-RC1" // submodules/metals is based on main-v2, past 2.0.0-RC1
   def scalaCli          = "1.19.0"
 
   def scala213 = scala2
@@ -106,6 +106,10 @@ object JavacInternals {
   def addExports = exportedPackages.map { pkg =>
     s"--add-exports=jdk.compiler/com.sun.tools.javac.$pkg=ALL-UNNAMED"
   }
+
+  /** What javac needs to compile sources using these internals */
+  def addModulesAndExports = Seq("--add-modules", "jdk.compiler") ++ addExports
+
   def javaOptions = addExports ++ openedPackages.map { pkg =>
     s"--add-opens=jdk.compiler/com.sun.tools.javac.$pkg=ALL-UNNAMED"
   }
@@ -130,7 +134,95 @@ object submodules extends Module {
 
     object `mtags-interfaces` extends JavaModule with MetalsPublishModule {
       def sources = Task.Sources("src/main/java")
-      def mvnDeps = Seq(Deps.lsp4j)
+      def mvnDeps = Seq(Deps.lsp4j, mvn"org.slf4j:slf4j-api:2.0.16")
+    }
+
+    def protobufVersion = "4.36.1"
+
+    /** Generates Java sources from `src/main/protobuf`, like sbt-protoc in metals' sbt build */
+    trait ProtobufJavaModule extends JavaModule {
+      def protobufSources = Task.Sources("src/main/protobuf")
+
+      def protocBinary = Task {
+        val os0 = sys.props("os.name").toLowerCase(java.util.Locale.ROOT) match {
+          case n if n.contains("linux")   => "linux"
+          case n if n.contains("mac")     => "osx"
+          case n if n.contains("windows") => "windows"
+          case other                      => sys.error(s"Unsupported OS for protoc: $other")
+        }
+        val arch = sys.props("os.arch") match {
+          case "amd64" | "x86_64"  => "x86_64"
+          case "aarch64" | "arm64" => "aarch_64"
+          case other               => sys.error(s"Unsupported architecture for protoc: $other")
+        }
+        val name = s"protoc-$protobufVersion-$os0-$arch.exe"
+        val url =
+          s"https://repo1.maven.org/maven2/com/google/protobuf/protoc/$protobufVersion/$name"
+        val file = FileCache()
+          .file(coursier.util.Artifact(url))
+          .run
+          .unsafeRun()(using scala.concurrent.ExecutionContext.global)
+          .fold(err => sys.error(s"Error downloading $url: $err"), identity)
+        val dest = Task.dest / name
+        os.copy.over(os.Path(file), dest)
+        if (!Properties.isWin) os.perms.set(dest, "rwxr-xr-x")
+        PathRef(dest)
+      }
+
+      def protobufJavaSources = Task {
+        val dirs   = protobufSources().map(_.path).filter(os.isDir(_))
+        val protos = dirs.flatMap(os.walk(_)).filter(_.ext == "proto")
+        if (protos.nonEmpty)
+          os.proc(
+            protocBinary().path,
+            dirs.map(dir => s"-I$dir"),
+            s"--java_out=${Task.dest}",
+            protos
+          ).call(stdout = os.Inherit)
+        PathRef(Task.dest)
+      }
+
+      def generatedSources = super.generatedSources() ++ Seq(protobufJavaSources())
+    }
+
+    object jsemanticdb extends ProtobufJavaModule with MetalsPublishModule {
+      def sources = Task.Sources("src/main/scala")
+      def mvnDeps = Seq(
+        mvn"org.slf4j:slf4j-api:2.0.16",
+        mvn"com.google.protobuf:protobuf-java-util:$protobufVersion",
+        mvn"com.google.protobuf:protobuf-java:$protobufVersion"
+      )
+    }
+
+    object `semanticdb-protoc` extends JavaModule with MetalsPublishModule {
+      def sources    = Task.Sources("src/main/java")
+      def moduleDeps = Seq(jsemanticdb)
+      def mvnDeps = Seq(
+        mvn"com.google.guava:guava:33.7.1-jre",
+        mvn"com.google.protobuf:protobuf-java:$protobufVersion"
+      )
+    }
+
+    object `semanticdb-javac` extends JavaModule with MetalsPublishModule {
+      def sources      = Task.Sources("src/main/scala")
+      def moduleDeps   = Seq(jsemanticdb)
+      def javacOptions = super.javacOptions() ++ JavacInternals.addModulesAndExports
+      def resources    = Task.Sources() // resources-packaged is only for the published JAR
+    }
+
+    object turbine extends ProtobufJavaModule with MetalsPublishModule {
+      def moduleDir = super.moduleDir / os.up / "vendor" / "turbine"
+      def sources   = Task.Sources("src/main/java")
+      def mvnDeps = Seq(
+        mvn"com.google.guava:guava:33.7.1-jre",
+        mvn"com.google.auto.value:auto-value:1.11.1",
+        mvn"com.google.auto.value:auto-value-annotations:1.11.1",
+        mvn"com.google.protobuf:protobuf-java:$protobufVersion"
+      )
+      def javacOptions = super.javacOptions() ++ Seq(
+        "-processor",
+        "com.google.auto.value.processor.AutoValueProcessor"
+      )
     }
 
     trait MtagsScalaModule extends ScalaModule with MetalsPublishModule {
@@ -148,10 +240,11 @@ object submodules extends Module {
     object `mtags-shared` extends Cross[MtagsSharedModule](Versions.scala2PcVersions)
     trait MtagsSharedModule extends MtagsCrossModule {
       def sources    = Task.Sources(os.sub / "src" / "main" / "scala", scalaBinaryVersionDir)
-      def moduleDeps = Seq(`mtags-interfaces`)
+      def moduleDeps = Seq(`mtags-interfaces`, jsemanticdb)
       def mvnDeps = Seq(
         mvn"org.lz4:lz4-java:1.8.1",
-        mvn"com.google.protobuf:protobuf-java:4.36.1",
+        mvn"com.google.protobuf:protobuf-java:$protobufVersion",
+        mvn"com.google.protobuf:protobuf-java-util:$protobufVersion",
         mvn"com.google.guava:guava:33.7.1-jre",
         mvn"io.get-coursier:interface:1.0.29-M2",
         excludeScalaCompiler(mvn"com.outr::scribe:$scribeVersion"),
@@ -188,8 +281,9 @@ object submodules extends Module {
         os.write.over(dest, code, createFolders = true)
         PathRef(dir)
       }
-      def moduleDeps = Seq(`mtags-shared`(crossScalaVersion))
+      def moduleDeps = Seq(`mtags-shared`(crossScalaVersion), `semanticdb-protoc`)
       def mvnDeps = Seq(
+        mvn"org.ow2.asm:asm:9.9",
         excludeScalaCompiler(mvn"com.lihaoyi::geny:1.1.1"),
         mvn"org.scala-lang.modules::scala-java8-compat:1.0.2",
         mvn"org.jsoup:jsoup:1.23.2",
@@ -205,10 +299,16 @@ object submodules extends Module {
     object `mtags-java` extends MtagsScalaModule {
       def scalaVersion = Versions.scala2
       def sources      = Task.Sources("src/main/scala")
-      def moduleDeps   = Seq(`mtags-interfaces`, `mtags-shared`(Versions.scala2))
+      def moduleDeps = Seq(
+        `mtags-interfaces`,
+        `mtags-shared`(Versions.scala2),
+        `semanticdb-javac`,
+        turbine
+      )
       def mvnDeps = Seq(
         mvn"org.scala-lang.modules::scala-java8-compat:1.0.2"
       )
+      def javacOptions = super.javacOptions() ++ JavacInternals.addModulesAndExports
     }
   }
 

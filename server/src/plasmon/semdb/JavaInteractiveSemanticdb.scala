@@ -16,7 +16,7 @@ import scala.jdk.CollectionConverters.*
 import scala.meta.internal.semanticdb as s
 import scala.meta.internal.metals.JdkSources
 import scala.meta.internal.mtags.{MD5, SourcePath}
-import scala.meta.internal.pc.JavaMetalsGlobal
+import scala.meta.internal.jpc.JavaMetalsCompiler
 import scala.util.{Failure, Success, Try, Using}
 
 trait JavaInteractiveSemanticdb {
@@ -127,7 +127,7 @@ object JavaInteractiveSemanticdb {
           try {
             // JavacFileManager#getLocationForModule specifically tests that JavaFileObject is instanceof PathFileObject when using Patch-Module
             // so can't use Metals SourceJavaFileObject
-            val javaFileObject = JavaMetalsGlobal.makeFileObject(source.toIO)
+            val javaFileObject = JavaMetalsCompiler.makeFileObject(source.toIO)
 
             // We call COMPILER.getTask directly (rather than via classpathCompilationTask)
             // so we can pass a capturing DiagnosticListener. classpathCompilationTask hardcodes
@@ -141,7 +141,7 @@ object JavaInteractiveSemanticdb {
                       .map(src => s" (${src.getName}:${d.getLineNumber})")
                       .getOrElse("")
                 )
-            val javacTask = JavaMetalsGlobal.COMPILER
+            val javacTask = JavaMetalsCompiler.COMPILER
               .getTask(
                 printWriter,
                 fileManager,

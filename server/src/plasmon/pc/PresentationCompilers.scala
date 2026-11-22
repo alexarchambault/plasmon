@@ -34,7 +34,7 @@ import plasmon.servercommand.BspUtil
 
 import java.net.URI
 import java.nio.file.Paths
-import java.util.{Collections, List as JList, Map as JMap, Optional, UUID}
+import java.util.{Collections, List as JList, Map as JMap, Optional}
 import java.util.concurrent.{
   CompletableFuture,
   ConcurrentHashMap,
@@ -64,9 +64,10 @@ import scala.meta.internal.metals.{
   Testing
 }
 import scala.meta.internal.mtags.{GlobalSymbolIndex, MD5}
+import scala.meta.internal.jpc.JavaPresentationCompiler
 import scala.meta.internal.pc.{
+  HasCompilerAccess,
   InlayHints,
-  JavaPresentationCompiler,
   LogMessages,
   PcSymbolInformation
 }
@@ -1431,7 +1432,7 @@ class PresentationCompilers(
       case s: Scala3PresentationCompiler => s.module.targetId
       case r: RemotePresentationCompiler => r.module.targetId
       case j: JavaPresentationCompiler =>
-        GlobalSymbolIndex.Module.fromString(j.moduleString).targetId
+        GlobalSymbolIndex.Module.fromString(j.buildTargetId).targetId
       case _ => "" // ???
     }
 
@@ -2014,45 +2015,38 @@ object PresentationCompilers {
       val id         = s"interactive-java-$idSuffix"
       val label      = s"Interactive Java $nameSuffix"
 
-      val pc = JavaPresentationCompiler(
-        javaFileManager,
-        javaUserLoggerMaker(module.targetId),
-        module.asString,
-        ec,
-        wrapper = new JavaPresentationCompiler.Wrapper {
-          def run[T](name: String)(f: => T): T = {
-            val uuid = UUID.randomUUID().toString
-            languageClient.progress(
-              PlasmonLanguageClient.ProgressDetails(
-                id,
-                label,
-                uuid,
-                name,
-                done = false,
-                progress = null
-              )
-            )
-            try f
-            finally
-              languageClient.progress(
-                PlasmonLanguageClient.ProgressDetails(
-                  id,
-                  label,
-                  uuid,
-                  name,
-                  done = true,
-                  progress = null
-                )
-              )
-          }
-        }
-      )
-      configure(pc, search, completionItemPriority, workspace, ec, sh, config0)
-        .newInstance(
-          module.asString,
-          classpath.asJava,
-          Nil.asJava
+      def progress(reqId: String, name: String, done: Boolean): Unit =
+        languageClient.progress(
+          PlasmonLanguageClient.ProgressDetails(
+            id,
+            label,
+            reqId,
+            name,
+            done = done,
+            progress = null
+          )
         )
+
+      val pc = JavaPresentationCompiler(
+        javaUserLoggerMaker(module.targetId),
+        buildTargetId = module.asString,
+        ec = ec,
+        javaFileManagerFactory = (_, _) => javaFileManager()
+      )
+      val configured =
+        configure(pc, search, completionItemPriority, workspace, ec, sh, config0)
+          .newInstance(
+            module.asString,
+            classpath.asJava,
+            Nil.asJava
+          )
+      configured match {
+        case j: HasCompilerAccess =>
+          j.compilerAccess.beforeAccess((reqId, name, _) => progress(reqId, name, done = false))
+          j.compilerAccess.afterAccess((reqId, name, _) => progress(reqId, name, done = true))
+        case _ =>
+      }
+      configured
     }
 
     def asJson: RawJson = {
