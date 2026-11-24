@@ -1191,22 +1191,40 @@ class PresentationCompilers(
                 case Some(_) =>
                   logger0.log(s"Got wrongful diagnostics for wrapped source $path, ignoring them")
                 case None =>
-                  val mappedSourceOpt = bspData.mappedFrom(targetId, path)
-                  val updateLine: Int => Int = mappedSourceOpt match {
-                    case Some(mappedSource) =>
-                      line => mappedSource.toUserLine(line).getOrElse(0)
-                    case None =>
-                      identity
+                  // Diagnostics of the code generated for wrapped sources (like scripts) are
+                  // reported for the files of users, the only ones that are sources of their
+                  // target, with the positions of their code. Those of the generated code around
+                  // it are dropped.
+                  val mappedSourceOpt = bspData.mappedFrom(targetId, path).orElse {
+                    // the presentation compiler gets the generated code of wrapped sources as
+                    // `<generated>.sc.scala` (see IndexerActor)
+                    if (path.last.endsWith(".sc.scala"))
+                      bspData.mappedFrom(
+                        targetId,
+                        path / os.up / (path.last.stripSuffix(".sc.scala") + ".scala")
+                      )
+                    else None
                   }
-                  for (diag <- diags if !diag.pos.span.exists)
-                    logger0.log(s"No span diagnostic: $diag")
-                  val diags0 = diags.collect {
-                    case diag if diag.pos.span.exists =>
+                  val updateLine: Int => Option[Int] = mappedSourceOpt match {
+                    case Some(mappedSource) => mappedSource.toUserLine
+                    case None               => Some(_)
+                  }
+                  val diagUri = mappedSourceOpt.fold(uri)(_.userPath.toNIO.toUri)
+                  def inUserCode(diag: dotty.tools.dotc.reporting.Diagnostic): Boolean =
+                    updateLine(diag.pos.startLine).nonEmpty && updateLine(diag.pos.endLine).nonEmpty
+                  val diags0 = diags.flatMap {
+                    case diag if !diag.pos.span.exists =>
+                      logger0.log(s"No span diagnostic: $diag")
+                      None
+                    case diag if !inUserCode(diag) =>
+                      logger0.log(s"Diagnostic outside of user code: $diag")
+                      None
+                    case diag =>
                       scribe.info(s"raw diag in ${uri.toOsPath.relativeTo(workspace)}: $diag")
-                      new l.Diagnostic(
+                      val lspDiag = new l.Diagnostic(
                         new l.Range(
-                          new l.Position(updateLine(diag.pos.startLine), diag.pos.startColumn),
-                          new l.Position(updateLine(diag.pos.endLine), diag.pos.endColumn)
+                          new l.Position(updateLine(diag.pos.startLine).get, diag.pos.startColumn),
+                          new l.Position(updateLine(diag.pos.endLine).get, diag.pos.endColumn)
                         ),
                         diag.message,
                         diag.level match {
@@ -1219,8 +1237,9 @@ class PresentationCompilers(
                         },
                         diagnosticSource
                       )
+                      Some(lspDiag)
                   }
-                  emitDiagnostics(pc, targetId.module, uri, diags0, logger0)
+                  emitDiagnostics(pc, targetId.module, diagUri, diags0, logger0)
               }
             },
             module = targetId.module

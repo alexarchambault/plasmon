@@ -13,6 +13,7 @@ import java.util.concurrent.CompletableFuture
 
 import scala.collection.mutable
 import scala.concurrent.duration.FiniteDuration
+import scala.jdk.CollectionConverters.*
 
 // This needs to be a trait. The lsp4j reflection stuff is unhappy if it's a class
 // (it finds duplicated methods…)
@@ -69,6 +70,37 @@ trait MockLanguageClient extends LanguageClient with MockLanguageClient.Stuff
       res
     }
   }
+
+  /** Waits for the latest diagnostics published for `path` to satisfy `cond`, and returns them
+    *
+    * Unlike [[awaitDiagnostics]], this follows the diagnostics of a file as they get updated, and
+    * can wait for them to be cleared.
+    *
+    * @return
+    *   the diagnostics satisfying `cond` if any, else the latest ones published for `path` when the
+    *   timeout expired, if any
+    */
+  def awaitLatestDiagnostics(
+    path: os.Path,
+    timeout: FiniteDuration
+  )(cond: Seq[l.Diagnostic] => Boolean): Either[Option[Seq[l.Diagnostic]], Seq[l.Diagnostic]] = {
+    val deadline = System.currentTimeMillis() + timeout.toMillis
+    lock.synchronized {
+      def latest = publishDiagnostics0.findLast { params =>
+        os.Path(Paths.get(new URI(params.getUri))) == path
+      }.map(_.getDiagnostics.asScala.toSeq)
+      def found     = latest.filter(cond)
+      var res       = found
+      var remaining = deadline - System.currentTimeMillis()
+      while (res.isEmpty && remaining > 0L) {
+        lock.wait(remaining)
+        res = found
+        remaining = deadline - System.currentTimeMillis()
+      }
+      res.toRight(latest)
+    }
+  }
+
   override def showMessage(params: l.MessageParams): Unit =
     lock.synchronized {
       outputStream.pprint(params)
