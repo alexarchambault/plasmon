@@ -52,6 +52,11 @@ object PcDiagnostics {
       Option(scheduled.put(path, task)).foreach(_.cancel(false))
     }
 
+  /** Type checks the files opened in the editor, see [[schedule]] */
+  def scheduleOpened(server: Server): Unit =
+    for (path <- server.editorState.buffers.open)
+      schedule(server, path)
+
   private def typeCheck(
     server: Server,
     path: os.Path,

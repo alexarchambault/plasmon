@@ -158,4 +158,19 @@ class PcDiagnosticsTests extends PlasmonSuite {
       }
     }
 
+  for (mode <- lspOnlyModes)
+    test("on files opened before enabling them" + mode.testNameSuffix) {
+      withScalaCliProject(SingleModuleBuildTool.ScalaCli(), scalaSource("n")) {
+        (path, driver, client) =>
+          // Opening a file has its presentation compiler type check it (for its semanticdb),
+          // which computes its diagnostics, so that the expected error comes with a change
+          // afterwards: when PC diagnostics aren't enabled, changes don't get type checked
+          driver.didOpen(path, 0, scalaSource("n"), 0, awaitTimeout)
+          driver.hover(path, new l.Position(3, 6))
+          driver.didChange(path, 1, scalaSource("zz"))
+          enablePcDiagnostics(driver)
+          awaitPcDiags(client, path, Seq(Diag(4, 10, 4, 12, "Not found: zz")))
+      }
+    }
+
 }
