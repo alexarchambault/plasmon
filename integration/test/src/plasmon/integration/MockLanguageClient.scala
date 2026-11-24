@@ -71,6 +71,14 @@ trait MockLanguageClient extends LanguageClient with MockLanguageClient.Stuff
     }
   }
 
+  /** The diagnostics published for `path` so far, oldest first */
+  def publishedDiagnostics(path: os.Path): Seq[Seq[l.Diagnostic]] =
+    lock.synchronized {
+      publishDiagnostics0.toList
+        .filter(params => os.Path(Paths.get(new URI(params.getUri))) == path)
+        .map(_.getDiagnostics.asScala.toSeq)
+    }
+
   /** Waits for the latest diagnostics published for `path` to satisfy `cond`, and returns them
     *
     * Unlike [[awaitDiagnostics]], this follows the diagnostics of a file as they get updated, and

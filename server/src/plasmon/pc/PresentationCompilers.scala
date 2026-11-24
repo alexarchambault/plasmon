@@ -1184,7 +1184,7 @@ class PresentationCompilers(
           lazy val pc: Scala3PresentationCompiler = new Scala3PresentationCompiler(
             javaHome.toNIO,
             () => logger().consumer,
-            emitDiagnostics = (uri, diags) => {
+            emitDiagnostics = (uri, source, diags) => {
               val logger0 = logger()
               val path    = uri.toOsPath
               bspData.mappedTo(targetId, path) match {
@@ -1210,36 +1210,56 @@ class PresentationCompilers(
                     case None               => Some(_)
                   }
                   val diagUri = mappedSourceOpt.fold(uri)(_.userPath.toNIO.toUri)
-                  def inUserCode(diag: dotty.tools.dotc.reporting.Diagnostic): Boolean =
-                    updateLine(diag.pos.startLine).nonEmpty && updateLine(diag.pos.endLine).nonEmpty
-                  val diags0 = diags.flatMap {
-                    case diag if !diag.pos.span.exists =>
-                      logger0.log(s"No span diagnostic: $diag")
-                      None
-                    case diag if !inUserCode(diag) =>
-                      logger0.log(s"Diagnostic outside of user code: $diag")
-                      None
-                    case diag =>
-                      scribe.info(s"raw diag in ${uri.toOsPath.relativeTo(workspace)}: $diag")
-                      val lspDiag = new l.Diagnostic(
-                        new l.Range(
-                          new l.Position(updateLine(diag.pos.startLine).get, diag.pos.startColumn),
-                          new l.Position(updateLine(diag.pos.endLine).get, diag.pos.endColumn)
-                        ),
-                        diag.message,
-                        diag.level match {
-                          case dotty.tools.dotc.interfaces.Diagnostic.WARNING =>
-                            l.DiagnosticSeverity.Warning
-                          case dotty.tools.dotc.interfaces.Diagnostic.ERROR =>
-                            l.DiagnosticSeverity.Error
-                          case _ =>
-                            l.DiagnosticSeverity.Information
-                        },
-                        diagnosticSource
-                      )
-                      Some(lspDiag)
+                  // Requests are run latest first, so that diagnostics computed for former
+                  // versions of the code (by requests sent while it was being edited) can come
+                  // after those of its current version: these are ignored. Told apart via the
+                  // code that was type checked, as an empty list of diagnostics points to no code.
+                  val currentCode = mappedSourceOpt match {
+                    case Some(mappedSource) =>
+                      buffers.get(mappedSource.userPath).map(mappedSource.update(_)._1.value)
+                    case None =>
+                      buffers.get(path)
                   }
-                  emitDiagnostics(pc, targetId.module, diagUri, diags0, logger0)
+                  val stale = currentCode.exists(_ != new String(source.content()))
+                  if (stale)
+                    logger0.log(s"Ignoring diagnostics of a former version of $path")
+                  else {
+                    def inUserCode(diag: dotty.tools.dotc.reporting.Diagnostic): Boolean =
+                      updateLine(diag.pos.startLine).nonEmpty && updateLine(
+                        diag.pos.endLine
+                      ).nonEmpty
+                    val diags0 = diags.flatMap {
+                      case diag if !diag.pos.span.exists =>
+                        logger0.log(s"No span diagnostic: $diag")
+                        None
+                      case diag if !inUserCode(diag) =>
+                        logger0.log(s"Diagnostic outside of user code: $diag")
+                        None
+                      case diag =>
+                        scribe.info(s"raw diag in ${uri.toOsPath.relativeTo(workspace)}: $diag")
+                        val lspDiag = new l.Diagnostic(
+                          new l.Range(
+                            new l.Position(
+                              updateLine(diag.pos.startLine).get,
+                              diag.pos.startColumn
+                            ),
+                            new l.Position(updateLine(diag.pos.endLine).get, diag.pos.endColumn)
+                          ),
+                          diag.message,
+                          diag.level match {
+                            case dotty.tools.dotc.interfaces.Diagnostic.WARNING =>
+                              l.DiagnosticSeverity.Warning
+                            case dotty.tools.dotc.interfaces.Diagnostic.ERROR =>
+                              l.DiagnosticSeverity.Error
+                            case _ =>
+                              l.DiagnosticSeverity.Information
+                          },
+                          diagnosticSource
+                        )
+                        Some(lspDiag)
+                    }
+                    emitDiagnostics(pc, targetId.module, diagUri, diags0, logger0)
+                  }
               }
             },
             module = targetId.module

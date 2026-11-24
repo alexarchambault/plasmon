@@ -1,5 +1,6 @@
 package plasmon.integration
 
+import com.eed3si9n.expecty.Expecty.expect
 import org.eclipse.lsp4j as l
 import plasmon.integration.TestUtil.*
 
@@ -82,6 +83,14 @@ class PcDiagnosticsTests extends PlasmonSuite {
     s"""//> using scala "${IntegrationConstants.scala3}"
        |//> using jvm "${jvm.value}"""".stripMargin
 
+  private def scalaSource(value: String) =
+    s"""$header
+       |object Foo {
+       |  val n = 2
+       |  val m = $value
+       |}
+       |""".stripMargin
+
   for (mode <- lspOnlyModes)
     test("wrapped source" + mode.testNameSuffix) {
       val buildTool = SingleModuleBuildTool.ScalaCli(scriptMode = true)
@@ -98,6 +107,39 @@ class PcDiagnosticsTests extends PlasmonSuite {
           // reported on the script itself, at the position of the error in it, and only for the
           // code of the user, not for the code wrapping it
           awaitPcDiags(client, path, Seq(Diag(3, 8, 3, 10, "Not found: zz")))
+      }
+    }
+
+  for (mode <- lspOnlyModes)
+    test("diagnostics of former versions of the code" + mode.testNameSuffix) {
+      withScalaCliProject(SingleModuleBuildTool.ScalaCli(), scalaSource("n")) {
+        (path, driver, client) =>
+          val textDocument = new l.TextDocumentIdentifier(path.toNIO.toUri.toASCIIString)
+          // Opening the file type checks it too, for its semanticdb, and that can come last. That
+          // version has no errors: its empty list of diagnostics points to no code, and can only
+          // be told apart from those of the latest version via the code that was type checked.
+          driver.didOpen(path, 0, scalaSource("n"), 0, awaitTimeout)
+          enablePcDiagnostics(driver)
+          // Changes, each followed by a request having the presentation compiler type check its
+          // version of the code. The requests queue up while the presentation compiler handles
+          // the former ones, and get run latest first, so that former versions get type checked
+          // after the latest one.
+          val values = (1 to 20).map(i => s"zz$i") :+ "zz"
+          val requests =
+            for ((value, idx) <- values.zipWithIndex) yield {
+              driver.didChange(path, idx + 1, scalaSource(value))
+              driver.lsp.getTextDocumentService.hover(
+                new l.HoverParams(textDocument, new l.Position(3, 6))
+              )
+            }
+          for (req <- requests)
+            req.get()
+          val expected = Seq(Diag(4, 10, 4, 12, "Not found: zz"))
+          awaitPcDiags(client, path, expected)
+          // no diagnostics of former versions after those of the latest one
+          val published   = client.publishedDiagnostics(path).map(pcDiags)
+          val afterLatest = published.drop(published.indexOf(expected))
+          expect(afterLatest.forall(_ == expected))
       }
     }
 
