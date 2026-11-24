@@ -143,4 +143,19 @@ class PcDiagnosticsTests extends PlasmonSuite {
       }
     }
 
+  for (mode <- lspOnlyModes)
+    test("on changes" + mode.testNameSuffix) {
+      withScalaCliProject(SingleModuleBuildTool.ScalaCli(), scalaSource("n")) {
+        (path, driver, client) =>
+          enablePcDiagnostics(driver)
+          // no request is sent: these diagnostics come from type checks run on changes only
+          driver.didOpen(path, 0, scalaSource("zz"), 0, awaitTimeout)
+          awaitPcDiags(client, path, Seq(Diag(4, 10, 4, 12, "Not found: zz")))
+          driver.didChange(path, 1, scalaSource("qqqq"))
+          awaitPcDiags(client, path, Seq(Diag(4, 10, 4, 14, "Not found: qqqq")))
+          driver.didChange(path, 2, scalaSource("n"))
+          awaitPcDiags(client, path, Nil)
+      }
+    }
+
 }
