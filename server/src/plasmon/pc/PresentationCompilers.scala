@@ -1238,8 +1238,19 @@ class PresentationCompilers(
                         end   <- updatePos(diag.pos.endLine, diag.pos.endColumn)
                       } yield new l.Range(start, end)
                     val diags0 = diags.flatMap {
+                      // The ones without a position, such as "N warnings found" (the summary of
+                      // what the run reported, positioned ones included) or "there was 1
+                      // deprecation warning; re-run with -deprecation for details"
                       case diag if !diag.pos.span.exists =>
-                        logger0.log(s"No span diagnostic: $diag")
+                        val level = diag.level match {
+                          case dotty.tools.dotc.interfaces.Diagnostic.WARNING => "warning"
+                          case dotty.tools.dotc.interfaces.Diagnostic.ERROR   => "error"
+                          case _                                              => "info"
+                        }
+                        logger0.log(
+                          s"Diagnostic without position for ${path.relativeTo(workspace)} " +
+                            s"($level): ${diag.message}"
+                        )
                         None
                       case diag =>
                         userRange(diag) match {
