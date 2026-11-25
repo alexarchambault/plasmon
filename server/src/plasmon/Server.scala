@@ -372,6 +372,13 @@ final class Server(
       onBuildTargetDidChangeFunc = params =>
         if (params.getChanges.asScala.nonEmpty) {
           scribe.info(s"Some build targets changed ($params)")
+          // The presentation compilers of these targets may have read their former class path
+          // or byte code already. Build servers that compile targets on their own (rather than
+          // upon our compile requests, after which we reset these compilers already, see
+          // postCompilation) only tell us via these notifications.
+          if (autoCompile)
+            for (change <- params.getChanges.asScala)
+              presentationCompilers.reset(change.getTarget)
           onBuildTargetDidChange(params)
         },
       buildToolId,
@@ -591,7 +598,7 @@ final class Server(
             val targetId = new b.BuildTargetIdentifier(event.targetId.targetId)
             if (sourcepath.nonEmpty)
               resetSourcepathCompilers(targetId)
-            else
+            else if (compilations.canCompile(targetId))
               compilations
                 .compileTarget(targetId)
                 .onComplete {

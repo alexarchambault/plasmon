@@ -361,7 +361,9 @@ object ProjectOps {
     f.flatten
   }
 
-  /** Compiles the module a file belongs to. `None` when the file isn't in any loaded module. */
+  /** Compiles the module a file belongs to. `None` when the file isn't in any loaded module, or
+    * when its build server says it can't compile that module.
+    */
   def compile(
     server: Server,
     file: os.Path
@@ -369,7 +371,7 @@ object ProjectOps {
     val f = Future {
       server.compilations.compileFile(file) match {
         case None =>
-          scribe.warn(s"No build target found for $file, nothing to compile")
+          scribe.warn(s"No build target that can be compiled found for $file, nothing to compile")
           Future.successful(None)
         case Some(f) =>
           reportingFailures(server, file.toString, f).map(Some(_))(using server.pools.dummyEc)

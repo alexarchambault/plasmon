@@ -158,11 +158,24 @@ final class Compilations(
     elem.promise.future
   }
 
+  /** Whether the build server of a target says it can compile it
+    *
+    * Some build servers compile their targets on their own, and answer compile requests with no-ops
+    * (like REPLs, which compile code as it gets evaluated). Asking them to compile is pointless,
+    * and acting upon the outcome (restarting presentation compilers, say) is harmful.
+    */
+  def canCompile(targetId: b.BuildTargetIdentifier): Boolean =
+    bspData.info(targetId).flatMap(t => Option(t.getCapabilities)).forall { capabilities =>
+      !java.lang.Boolean.FALSE.equals(capabilities.getCanCompile)
+    }
+
+  /** Compiles the target of a file, unless its build server says it can't compile it */
   def compileFile(path: os.Path): Option[Future[b.CompileResult]] =
-    bspData.inverseSources(path).map { targetId =>
+    bspData.inverseSources(path).filter(canCompile).map { targetId =>
       compileTarget(targetId)
     }
 
+  /** Compiles the targets of files, except those their build server says it can't compile */
   def compileFiles(paths: Seq[os.Path]): Future[Unit] = {
 
     val compilations = paths
@@ -170,6 +183,7 @@ final class Compilations(
         bspData.inverseSources(path).toSeq
       }
       .distinct
+      .filter(canCompile)
       .flatMap { targetId =>
         val buildServerOpt = bspData.buildServerOf(targetId)
         if (buildServerOpt.isEmpty)
