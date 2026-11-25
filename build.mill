@@ -533,6 +533,8 @@ object server extends ScalaModule with PlasmonPublishModule {
     // mvn"com.lihaoyi:::ammonite-sshd:3.0.0-M0-60-73894704c"
     mvn"com.lihaoyi::castor:0.3.2",
     mvn"com.outr:scribe_2.13:3.19.1",
+    // Metals 2 logs via slf4j (presentation compiler errors among others): to scribe, not to NOP
+    mvn"com.outr:scribe-slf4j2_2.13:3.19.1",
     mvn"com.lihaoyi:ujson_2.13:4.4.3",
     mvn"org.eclipse.jdt:org.eclipse.jdt.core:3.25.0",
     mvn"org.virtuslab.scala-cli:scala-cli-bsp:1.19.0".exclude(("ch.epfl.scala", "bsp4j")),
