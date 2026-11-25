@@ -71,6 +71,7 @@ object DocumentChange {
     }
 
     if (!path.isDependencySource(server.workspace())) {
+      PcDiagnostics.schedule(server, path)
       implicit val ec = server.pools.documentChangeEc
       Future
         .sequence(
@@ -109,6 +110,7 @@ object DocumentChange {
   ): Reactions = {
 
     server.editorState.buffers.put(path, content)
+    PcDiagnostics.schedule(server, path)
 
     server.refreshStatus()
     for {

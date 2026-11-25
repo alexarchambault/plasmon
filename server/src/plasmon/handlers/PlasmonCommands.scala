@@ -1220,6 +1220,9 @@ object PlasmonCommands {
                 else Set(Diagnostics.Type.Compilation, Diagnostics.Type.Syntax)
               for (client <- clients)
                 client.setDiagnosticTypes(types)
+              // diagnostics so far were only computed as a side effect of requests
+              if (enable)
+                plasmon.handlers.docchange.PcDiagnostics.scheduleOpened(server)
               null
             }(using server.pools.requestsEces).asJava
           }
