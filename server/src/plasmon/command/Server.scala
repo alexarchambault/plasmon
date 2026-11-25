@@ -89,9 +89,15 @@ object Server extends caseapp.Command[ServerOptions] {
     Withdraw
   )
 
-  def initLogging(logToFileOpt: Option[os.Path]): Unit = {
+  /** Sends logs to stderr, or to `logToFileOpt`, and their lines to `onLogLine` too */
+  def initLogging(
+    logToFileOpt: Option[os.Path],
+    onLogLine: Option[String => Unit] = None
+  ): Unit = {
     import scribe.file.*
     import scribe.format.*
+    import scribe.output.LogOutput
+    import scribe.output.format.OutputFormat
     import scribe.writer.*
     import scribe.*
     val format = formatter"$date $levelPaddedRight ${scribe.format.messages}"
@@ -100,15 +106,21 @@ object Server extends caseapp.Command[ServerOptions] {
       case Some(logToFile) =>
         FileWriter(pathBuilder = PathBuilder.static(logToFile.toNIO)).flushAlways
     }
-    Logger.root
-      .clearModifiers()
-      .clearHandlers()
-      .withHandler(
-        writer = writer,
-        formatter = format,
-        minimumLevel = Some(Level.Info),
-        modifiers = Nil
-      )
+    val writers = Seq(writer) ++ onLogLine.toSeq.map { f =>
+      new Writer {
+        def write(record: LogRecord, output: LogOutput, outputFormat: OutputFormat): Unit =
+          f(output.plainText)
+      }
+    }
+    writers
+      .foldLeft(Logger.root.clearModifiers().clearHandlers()) { (logger, writer) =>
+        logger.withHandler(
+          writer = writer,
+          formatter = format,
+          minimumLevel = Some(Level.Info),
+          modifiers = Nil
+        )
+      }
       .replace()
   }
 
@@ -161,13 +173,29 @@ object Server extends caseapp.Command[ServerOptions] {
     start(options, None)
   }
 
+  /** What whoever runs a server in its own process wants to hear of it, see [[start]].
+    *
+    * @param client
+    *   the language client of the server, that gets what it'd send an editor (status, logs, …)
+    * @param onLogLine
+    *   called with the lines of the log of the server
+    */
+  final case class Hooks(
+    client: Option[PlasmonLanguageClient] = None,
+    onLogLine: Option[String => Unit] = None
+  )
+
   /** Sets a server up and serves LSP and / or commands until it exits.
     *
     * With `inProcess`, the server is handed to it rather than serving LSP or waiting for `plasmon
     * exit`: it serves the server however it likes, for as long as it runs. The command socket is up
     * either way.
     */
-  def start(options: ServerOptions, inProcess: Option[InProcess => Unit]): Unit = {
+  def start(
+    options: ServerOptions,
+    inProcess: Option[InProcess => Unit],
+    hooks: Hooks = Hooks()
+  ): Unit = {
 
     // Without LSP there is no client to tell us what to work on, so the working directory it is
     val autoInit = options.autoInit.getOrElse(!options.lsp)
@@ -203,10 +231,11 @@ object Server extends caseapp.Command[ServerOptions] {
             s" (server JAR URI: ${getClass.getProtectionDomain.getCodeSource.getLocation.toURI})"
       )
 
-      initLogging {
+      initLogging(
         if (options.logToStderr.getOrElse(autoInit)) None
-        else Some(stateDir / "log")
-      }
+        else Some(stateDir / "log"),
+        hooks.onLogLine
+      )
 
       scribe.info("Starting from scribe")
 
@@ -329,6 +358,10 @@ object Server extends caseapp.Command[ServerOptions] {
         sourcepath = sourcepathMode,
         stopBuildToolAfterLoad = options.stopBuildToolAfterLoad
       )
+
+      // Early on, so that the client hears of the logs that come before anything is served
+      for (client <- hooks.client)
+        server.setClient(client)
 
       indexer = new Indexer(server)
       server.indexerLogger = Some(indexer.logger)

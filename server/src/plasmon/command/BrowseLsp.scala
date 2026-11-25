@@ -19,13 +19,15 @@ import scala.util.control.NonFatal
   * It goes through the same commands as the command line (`plasmon lsp … --auto`), run against the
   * server running in this process (see [[Browse.serverOptions]]). Loads run one at a time, and the
   * other requests on a file wait for its load, then run alongside each other. What commands print
-  * on stderr (what is being loaded, the logs of the requests) goes to [[status]], that the page
+  * on stderr (what is being loaded, the logs of the requests) goes to `status`, that the page
   * shows.
   */
-private[command] final class BrowseLsp(root: os.Path, inProcess: Server.InProcess) {
+private[command] final class BrowseLsp(
+  root: os.Path,
+  inProcess: Server.InProcess,
+  status: BrowseStatus
+) {
   import BrowseLsp.*
-
-  val status = new Status
 
   // Whether loading what each file needs went fine, once it's done
   private val loads = new ConcurrentHashMap[os.Path, Promise[Boolean]]
@@ -205,90 +207,5 @@ private[command] object BrowseLsp {
   extension (s: String) {
     private def nonEmptyOr(other: String): String =
       if (s.isEmpty) other else s
-  }
-
-  /** What the page shows in its status bar: what's going on, and the lines that led to it.
-    *
-    * The page long-polls it, see [[await]].
-    */
-  final class Status {
-    private var seq       = 0L
-    private var active    = 0
-    private var text      = "Ready"
-    private var error     = false
-    private var idleText  = "Ready"
-    private var idleError = false
-    private var firstLine = 0L
-    private val lines     = mutable.ArrayDeque.empty[String]
-    private val maxLines  = 1000
-
-    private def changed(): Unit = {
-      seq += 1
-      notifyAll()
-    }
-
-    def busy(description: String): Unit = synchronized {
-      active += 1
-      text = description + "…"
-      error = false
-      addLine(s"$description…")
-      changed()
-    }
-
-    /** A line for the log, and for the status bar too with `inStatusBar` */
-    def line(line: String, inStatusBar: Boolean = true): Unit = synchronized {
-      addLine(line)
-      // The logs of the request itself are too chatty for the status bar, they're in the log
-      if (inStatusBar && active > 0 && !line.startsWith("["))
-        text = line
-      changed()
-    }
-
-    def done(): Unit = synchronized {
-      active = math.max(0, active - 1)
-      if (active == 0) {
-        text = idleText
-        error = idleError
-      }
-      changed()
-    }
-
-    /** What to show when nothing is going on, from now on */
-    def idle(description: String, error: Boolean = false): Unit = synchronized {
-      idleText = description
-      idleError = error
-      addLine(description)
-      if (active == 0) {
-        text = description
-        this.error = error
-      }
-      changed()
-    }
-
-    private def addLine(line: String): Unit = {
-      lines.append(line)
-      if (lines.length > maxLines) {
-        lines.removeHead()
-        firstLine += 1
-      }
-    }
-
-    /** The status, once it changed from `since` (or after `timeoutMs`), with the log lines from
-      * `fromLine` on.
-      */
-    def await(since: Long, fromLine: Long, timeoutMs: Long): ujson.Obj = synchronized {
-      val deadline = System.currentTimeMillis() + timeoutMs
-      while (seq <= since && System.currentTimeMillis() < deadline)
-        wait(math.max(1L, deadline - System.currentTimeMillis()))
-      val from = math.max(fromLine, firstLine)
-      ujson.Obj(
-        "seq"      -> seq.toDouble,
-        "busy"     -> (active > 0),
-        "text"     -> text,
-        "error"    -> error,
-        "fromLine" -> from.toDouble,
-        "lines" -> ujson.Arr.from(lines.iterator.drop((from - firstLine).toInt).map(ujson.Str(_)))
-      )
-    }
   }
 }

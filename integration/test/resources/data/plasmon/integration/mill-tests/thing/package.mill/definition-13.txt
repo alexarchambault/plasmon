@@ -3,9 +3,9 @@
     "path": "thing/package.mill",
     "line": 13,
     "colRange": [
-      8,
+      7,
       15
     ],
-    "content": "package"
+    "content": "`package"
   }
 ]

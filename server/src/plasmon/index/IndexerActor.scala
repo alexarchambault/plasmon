@@ -11,6 +11,7 @@ import plasmon.bsp.{
   BspConnection,
   BspDataPortability,
   BuildServerInfo,
+  MillUserCodeRewrites,
   MillWrappedSources,
   PlasmonBuildServer,
   ReplayArtifacts
@@ -862,18 +863,31 @@ class IndexerActor(
 
             def compilerPath = generatedPath
             def userPath     = userPath0
+
+            // What Mill changes in the user code of build files, see MillUserCodeRewrites
+            private val millRewrites =
+              Option.when(generatedPath.last.endsWith(".mill")) {
+                new MillUserCodeRewrites.Tracker(
+                  generatedPath,
+                  userPath0,
+                  sourceItem.getTopWrapper,
+                  sourceItem.getBottomWrapper
+                )
+              }
+
+            @volatile private var lastRedirects = Seq.empty[MillUserCodeRewrites.Redirect]
+
             def update(
               content: String
             ): (Input.VirtualFile, l.Position => l.Position, AdjustLspData) = {
-              val adjustLspData = AdjustedLspData.create(
-                generatedPath,
-                userPath0,
-                fromScala
-              )
+              val applied =
+                millRewrites.map(_.current().apply(content))
+              val rewrittenContent = applied.fold(content)(_.content)
               val actualContent =
                 // FIXME Dirty hack, mark that in the BSP wrapped sources messages?
+                // (Mill versions that comment out package clauses get them rewritten above)
                 if (generatedPath.last.endsWith(".mill"))
-                  content.linesIterator.zip(content.linesWithSeparators)
+                  rewrittenContent.linesIterator.zip(rewrittenContent.linesWithSeparators)
                     .map {
                       case (line, lineWithSep) =>
                         if (line.startsWith("package "))
@@ -883,22 +897,57 @@ class IndexerActor(
                     }
                     .mkString
                 else
-                  content
-              val updatedContent =
-                sourceItem.getTopWrapper + actualContent + sourceItem.getBottomWrapper
+                  rewrittenContent
+              val beforeBottom   = sourceItem.getTopWrapper + actualContent
+              val updatedContent = beforeBottom + sourceItem.getBottomWrapper
+
+              // Queries on code Mill moved after the user code (like the parents of an
+              // object `package`) go to where it got moved
+              val redirects = applied.toSeq.flatMap { applied0 =>
+                MillUserCodeRewrites.redirects(
+                  applied0.changes,
+                  sourceItem.getBottomWrapper,
+                  beforeBottom.count(_ == '\n'),
+                  beforeBottom.length - beforeBottom.lastIndexOf('\n') - 1
+                )
+              }
+              lastRedirects = redirects
+              val toScala0: l.Position => l.Position =
+                if (redirects.isEmpty) toScala
+                else
+                  pos =>
+                    redirects.iterator
+                      .flatMap(_.toCompiler(pos.getLine, pos.getCharacter))
+                      .nextOption()
+                      .fold(toScala(pos))((line, char) => new l.Position(line, char))
+              val fromScala0: l.Position => l.Position =
+                if (redirects.isEmpty) fromScala
+                else
+                  pos =>
+                    redirects.iterator
+                      .flatMap(_.toUser(pos.getLine, pos.getCharacter))
+                      .nextOption()
+                      .fold(fromScala(pos))((line, char) => new l.Position(line, char))
+              val adjustLspData = AdjustedLspData.create(
+                generatedPath,
+                userPath0,
+                fromScala0
+              )
+
+              val inputPath =
+                if (
+                  generatedPath.last.endsWith(".scala") &&
+                  !generatedPath.last.endsWith(".sc.scala")
+                )
+                  generatedPath / os.up / (generatedPath.last.stripSuffix(".scala") + ".sc.scala")
+                else
+                  generatedPath
 
               (
-                Input.VirtualFile(
-                  if (
-                    generatedPath.last.endsWith(".scala") &&
-                    !generatedPath.last.endsWith(".sc.scala")
-                  )
-                    generatedPath.toString.stripSuffix(".scala") + ".sc.scala"
-                  else
-                    generatedPath.toString,
-                  updatedContent
-                ),
-                toScala,
+                // A URI, like other inputs handed to the presentation compiler - it gets passed
+                // as is to it (see PresentationCompilers.compile), that fails on a bare path
+                Input.VirtualFile(inputPath.toNIO.toUri.toASCIIString, updatedContent),
+                toScala0,
                 adjustLspData
               )
             }
@@ -906,6 +955,11 @@ class IndexerActor(
               Some(line + topWrapperLineCount)
             override def toUserLine(line: Int): Option[Int] =
               Some(line - topWrapperLineCount).filter(_ >= 0)
+            override def toUserPosition(line: Int, char: Int): Option[(Int, Int)] =
+              lastRedirects.iterator
+                .flatMap(_.toUser(line, char))
+                .nextOption()
+                .orElse(toUserLine(line).map((_, char)))
           }
         (item.getTarget, mappedSource)
       }

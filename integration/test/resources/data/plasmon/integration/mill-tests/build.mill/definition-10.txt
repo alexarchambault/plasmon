@@ -7,5 +7,14 @@
       15
     ],
     "content": "`package"
+  },
+  {
+    "path": ".plasmon/readonly/dependencies/mill-core-api_3-1.4.0-M2-sources.jar/mill/api/Cross.scala",
+    "line": 285,
+    "colRange": [
+      6,
+      11
+    ],
+    "content": "apply"
   }
 ]

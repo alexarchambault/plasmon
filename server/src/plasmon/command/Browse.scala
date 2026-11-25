@@ -34,17 +34,33 @@ object Browse extends caseapp.Command[BrowseOptions] {
     }
 
     val realRoot = root.toNIO.toRealPath()
+    // What the page shows of what the server is doing: what it'd tell an editor, and its log
+    val status = new BrowseStatus(os.Path(realRoot))
     // The plasmon server lives in this process, with the page alongside it
     Server.start(
       serverOptions(os.Path(realRoot)),
       Some { inProcess =>
-        val app    = new BrowseApp(realRoot, options.host, options.port, tls, inProcess)
+        // Like editors do, for the server to say what's up with the file users look at
+        def focus(file: os.Path): Unit = {
+          inProcess.server.editorState.focusedDocument = Some(file)
+          inProcess.server.refreshStatus()
+        }
+        val app = new BrowseApp(
+          realRoot,
+          options.host,
+          options.port,
+          tls,
+          inProcess,
+          status,
+          focus
+        )
         val stop   = app.start()
         val scheme = if (tls.isDefined) "https" else "http"
         System.err.println(s"Browsing $root at $scheme://${options.host}:${options.port}/")
         try inProcess.awaitExit()
         finally stop()
-      }
+      },
+      Server.Hooks(client = Some(status.client), onLogLine = Some(status.serverLog))
     )
   }
 
@@ -105,7 +121,9 @@ private final class BrowseApp(
   override val host: String,
   override val port: Int,
   tls: Option[SSLContext],
-  inProcess: Server.InProcess
+  inProcess: Server.InProcess,
+  status: BrowseStatus = new BrowseStatus,
+  focus: os.Path => Unit = _ => ()
 ) extends cask.MainRoutes {
 
   override def debugMode = false
@@ -128,15 +146,25 @@ private final class BrowseApp(
     if (path.endsWith("/api/tree")) tree(param("path").getOrElse(""))
     else if (path.endsWith("/api/file")) file(param("path").getOrElse(""))
     else if (path.endsWith("/api/status"))
-      json(lsp.status.await(
+      json(status.await(
         param("since").flatMap(_.toLongOption).getOrElse(-1L),
         param("fromLine").flatMap(_.toLongOption).getOrElse(0L),
-        timeoutMs = 20000L
+        timeoutMs = 20000L,
+        // the log of `plasmon browse` by default, none with an empty value
+        log = param("log").fold(Some(BrowseStatus.BrowseChannel))(Option(_).filter(_.nonEmpty))
       ))
     else if (path.endsWith("/api/load"))
       resolve(param("path").getOrElse("")).filter(Files.isRegularFile(_)) match {
         case Some(file) =>
+          focus(os.Path(file))
           lsp.load(os.Path(file))
+          json(ujson.Obj())
+        case None => cask.Response("File not found", statusCode = 404)
+      }
+    else if (path.endsWith("/api/focus"))
+      resolve(param("path").getOrElse("")).filter(Files.isRegularFile(_)) match {
+        case Some(file) =>
+          focus(os.Path(file))
           json(ujson.Obj())
         case None => cask.Response("File not found", statusCode = 404)
       }
@@ -180,7 +208,7 @@ private final class BrowseApp(
   }
 
   private val attributes = new GitAttributes(root)
-  private val lsp        = new BrowseLsp(os.Path(root), inProcess)
+  private val lsp        = new BrowseLsp(os.Path(root), inProcess, status)
 
   /** LSP locations, with their path relative to `root` when they're under it (`null` otherwise, the
     * page can't show them then)

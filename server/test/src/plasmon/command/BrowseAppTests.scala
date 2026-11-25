@@ -24,7 +24,13 @@ class BrowseAppTests extends munit.FunSuite {
     .followRedirects(HttpClient.Redirect.NEVER)
     .build()
 
-  private final class Running(val root: os.Path, val port: Int, val fake: Fake) {
+  private final class Running(
+    val root: os.Path,
+    val port: Int,
+    val fake: Fake,
+    val browseStatus: BrowseStatus,
+    val focused: ConcurrentLinkedQueue[os.Path]
+  ) {
     def get(pathAndQuery: String): HttpResponse[String] =
       http.send(
         HttpRequest.newBuilder(URI.create(s"http://127.0.0.1:$port$pathAndQuery")).build(),
@@ -66,9 +72,12 @@ class BrowseAppTests extends munit.FunSuite {
       val realRoot = root.toNIO.toRealPath()
       val fake     = new Fake(reply)
       val port     = freePort()
-      val app      = new BrowseApp(realRoot, "127.0.0.1", port, None, fake.inProcess)
-      val stop     = app.start()
-      try f(new Running(os.Path(realRoot), port, fake))
+      val status   = new BrowseStatus(os.Path(realRoot))
+      val focused  = new ConcurrentLinkedQueue[os.Path]
+      val app =
+        new BrowseApp(realRoot, "127.0.0.1", port, None, fake.inProcess, status, focused.add(_))
+      val stop = app.start()
+      try f(new Running(os.Path(realRoot), port, fake, status, focused))
       finally stop()
     }
     finally os.remove.all(dir)
@@ -321,6 +330,48 @@ class BrowseAppTests extends munit.FunSuite {
 
       assertEquals(app.get("/api/load?path=nope.scala").statusCode(), 404)
       assertEquals(app.get("/api/load?path=src").statusCode(), 404)
+    }
+  }
+
+  test("focus, when loading and on its own") {
+    withApp(
+      setup = root => os.write(root / "src" / "Foo.scala", "object Foo\n", createFolders = true)
+    ) { app =>
+      val foo = app.root / "src" / "Foo.scala"
+      app.json("/api/load?path=src/Foo.scala")
+      assertEquals(app.json("/api/focus?path=src/Foo.scala"), ujson.Obj())
+      assertEquals(app.focused.asScala.toSeq, Seq(foo, foo))
+      assertEquals(app.get("/api/focus?path=nope.scala").statusCode(), 404)
+      assertEquals(app.get("/api/focus?path=src").statusCode(), 404)
+      assertEquals(app.get("/api/focus?path=../outside").statusCode(), 404)
+    }
+  }
+
+  test("status: the logs of the server, its status items") {
+    withApp(
+      setup = root => os.write(root / "Foo.scala", "object Foo\n")
+    ) { app =>
+      import plasmon.languageclient.PlasmonLanguageClient
+      app.browseStatus.client.log(
+        PlasmonLanguageClient.LogMessage("indexer", "Indexer", java.util.List.of("Indexing"))
+      )
+      app.browseStatus.client.statusUpdate(
+        (app.root / "Foo.scala").toNIO.toUri.toASCIIString,
+        java.util.List.of(
+          PlasmonLanguageClient.StatusUpdate("plasmon.interactive", "Idle", 0, false)
+        )
+      )
+      app.browseStatus.line("browse line")
+
+      val res = app.json("/api/status?since=-1&log=indexer&fromLine=0")
+      assertEquals(res("log").str, "indexer")
+      assertEquals(res("lines"), ujson.Arr("Indexing"))
+      assertEquals(res("file").str, "Foo.scala")
+      assertEquals(res("items").arr.map(_("text").str).toSeq, Seq("Idle"))
+      assert(res("channels").arr.exists(_("label").str == "Indexer"))
+      // The log of browse by default, none when asked for none
+      assertEquals(app.status()("lines"), ujson.Arr("browse line"))
+      assert(!app.json("/api/status?since=-1&log=").obj.contains("lines"))
     }
   }
 
