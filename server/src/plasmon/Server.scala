@@ -24,7 +24,13 @@ import plasmon.index.{
   SymbolSearchIndex
 }
 import plasmon.languageclient.*
-import plasmon.pc.{NopReportContext, PresentationCompilers, RemotePcHost, SourcepathMode}
+import plasmon.pc.{
+  JdkClasses,
+  NopReportContext,
+  PresentationCompilers,
+  RemotePcHost,
+  SourcepathMode
+}
 import plasmon.render.JsonCodecs.given
 import plasmon.semdb.{
   InteractiveSemanticdbs,
@@ -89,7 +95,8 @@ final class Server(
   val reindexSource: os.Path => Unit,
   scala2Compat: Boolean,
   val sourcepath: Option[SourcepathMode],
-  val stopBuildToolAfterLoad: Boolean = false
+  val stopBuildToolAfterLoad: Boolean = false,
+  val jdkClasses: JdkClasses = JdkClasses.default
 ) extends IndexerServerLike with BspServersServerLike with AutoCloseable {
 
   private var initializeParamsOpt0 = Option.empty[l.InitializeParams]
@@ -269,20 +276,18 @@ final class Server(
     bestEffortEnabled = enableBestEffortMode
   )(using pools.compilationEc)
 
-  lazy val jdkCp = {
-    val rtJar = javaHome / "jre/lib/rt.jar"
-    if (os.exists(rtJar)) Seq(rtJar)
-    else {
-      val jmodsDir = javaHome / "jmods"
-      if (os.isDir(jmodsDir))
-        os.list(jmodsDir)
-          .filter(_.last.endsWith(".jmod"))
-          .filter(os.isFile(_))
-      else {
-        scribe.warn(s"No rt.jar or jmods directory found in Java home dir $javaHome")
-        Nil
-      }
-    }
+  lazy val jdkCp: Seq[os.Path] = {
+    val cp = jdkClasses.classPath(javaHome)
+    if (cp.isEmpty)
+      scribe.warn(
+        s"No ${jdkClasses.description} found in Java home dir $javaHome, " +
+          "presentation compilers won't find JDK classes"
+      )
+    else
+      scribe.info(
+        s"Reading JDK classes from ${cp.map(_.relativeTo(javaHome)).mkString(", ")} in $javaHome"
+      )
+    cp
   }
 
   lazy val jdkSources =
@@ -300,7 +305,7 @@ final class Server(
 
   private def newJavaFileManager(): CustomFileManager =
     new CustomFileManager(
-      javaHome.toNIO,
+      jdkCp.map(_.toNIO),
       JavaMetalsCompiler.COMPILER.getStandardFileManager(null, null, null),
       jdkContext
     )

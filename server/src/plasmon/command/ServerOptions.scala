@@ -41,6 +41,9 @@ final case class ServerOptions(
     bsp: List[String] = Nil,
   @HelpMessage("Once `--auto` loaded a build tool and a module, stop the build tool, and answer from the BSP data it left in the cache (.plasmon/cache/bsp by default) instead (default: false)")
     stopBuildToolAfterLoad: Boolean = false,
+  @HelpMessage("Where presentation compilers read the JDK classes from: ct-sym (default, the class signatures of the JDK's lib/ct.sym, there in any JDK with javac) or jmods (the .jmod files under jmods/, that JDKs built without JMODs like Temurin 24+ lack)")
+  @ValueDescription("ct-sym|jmods")
+    jdkClasses: Option[String] = None,
   @Hidden
   @HelpMessage("How sources are handed to the compiler with --sourcepath: logical (default, files listed one by one, packages read from package clauses) or classic (source roots laid out by package)")
     sourcepathMode: Option[String] = None

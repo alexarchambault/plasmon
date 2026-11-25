@@ -20,7 +20,7 @@ import plasmon.jsonrpc.{
 import plasmon.languageclient.PlasmonLanguageClient
 import plasmon.protocol
 import plasmon.protocol.CommandClient
-import plasmon.pc.SourcepathMode
+import plasmon.pc.{JdkClasses, SourcepathMode}
 import plasmon.servercommand.*
 import plasmon.util.{ThreadUtil, TimerThreadsHack}
 import plasmon.watch.WatchEvent
@@ -47,6 +47,7 @@ import scala.concurrent.duration.{
 }
 import scala.jdk.CollectionConverters.*
 import scala.util.{Failure, Properties, Success, Using}
+import scala.util.control.NonFatal
 
 object Server extends caseapp.Command[ServerOptions] {
 
@@ -141,6 +142,44 @@ object Server extends caseapp.Command[ServerOptions] {
       "system|liberica:24"
     else
       "system|17"
+
+  /** Resolves a JVM id, skipping the `|`-separated alternatives whose JDK lacks the files the
+    * presentation compilers read the JDK classes from (see [[plasmon.pc.JdkClasses]]).
+    *
+    * With `--jdk-classes jmods` and `system|17`, a system JDK without `jmods/` (Temurin 24+, like
+    * the one `cs launch --jvm 24` starts the server with and puts in `JAVA_HOME`) gets us a JDK 17
+    * instead, rather than presentation compilers that fail to start for lack of `java.lang.Object`.
+    * With the default `ct-sym`, this only skips JREs and the like.
+    */
+  private def resolveJavaHome(jvmId: String, jdkClasses: JdkClasses): os.Path = {
+    val alternatives        = jvmId.split('|').map(_.trim).filter(_.nonEmpty).toList
+    lazy val manager        = coursierapi.JvmManager.create()
+    def resolve(id: String) = os.Path(manager.get(id), os.pwd)
+    def loop(remaining: List[String]): os.Path =
+      remaining match {
+        case Nil         => resolve(jvmId)
+        case last :: Nil => resolve(last)
+        case id :: others =>
+          val homeOpt =
+            try Some(resolve(id))
+            catch {
+              case NonFatal(e) =>
+                scribe.info(s"Could not get JVM $id, trying ${others.mkString("|")}", e)
+                None
+            }
+          homeOpt match {
+            case Some(home) if jdkClasses.classPath(home).nonEmpty => home
+            case Some(home) =>
+              scribe.info(
+                s"No ${jdkClasses.description} in $home (JVM $id), " +
+                  s"trying ${others.mkString("|")}"
+              )
+              loop(others)
+            case None => loop(others)
+          }
+      }
+    loop(alternatives)
+  }
 
   /** A server running in this process, for whoever started it with [[start]].
     *
@@ -249,11 +288,24 @@ object Server extends caseapp.Command[ServerOptions] {
 
       val pools = ServerCommandThreadPools.noobNaiveDontUsePools()
 
+      val jdkClasses = options.jdkClasses.map(_.trim).filter(_.nonEmpty) match {
+        case None => JdkClasses.default
+        case Some(id) =>
+          JdkClasses.parse(id).getOrElse {
+            sys.error(
+              s"Unrecognized JDK classes source '$id' " +
+                s"(expected one of ${JdkClasses.all.map(_.id).mkString(", ")})"
+            )
+          }
+      }
+      scribe.info(s"JDK classes from: ${jdkClasses.id}")
+
       val javaHome = options.javaHome.filter(_.trim.nonEmpty).map(os.Path(_, os.pwd))
         .getOrElse {
           val jvmId = options.jvm.map(_.trim).filter(_.nonEmpty).getOrElse(defaultJvmId)
-          os.Path(coursierapi.JvmManager.create().get(jvmId), os.pwd)
+          resolveJavaHome(jvmId, jdkClasses)
         }
+      scribe.info(s"Java home: $javaHome")
 
       val bloopJavaHome = () => {
         val value = options.bloopJavaHome.filter(_.trim.nonEmpty).map(os.Path(_, os.pwd))
@@ -356,7 +408,8 @@ object Server extends caseapp.Command[ServerOptions] {
         reindexSource = indexer.reindexWorkspaceSource(_),
         scala2Compat = scala2Compat,
         sourcepath = sourcepathMode,
-        stopBuildToolAfterLoad = options.stopBuildToolAfterLoad
+        stopBuildToolAfterLoad = options.stopBuildToolAfterLoad,
+        jdkClasses = jdkClasses
       )
 
       // Early on, so that the client hears of the logs that come before anything is served
