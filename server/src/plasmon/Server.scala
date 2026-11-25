@@ -598,7 +598,7 @@ final class Server(
             val targetId = new b.BuildTargetIdentifier(event.targetId.targetId)
             if (sourcepath.nonEmpty)
               resetSourcepathCompilers(targetId)
-            else
+            else if (compilations.canCompile(targetId))
               compilations
                 .compileTarget(targetId)
                 .onComplete {
