@@ -485,6 +485,10 @@
     "allDeclaredFields": true
   },
   {
+    "name": "scala.meta.internal.headercompilers.MetalsJavaHeaderCompilerPlugin",
+    "allPublicConstructors": true
+  },
+  {
     "name": "scala.meta.internal.metals.WindowStateDidChangeParams",
     "allDeclaredConstructors": true,
     "allPublicConstructors": true,

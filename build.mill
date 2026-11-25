@@ -851,8 +851,11 @@ object server extends ScalaModule with PlasmonPublishModule {
     }
 
     def nativeImageClassPath = Task {
-      val dir           = Task.dest / "patched-jars"
-      val baseClassPath = runClasspath()
+      val dir = Task.dest / "patched-jars"
+      // The javac plugin of the Java presentation compiler: the JVM server loads it from the JAR
+      // it extracts (plasmon.pc.PlasmonEmbeddedClient), but a native image can't load classes at
+      // run time, so javac only finds the plugins compiled in it (via their service file)
+      val baseClassPath = runClasspath() ++ Seq(submodules.metals.`java-header-compiler`.jar())
 
       val patchedClassPath = baseClassPath
         .filter { ref =>
