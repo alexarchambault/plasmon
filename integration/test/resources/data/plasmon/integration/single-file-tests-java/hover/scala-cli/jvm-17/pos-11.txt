@@ -1,5 +1,5 @@
 ```java
-public java.util.Enumeration<java.net.URL> getResources(java.lang.String arg0) throws java.io.IOException
+public java.util.Enumeration<java.net.URL> getResources(java.lang.String name) throws java.io.IOException
 ```
 
 ***

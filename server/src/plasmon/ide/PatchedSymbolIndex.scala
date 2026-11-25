@@ -16,6 +16,7 @@ import scala.jdk.CollectionConverters.*
 import scala.meta.internal.mtags.{
   GlobalSymbolIndex,
   Mtags,
+  ScalametaCommonEnrichments,
   SourcePath,
   Symbol,
   SymbolDefinition
@@ -69,7 +70,7 @@ final class PatchedSymbolIndex(
       .getOrElse(symbolDefinition.path)
     val parsed = {
       val semdb = new Mtags()(using NopReportContext).index(
-        path.toLanguage,
+        ScalametaCommonEnrichments.filenameToJLanguage(path.uri),
         path.toInput,
         symbolDefinition.dialectOpt
       )

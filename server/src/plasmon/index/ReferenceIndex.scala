@@ -7,6 +7,7 @@ import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import com.google.common.hash.{BloomFilter, Funnels}
 import org.eclipse.lsp4j as l
+import plasmon.pc.NopReportContext
 import plasmon.PlasmonEnrichments.*
 import plasmon.ide.{
   AdjustRange,
@@ -150,7 +151,7 @@ final class ReferenceIndex(
         if (occs.isEmpty)
           bspData.getDialect(module, source)
             .map { dialect =>
-              Mtags
+              new Mtags()(using NopReportContext)
                 .allToplevels(source.toInput, dialect)
                 .occurrences
                 .find(_.encloses(queryPosition))

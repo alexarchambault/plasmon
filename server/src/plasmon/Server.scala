@@ -60,11 +60,8 @@ import scala.meta.internal.mtags.{
   SymbolIndexBucket,
   SymbolLocation
 }
-import scala.meta.internal.pc.{
-  CustomFileManager,
-  JavaMetalsGlobal,
-  PresentationCompilerConfigImpl
-}
+import scala.meta.internal.jpc.{CustomFileManager, JavaMetalsCompiler}
+import scala.meta.internal.pc.PresentationCompilerConfigImpl
 import scala.meta.parsers.ParseException
 import scala.meta.tokenizers.TokenizeException
 import scala.reflect.ClassTag
@@ -304,7 +301,7 @@ final class Server(
   private def newJavaFileManager(): CustomFileManager =
     new CustomFileManager(
       javaHome.toNIO,
-      JavaMetalsGlobal.COMPILER.getStandardFileManager(null, null, null),
+      JavaMetalsCompiler.COMPILER.getStandardFileManager(null, null, null),
       jdkContext
     )
 
@@ -504,7 +501,7 @@ final class Server(
   )
 
   // STATE
-  lazy val symbolDocs = new Docstrings(symbolIndex)(using NopReportContext)
+  lazy val symbolDocs = new Docstrings(symbolIndex, () => symbolIndex.mtags)
 
   val status = new Status(this)
 

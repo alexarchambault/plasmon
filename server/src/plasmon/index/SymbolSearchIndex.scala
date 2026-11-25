@@ -302,7 +302,7 @@ final class SymbolSearchIndex(
     token: CancelChecker,
     fileInFocus: Option[os.Path]
   ): Seq[l.SymbolInformation] = {
-    val query = WorkspaceSymbolQuery.fromTextQuery(textQuery)
+    val query = WorkspaceSymbolQuery.fuzzy(textQuery)
     SourcePath.withContext { implicit ctx =>
       val visitor =
         new WorkspaceSearchVisitor(

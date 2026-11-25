@@ -3,6 +3,7 @@ package plasmon.ide
 import org.eclipse.lsp4j as l
 import org.objectweb.asm.{ClassReader, ClassVisitor, Opcodes}
 import plasmon.PlasmonEnrichments.*
+import plasmon.pc.NopReportContext
 
 import scala.meta.dialects
 import scala.meta.internal.mtags.{Mtags, SourcePath}
@@ -120,7 +121,8 @@ object ArchiveLocations {
       if (isObject) Seq(objectSym, classSym)
       else Seq(classSym, objectSym)
 
-    val doc = Mtags.allToplevels(sourceEntry.toInput, dialects.Scala3, includeMembers = false)
+    val doc = new Mtags()(using NopReportContext)
+      .allToplevels(sourceEntry.toInput, dialects.Scala3, includeMembers = false)
     candidates.iterator
       .flatMap { sym =>
         doc.occurrences.iterator

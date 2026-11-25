@@ -26,6 +26,9 @@
         "pattern": "\\Qplasmon/version.properties\\E"
       },
       {
+        "pattern": "\\Qplasmon/java-header-compiler.jar\\E"
+      },
+      {
         "pattern": "\\Qplasmon/plasmon.vsix\\E"
       },
       {

@@ -41,6 +41,7 @@ import scala.meta.internal.metals.{
 }
 import scala.meta.internal.mtags.{
   GlobalSymbolIndex,
+  Mtags,
   OnDemandSymbolIndex,
   SourcePath
 }
@@ -1082,6 +1083,7 @@ class IndexerActor(
         val reluri     = source.toIdeallyRelativeURI(sourceItem)
         val input      = sourceToIndex0.toInput
         SemanticdbDefinition.foreach(
+          new Mtags()(using NopReportContext),
           input,
           dialectOpt,
           includeMembers = true,

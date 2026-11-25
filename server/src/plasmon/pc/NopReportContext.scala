@@ -1,12 +1,7 @@
 package plasmon.pc
 
-import java.util.Optional
+import scala.meta.internal.metals.{EmptyReportContext, ReportContext}
 
-import scala.meta.pc.reports.{ReportContext, Reporter}
-
-object NopReportContext extends ReportContext {
-  private val nopReporter: Reporter = (_, _) => Optional.empty()
-  def unsanitized(): Reporter       = nopReporter
-  def bloop(): Reporter             = nopReporter
-  def incognito(): Reporter         = nopReporter
-}
+/** A report context that discards reports (Metals' internal flavor, that Mtags and Docstrings need)
+  */
+val NopReportContext: ReportContext = EmptyReportContext
