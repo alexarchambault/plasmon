@@ -452,6 +452,13 @@ object TargetData {
     def compilerPath: os.Path
     def toCompilerLine(line: Int): Option[Int] = None
     def toUserLine(line: Int): Option[Int]     = None
+
+    /** The user position of a position in the code passed to the compiler, if known
+      *
+      * As of the last call to [[update]], for positions that don't only depend on lines.
+      */
+    def toUserPosition(line: Int, char: Int): Option[(Int, Int)] =
+      toUserLine(line).map((_, char))
     def update(
       content: String
     ): (Input.VirtualFile, l.Position => l.Position, AdjustLspData)

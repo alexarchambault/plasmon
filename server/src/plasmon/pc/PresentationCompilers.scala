@@ -1206,9 +1206,14 @@ class PresentationCompilers(
                       )
                     else None
                   }
-                  val updateLine: Int => Option[Int] = mappedSourceOpt match {
-                    case Some(mappedSource) => mappedSource.toUserLine
-                    case None               => Some(_)
+                  val updatePos: (Int, Int) => Option[l.Position] = mappedSourceOpt match {
+                    case Some(mappedSource) =>
+                      (line, char) =>
+                        mappedSource
+                          .toUserPosition(line, char)
+                          .map((line0, char0) => new l.Position(line0, char0))
+                    case None =>
+                      (line, char) => Some(new l.Position(line, char))
                   }
                   val diagUri = mappedSourceOpt.fold(uri)(_.userPath.toNIO.toUri)
                   // Requests are run latest first, so that diagnostics computed for former
@@ -1225,39 +1230,41 @@ class PresentationCompilers(
                   if (stale)
                     logger0.log(s"Ignoring diagnostics of a former version of $path")
                   else {
-                    def inUserCode(diag: dotty.tools.dotc.reporting.Diagnostic): Boolean =
-                      updateLine(diag.pos.startLine).nonEmpty && updateLine(
-                        diag.pos.endLine
-                      ).nonEmpty
+                    def userRange(
+                      diag: dotty.tools.dotc.reporting.Diagnostic
+                    ): Option[l.Range] =
+                      for {
+                        start <- updatePos(diag.pos.startLine, diag.pos.startColumn)
+                        end   <- updatePos(diag.pos.endLine, diag.pos.endColumn)
+                      } yield new l.Range(start, end)
                     val diags0 = diags.flatMap {
                       case diag if !diag.pos.span.exists =>
                         logger0.log(s"No span diagnostic: $diag")
                         None
-                      case diag if !inUserCode(diag) =>
-                        logger0.log(s"Diagnostic outside of user code: $diag")
-                        None
                       case diag =>
-                        scribe.info(s"raw diag in ${uri.toOsPath.relativeTo(workspace)}: $diag")
-                        val lspDiag = new l.Diagnostic(
-                          new l.Range(
-                            new l.Position(
-                              updateLine(diag.pos.startLine).get,
-                              diag.pos.startColumn
-                            ),
-                            new l.Position(updateLine(diag.pos.endLine).get, diag.pos.endColumn)
-                          ),
-                          diag.message,
-                          diag.level match {
-                            case dotty.tools.dotc.interfaces.Diagnostic.WARNING =>
-                              l.DiagnosticSeverity.Warning
-                            case dotty.tools.dotc.interfaces.Diagnostic.ERROR =>
-                              l.DiagnosticSeverity.Error
-                            case _ =>
-                              l.DiagnosticSeverity.Information
-                          },
-                          diagnosticSource
-                        )
-                        Some(lspDiag)
+                        userRange(diag) match {
+                          case None =>
+                            logger0.log(s"Diagnostic outside of user code: $diag")
+                            None
+                          case Some(range) =>
+                            scribe.info(
+                              s"raw diag in ${uri.toOsPath.relativeTo(workspace)}: $diag"
+                            )
+                            val lspDiag = new l.Diagnostic(
+                              range,
+                              diag.message,
+                              diag.level match {
+                                case dotty.tools.dotc.interfaces.Diagnostic.WARNING =>
+                                  l.DiagnosticSeverity.Warning
+                                case dotty.tools.dotc.interfaces.Diagnostic.ERROR =>
+                                  l.DiagnosticSeverity.Error
+                                case _ =>
+                                  l.DiagnosticSeverity.Information
+                              },
+                              diagnosticSource
+                            )
+                            Some(lspDiag)
+                        }
                     }
                     emitDiagnostics(pc, targetId.module, diagUri, diags0, logger0)
                   }
