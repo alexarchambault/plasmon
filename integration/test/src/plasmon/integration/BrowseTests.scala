@@ -23,11 +23,9 @@ class BrowseTests extends PlasmonSuite {
   private def jvm          = TestUtil.jvmValues.head
   private def scalaVersion = IntegrationConstants.scala3
 
-  // Undertow and cask aren't set up for native images
-  if (TestUtil.launcherKind != "native")
-    test("hover, definition and diagnostics") {
-      browseTest()
-    }
+  test("hover, definition and diagnostics") {
+    browseTest()
+  }
 
   private def browseTest(): Unit = {
     val fooFile = os.sub / "Foo.scala"

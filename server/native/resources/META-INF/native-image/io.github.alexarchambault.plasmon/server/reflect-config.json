@@ -62,6 +62,47 @@
     ]
   },
   {
+    "name": "io.undertow.server.ConnectorStatisticsImpl"
+  },
+  {
+    "name": "io.undertow.server.DefaultByteBufferPool"
+  },
+  {
+    "name": "io.undertow.server.DefaultByteBufferPool$DefaultPooledBuffer"
+  },
+  {
+    "name": "io.undertow.server.HttpServerExchange"
+  },
+  {
+    "name": "io.undertow.server.protocol.http.HttpReadListener"
+  },
+  {
+    "name": "io.undertow.server.protocol.http.HttpRequestParser$$generated",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "org.xnio.OptionMap"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "io.undertow.util.Headers",
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.undertow.util.HttpString"
+  },
+  {
+    "name": "io.undertow.util.Methods",
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.undertow.util.Protocols",
+    "allDeclaredFields": true
+  },
+  {
     "name": "java.lang.Class",
     "methods": [
       {
@@ -267,6 +308,114 @@
         "name": "INSTANCE"
       }
     ]
+  },
+  {
+    "name": "org.jboss.threads.EnhancedQueueExecutor",
+    "fields": [
+      {
+        "name": "activeCount"
+      },
+      {
+        "name": "peakQueueSize"
+      },
+      {
+        "name": "peakThreadCount"
+      },
+      {
+        "name": "queueSize"
+      },
+      {
+        "name": "terminationWaiters"
+      }
+    ]
+  },
+  {
+    "name": "org.jboss.threads.EnhancedQueueExecutor$MXBeanImpl"
+  },
+  {
+    "name": "org.jboss.threads.EnhancedQueueExecutor$PoolThreadNode",
+    "fields": [
+      {
+        "name": "parked"
+      },
+      {
+        "name": "task"
+      }
+    ]
+  },
+  {
+    "name": "org.jboss.threads.EnhancedQueueExecutor$QNode",
+    "fields": [
+      {
+        "name": "next"
+      }
+    ]
+  },
+  {
+    "name": "org.jboss.threads.EnhancedQueueExecutorBase1",
+    "fields": [
+      {
+        "name": "tail"
+      }
+    ]
+  },
+  {
+    "name": "org.jboss.threads.EnhancedQueueExecutorBase3",
+    "fields": [
+      {
+        "name": "head"
+      }
+    ]
+  },
+  {
+    "name": "org.jboss.threads.EnhancedQueueExecutorBase5",
+    "fields": [
+      {
+        "name": "threadStatus"
+      }
+    ]
+  },
+  {
+    "name": "org.jboss.threads.management.StandardThreadPoolMXBean"
+  },
+  {
+    "name": "org.xnio.Connection"
+  },
+  {
+    "name": "org.xnio.XnioWorker"
+  },
+  {
+    "name": "org.xnio.management.XnioProviderMXBean"
+  },
+  {
+    "name": "org.xnio.management.XnioServerMXBean"
+  },
+  {
+    "name": "org.xnio.management.XnioWorkerMXBean"
+  },
+  {
+    "name": "org.xnio.nio.NioSocketConduit"
+  },
+  {
+    "name": "org.xnio.nio.NioTcpServer"
+  },
+  {
+    "name": "org.xnio.nio.NioTcpServer$1"
+  },
+  {
+    "name": "org.xnio.nio.NioXnio$3"
+  },
+  {
+    "name": "org.xnio.nio.NioXnioProvider"
+  },
+  {
+    "name": "org.xnio.nio.NioXnioWorker"
+  },
+  {
+    "name": "org.xnio.nio.NioXnioWorker$NioWorkerMetrics"
+  },
+  {
+    "name": "org.xnio.nio.WorkerThread"
   },
   {
     "name": "plasmon.bsp.PlasmonBuildClient",
