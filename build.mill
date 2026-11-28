@@ -1085,9 +1085,59 @@ object server extends ScalaModule with PlasmonPublishModule {
       Seq(PathRef(resourceDir))
     }
 
+    /** Reflection entries for the classes that JBoss Logging generates for message loggers and
+      * bundles (Undertow, XNIO, JBoss Threads, WildFly Common, …)
+      *
+      * `Logger.getMessageLogger(classOf[Foo], …)` loads `Foo_$logger` with `Class.forName` and
+      * calls its `(org.jboss.logging.Logger)` constructor, and `Messages.getBundle(classOf[Foo])`
+      * loads `Foo_$bundle` and reads its `INSTANCE` field. Neither can be seen by native-image, and
+      * without them Undertow fails in its static initializers (`Invalid logger interface
+      * io.undertow.UndertowLogger (implementation not found …)`) when `plasmon browse` starts it.
+      */
+    def jbossLoggingGraalvmStuff = Task {
+      import java.util.zip._
+      val resourceDir = Task.dest / "resources"
+      val dir =
+        resourceDir / "META-INF" / "native-image" / "io.github.alexarchambault.plasmon" / "jboss-logging"
+      val jars = server.runClasspath()
+        .map(_.path)
+        .filter(p => p.last.endsWith(".jar") && os.isFile(p))
+      val classNames = jars.flatMap { jar =>
+        Using.resource(new ZipFile(jar.toIO)) { zf =>
+          zf.entries().asScala.map(_.getName)
+            .filter(name => name.endsWith("_$logger.class") || name.endsWith("_$bundle.class"))
+            .map(_.stripSuffix(".class").replace('/', '.'))
+            .toVector
+        }
+      }.distinct.sorted
+      val entries = classNames.map { name =>
+        if (name.endsWith("_$logger"))
+          ujson.Obj(
+            "name" -> name,
+            "methods" -> ujson.Arr(
+              ujson.Obj(
+                "name"           -> "<init>",
+                "parameterTypes" -> ujson.Arr("org.jboss.logging.Logger")
+              )
+            )
+          )
+        else
+          ujson.Obj(
+            "name"   -> name,
+            "fields" -> ujson.Arr(ujson.Obj("name" -> "INSTANCE"))
+          )
+      }
+      os.write(
+        dir / "reflect-config.json",
+        ujson.Arr(entries*).render(indent = 2) + "\n",
+        createFolders = true
+      )
+      Seq(PathRef(resourceDir))
+    }
+
     def resources = Task {
       Seq(native.resources()) ++ lsp4jGraalvmStuff() ++ bsp4jGraalvmStuff() ++
-        remotePcGraalvmStuff()
+        remotePcGraalvmStuff() ++ jbossLoggingGraalvmStuff()
     }
     def nativeImageConfResources = Task(Seq(native.resources()))
 
